@@ -1,7 +1,7 @@
 {
-  "name": "chi-video-wall-js",
-  "version": "0.0.0",
-  "description": "Code for the video wall.",
+  "name": "chi-video-wall",
+  "version": "0.1.0",
+  "description": "Code which can manage a large video wall with multiple nodes.",
   "main": "server/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
