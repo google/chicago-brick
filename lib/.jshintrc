@@ -1,0 +1,20 @@
+{
+  "extends": "../.jshintrc",
+  "globals": {
+    "ServerModuleInterface": true,
+    "ClientModuleInterface": true,
+    "debug": true,
+    "geometry": true,
+    "Q": true,
+    "Surface": true,
+    "wallGeometry": true,
+    "loadYoutubeApi": true,
+    "YT": true,
+    "register": true,
+    "network": true,
+    "CanvasSurface": true,
+    "Rectangle": true
+  },
+  "strict": false
+}
+

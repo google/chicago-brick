@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Render *all* the screens!</title>
+<script src="demo.js"></script>
+<style>
+.row {
+  padding: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+.cell {
+  padding: 0;
+  margin: 0;
+  display: inline-block;
+}
+body, html {
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+}
+#controls {
+  padding: 10px;
+  margin: 10px;
+}
+</style>
+</head>
+<body>
+<div id="controls">
+  <a href="/demo.html?grid=111,111,111">3x3 grid</a> |
+  <a href="/demo.html?grid=1111001111110,0011111111000,0111111111111,1001111110110,0000001100000">Full grid</a>
+</div>
+<div id="container"></div>
+<script>
+go();
+</script>
+</body>
+</html>

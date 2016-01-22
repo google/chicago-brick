@@ -1,0 +1,18 @@
+# People who have agreed to one of the CLAs and can contribute patches.
+# The AUTHORS file lists the copyright holders; this file
+# lists people.  For example, Google employees are listed here
+# but not in AUTHORS, because Google holds the copyright.
+#
+# http://code.google.com/legal/individual-cla-v1.0.html (electronic submission)
+# http://code.google.com/legal/corporate-cla-v1.0.html (requires FAX)
+#
+# Note that the CLA isn't a copyright _assignment_ but rather a
+# copyright _license_.  You retain the copyright on your
+# contributions.
+
+Brian Turnbull <bmt@google.com>
+Jacob Lee <jacobly@google.com>
+James Megquier <jmegq@google.com>
+Jason Gessner <jgessner@google.com>
+Matt Handley <applmak@google.com>
+Nick Piepmeier <pieps@google.com>

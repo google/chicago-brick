@@ -1,0 +1,81 @@
+// Playlist for local development.
+// Runs all modules in the default configuration.
+
+{
+  "modules": [
+    {
+      "name": "balls",
+      "path": "demo_modules/balls/balls.js",
+      "title": "Bouncing Balls",
+      "author": "Matt Handley"
+    },
+    {
+      "name": "genlock-test",
+      "path": "demo_modules/genlock_test/genlock_test.js",
+    },
+    {
+      "name": "life",
+      "path": "demo_modules/p5_game_of_life/p5_game_of_life.js",
+      "title": "The Game of Life",
+      "author": "Jason Gessner"
+    },
+    {
+      "name": "memory-debug",
+      "path": "demo_modules/memory_debug/memory_debug.js",
+    },
+// TODO(applmak): re-enable this when it is less crashy.
+//    {
+//      "name": "particles",
+//      "path": "demo_modules/particles/particles.js",
+//      "title": "Particles",
+//      "author": "Matt Handley"
+//    },
+    {
+      "name": "registration",
+      "path": "demo_modules/registration/registration.js",
+      "title": "Registration Test",
+      "author": "Matt Handley"
+    },
+    {
+      "name": "solid",
+      "path": "demo_modules/solid/solid.js",
+      "title": "Solid Color",
+      "author": "Matt Handley",
+      "config": {
+        "color": "yellow",
+      },
+    },
+    {
+      "name": "stars",
+      "path": "demo_modules/tutorials/04_stars/stars.js",
+      "title": "Obligatory Zooming Stars",
+      "author": "Matt Handley"
+    },
+    {
+      "name": "threejs",
+      "path": "demo_modules/threejs_test/threejs_test.js",
+      "title": "threejs test",
+      "author": "Matt Handley"
+    },
+    {
+      "name": "p5_test",
+      "path": "demo_modules/p5_test/p5_test.js",
+      "title": "p5 surface test",
+      "author": "Jason Gessner"
+    },
+    {
+      "name": "hello_world",
+      "path": "demo_modules/hello_world/hello_world.js",
+      "title": "A \"Mandelbrot\" demo",
+      "author": "Matt Handley"
+    },
+  ],
+  "playlist": [
+    {
+      "collection": "__ALL__",
+      "duration": 600,
+      "moduleDuration": 60,
+      "maxPartitions": 4,
+    },
+  ],
+}

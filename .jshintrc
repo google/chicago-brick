@@ -1,0 +1,18 @@
+{
+  "-W041": false,  /* Disable "Use '===' to compare with 0". */
+  "-W058": true,  /* Disable 'Missing () invoking a constructor' */
+  "newcap": false,
+  "curly": true,
+  "eqeqeq": false,
+  "funcscope": true,
+  "nocomma": true,
+  "noarg": true,
+  "nonbsp": true,
+  "nonew": true,
+  "shadow": false,
+  "singleGroups": true,
+  "undef": true,
+  "unused": "vars",
+  "esnext": true,
+  "predef": ["Path2D"]
+}

@@ -1,0 +1,12 @@
+{
+  "extends": "../.jshintrc",
+  "browser": true,
+  "strict": true,
+  "-W097": false,
+  "globals": {
+    "console": false,
+    "define": false,
+    "require": false,
+    "requirejs": false
+  }
+}
