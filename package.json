@@ -1,5 +1,5 @@
 {
-  "name": "chi-video-wall",
+  "name": "chicago-brick",
   "version": "0.1.0",
   "description": "Code which can manage a large video wall with multiple nodes.",
   "main": "server/server.js",
