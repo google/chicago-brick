@@ -26,7 +26,7 @@ var MemoryDebugClient = function() {
 };
 MemoryDebugClient.prototype = Object.create(ClientModuleInterface.prototype);
 MemoryDebugClient.prototype.willBeShownSoon = function(container) {
-  container.style.backgroundColor = 'red';
+  container.style.backgroundColor = 'black';
 };
 
 register(MemoryDebugServer, MemoryDebugClient);
