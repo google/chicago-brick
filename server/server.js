@@ -26,6 +26,7 @@ var PlaylistLoader = require('server/modules/playlist_loader');
 var wallGeometry = require('server/util/wall_geometry');
 var Control = require('server/control');
 var webapp = require('server/webapp');
+var credentials = require('server/util/credentials');
 
 var cli = commandLineArgs([
   {name: 'playlist', type: String, alias: 'p',
@@ -47,7 +48,8 @@ var cli = commandLineArgs([
   {name: 'module_duration', type: Number},
   {name: 'max_partitions', type: Number},
   {name: 'game_server_host', type: String, defaultValue: ''},
-  {name: 'geometry_file', type: String}
+  {name: 'geometry_file', type: String},
+  {name: 'credential_dir', type: String}
 ]);
 var flags = cli.parse();
 if (flags.help) {
@@ -88,6 +90,10 @@ var control = new Control(manager, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);
+
+if (flags.credential_dir) {
+  credentials.loadFromDir(flags.credential_dir);
+}
 
 var server = app.listen(flags.port, function() {
   var host = server.address().address;
