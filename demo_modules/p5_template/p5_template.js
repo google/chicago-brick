@@ -22,22 +22,26 @@ class P5TemplateServer extends ServerModuleInterface {
 }
 
 // p5 must be a P5.js instance.
-function P5TemplateSketch(p5, surface) {
-  this.p5 = p5;
-  this.surface = surface;
+// TODO(jgessner): Make a P5Sketch base class.  I'm keeping the empty methods in
+//   here for now to remind me of the interface it should have.
+class P5TemplateSketch {
+  constructor(p5, surface) {
+    this.p5 = p5;
+    this.surface = surface;
+  }
+
+  setup() {
+    var p5 = this.p5;
+
+    p5.background(128, 128, 128);
+  }
+
+  preload() {
+  }
+
+  draw(t) {
+  }
 }
-
-P5TemplateSketch.prototype.preload = function() {
-};
-
-P5TemplateSketch.prototype.setup = function() {
-  var p5 = this.p5;
-
-  p5.background(128, 128, 128);
-};
-
-P5TemplateSketch.prototype.draw = function(t, balls) {
-};
 
 class P5TemplateClient extends ClientModuleInterface {
   constructor(config) {

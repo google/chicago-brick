@@ -22,55 +22,58 @@ class P5TestServer extends ServerModuleInterface {
 }
 
 // p5 must be a P5.js instance.
-function P5TestSketch(p5) {
-  this.p5 = p5;
-  this.rectangleColor = null;
-  this.verticalCircleColor = null;
-  this.horizontalCircleColor = null;
-  this.scalar = 300;
-  this.squareSize = 1000;
+class P5TestSketch {
+  constructor(p5, surface) {
+    this.p5 = p5;
+    this.surface = surface;
+    this.rectangleColor = null;
+    this.verticalCircleColor = null;
+    this.horizontalCircleColor = null;
+    this.scalar = 300;
+    this.squareSize = 1000;
+  }
+
+  setup() {
+    var p5 = this.p5;
+    p5.rectMode(p5.CENTER);
+    p5.fill(0);
+
+    this.rectangleColor = p5.color(p5.random(255), p5.random(255), p5.random(255));
+    this.verticalCircleColor = p5.color(p5.random(255), p5.random(255), p5.random(255));
+    this.horizontalCircleColor = p5.color(p5.random(255), p5.random(255), p5.random(255));
+  }
+
+  draw(t) {
+    var p5 = this.p5;
+
+    p5.background(0);
+
+    var angRect = p5.radians(t) / 25;
+    p5.push();
+    p5.fill(this.rectangleColor);
+    p5.translate(p5.wallWidth / 2, p5.wallHeight / 2);
+    p5.rotate(angRect);
+    p5.rect(0, 0, this.squareSize, this.squareSize);
+    p5.pop();
+
+    var ang1 = p5.radians(t) / 10;
+    var ang2 = p5.radians(t) / 5;
+
+    var x1 = p5.wallWidth/2 + this.scalar * p5.cos(ang1);
+    var x2 = p5.wallWidth/2 + this.scalar * p5.cos(ang2);
+
+    var y1 = p5.wallHeight/2 + this.scalar * p5.sin(ang1);
+    var y2 = p5.wallHeight/2 + this.scalar * p5.sin(ang2);
+
+    p5.fill(this.verticalCircleColor);
+    p5.ellipse(x1, p5.wallHeight*0.5 - this.squareSize * 0.87, this.scalar, this.scalar);
+    p5.ellipse(x2, p5.wallHeight*0.5 + this.squareSize * 0.87, this.scalar, this.scalar);
+
+    p5.fill(this.horizontalCircleColor);
+    p5.ellipse(p5.wallWidth*0.5 - this.squareSize * 0.87, y1, this.scalar, this.scalar);
+    p5.ellipse(p5.wallWidth*0.5 + this.squareSize * 0.87, y2, this.scalar, this.scalar);
+  }
 }
-
-P5TestSketch.prototype.setup = function() {
-  var p5 = this.p5;
-  p5.rectMode(p5.CENTER);
-  p5.fill(0);
-
-  this.rectangleColor = p5.color(p5.random(255), p5.random(255), p5.random(255));
-  this.verticalCircleColor = p5.color(p5.random(255), p5.random(255), p5.random(255));
-  this.horizontalCircleColor = p5.color(p5.random(255), p5.random(255), p5.random(255));
-};
-
-P5TestSketch.prototype.draw = function(t, board) {
-  var p5 = this.p5;
-
-  p5.background(0);
-
-  var angRect = p5.radians(t) / 25;
-  p5.push();
-  p5.fill(this.rectangleColor);
-  p5.translate(p5.wallWidth / 2, p5.wallHeight / 2);
-  p5.rotate(angRect);
-  p5.rect(0, 0, this.squareSize, this.squareSize);
-  p5.pop();
-
-  var ang1 = p5.radians(t) / 10;
-  var ang2 = p5.radians(t) / 5;
-
-  var x1 = p5.wallWidth/2 + this.scalar * p5.cos(ang1);
-  var x2 = p5.wallWidth/2 + this.scalar * p5.cos(ang2);
-
-  var y1 = p5.wallHeight/2 + this.scalar * p5.sin(ang1);
-  var y2 = p5.wallHeight/2 + this.scalar * p5.sin(ang2);
-
-  p5.fill(this.verticalCircleColor);
-  p5.ellipse(x1, p5.wallHeight*0.5 - this.squareSize * 0.87, this.scalar, this.scalar);
-  p5.ellipse(x2, p5.wallHeight*0.5 + this.squareSize * 0.87, this.scalar, this.scalar);
-
-  p5.fill(this.horizontalCircleColor);
-  p5.ellipse(p5.wallWidth*0.5 - this.squareSize * 0.87, y1, this.scalar, this.scalar);
-  p5.ellipse(p5.wallWidth*0.5 + this.squareSize * 0.87, y2, this.scalar, this.scalar);
-};
 
 class P5TestClient extends ClientModuleInterface {
   constructor(config) {
