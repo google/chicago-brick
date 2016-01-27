@@ -13,39 +13,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var ThreeJsTestServer = function(config) {
-};
-ThreeJsTestServer.prototype = Object.create(ServerModuleInterface.prototype);
-ThreeJsTestServer.prototype.tick = function(time, delta) {
-};
-
 var THREE = require('three');
 
-var ThreeJsTestClient = function(config) {
-};
-ThreeJsTestClient.prototype = Object.create(ClientModuleInterface.prototype);
-ThreeJsTestClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
+class ThreeJsTestServer extends ServerModuleInterface {}
+
+class ThreeJsTestClient extends ClientModuleInterface {
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
   }
-};
-ThreeJsTestClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.startTime = deadline;
-  this.surface = new ThreeJsSurface(container, wallGeometry);
 
-  var geometry = new THREE.BoxGeometry(3, 3, 3);
-  var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-  this.cube = new THREE.Mesh(geometry, material);
-  this.surface.scene.add(this.cube);
+  willBeShownSoon(container, deadline) {
+    this.startTime = deadline;
+    this.surface = new ThreeJsSurface(container, wallGeometry);
 
-  this.surface.camera.position.set(0, 0, 5);
-  this.surface.camera.updateProjectionMatrix();
-  return Promise.resolve();
-};
-ThreeJsTestClient.prototype.draw = function(time, delta) {
-  this.cube.rotation.x = time / 1000;
-  this.cube.rotation.y = time * 1.1 / 1000;
-  this.surface.render();
-};
+    var geometry = new THREE.BoxGeometry(3, 3, 3);
+    var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    this.cube = new THREE.Mesh(geometry, material);
+    this.surface.scene.add(this.cube);
+
+    this.surface.camera.position.set(0, 0, 5);
+    this.surface.camera.updateProjectionMatrix();
+  }
+
+  draw(time, delta) {
+    this.cube.rotation.x = time / 1000;
+    this.cube.rotation.y = time * 1.1 / 1000;
+    this.surface.render();
+  }
+}
 
 register(ThreeJsTestServer, ThreeJsTestClient);

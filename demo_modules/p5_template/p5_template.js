@@ -13,22 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var P5TemplateServer = function(config, startTime) {
-  debug('P5Template Server!', config);
-  this.startTime = startTime;
-};
-
-P5TemplateServer.prototype = Object.create(ServerModuleInterface.prototype);
-
-P5TemplateServer.prototype.willBeShownSoon = function() {
-  return Promise.resolve();
-};
-
-P5TemplateServer.prototype.dispose = function() {
-};
-
-P5TemplateServer.prototype.tick = function(time, delta) {
-};
+class P5TemplateServer extends ServerModuleInterface {
+  constructor(config, startTime) {
+    super();
+    debug('P5Template Server!', config);
+    this.startTime = startTime;
+  }
+}
 
 // p5 must be a P5.js instance.
 function P5TemplateSketch(p5, surface) {
@@ -48,31 +39,27 @@ P5TemplateSketch.prototype.setup = function() {
 P5TemplateSketch.prototype.draw = function(t, balls) {
 };
 
-var P5TemplateClient = function(config) {
-  debug('P5Template Client!', config);
-};
-
-P5TemplateClient.prototype = Object.create(ClientModuleInterface.prototype);
-
-P5TemplateClient.prototype.beginFadeIn = function(time) {
-};
-
-P5TemplateClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
+class P5TemplateClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
+    debug('P5Template Client!', config);
   }
-};
 
-P5TemplateClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.startTime = deadline;
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
+  }
 
-  this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
+  willBeShownSoon(container, deadline) {
+    this.startTime = deadline;
 
-  return Promise.resolve();
-};
+    this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
+  }
 
-P5TemplateClient.prototype.draw = function(time, delta) {
-  this.surface.p5.draw(time);
-};
+  draw(time, delta) {
+    this.surface.p5.draw(time);
+  }
+}
 
 register(P5TemplateServer, P5TemplateClient);

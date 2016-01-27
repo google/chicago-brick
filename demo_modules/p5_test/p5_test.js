@@ -13,25 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var P5TestServer = function(config, startTime) {
-  debug('P5Test Server!', config);
-  this.startTime = startTime;
-};
-P5TestServer.prototype = Object.create(ServerModuleInterface.prototype);
-
-var P5TestClient = function(config) {
-  debug('P5Test Client!', config);
-  this.image = null;
-  this.surface = null;
-};
-
-P5TestClient.prototype = Object.create(ClientModuleInterface.prototype);
-
-P5TestClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
+class P5TestServer extends ServerModuleInterface {
+  constructor(config, startTime) {
+    super();
+    debug('P5Test Server!', config);
+    this.startTime = startTime;
   }
-};
+}
 
 // p5 must be a P5.js instance.
 function P5TestSketch(p5) {
@@ -84,16 +72,29 @@ P5TestSketch.prototype.draw = function(t, board) {
   p5.ellipse(p5.wallWidth*0.5 + this.squareSize * 0.87, y2, this.scalar, this.scalar);
 };
 
-P5TestClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.startTime = deadline;
+class P5TestClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
+    debug('P5Test Client!', config);
+    this.image = null;
+    this.surface = null;
+  }
 
-  this.surface = new P5Surface(container, wallGeometry, P5TestSketch, deadline);
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
+  }
 
-  return Promise.resolve();
-};
+  willBeShownSoon(container, deadline) {
+    this.startTime = deadline;
 
-P5TestClient.prototype.draw = function(time, delta) {
-  this.surface.p5.draw(time);
-};
+    this.surface = new P5Surface(container, wallGeometry, P5TestSketch, deadline);
+  }
+
+  draw(time, delta) {
+    this.surface.p5.draw(time);
+  }
+}
 
 register(P5TestServer, P5TestClient);

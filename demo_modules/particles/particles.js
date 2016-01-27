@@ -23,6 +23,7 @@ var Noise = require('noisejs');
 var assert = require('assert');
 
 var MAX_PARTICLES_PER_CLIENT = 100;
+
 class ParticlesServer extends ServerModuleInterface {
   makeParticle(time) {
     var x = Math.random() * wallGeometry.extents.w;

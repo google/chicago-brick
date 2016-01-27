@@ -13,31 +13,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var GenlockTestServer = function() {};
-GenlockTestServer.prototype = Object.create(ServerModuleInterface.prototype);
+class GenlockTestServer extends ServerModuleInterface {}
 
-var GenlockTestClient = function(config) {
-};
-GenlockTestClient.prototype = Object.create(ClientModuleInterface.prototype);
-GenlockTestClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
-  } 
-};
-GenlockTestClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.surface = new CanvasSurface(container, wallGeometry);
-  this.canvas = this.surface.context;
-};
-GenlockTestClient.prototype.draw = function(time, delta) {
-  var seconds = time / 1000;
-  var nowIntSeconds = Math.floor(seconds);
-  var lastIntSeconds = Math.floor(seconds - delta / 1000);
-  if (nowIntSeconds != lastIntSeconds) {
-    this.canvas.fillStyle = 'white';
-  } else {
-    this.canvas.fillStyle = 'black';
+class GenlockTestClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
   }
-  this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-};
+
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
+  }
+
+  willBeShownSoon(container, deadline) {
+    this.surface = new CanvasSurface(container, wallGeometry);
+    this.canvas = this.surface.context;
+
+    // Despite the background and text colors changing, the rest of the text
+    // styling doesn't need to change on each frame.
+    this.canvas.textAlign = 'center';
+    var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
+    this.canvas.font = fontHeight + 'px Helvetica';
+    this.canvas.textBaseline = 'middle';
+  }
+
+  draw(time, delta) {
+    var seconds = time / 1000;
+    var nowIntSeconds = Math.floor(seconds);
+    var lastIntSeconds = Math.floor(seconds - delta / 1000);
+    if (nowIntSeconds != lastIntSeconds) {
+      this.canvas.fillStyle = 'white';
+    } else {
+      this.canvas.fillStyle = 'black';
+    }
+    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+  }
+}
 
 register(GenlockTestServer, GenlockTestClient);

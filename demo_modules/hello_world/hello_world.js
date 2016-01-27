@@ -16,95 +16,103 @@ limitations under the License.
 var asset = require('asset');
 var _ = require('underscore');
 
-var HelloWorldServer = function(config) {
-  debug('Hello, world!', config);
-  this.nextColorTime = 0;
-};
-HelloWorldServer.prototype = Object.create(ServerModuleInterface.prototype);
-HelloWorldServer.prototype.tick = function(time, delta) {
-  // If there's no moment to switch colors defined, pick such a moment,
-  // broadcast to clients.
-  if (!this.nextColorTime) {
-    this.nextColorTime = time + 1000;
-    network.emit('color', {
-      color : _.sample([
-        'red',
-        'green',
-        'blue',
-        'yellow',
-        'pink',
-        'violet',
-        'orange',
-        'cyan'
-      ]),
-      time : this.nextColorTime
-    });
-    debug('choose color', this.nextColorTime);
-    Promise.delay(1100).then((function() { this.nextColorTime = 0; }).bind(this));
+class HelloWorldServer extends ServerModuleInterface {
+  constructor(config) {
+    super();
+    debug('Hello, world!', config);
+    this.nextcolorTime = 0;
   }
-};
 
-var HelloWorldClient = function(config) {
-  debug('Hello, world!', config);
-  this.color = config.color;
-  this.nextColor = null;
-  this.nextColorTime = 0;
-  this.image = null;
-  this.surface = null;
+  tick(time, delta) {
+    // If there's no moment to switch colors defined, pick such a moment,
+    // broadcast to clients.
+    if (!this.nextColorTime) {
+      this.nextColorTime = time + 1000;
+      network.emit('color', {
+        color : _.sample([
+          'red',
+          'green',
+          'blue',
+          'yellow',
+          'pink',
+          'violet',
+          'orange',
+          'cyan'
+        ]),
+        time : this.nextColorTime
+      });
+      debug('choose color', this.nextColorTime);
+      Promise.delay(1100).then((function() { this.nextColorTime = 0; }).bind(this));
+    }
+  }
+}
 
-  var client = this;
-  network.on('color', function handleColor(data) {
-    debug('handle color', data);
-    client.nextColor = data.color;
-    client.nextColorTime = data.time;
-  });
-};
-HelloWorldClient.prototype = Object.create(ClientModuleInterface.prototype);
-HelloWorldClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
-  } 
-};
-HelloWorldClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.startTime = deadline;
-  this.surface = new CanvasSurface(container, wallGeometry);
-  this.canvas = this.surface.context;
-
-  // Load the image asset.
-  var self = this;
-  return new Promise(function(resolve, reject) {
-    self.image = new Image;
-    self.image.onload = resolve;
-    self.image.src = asset('fractal.gif');
-  });
-};
-HelloWorldClient.prototype.draw = function(time, delta) {
-  if (this.nextColorTime && this.nextColorTime < time) {
-    this.color = this.nextColor;
+class HelloWorldClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
+    debug('Hello, world!', config);
+    this.color = config.color;
+    this.nextColor = null;
     this.nextColorTime = 0;
+    this.image = null;
+    this.surface = null;
+
+    var client = this;
+    network.on('color', function handleColor(data) {
+      debug('handle color', data);
+      client.nextColor = data.color;
+      client.nextColorTime = data.time;
+    });
   }
 
-  this.canvas.fillStyle = 'black';
-  this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    } 
+  }
 
-  this.canvas.fillStyle = 'white';
+  willBeShownSoon(container, deadline) {
+    this.startTime = deadline;
+    this.surface = new CanvasSurface(container, wallGeometry);
+    this.canvas = this.surface.context;
 
-  this.surface.pushOffset();
-  var x = Math.cos(time * Math.PI / 2000) * 100;
-  var y = Math.sin(time * Math.PI / 2000) * 100;
-  var cx = this.surface.wallRect.w / 2;
-  var cy = this.surface.wallRect.h / 2;
+    // Load the image asset.
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      self.image = new Image;
+      self.image.onload = resolve;
+      self.image.src = asset('fractal.gif');
+    });
+  }
 
-  this.canvas.drawImage(this.image, cx + x - 50, cy + y - 50, 100, 100);
+  draw(time, delta) {
+    if (this.nextColorTime && this.nextColorTime < time) {
+      this.color = this.nextColor;
+      this.nextColorTime = 0;
+    }
 
-  this.surface.popOffset();
+    this.canvas.fillStyle = 'black';
+    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-  this.canvas.fillStyle = this.color || 'white';
-  this.canvas.textAlign = 'center';
-  var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
-  this.canvas.font = fontHeight + 'px Helvetica';
-  this.canvas.textBaseline = 'middle';
-  this.canvas.fillText('Time: ' + time.toFixed(1), this.surface.virtualRect.w / 2, this.surface.virtualRect.h / 2);
-};
+    this.canvas.fillStyle = 'white';
+
+    this.surface.pushOffset();
+    var x = Math.cos(time * Math.PI / 2000) * 100;
+    var y = Math.sin(time * Math.PI / 2000) * 100;
+    var cx = this.surface.wallRect.w / 2;
+    var cy = this.surface.wallRect.h / 2;
+
+    this.canvas.drawImage(this.image, cx + x - 50, cy + y - 50, 100, 100);
+
+    this.surface.popOffset();
+
+    this.canvas.fillStyle = this.color || 'white';
+    this.canvas.textAlign = 'center';
+    var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
+    this.canvas.font = fontHeight + 'px Helvetica';
+    this.canvas.textBaseline = 'middle';
+    this.canvas.fillText('Time: ' + time.toFixed(1), this.surface.virtualRect.w / 2, this.surface.virtualRect.h / 2);
+  }
+}
 
 register(HelloWorldServer, HelloWorldClient);

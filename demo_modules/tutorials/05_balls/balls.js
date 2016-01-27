@@ -36,141 +36,145 @@ function makeBoxPolygon(x, y, radius) {
   ]);
 }
 
-var BallsServer = function() {
-  this.ballData = makeBallData();
-};
-BallsServer.prototype = Object.create(ServerModuleInterface.prototype);
-BallsServer.prototype.willBeShownSoon = function() {
-  var spawnRect = new Rectangle(
-    wallGeometry.extents.x + BALL_RADIUS,
-    wallGeometry.extents.y + BALL_RADIUS,
-    wallGeometry.extents.w - 2*BALL_RADIUS,
-    wallGeometry.extents.h - 2*BALL_RADIUS);
-  
-  // Choose a random starting location inside of our geo.
-  do {
-    this.ballData.x = Math.random() * spawnRect.w + spawnRect.x;
-    this.ballData.y = Math.random() * spawnRect.h + spawnRect.y;
+class BallsServer extends ServerModuleInterface {
+  constructor() {
+    super();
+    this.ballData = makeBallData();
+  }
+
+  willBeShownSoon() {
+    var spawnRect = new Rectangle(
+      wallGeometry.extents.x + BALL_RADIUS,
+      wallGeometry.extents.y + BALL_RADIUS,
+      wallGeometry.extents.w - 2*BALL_RADIUS,
+      wallGeometry.extents.h - 2*BALL_RADIUS);
     
-    // Generate this ball's collision box:
-    var ballPolygon = makeBoxPolygon(this.ballData.x, this.ballData.y, BALL_RADIUS);
-  } while (!geometry.isInsidePolygon(ballPolygon, wallGeometry));
-  
-  // Move the ball towards the center of the wall.
-  var wallCenterX = wallGeometry.extents.x + wallGeometry.extents.w/2;
-  var wallCenterY = wallGeometry.extents.y + wallGeometry.extents.h/2;
-  
-  this.ballData.vx = wallCenterX - this.ballData.x;
-  this.ballData.vy = wallCenterY - this.ballData.y;
-  // Ensure it's moving at 300px/sec
-  var speed = Math.sqrt(this.ballData.vx * this.ballData.vx + 
-                        this.ballData.vy * this.ballData.vy);
-  this.ballData.vx *= 300/speed;
-  this.ballData.vy *= 300/speed;
-  
-  state.create('balldata', {
-    x: 'NumberLerpInterpolator',
-    y: 'NumberLerpInterpolator',
-    vx: 'ValueNearestInterpolator',
-    vy: 'ValueNearestInterpolator'
-  });
-
-  return Promise.resolve();
-};
-BallsServer.prototype.tick = function(time, delta) {
-  var timeLeft = delta / 1000;
-  
-  // Handle all collisions.
-  do {
-    //debug('Trying to find first collision.', timeLeft);
-    // Find the first collision in the timeLeft.
+    // Choose a random starting location inside of our geo.
     do {
-      // Move the ball.
-      var newX = this.ballData.x + this.ballData.vx * timeLeft;
-      var newY = this.ballData.y + this.ballData.vy * timeLeft;
-  
-      // Assert: We start inside the wall geometry.
-      // If we move outside of it, flip the appropriate direction.
-      var newBallPolygon = makeBoxPolygon(newX, newY, BALL_RADIUS);
+      this.ballData.x = Math.random() * spawnRect.w + spawnRect.x;
+      this.ballData.y = Math.random() * spawnRect.h + spawnRect.y;
+      
+      // Generate this ball's collision box:
+      var ballPolygon = makeBoxPolygon(this.ballData.x, this.ballData.y, BALL_RADIUS);
+    } while (!geometry.isInsidePolygon(ballPolygon, wallGeometry));
+    
+    // Move the ball towards the center of the wall.
+    var wallCenterX = wallGeometry.extents.x + wallGeometry.extents.w/2;
+    var wallCenterY = wallGeometry.extents.y + wallGeometry.extents.h/2;
+    
+    this.ballData.vx = wallCenterX - this.ballData.x;
+    this.ballData.vy = wallCenterY - this.ballData.y;
+    // Ensure it's moving at 300px/sec
+    var speed = Math.sqrt(this.ballData.vx * this.ballData.vx + 
+                          this.ballData.vy * this.ballData.vy);
+    this.ballData.vx *= 300/speed;
+    this.ballData.vy *= 300/speed;
+    
+    state.create('balldata', {
+      x: 'NumberLerpInterpolator',
+      y: 'NumberLerpInterpolator',
+      vx: 'ValueNearestInterpolator',
+      vy: 'ValueNearestInterpolator'
+    });
+  }
 
-      if (geometry.isInsidePolygon(newBallPolygon, wallGeometry)) {
-        //debug('No collision found!', timeLeft);
-        break;
-      } else {
-        // Figure out which line we are passing through...
-        var intersection = geometry.intersectPolygonPolygon(newBallPolygon, wallGeometry);
-        if (!intersection) {
-          //debug('intersection error', newBallPolygon.extents.serialize(), wallGeometry.extents.serialize());
-          throw new Error('We moved through the polygon, but couldn\'t find an intersection');
+  tick(time, delta) {
+    var timeLeft = delta / 1000;
+    
+    // Handle all collisions.
+    do {
+      //debug('Trying to find first collision.', timeLeft);
+      // Find the first collision in the timeLeft.
+      do {
+        // Move the ball.
+        var newX = this.ballData.x + this.ballData.vx * timeLeft;
+        var newY = this.ballData.y + this.ballData.vy * timeLeft;
+    
+        // Assert: We start inside the wall geometry.
+        // If we move outside of it, flip the appropriate direction.
+        var newBallPolygon = makeBoxPolygon(newX, newY, BALL_RADIUS);
+
+        if (geometry.isInsidePolygon(newBallPolygon, wallGeometry)) {
+          //debug('No collision found!', timeLeft);
+          break;
+        } else {
+          // Figure out which line we are passing through...
+          var intersection = geometry.intersectPolygonPolygon(newBallPolygon, wallGeometry);
+          if (!intersection) {
+            //debug('intersection error', newBallPolygon.extents.serialize(), wallGeometry.extents.serialize());
+            throw new Error('We moved through the polygon, but couldn\'t find an intersection');
+          }
+
+          // We intersected. Start again at the original position, but move a
+          // smaller amount.
+          timeLeft *= 0.5;
         }
-
-        // We intersected. Start again at the original position, but move a
-        // smaller amount.
-        timeLeft *= 0.5;
-      }
-    } while (timeLeft > 0.001);
-  
-    // It's safe to move to newX, newY with no collisions.
-    this.ballData.x = newX;
-    this.ballData.y = newY;
-  
-    if (intersection) {
-      //debug('Found a collision at ', intersection);
-  
-      // Respond to collision.
-      var horiz = intersection.p1.y == intersection.p2.y;
-      if (horiz) {
-        this.ballData.vy *= -1;        
-        //debug('Flipped y');
+      } while (timeLeft > 0.001);
+    
+      // It's safe to move to newX, newY with no collisions.
+      this.ballData.x = newX;
+      this.ballData.y = newY;
+    
+      if (intersection) {
+        //debug('Found a collision at ', intersection);
+    
+        // Respond to collision.
+        var horiz = intersection.p1.y == intersection.p2.y;
+        if (horiz) {
+          this.ballData.vy *= -1;        
+          //debug('Flipped y');
+        } else {
+          this.ballData.vx *= -1;
+          //debug('Flipped x');
+        }
+        intersection = undefined;
       } else {
-        this.ballData.vx *= -1;
-        //debug('Flipped x');
+        break;
       }
-      intersection = undefined;
-    } else {
-      break;
+    } while (true);
+    
+    state.get('balldata').set(this.ballData, time);
+  }
+}
+
+class BallsClient extends ClientModuleInterface {
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    } 
+  }
+
+  willBeShownSoon(container, deadline) {
+    this.surface = new CanvasSurface(container, wallGeometry);
+    this.canvas = this.surface.context;
+  }
+
+  draw(time, delta) {
+    // Clear the screen.
+    this.canvas.fillStyle = 'black';
+    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+    
+    var data = state.get('balldata');
+    if (!data) {
+      return;
     }
-  } while (true);
-  
-  state.get('balldata').set(this.ballData, time);
-};
+    var ballData = data.get(time - 100);
+    if (!ballData) {
+      // Wait a little bit.
+      return;
+    }
 
-var BallsClient = function(config) {};
-BallsClient.prototype = Object.create(ClientModuleInterface.prototype);
-BallsClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
-  } 
-};
-BallsClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.surface = new CanvasSurface(container, wallGeometry);
-  this.canvas = this.surface.context;
-};
-BallsClient.prototype.draw = function(time, delta) {
-  // Clear the screen.
-  this.canvas.fillStyle = 'black';
-  this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-  
-  var data = state.get('balldata');
-  if (!data) {
-    return;
+    // Push a transform.
+    this.surface.pushOffset();
+    
+    this.canvas.fillStyle = 'red';
+    this.canvas.beginPath();
+    this.canvas.arc(ballData.x, ballData.y, BALL_RADIUS, 0, 2*Math.PI);
+    this.canvas.closePath();
+    this.canvas.fill();
+    
+    this.surface.popOffset();
   }
-  var ballData = data.get(time - 100);
-  if (!ballData) {
-    // Wait a little bit.
-    return;
-  }
-
-  // Push a transform.
-  this.surface.pushOffset();
-  
-  this.canvas.fillStyle = 'red';
-  this.canvas.beginPath();
-  this.canvas.arc(ballData.x, ballData.y, BALL_RADIUS, 0, 2*Math.PI);
-  this.canvas.closePath();
-  this.canvas.fill();
-  
-  this.surface.popOffset();
-};
+}
 
 register(BallsServer, BallsClient);
