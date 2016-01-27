@@ -16,10 +16,6 @@ limitations under the License.
 class Codelab01FilledCanvasServer extends ServerModuleInterface {}
 
 class Codelab01FilledCanvasClient extends ClientModuleInterface {
-  constructor(config) {
-    super();
-  }
-
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

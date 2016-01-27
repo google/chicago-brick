@@ -16,10 +16,6 @@ limitations under the License.
 class GenlockTestServer extends ServerModuleInterface {}
 
 class GenlockTestClient extends ClientModuleInterface {
-  constructor(config) {
-    super();
-  }
-
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

@@ -20,10 +20,6 @@ var BALL_RADIUS = 50;
 var NUM_BALLS = 200;
 
 class BallsServer extends ServerModuleInterface {
-  constructor(config) {
-    super();
-  }
-
   willBeShownSoon(container, deadline) {
     this.balls = [];
     var extents = wallGeometry.extents;
@@ -133,6 +129,7 @@ class BallsClient extends ClientModuleInterface {
     this.canvas.fillStyle = 'black';
     this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
     
+    // TODO(applmak): What are you thinking, Matt?
     // Find a time point that's roughly 300 ms behind the server.
     var foundI = -1;
     for (var i = 0; i < this.balls.length-1; ++i) {
