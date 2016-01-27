@@ -13,37 +13,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var RegistrationServer = function() {};
-RegistrationServer.prototype = Object.create(ServerModuleInterface.prototype);
+class RegistrationServer extends ServerModuleInterface {}
 
-var RegistrationClient = function(config) {
-  this.speed_ = config.speed || 1;
-};
-RegistrationClient.prototype = Object.create(ClientModuleInterface.prototype);
-RegistrationClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
-  } 
-};
-RegistrationClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.surface = new CanvasSurface(container, wallGeometry);
-  this.canvas = this.surface.context;
-};
-RegistrationClient.prototype.draw = function(time, delta) {
-  this.canvas.fillStyle = 'black';
-  this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-  
-  var x = time * this.speed_ % this.surface.virtualRect.w;
-  var y = time * this.speed_ % this.surface.virtualRect.h;
-  
-  this.canvas.strokeStyle = 'white';
-  this.canvas.beginPath();
-  this.canvas.moveTo(0, y);
-  this.canvas.lineTo(this.surface.virtualRect.w, y);
-  this.canvas.moveTo(x, 0);
-  this.canvas.lineTo(x, this.surface.virtualRect.h);
-  
-  this.canvas.stroke();
-};
+class RegistrationClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
+    this.speed_ = config.speed || 1;
+  }
+
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    } 
+  }
+
+  willBeShownSoon(container, deadline) {
+    this.surface = new CanvasSurface(container, wallGeometry);
+    this.canvas = this.surface.context;
+  }
+
+  draw(time, delta) {
+    this.canvas.fillStyle = 'black';
+    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+    
+    var x = time * this.speed_ % this.surface.virtualRect.w;
+    var y = time * this.speed_ % this.surface.virtualRect.h;
+    
+    this.canvas.strokeStyle = 'white';
+    this.canvas.beginPath();
+    this.canvas.moveTo(0, y);
+    this.canvas.lineTo(this.surface.virtualRect.w, y);
+    this.canvas.moveTo(x, 0);
+    this.canvas.lineTo(x, this.surface.virtualRect.h);
+    
+    this.canvas.stroke();
+  }
+}
 
 register(RegistrationServer, RegistrationClient);

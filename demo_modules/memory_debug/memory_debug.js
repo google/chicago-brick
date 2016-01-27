@@ -15,18 +15,21 @@ limitations under the License.
 
 // This is a no-op module that shows what is leaking in the framework when we
 // switch modules.
-var MemoryDebugServer = function() {};
-MemoryDebugServer.prototype = Object.create(ServerModuleInterface.prototype);
+class MemoryDebugServer extends ServerModuleInterface {}
 
-var MemoryDebugClient = function() {
-  var client = this;
-  network.on('_memory_debug', function memoryDebugHandler() {
-    client.thing = (client.thing || 0) + 1;
-  });
-};
-MemoryDebugClient.prototype = Object.create(ClientModuleInterface.prototype);
-MemoryDebugClient.prototype.willBeShownSoon = function(container) {
-  container.style.backgroundColor = 'black';
-};
+class MemoryDebugClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
+    // TODO(applmak): Send something this message, maybe?
+    var client = this;
+    network.on('_memory_debug', function memoryDebugHandler() {
+      client.thing = (client.thing || 0) + 1;
+    });
+  }
+
+  willBeShownSoon(container) {
+    container.style.backgroundColor = 'black';
+  }
+}
 
 register(MemoryDebugServer, MemoryDebugClient);

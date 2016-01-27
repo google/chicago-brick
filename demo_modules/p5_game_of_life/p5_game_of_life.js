@@ -16,89 +16,83 @@ limitations under the License.
 var numColumns = 184;
 var numRows = 40;
 
-var P5GameOfLifeServer = function(config, startTime) {
-  debug('P5GameOfLife Server!', config);
-  this.startTime = startTime;
+class P5GameOfLifeServer extends ServerModuleInterface {
+  constructor(config) {
+    super();
+    debug('P5GameOfLife Server!', config);
 
-  this.numTicks = 0;
-  this.numTicksBetweenIterations = 2;
+    this.numTicks = 0;
+    this.numTicksBetweenIterations = 2;
 
-  this.gameBoard = new Array(numColumns);
-  this.tmpBoard = new Array(numColumns);
-  for (var i = 0; i < numColumns; i++) {
-    this.gameBoard[i] = new Array(numRows);
-    this.tmpBoard[i] = new Array(numRows);
-  }
-  for (i = 0; i < numColumns; i++) {
-    for (var j = 0; j < numRows; j++) {
-      // Lining the edges with 0s
-      if (i === 0 || j === 0 || i == numColumns-1 || j == numRows-1) {
-        this.gameBoard[i][j] = 0;
-      } else {
-        // Filling the rest randomly
-        this.gameBoard[i][j] = Math.round(Math.random());
+    this.gameBoard = new Array(numColumns);
+    this.tmpBoard = new Array(numColumns);
+    for (var i = 0; i < numColumns; i++) {
+      this.gameBoard[i] = new Array(numRows);
+      this.tmpBoard[i] = new Array(numRows);
+    }
+    for (i = 0; i < numColumns; i++) {
+      for (var j = 0; j < numRows; j++) {
+        // Lining the edges with 0s
+        if (i === 0 || j === 0 || i == numColumns-1 || j == numRows-1) {
+          this.gameBoard[i][j] = 0;
+        } else {
+          // Filling the rest randomly
+          this.gameBoard[i][j] = Math.round(Math.random());
+        }
+        this.tmpBoard[i][j] = 0;
       }
-      this.tmpBoard[i][j] = 0;
     }
   }
-};
 
-P5GameOfLifeServer.prototype = Object.create(ServerModuleInterface.prototype);
+  tick(time, delta) {
+    this.numTicks++;
 
-P5GameOfLifeServer.prototype.willBeShownSoon = function() {
-  return Promise.resolve();
-};
+    if (this.numTicks % this.numTicksBetweenIterations !== 0) {
+      return;
+    }
 
-P5GameOfLifeServer.prototype.dispose = function() {};
+    // Update the board and emit it.
+    // Loop through every spot in our 2D array and check spots neighbors
+    for (var x = 1; x < numColumns - 1; x++) {
+      for (var y = 1; y < numRows - 1; y++) {
+        // Add up all the states in a 3x3 surrounding grid
+        var neighbors = 0;
+        for (var i = -1; i <= 1; i++) {
+          for (var j = -1; j <= 1; j++) {
+            neighbors += this.gameBoard[x+i][y+j];
+          }
+        }
 
-P5GameOfLifeServer.prototype.tick = function(time, delta) {
-  this.numTicks++;
-
-  if (this.numTicks % this.numTicksBetweenIterations !== 0) {
-    return;
-  }
-
-  // Update the board and emit it.
-  // Loop through every spot in our 2D array and check spots neighbors
-  for (var x = 1; x < numColumns - 1; x++) {
-    for (var y = 1; y < numRows - 1; y++) {
-      // Add up all the states in a 3x3 surrounding grid
-      var neighbors = 0;
-      for (var i = -1; i <= 1; i++) {
-        for (var j = -1; j <= 1; j++) {
-          neighbors += this.gameBoard[x+i][y+j];
+        // A little trick to subtract the current cell's state since
+        // we added it in the above loop
+        neighbors -= this.gameBoard[x][y];
+        // Rules of Life
+        if (this.gameBoard[x][y] == 1 && neighbors <  2) {
+          // Died of loneliness.
+          this.tmpBoard[x][y] = 0;
+        } else if (this.gameBoard[x][y] == 1 && neighbors >  3) {
+          // Died of overpopulation.
+          this.tmpBoard[x][y] = 0;
+        } else if (this.gameBoard[x][y] === 0 && neighbors == 3) {
+          // Reproduction!
+          this.tmpBoard[x][y] = 1;
+        } else {
+          // Stasis.
+          this.tmpBoard[x][y] = this.gameBoard[x][y];
         }
       }
-
-      // A little trick to subtract the current cell's state since
-      // we added it in the above loop
-      neighbors -= this.gameBoard[x][y];
-      // Rules of Life
-      if (this.gameBoard[x][y] == 1 && neighbors <  2) {
-        // Died of loneliness.
-        this.tmpBoard[x][y] = 0;
-      } else if (this.gameBoard[x][y] == 1 && neighbors >  3) {
-        // Died of overpopulation.
-        this.tmpBoard[x][y] = 0;
-      } else if (this.gameBoard[x][y] === 0 && neighbors == 3) {
-        // Reproduction!
-        this.tmpBoard[x][y] = 1;
-      } else {
-        // Stasis.
-        this.tmpBoard[x][y] = this.gameBoard[x][y];
-      }
     }
+
+    // Swap!
+    var temp = this.gameBoard;
+    this.gameBoard = this.tmpBoard;
+    this.tmpBoard = temp;
+
+    network.emit('board', {
+      board : this.gameBoard,
+    });
   }
-
-  // Swap!
-  var temp = this.gameBoard;
-  this.gameBoard = this.tmpBoard;
-  this.tmpBoard = temp;
-
-  network.emit('board', {
-    board : this.gameBoard,
-  });
-};
+}
 
 // p5 must be a P5.js instance.
 function P5GameOfLifeSketch(p5, surface) {
@@ -230,39 +224,33 @@ P5GameOfLifeSketch.prototype.draw = function(t, board) {
   }
 };
 
-var P5GameOfLifeClient = function(config) {
-  debug('P5GameOfLife Client!', config);
-  this.image = null;
-  this.surface = null;
-  this.gameBoard = null;
+class P5GameOfLifeClient extends ClientModuleInterface {
+  constructor(config) {
+    super();
+    debug('P5GameOfLife Client!', config);
+    this.image = null;
+    this.surface = null;
+    this.gameBoard = null;
 
-  var client = this;
-  network.on('board', function handleBoard(data) {
-    client.gameBoard = data.board;
-  });
-};
-
-P5GameOfLifeClient.prototype = Object.create(ClientModuleInterface.prototype);
-
-P5GameOfLifeClient.prototype.beginFadeIn = function(time) {
-};
-
-P5GameOfLifeClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
+    var client = this;
+    network.on('board', function handleBoard(data) {
+      client.gameBoard = data.board;
+    });
   }
-};
 
-P5GameOfLifeClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.startTime = deadline;
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
+  }
 
-  this.surface = new P5Surface(container, wallGeometry, P5GameOfLifeSketch, deadline);
+  willBeShownSoon(container, deadline) {
+    this.surface = new P5Surface(container, wallGeometry, P5GameOfLifeSketch, deadline);
+  }
 
-  return Promise.resolve();
-};
-
-P5GameOfLifeClient.prototype.draw = function(time, delta) {
-  this.surface.p5.draw(time, this.gameBoard);
-};
+  draw(time, delta) {
+    this.surface.p5.draw(time, this.gameBoard);
+  }
+}
 
 register(P5GameOfLifeServer, P5GameOfLifeClient);

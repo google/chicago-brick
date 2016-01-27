@@ -13,50 +13,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var SharedTestServer = function() {
-};
-SharedTestServer.prototype = Object.create(ServerModuleInterface.prototype);
-SharedTestServer.prototype.willBeShownSoon = function() {
-  return Promise.resolve();
-};
+class SharedTestServer extends ServerModuleInterface {}
 
-SharedTestServer.prototype.tick = function(time, delta) {
-};
+class SharedTestClient extends ClientModuleInterface {
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    } 
+  }
 
-var SharedTestClient = function(config) {};
-SharedTestClient.prototype = Object.create(ClientModuleInterface.prototype);
-SharedTestClient.prototype.finishFadeOut = function() {
-  if (this.surface) {
-    this.surface.destroy();
-  } 
-};
-SharedTestClient.prototype.willBeShownSoon = function(container, deadline) {
-  this.surface = new CanvasSurface(container, wallGeometry);
-  this.canvas = this.surface.context;
-  this.clientId = 'client' + this.surface.virtualRect.x + this.surface.virtualRect.y;
-  state.create(this.clientId, 'ValueNearestInterpolator');
-};
-SharedTestClient.prototype.draw = function(time, delta) {
-  // Clear the screen.
-  this.canvas.fillStyle = 'black';
-  this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-  
-  state.get(this.clientId).set(time, time);
+  willBeShownSoon(container, deadline) {
+    this.surface = new CanvasSurface(container, wallGeometry);
+    this.canvas = this.surface.context;
+    this.clientId = 'client' + this.surface.virtualRect.x + this.surface.virtualRect.y;
+    state.create(this.clientId, 'ValueNearestInterpolator');
+  }
 
-  this.canvas.fillStyle = this.color || 'white';
-  this.canvas.textAlign = 'center';
-  var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
-  this.canvas.font = fontHeight + 'px Helvetica';
-  this.canvas.textBaseline = 'middle';
-  this.canvas.fillText('Time: ' + time.toFixed(1), this.surface.virtualRect.w / 2, this.surface.virtualRect.h / 2);
-  var idx = 1;
-  for (var name in state.trackedState_) {
-    if (name.startsWith('client') && state.trackedState_[name].get(time - 100)) {
-      this.canvas.fillText(name + ': ' + state.trackedState_[name].get(time - 100).toFixed(1), this.surface.virtualRect.w / 2, this.surface.virtualRect.h / 2 + fontHeight * idx);
-      idx++;
+  draw(time, delta) {
+    // Clear the screen.
+    this.canvas.fillStyle = 'black';
+    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+    
+    state.get(this.clientId).set(time, time);
+
+    this.canvas.fillStyle = this.color || 'white';
+    this.canvas.textAlign = 'center';
+    var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
+    this.canvas.font = fontHeight + 'px Helvetica';
+    this.canvas.textBaseline = 'middle';
+    this.canvas.fillText('Time: ' + time.toFixed(1), this.surface.virtualRect.w / 2, this.surface.virtualRect.h / 2);
+    var idx = 1;
+    for (var name in state.trackedState_) {
+      if (name.startsWith('client') && state.trackedState_[name].get(time - 100)) {
+        this.canvas.fillText(name + ': ' + state.trackedState_[name].get(time - 100).toFixed(1), this.surface.virtualRect.w / 2, this.surface.virtualRect.h / 2 + fontHeight * idx);
+        idx++;
+      }
     }
   }
-};
+}
 
 register(SharedTestServer, SharedTestClient);
 

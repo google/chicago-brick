@@ -13,10 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var SimpleServer = function() {};
-SimpleServer.prototype = Object.create(ServerModuleInterface.prototype);
-
-var SimpleClient = function() {};
-SimpleClient.prototype = Object.create(ClientModuleInterface.prototype);
+class SimpleServer extends ServerModuleInterface {}
+class SimpleClient extends ClientModuleInterface {}
 
 register(SimpleServer, SimpleClient);
