@@ -21,8 +21,8 @@ var log = require('server/util/log');
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(moduleManager, playlistLoader) {
-    this.layoutSM = moduleManager.getLayoutSM();
+  constructor(layoutSM, playlistLoader) {
+    this.layoutSM = layoutSM;
     this.playlistLoader = playlistLoader;
 
     this.initialConfig = playlistLoader.getInitialPlaylistConfig();
