@@ -21,7 +21,7 @@ var debug = require('debug')('wall:server');
 
 var game = require('./game/game');
 var network = require('server/network/network');
-var moduleManager = require('server/modules/module_manager');
+var LayoutStateMachine = require('server/modules/layout_state_machine');
 var PlaylistLoader = require('server/modules/playlist_loader');
 var wallGeometry = require('server/util/wall_geometry');
 var Control = require('server/control');
@@ -85,7 +85,7 @@ if (playlist.length === 0) {
 
 var app = webapp.create(flags);
 
-var manager = new moduleManager.Manager;
+var manager = new LayoutStateMachine;
 var control = new Control(manager, playlistLoader);
 control.installHandlers(app);
 
@@ -114,13 +114,13 @@ network.openWebSocket(server);
 
 debug('Running playlist of ' + playlist.length + ' items');
 
-manager.startPlaylist(playlist);
+manager.setPlaylist(playlist);
 
 network.on('new-client', function(client) {
   manager.newClient(client);
 });
 
 network.on('lost-client', function(id) {
-  manager.lostClient(id);
+  manager.dropClient(id);
 });
 
