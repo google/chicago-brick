@@ -24,11 +24,10 @@ var Debug = require('debug');
 var Noise = require('noisejs');
 var moduleDebug = Debug('wall:module');
 var random = require('random-js')();
-var vm = require('vm');
-var vmShim = require('vm-shim');
 
 require('lib/promise');
 var moduleAssert = require('lib/assert');
+var safeEval = require('lib/eval');
 var fakeRequire = require('lib/fake_require');
 var geometry = require('lib/geometry');
 var googleapis = require('server/util/googleapis');
@@ -76,9 +75,9 @@ exports.loadServerScript = function(name, dependencies, script) {
       serverSideModuleDef = serverSide;
     },
   }, serverSandbox(name, dependencies));
-  // Use vm-shim to actually run the script so that Node doesn't leak
-  // the newly created context: https://github.com/nodejs/node/issues/3113
-  vmShim.runInNewContext(script, sandbox);
+  // Use safeEval to actually run the script so that Node doesn't leak
+  // anything: https://github.com/nodejs/node/issues/3113
+  safeEval(script, sandbox);
   return serverSideModuleDef;
 };
 
@@ -96,7 +95,7 @@ exports.loadAndVerifyScript = function(name, script) {
       // In verify mode, the local wall geometry is the same as the global.
       wallGeometry: wallGeometry.getGeo(),
     }, serverSandbox(name));
-    vm.runInNewContext(script, sandbox);
+    safeEval(script, sandbox);
     moduleDebug('Parsed correctly');
     if (!serverSideModuleDef) {
       moduleDebug('Module did not register a server-side module!');

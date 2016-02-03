@@ -18,7 +18,6 @@ define(function(require) {
   var _ = require('underscore');
   var L = require('leaflet');
   require('leaflet-edgebuffer');
-  var vm = require('vm-shim');
   var Noise = require('noisejs');
 
   var asset = require('client/asset/asset');
@@ -36,6 +35,7 @@ define(function(require) {
   var ClientStateMachine = require('client/modules/client_state_machine');
   var fakeRequire = require('lib/fake_require');
   var geometry = require('lib/geometry');
+  var safeEval = require('lib/eval');
   var loadYoutubeApi = require('client/util/load_youtube_api');
   var StateManager = require('client/state/state_manager');
   var NeighborPersistence = require('client/network/neighbor_persistence');
@@ -86,7 +86,7 @@ define(function(require) {
         loadYoutubeApi: loadYoutubeApi,
         debug: debug('wall:module:' + name),
       }, dependencies);
-      vm.runInNewContext(code, sandbox);
+      safeEval(code, sandbox);
       if (!def) {
         throw new Error('Failed to parse module ' + name);
       }
