@@ -49,18 +49,6 @@ define(function(require) {
     remove: function(module) {
       modulesToDraw.filter(function(pair) {
         return pair.module === module;
-      }).forEach(function(pair) {
-        // Note that we're done fading out, time to dispose.
-        // TODO(applmak): Make a real .dispose method.
-        try {
-          pair.module.finishFadeOut();
-        } catch (e) {
-          error(e);
-        }
-        pair.globals._container.remove();
-    
-        // Now, clean up any singletons.
-        pair.globals._network.close();
       });
       modulesToDraw = modulesToDraw.filter(function(pair) {
         return pair.module !== module;
