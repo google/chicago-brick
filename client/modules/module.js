@@ -33,7 +33,7 @@ define(function(require) {
   }
 
   class ClientModule {
-    constructor(def, klass, globals, deadline) {
+    constructor(def, klass, globals, titleCard, deadline) {
       // Module definition -- sent from the server.
       this.def = def;
 
@@ -49,6 +49,9 @@ define(function(require) {
 
       // The dom container for the module's content.
       this.container = createNewContainer(def);
+
+      // The modules title card manager.
+      this.titleCard = titleCard;
 
       // Module class instance.
       this.instance = new this.klass(def.config);
@@ -93,6 +96,7 @@ define(function(require) {
           'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
       this.container.style.opacity = 1.0;
       Promise.delay(timeManager.until(deadline)).done(() => {
+        this.titleCard.enter();
         try {
           this.instance.finishFadeIn();
         } catch(e) {
@@ -103,6 +107,7 @@ define(function(require) {
     }
 
     fadeOut(deadline) {
+      this.titleCard.exit();
       try {
         this.instance.beginFadeOut(deadline);
       } catch(e) {
@@ -115,6 +120,7 @@ define(function(require) {
     }
 
     dispose() {
+      this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 
       // TODO(bmt): Make this a member variable of ClientModule rather than

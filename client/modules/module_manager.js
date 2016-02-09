@@ -40,6 +40,7 @@ define(function(require) {
   var loadYoutubeApi = require('client/util/load_youtube_api');
   var StateManager = require('client/state/state_manager');
   var NeighborPersistence = require('client/network/neighbor_persistence');
+  var TitleCard = require('client/title_card');
   // Node modules made available to client-side modules.
   // Entries with "undefined" are only available on the server;
   // we mention them here so that the client module can call require()
@@ -115,12 +116,16 @@ define(function(require) {
       var deadline = bits.time;
       var geo = new geometry.Polygon(bits.geo);
 
+      var titleCard = new TitleCard(def);
+
       var moduleNetwork = network.forModule(
         `${geo.extents.serialize()}-${deadline}`);
       var openNetwork = moduleNetwork.open();
+
       var deps = {
         _network: moduleNetwork,
         network: openNetwork,
+        titleCard: titleCard.getModuleAPI(),
         state: new StateManager(openNetwork),
         globalWallGeometry: geo,
         wallGeometry: new geometry.Polygon(geo.points.map(function(p) {
@@ -135,7 +140,7 @@ define(function(require) {
       }
 
       this.stateMachine.nextModule(
-          new ClientModule(def, clientModuleClass, deps, deadline));
+          new ClientModule(def, clientModuleClass, deps, titleCard, deadline));
     }.bind(this));
   };
 

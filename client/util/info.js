@@ -48,8 +48,5 @@ define(function(require) {
       ret.virtualRectNoBezel.y + ret.vbezel,
       ret.virtualRectNoBezel.w - 2 * ret.hbezel,
       ret.virtualRectNoBezel.h - 2 * ret.vbezel);
-  
-  ret.showTitleCard = !!parsedLocation.title;
-  
   return ret;
 });

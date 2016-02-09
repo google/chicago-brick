@@ -21,8 +21,6 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var ClientModule = require('client/modules/module');
   var debug = require('client/util/debug')('wall:client_state_machine');
-  var info = require('client/util/info');
-  var asset = require('client/asset/asset');
 
   // Displays a module until told to show a new one.
   class DisplayState extends stateMachine.State {
@@ -30,32 +28,7 @@ define(function(require) {
       super('DisplayState');
       this.module_ = module;
     }
-    getTitleCard_() {
-      var elem = document.querySelector('#title-card');
-      if (!elem) {
-        elem = document.createElement('div');
-        elem.id = 'title-card';
-        document.body.insertBefore(elem, document.body.firstChild);
-      }
-      return elem;
-    }
-    enter_() {
-      // If we are at the config's title card, and the meta contains title
-      // information, display that.
-      if (info.showTitleCard) {
-        // Ensure that the right element exists.
-        var titleCardElement = this.getTitleCard_();
-
-        // Type safety? What's that?
-        if (typeof this.module_.def.title === 'string') {
-          titleCardElement.innerHTML = `<div>${this.module_.def.title}</div>
-              <div>${this.module_.def.author}</div>`;
-        } else {
-          titleCardElement.innerHTML =
-              `<img src="${asset(this.meta_.title.path)}">`;
-        }
-      }
-    }
+    enter_() {}
     nextModule(module) {
       this.transition_(new PrepareState(this.module_, module));
     }
@@ -150,5 +123,20 @@ define(function(require) {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Displays a module until told to show a new one.
+  class DisplayState extends stateMachine.State {
+    constructor(module) {
+      super('DisplayState');
+      this.module_ = module;
+    }
+    enter_() {}
+    nextModule(module) {
+      this.transition_(new PrepareState(this.module_, module));
+    }
+  }
+
+>>>>>>> Formalize the title card client API and encapsulate title card management in ClientModule.
   return ClientStateMachine;
 });
