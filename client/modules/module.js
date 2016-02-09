@@ -33,11 +33,23 @@ define(function(require) {
 
   class ClientModule {
     constructor(def, klass, globals, deadline) {
+      // Module definition -- sent from the server.
       this.def = def;
+
+      // Module class instance as eval-ed in module_manager.js.
       this.klass = klass;
+
+      // Global context that was provided to the module.
       this.globals = globals;
+
+      // Absolute time when this module is supposed to be visible. Module will
+      // actually be faded in by deadline + 5000ms.
       this.deadline = deadline;
+
+      // The dom container for the module's content.
       this.container = createNewContainer(def);
+
+      // Module class instance.
       this.instance = new this.klass(def.config);
     }
 

@@ -99,7 +99,13 @@ define(function(require) {
       this.savedModule_ = null;
     }
     enter_() {
-      var fadeDeadline = timeManager.now() + 5000;
+      var fadeDeadline = 0;
+      if (this.module_) {
+        fadeDeadline = this.module_.deadline + 5000;
+      } else if (this.oldModule_) {
+        fadeDeadline = this.oldModule_.deadline + 5000;
+      }
+
       // Start the transition!
       if (this.oldModule_) {
         this.oldModule_.fadeOut(fadeDeadline);
