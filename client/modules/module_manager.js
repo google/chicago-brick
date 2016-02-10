@@ -25,6 +25,7 @@ define(function(require) {
   var peerNetwork = require('client/network/peer');
   var debug = require('client/util/debug');
   var error = require('client/util/log').error(debug);
+  var ClientModule = require('client/modules/module');
   var moduleInterface = require('lib/module_interface');
   var network = require('client/network/network');
   var CanvasSurface = require('client/surface/canvas_surface');
@@ -107,8 +108,9 @@ define(function(require) {
   ModuleManager.prototype.start = function() {
     timeManager.start();
 
+    // Server has asked us to load a new module.
     network.on('loadModule', function(bits) {
-      var module = bits.module;
+      var def = bits.module;
       var code = bits.def;
       var deadline = bits.time;
       var geo = new geometry.Polygon(bits.geo);
@@ -127,14 +129,13 @@ define(function(require) {
         peerNetwork: peerNetwork,
       };
 
-      var clientModuleClass = loadModule(module.name, deps, code);
+      var clientModuleClass = loadModule(def.name, deps, code);
       if (!clientModuleClass) {
         throw new Error('Failed to load module!');
       }
-      var clientModuleInstance = new clientModuleClass(module.config);
 
       this.stateMachine.nextModule(
-          module, clientModuleInstance, deps, deadline);
+          new ClientModule(def, clientModuleClass, deps, deadline));
     }.bind(this));
   };
 
