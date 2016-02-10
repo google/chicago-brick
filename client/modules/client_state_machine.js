@@ -94,6 +94,7 @@ define(function(require) {
         // with it soon. Instead, clean up, then setup a transition to empty.
         this.module_.dispose();
         this.module_ = ClientModule.newEmptyModule(this.module_.deadline);
+        debug('Transitioning to empty module due to willBeShownSoon exception.');
       }
       Promise.delay(timeManager.until(this.module_.deadline)).done(() => {
         this.transition_(new TransitionState(this.oldModule_, this.module_));
@@ -128,6 +129,7 @@ define(function(require) {
       if (!this.module_.fadeIn(fadeDeadline)) {
         this.module_.dispose();
         this.module_ = ClientModule.newEmptyModule(this.module_.deadline);
+        debug('Transitioning to empty module due to fadeIn exception.');
       }
 
       // Wait until the deadline.
