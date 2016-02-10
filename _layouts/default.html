@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>{{ page.title }}</title>
+    <link rel="stylesheet" href="/css/index.css" type="text/css" />
+  </head>
+  <body>
+    <nav>
+      <header>Navigation</header>
+      <ul>
+        {% for page in site.pages %}
+          <li><a href="{{page.url}}">{{page.title}}</a></li>
+        {% endfor %}
+      </ul>
+    </nav>
+    <section>
+      {{ page.content | markdownify }}
+    </section>
+  </body>
+</html>
