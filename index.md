@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Chicago Brick - Software to manage a multi-node video wall
+title: Chicago Brick
 permalink: /index.html
 ---
 

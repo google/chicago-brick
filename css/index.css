@@ -1,0 +1,34 @@
+body {
+  margin: 0px;
+  display: flex;
+  flex-flow: row nowrap;
+  font: 20px Verdana, sans-serif;
+  min-height: 100vh;
+}
+body > section {
+  flex: 1 1 100%;
+  padding: 5px;
+}
+nav {
+  flex: 1 1 auto;
+  background-color: #555;
+  border-right: 2px solid #ddd;
+  padding: 5px;
+  color: white;
+  font-weight: bolder;
+}
+nav ul {
+  list-style-type: none;
+  padding-left: 3px;
+}
+nav li {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap; 
+}
+nav li:before {
+  content: '- ';
+}
+nav a {
+  color: white;
+}
