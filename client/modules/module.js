@@ -20,6 +20,7 @@ define(function(require) {
   var debug = require('client/util/debug')('wall:client_module');
   var error = require('client/util/log').error(debug);
   var timeManager = require('client/util/time');
+  var moduleInterface = require('lib/module_interface');
 
   function createNewContainer(def) {
     var newContainer = document.createElement('div');
@@ -51,6 +52,11 @@ define(function(require) {
 
       // Module class instance.
       this.instance = new this.klass(def.config);
+    }
+
+    static newEmptyModule(deadline) {
+      var def = {'name': 'empty-module'};
+      return new ClientModule(def, moduleInterface.Client, {}, deadline);
     }
 
     willBeHiddenSoon() {
@@ -110,7 +116,12 @@ define(function(require) {
 
     dispose() {
       moduleTicker.remove(this.instance);
-      this.globals._network.close();
+
+      // TODO(bmt): Make this a member variable of ClientModule rather than
+      // reaching into the globals.
+      if (this.globals._network) {
+        this.globals._network.close();
+      }
       try {
         this.instance.finishFadeOut();
       } catch(e) {
