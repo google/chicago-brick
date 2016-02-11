@@ -117,7 +117,7 @@ define(function(require) {
 
     // Called by the framework when the module has faded in.
     enter() {
-      if (this.elem_ && !this.inDocument_) {
+      if (this.isTitleClient() && !this.inDocument_) {
         document.body.insertBefore(this.elem_, document.body.firstChild);
         this.inDocument_ = true;
       }
@@ -125,7 +125,7 @@ define(function(require) {
 
     // Called by the framework when the module is fading out.
     exit() {
-      if (this.elem_ && this.inDocument_) {
+      if (this.isTitleClient() && this.inDocument_) {
         this.elem_.remove();
         this.inDocument_ = false;
       }
