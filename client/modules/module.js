@@ -20,6 +20,7 @@ define(function(require) {
   var debug = require('client/util/debug')('wall:client_module');
   var error = require('client/util/log').error(debug);
   var timeManager = require('client/util/time');
+  var TitleCard = require('client/title_card');
   var moduleInterface = require('lib/module_interface');
 
   function createNewContainer(def) {
@@ -59,7 +60,8 @@ define(function(require) {
 
     static newEmptyModule(deadline) {
       var def = {'name': 'empty-module'};
-      return new ClientModule(def, moduleInterface.Client, {}, deadline);
+      return new ClientModule(def, moduleInterface.Client, {},
+          new TitleCard(def), deadline);
     }
 
     willBeHiddenSoon() {
