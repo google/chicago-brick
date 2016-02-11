@@ -123,20 +123,5 @@ define(function(require) {
     }
   }
 
-<<<<<<< HEAD
-=======
-  // Displays a module until told to show a new one.
-  class DisplayState extends stateMachine.State {
-    constructor(module) {
-      super('DisplayState');
-      this.module_ = module;
-    }
-    enter_() {}
-    nextModule(module) {
-      this.transition_(new PrepareState(this.module_, module));
-    }
-  }
-
->>>>>>> Formalize the title card client API and encapsulate title card management in ClientModule.
   return ClientStateMachine;
 });
