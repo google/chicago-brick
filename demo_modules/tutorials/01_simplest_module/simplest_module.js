@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class SimpleServer extends ServerModuleInterface {}
-class SimpleClient extends ClientModuleInterface {}
+// This module doesn't display anything but an empty void, but it is the
+// simplest possible module.
+class SimplestServer extends ServerModuleInterface {}
+class SimplestClient extends ClientModuleInterface {}
 
-register(SimpleServer, SimpleClient);
+register(SimplestServer, SimplestClient);
