@@ -15,8 +15,6 @@ limitations under the License.
 
 var _ = require('underscore');
 
-// This module introduces the server and network communication.
-// The server selects a new color every second and pushes that to the client.
 class ColorsServer extends ServerModuleInterface {
   constructor() {
     super();
@@ -26,8 +24,7 @@ class ColorsServer extends ServerModuleInterface {
   tick(time, delta) {
     if (time > this.nextColorTime) {
       this.nextColorTime = time + 1000;
-
-      network.emit('colorChange', {
+      network.emit('color', {
         color : _.sample([
           'red',
           'green',
@@ -52,7 +49,7 @@ class ColorsClient extends ClientModuleInterface {
     this.switchTime_ = Infinity;
     
     var self = this;
-    network.on('colorChange', function handleColor(data) {
+    network.on('color', function handleColor(data) {
       self.nextColor_ = data.color;
       self.switchTime_ = data.time;
     });

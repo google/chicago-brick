@@ -15,31 +15,10 @@ limitations under the License.
 
 class ProceduralServer extends ServerModuleInterface {}
 
-// This module draws a red square on each screen on the wall. The square's x
-// position is based on the x offset of the screen and the cosine function,
-// while the y position is based on the y offset of the screen and sine
-// function. The sine and cosine functions are applied to the time given to the
-// draw method.
-
-// Play with various values of xSpeed, ySpeed and maxDistance to see different
-// patterns.
 class ProceduralClient extends ClientModuleInterface {
   willBeShownSoon(container) {
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
-
-    // Don't put things in draw that don't change from frame to frame.
-
-    // The center point here is of a particular screen, not of the wall.
-    this.centerX = this.surface.virtualRect.w/2;
-    this.centerY = this.surface.virtualRect.h/2;
-
-    this.maxXDistance = 400;
-    this.maxYDistance = 200;
-    this.xSpeed = 1 + (5+this.surface.virtualOffset.x*17) % this.surface.virtualOffset.w;
-    this.ySpeed = 1 + (2+this.surface.virtualOffset.y*15) % this.surface.virtualOffset.h;
-
-    this.canvas.fillStyle = 'red';
   }
 
   finishFadeOut() {
@@ -49,12 +28,17 @@ class ProceduralClient extends ClientModuleInterface {
   }
 
   draw(time, delta) {
+    var centerX = this.surface.virtualRect.w/2;
+    var centerY = this.surface.virtualRect.h/2;
+
+    var xSpeed = (5+this.surface.virtualOffset.x*17) % this.surface.virtualOffset.w;
+    var ySpeed = (2+this.surface.virtualOffset.y*15) % this.surface.virtualOffset.h;
+    var x = 400 * Math.cos(time / 1000 * (1 + xSpeed)) + centerX;
+    var y = 400 * Math.sin(time / 1000 * (1 + ySpeed)) + centerY;
+    // Clear:
     this.canvas.clearRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-
     // Draw a red box.
-    var x = this.maxXDistance * Math.cos(time / 1000 * this.xSpeed) + this.centerX;
-    var y = this.maxYDistance * Math.sin(time / 1000 * this.ySpeed) + this.centerY;
-
+    this.canvas.fillStyle = 'red';
     this.canvas.fillRect(x - 50, y - 50, 100, 100);
   }
 }
