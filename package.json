@@ -28,7 +28,7 @@
     "leaflet-edgebuffer": "colllin/Leaflet.EdgeBuffer#patch-1",
     "lwip": "^0.0.8",
     "noisejs": "^2.1.0",
-    "p5": "^0.4.19",
+    "p5": "^0.4.22",
     "peer": "^0.2.8",
     "peerjs": "^0.3.14",
     "pngparse": "^2.0.1",
