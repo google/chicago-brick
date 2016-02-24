@@ -32,10 +32,14 @@ class Module {
   }
 }
 
-var moduleList = [];
+var engineModuleList = [
+  new Module('_faded_out', 'demo_modules/solid/solid.js', '', '', {
+    color: 'black'
+  })
+];
 
 var allModules = {};
-moduleList.forEach((m) => allModules[m.name] = m);
+engineModuleList.forEach((m) => allModules[m.name] = m);
 
 function registerModule(name, path, title, author, config) {
   allModules[name] = new Module(name, path, title || '', author || '', config);
