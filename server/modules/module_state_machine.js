@@ -86,7 +86,7 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.current_.loadPlaylist(deadline);
   }
   fadeToBlack(deadline) {
-    this.context_.playlist = ['memory-debug'];
+    this.context_.playlist = ['_faded_out'];
     this.context_.moduleDuration = deadline;
     this.current_.loadPlaylist(deadline);
 
