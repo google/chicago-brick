@@ -18,7 +18,6 @@ require('lib/promise');
 var debug = require('debug')('wall:server_state_machine');
 
 var stateMachine = require('lib/state_machine');
-var library = require('server/modules/library');
 var logError = require('server/util/log').error(debug);
 var game = require('server/game/game');
 var time = require('server/util/time');
@@ -35,10 +34,7 @@ class RunningModule {
   }
 
   instantiate(deadline) {
-    var def = library.modules[this.moduleDef.path];
-    var constructor = library.loadServerScript(
-        this.moduleDef.name, this.globals, def);
-    this.instance = new constructor(this.moduleDef.config, deadline);
+    this.instance = this.moduleDef.instantiate(this.globals, deadline);
   }
 
   tick(now, delta) {

@@ -131,112 +131,108 @@ let loadModuleAtPath = function(path) {
 };
 
 /**
- * A data class defining a module. This combines a code location
- * and a set of config parameters, so that we can give different names
- * to modules that have the same code but different configuration.
+ * The ModuleDef class contains all the information necessary to load & 
+ * instantiate a module, including code location and config parameters.
  */
-class Module {
+class ModuleDef {
   constructor(name, path, title, author, config) {
     this.name = name;
     this.path = path;
     this.config = config || {};
     this.title = title;
     this.author = author;
-  }
-}
-
-var engineModuleList = [
-  new Module('_faded_out', 'demo_modules/solid/solid.js', '', '', {
-    color: 'black'
-  })
-];
-
-class ModuleDefinitionLibrary {
-  constructor() {
-    // A map of name -> Module.
-    // TODO(applmak): Combine this and the modules map below.
-    this.allModules = {};
-    engineModuleList.forEach((m) => this.allModules[m.name] = m);
     
-    // map of path -> promise<string>
-    // This map is only populated during the loading process.
-    this.moduleLoader = {};
-
-    // map of path -> string.
-    this.modules = {};
+    // The promise that when set, indicates the module is loaded.
+    this.loadPromise = null;
+    
+    // The string source of the module.
+    this.def_ = '';
+    
+    this.load_();
   }
-  registerModule(name, path, title, author, config) {
-    this.allModules[name] = new Module(name, path,
-        title || '', author || '', config);
+  static register(def) {
+    assert(!(def.name in ModuleDef.modules), 'Def ' + def.name + ' already exists!');
+    ModuleDef.modules[def.name] = def;
   }
-
-  registerModuleExtension(name, extendsName, title, author, config) {
-    assert(extendsName in this.allModules,
-        'Unknown module "' + extendsName + '"');
-    var orig = this.allModules[extendsName];
-    this.allModules[name] = new Module(name, orig.path,
-        title || orig.title, author || orig.author, config);
+  // Returns a new module def that extends this def with new configuration.
+  extend(name, title, author, config) {
+    return new ModuleDef(name, this.path,
+      title || this.title, author || this.author, config);
   }
-  load(path) {
-    if (path in this.moduleLoader) {
-      // In the middle of loading... so join.
-      return this.moduleLoader[path];
-    }
-
+  // Loads a module from disk asynchronously, assigning def when complete.
+  load_() {
     let loadModule = () => {
       let rewatch = () => {
-        // Clean up in-progress module loading.
-        delete this.moduleLoader[path];
-
         // Watch for future changes.
-        let watch = fs.watch(path, {persistent: true}, (event) => {
-          debug('Module changed! Reloading', path);
+        let watch = fs.watch(this.path, {persistent: true}, (event) => {
+          debug('Module changed! Reloading', this.path);
           watch.close();
           loadModule();
         });
       };
     
-      let m = loadModuleAtPath(path).then((def) => {
-        debug('Loaded', path);
+      this.loadPromise = loadModuleAtPath(this.path).then((def) => {
+        debug('Loaded', this.path);
+        this.def_ = def;
       
-        // Save the updated, valid module.
-        this.modules[path] = def;
-      
+        // Start rewatcher.
         rewatch();
-      
-        return def;
       }, (e) => {
-        debug('Error loading ' + path);
+        debug('Error loading ' + this.path);
         debug(e);
       
+        // Start rewatcher, despite error.
         rewatch();
 
+        // Allow users to note that this module failed to load correctly.
         return Promise.reject(e);
       });
-    
-      this.moduleLoader[path] = m;
-      return m;
     };
 
-    return loadModule();
+    loadModule();
   }
   
-  // Loads a previously-verified script for execution.
-  // Returns a class definition for the server-side module.
-  loadServerScript(name, dependencies, script) {
+  // Instantiates this server-side version of this module, with any additional
+  // globals being passed along.
+  // TODO(applmak): Once automatic globals are removed, cache the constructor
+  // after the eval (do it on load), then change the require to construct the
+  // per-module globals (like network, which required 'deadline') to occur
+  // dynamically. Basically, make this module's 'require' somehow delegate to
+  // this particular instantiation.
+  instantiate(additionalGlobals, deadline) {
+    
     var serverSideModuleDef;
     var sandbox = _.extend({
       register: function(serverSide, unused) {
         serverSideModuleDef = serverSide;
       },
-    }, serverSandbox(name, dependencies));
+    }, serverSandbox(this.name, additionalGlobals));
     // Use safeEval to actually run the script so that Node doesn't leak
     // anything: https://github.com/nodejs/node/issues/3113
-    safeEval(script, sandbox);
-    return serverSideModuleDef;
+    safeEval(this.def_, sandbox);
+    
+    return new serverSideModuleDef(this.config, deadline);
+  }
+  
+  // Returns a JSON-serializable form of this for transmission to the client.
+  serializeForClient() {
+    return {
+      name: this.name,
+      path: this.path,
+      config: this.config,
+      title: this.title,
+      author: this.author,
+      def: this.def_
+    };
   }
 }
+ModuleDef.modules = {};
 
-// Export the singleton instance of the library.
-module.exports = new ModuleDefinitionLibrary;
+// Engine modules.
+ModuleDef.register(new ModuleDef('_faded_out', 'demo_modules/solid/solid.js', '', '', {
+  color: 'black'
+}));
+
+// Export the module def class.
+module.exports = ModuleDef;
 
