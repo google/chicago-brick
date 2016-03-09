@@ -22,7 +22,6 @@ var library = require('server/modules/library');
 var logError = require('server/util/log').error(debug);
 var game = require('server/game/game');
 var time = require('server/util/time');
-var moduleDefs = require('server/modules/module_defs');
 var network = require('server/network/network');
 var StateManager = require('server/state/state_manager');
 var moduleTicker = require('server/modules/module_ticker');
@@ -37,7 +36,7 @@ class RunningModule {
 
   instantiate(deadline) {
     var def = library.modules[this.moduleDef.path];
-    var constructor = moduleDefs.loadServerScript(
+    var constructor = library.loadServerScript(
         this.moduleDef.name, this.globals, def);
     this.instance = new constructor(this.moduleDef.config, deadline);
   }
