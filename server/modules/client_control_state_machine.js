@@ -19,7 +19,6 @@ var debug = require('debug')('wall:client_control_state_machine');
 
 var stateMachine = require('lib/state_machine');
 var time = require('server/util/time');
-var library = require('server/modules/library');
 var wallGeometry = require('server/util/wall_geometry');
 
 class ClientControlStateMachine extends stateMachine.Machine {
@@ -68,21 +67,17 @@ class PrepareState extends stateMachine.State {
     super('PrepareState');
 
     // Server-side module info.
-    this.module_ = moduleDef;
-
-    // Client-side module definition.
-    this.clientDef_ = library.modules[moduleDef.path];
+    this.moduleDef_ = moduleDef;
 
     // The deadline at which we should transition to the new module.
     this.deadline_ = deadline;
   }
   enter_() {
-    this.context_.moduleName = this.module_.name;
+    this.context_.moduleName = this.moduleDef_.name;
 
     // Tell the clients to load.
     this.context_.client.socket.emit('loadModule', {
-      module: this.module_,
-      def: this.clientDef_,
+      module: this.moduleDef_.serializeForClient(),
       time: this.deadline_,
       geo: this.context_.geo.points
     });

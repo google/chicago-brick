@@ -111,8 +111,10 @@ define(function(require) {
 
     // Server has asked us to load a new module.
     network.on('loadModule', function(bits) {
+      // TODO: Introduce a LoadedModule concept to standardize on these names
+      // and which mirrors the server-side equivalent.
       var def = bits.module;
-      var code = bits.def;
+      var code = bits.module.def;
       var deadline = bits.time;
       var geo = new geometry.Polygon(bits.geo);
 

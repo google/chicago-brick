@@ -17,11 +17,12 @@ limitations under the License.
 
 var RJSON = require('relaxed-json');
 var assert = require('assert');
+var _ = require('underscore');
 var debug = require('debug')('wall:playlist_loader');
 var fs = require('fs');
 
 var Layout = require('server/modules/layout');
-var moduleRegistry = require('server/modules/module_registry');
+var ModuleDef = require('server/modules/module_def');
 
 class PlaylistLoader {
 
@@ -29,25 +30,43 @@ class PlaylistLoader {
     this.flags = flags;
   }
 
-  /** Determines the list of modules for a layout JSON config. */
+  /** Returns the list of ModuleDefs for a layout specification. */
   getModulesForLayout_(layout, collections) {
     if (this.flags.module) {
-      var modules = this.flags.module.slice(0);
-      // If we have one module, repeat it so transitions happen.
-      return modules.length > 1 ? modules : [modules[0], modules[0]];
+      // Copy the module name list.
+      let names = this.flags.module.slice(0);
+      if (names.length == 1) {
+        // If we have one module, repeat it so transitions happen.
+        names = [names[0], names[0]];
+      }
+      return names.map((n) => {
+        assert(n in ModuleDef.modules, 'Loaded playlist referenced module ' +
+            n + ' which can\'t be found!');
+        return ModuleDef.modules[n];
+      });
     }
     if (layout.collection) {
       // Special collection name to run all available modules.
       if (layout.collection == '__ALL__') {
-        return Object.keys(moduleRegistry.allModules);
+        return _.values(ModuleDef.modules);
       }
       assert(
           layout.collection in collections,
           'Unknown collection name: ' + layout.collection);
-      return collections[layout.collection];
+      
+      return collections[layout.collection].map((n) => {
+        assert(n in ModuleDef.modules, 'Loaded playlist\'s collection ' +
+          layout.collection + ' references module ' + n +
+          ' which can\'t be found!');
+        return ModuleDef.modules[n];
+      });
     }
-    assert('modules' in layout, 'Missing modules list');
-    return layout.modules;
+    assert('modules' in layout, 'Missing modules list in layout def!');
+    return layout.modules.map((n) => {
+      assert(n in ModuleDef.modules, 'Loaded playlist\'s layout mentions ' + 
+        'module ' + n + ' which can\'t be found!');
+      return ModuleDef.modules[n];
+    });
   }
 
   /** Creates a playlist JSON object from command-line flags. */
@@ -56,6 +75,8 @@ class PlaylistLoader {
     return this.parseJson(playlistConfig);
   }
 
+  // TODO(applmak): This is weird API, because it doesn't have any side effects
+  // on 'this'.
   parseJson(jsonString) {
     return RJSON.parse(jsonString);
   }
@@ -66,24 +87,20 @@ class PlaylistLoader {
     for (var m of extraModules) {
       assert(m.name && (m.extends || m.path), 'Invalid configuration: ' + m);
       if (m.extends) {
+        assert(m.extends in ModuleDef.modules, 'Module ' + m.name + 
+          ' attempting to extend ' + m.extends + ' which was not found!');
         debug('Adding module ' + m.name + ' extending ' + m.extends);
-        moduleRegistry.registerModuleExtension(m.name, m.extends, m.title || '', m.author || '', m.config);
+        ModuleDef.register(ModuleDef.modules[m.extends].extend(
+          m.name, m.title, m.author, m.config));
       } else {
         debug('Adding module ' + m.name + ' from ' + m.path);
-        moduleRegistry.registerModule(m.name, m.path, m.title || '', m.author || '', m.config);
+        ModuleDef.register(new ModuleDef(m.name, m.path, m.title, m.author, m.config));
       }
     }
 
     return config.playlist.map((layout) => {
-      var modules = this.getModulesForLayout_(
-          layout, config.collections);
-      for (var moduleName of modules) {
-        if (!moduleRegistry.allModules[moduleName]) {
-          throw Error('Unknown module: ' + moduleName);
-        }
-      }
       return new Layout({
-        modules: modules,
+        modules: this.getModulesForLayout_(layout, config.collections),
         moduleDuration: this.flags.module_duration || layout.moduleDuration,
         duration: this.flags.layout_duration || layout.duration,
         maxPartitions: this.flags.max_partitions || layout.maxPartitions,

@@ -20,7 +20,7 @@ limitations under the License.
  */
 class Layout {
   constructor(config) {
-    // The list of module names to play.
+    // The list of ModuleDefs to play.
     this.modules = config.modules;
 
     // How long to run the entire layout.

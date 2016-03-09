@@ -22,8 +22,7 @@ var random = require('random-js')();
 
 var stateMachine = require('lib/state_machine');
 var time = require('server/util/time');
-var moduleRegistry = require('server/modules/module_registry');
-var library = require('server/modules/library');
+var ModuleDef = require('server/modules/module_def');
 var ServerStateMachine = require('server/modules/server_state_machine');
 var geometry = require('lib/geometry');
 
@@ -86,7 +85,7 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.current_.loadPlaylist(deadline);
   }
   fadeToBlack(deadline) {
-    this.context_.playlist = ['_faded_out'];
+    this.context_.playlist = [ModuleDef.modules['_faded_out']];  // jshint ignore:line
     this.context_.moduleDuration = deadline;
     this.current_.loadPlaylist(deadline);
 
@@ -136,8 +135,7 @@ class LoadingState extends stateMachine.State {
   }
   enter_() {
     // Load the playlist.
-    var modulePromises = this.context_.playlist.map((module) =>
-        library.load(moduleRegistry.allModules[module].path));
+    var modulePromises = this.context_.playlist.map((m) => m.loadPromise);
     Promise.allSettled(modulePromises).done((results) => {
       // Check to see if any modules were rejected. If so, remove them from the 
       // playlist.
@@ -173,17 +171,19 @@ class TransitionState extends stateMachine.State {
     this.index_ = opt_index || 0;
 
     this.deadline_ = deadline;
+    
+    // The current moduleDef we are attempting to show or showing.
+    this.moduleDef_ = null;
   }
   enter_() {
     // Check for wrapping.
     this.index_ = this.index_ % this.context_.playlist.length;
 
     // We'll attempt to transition the clients to this module.
-    this.module_ = moduleRegistry.allModules[
-        this.context_.playlist[this.index_]];
+    this.moduleDef_ = this.context_.playlist[this.index_];
 
     // Tell the server to transition.
-    this.context_.server.nextModule(this.module_, this.deadline_);
+    this.context_.server.nextModule(this.moduleDef_, this.deadline_);
     this.context_.server
         .monitorState((state) => {
           return state.name_ == 'ErrorState' || state.name_ == 'TransitionState';
@@ -200,14 +200,14 @@ class TransitionState extends stateMachine.State {
 
     // Tell each client to do the module.
     _.each(this.context_.clients, function(clientState) {
-      clientState.nextModule(this.module_, this.deadline_);
+      clientState.nextModule(this.moduleDef_, this.deadline_);
     }, this);
 
     // When the deadline arrives, enter display state.
     debug('Waiting until', this.deadline_);
     Promise.delay(time.until(this.deadline_)).done(() => {
       this.transition_(new DisplayState(
-          this.module_, this.deadline_, this.index_));
+          this.moduleDef_, this.deadline_, this.index_));
     });
   }
   loadPlaylist(deadline) {
@@ -217,7 +217,7 @@ class TransitionState extends stateMachine.State {
   newClient(client) {
     // Tell the new guy to load the next module NOW.
     this.context_.clients[client.socket.id].nextModule(
-        this.module_, this.deadline_);
+        this.moduleDef_, this.deadline_);
   }
   playModule(moduleName) {
     var index = this.context_.playlist.findIndex(moduleName);
@@ -235,11 +235,11 @@ class TransitionState extends stateMachine.State {
 }
 
 class DisplayState extends stateMachine.State {
-  constructor(module, deadline, index) {
+  constructor(moduleDef, deadline, index) {
     super('DisplayState');
 
     // The module to tell late clients to transition to.
-    this.lateClientModule_ = module;
+    this.lateClientModuleDef_ = moduleDef;
     this.lateClientDeadline_ = deadline;
 
     // What to play from the playlist.
@@ -255,13 +255,13 @@ class DisplayState extends stateMachine.State {
           Math.random() * this.context_.moduleDuration / 5;
       this.deadline_ = time.inFuture(1000 * displayDuration);
 
-      debug('Displaying ', this.lateClientModule_.name, 'until', this.deadline_);
+      debug('Displaying ', this.lateClientModuleDef_.name, 'until', this.deadline_);
       Promise.delay(time.until(this.deadline_)).done(() => {
         this.transition_(new TransitionState(
             this.deadline_, this.index_ + 1));
       });
     } else {
-      debug('Displaying ', this.lateClientModule_.name);
+      debug('Displaying ', this.lateClientModuleDef_.name);
       this.deadline_ = Infinity;
     }
   }
@@ -272,7 +272,7 @@ class DisplayState extends stateMachine.State {
   newClient(client) {
     // Tell the new guy to load the next module NOW.
     this.context_.clients[client.socket.id].nextModule(
-        this.lateClientModule_, this.lateClientDeadline_);
+        this.lateClientModuleDef_, this.lateClientDeadline_);
   }
   playModule(moduleName) {
     var index = this.context_.playlist.findIndex(moduleName);
