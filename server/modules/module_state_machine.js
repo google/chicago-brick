@@ -130,6 +130,8 @@ class LoadingState extends stateMachine.State {
   constructor(deadline) {
     super('LoadingState');
 
+    this.indexOfModuleToPlayWhenLoaded_ = 0;
+
     // The time at which we should swap to the new playlist.
     this.deadline_ = deadline;
   }
@@ -145,7 +147,7 @@ class LoadingState extends stateMachine.State {
         }
         return results[index].status == 'resolved';
       });
-      this.transition_(new TransitionState(this.deadline_));
+      this.transition_(new TransitionState(this.deadline_, this.indexOfModuleToPlayWhenLoaded_));
     });
   }
   loadPlaylist(deadline) {
@@ -156,6 +158,13 @@ class LoadingState extends stateMachine.State {
   }
   newClient(client) {}
   playModule(moduleName) {
+    var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);
+    if (index != -1) {
+      debug('Will play module ' + moduleName + ' when loading is complete.');
+      this.indexOfModuleToPlayWhenLoaded_ = index;
+      return true;
+    }
+    debug('Could not find requested module ' + moduleName);
     return false;
   }
   getDeadline() {
@@ -220,9 +229,9 @@ class TransitionState extends stateMachine.State {
         this.moduleDef_, this.deadline_);
   }
   playModule(moduleName) {
-    var index = this.context_.playlist.findIndex(moduleName);
+    var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);
     if (index != -1) {
-      debug('Found requested module ' + this.context_.playlist[index].name);
+      debug('Will play module ' + moduleName + ' just as soon as current transition completes!');
       this.index_ = index;
       return true;
     }
@@ -275,10 +284,12 @@ class DisplayState extends stateMachine.State {
         this.lateClientModuleDef_, this.lateClientDeadline_);
   }
   playModule(moduleName) {
-    var index = this.context_.playlist.findIndex(moduleName);
+    var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);
     if (index != -1) {
-      debug('Found requested module ' + this.context_.playlist[index].name);
+      debug('Found requested module ' + moduleName, index);
       this.index_ = index;
+      // Transition immediately.
+      this.transition_(new TransitionState(time.now(), index));
       return true;
     }
     debug('Could not find requested module ' + moduleName);
