@@ -15,6 +15,7 @@ limitations under the License.
 
 'use strict';
 
+const EventEmitter = require('events');
 const fs = require('fs');
 
 const Noise = require('noisejs');
@@ -133,8 +134,9 @@ let loadModuleAtPath = function(path) {
  * The ModuleDef class contains all the information necessary to load & 
  * instantiate a module, including code location and config parameters.
  */
-class ModuleDef {
+class ModuleDef extends EventEmitter {
   constructor(name, pathOrBaseModule, title, author, config) {
+    super();
     this.name = name;
     this.config = config || {};
     this.title = title;
@@ -166,6 +168,8 @@ class ModuleDef {
           debug('Module changed! Reloading', path);
           watch.close();
           loadModule();
+          // When the load is finished, tell listeners that we reloaded.
+          this.loadPromise.then(() => this.emit('reloaded'));
         });
       };
     

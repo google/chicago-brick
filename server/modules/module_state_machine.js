@@ -57,6 +57,11 @@ class ModuleStateMachine extends stateMachine.Machine {
 
     this.context_.playlist = null;
     this.context_.moduleDuration = null;
+    
+    this.reloadHandler = (moduleDef) => {
+      this.playModule(moduleDef.name);
+    };
+    library.on('reloaded', this.reloadHandler);
   }
   newClient(client) {
     if (!isDisplayInPoly(client.rect, this.geo_)) {
@@ -85,6 +90,8 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.current_.loadPlaylist(deadline);
   }
   fadeToBlack(deadline) {
+    library.removeListener('reloaded', this.reloadHandler);
+    
     this.context_.playlist = [library.modules['_faded_out']];  // jshint ignore:line
     this.context_.moduleDuration = deadline;
     this.current_.loadPlaylist(deadline);

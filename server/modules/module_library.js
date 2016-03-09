@@ -15,17 +15,26 @@ limitations under the License.
 
 'use strict';
 
+var EventEmitter = require('events');
 var assert = require('assert');
+
 var ModuleDef = require('server/modules/module_def');
 
-class ModuleLibrary {
+class ModuleLibrary extends EventEmitter {
   constructor() {
+    super();
+    
     // Map of name -> ModuleDef
     this.modules = {};
   }
   register(def) {
     assert(!(def.name in this.modules), 'Def ' + def.name + ' already exists!');
     this.modules[def.name] = def;
+    // We can safely use 'on' rather than 'once' here, because neither the 
+    // moduledefs nor this library are ever destroyed.
+    def.on('reloaded', () => {
+      this.emit('reloaded', def);
+    });
   }
 }
 
