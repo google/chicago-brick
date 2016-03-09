@@ -27,7 +27,7 @@ define(function(require) {
   function draw() {
     var now = time.now();
     var delta = now - lastTime;
-    
+
     modulesToDraw.forEach(function(pair) {
       try {
         pair.module.draw(now, delta);
@@ -47,9 +47,6 @@ define(function(require) {
       debug('Add: We are now drawing ' + modulesToDraw.length + ' modules');
     },
     remove: function(module) {
-      modulesToDraw.filter(function(pair) {
-        return pair.module === module;
-      });
       modulesToDraw = modulesToDraw.filter(function(pair) {
         return pair.module !== module;
       });
