@@ -195,7 +195,7 @@ TransitionState.prototype.nextModule = function(moduleDef, deadline) {
   this.savedModuleDef_ = moduleDef;
   this.savedDeadline_ = deadline;
 };
-PrepareState.prototype.stop = function() {
+TransitionState.prototype.stop = function() {
   if (this.oldModule_) {
     moduleTicker.remove(this.oldModule_);
   }
