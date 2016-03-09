@@ -22,29 +22,6 @@ define(function(require) {
   var ClientModule = require('client/modules/module');
   var debug = require('client/util/debug')('wall:client_state_machine');
 
-  // Displays a module until told to show a new one.
-  class DisplayState extends stateMachine.State {
-    constructor(module) {
-      super('DisplayState');
-      this.module_ = module;
-    }
-    enter_() {}
-    nextModule(module) {
-      this.transition_(new PrepareState(this.module_, module));
-    }
-  }
-
-  class ClientStateMachine extends stateMachine.Machine {
-    constructor() {
-      super('ClientStateMachine',
-          new DisplayState(ClientModule.newEmptyModule(0)));
-    }
-    nextModule(module) {
-      debug('Requested transition to module', module.def.name);
-      this.current_.nextModule(module);
-    }
-  }
-
   // The PrepareState gives the client module time to load assets. From the
   // beginning of the state, the module has about 60 seconds to load everything
   // it has to load. If it finishes earlier, it should resolve its
@@ -56,7 +33,7 @@ define(function(require) {
       super('PrepareState');
 
       this.oldModule_ = oldModule;
-      this.module_ = module;
+      this.module_ = module.instantiate();
     }
     enter_() {
       // Tell the modules that we're going to switch soon.
@@ -74,7 +51,17 @@ define(function(require) {
       });
     }
     nextModule(module) {
-      this.transition_(new PrepareState(this.module_, module));
+      // Suddenly, we aren't going to be fading from old -> current, and should 
+      // instead be showing new. But we've already told old and current to get
+      // ready to be hidden & shown (and old is likely still ticking). We should
+      // immediately tell current that it's going to be hidden, and then dispose
+      // of it. Then, we should prepare to transition from old -> new, skipping
+      // current. This ensures that everything gets disposed correctly and we
+      // still meet the module interface contract.
+      this.module_.willBeHiddenSoon();
+      this.module_.dispose();
+      
+      this.transition_(new PrepareState(this.oldModule_, module));
     }
   }
 
@@ -120,6 +107,29 @@ define(function(require) {
     }
     nextModule(module) {
       this.savedModule_ = module;
+    }
+  }
+
+  // Displays a module until told to show a new one.
+  class DisplayState extends stateMachine.State {
+    constructor(module) {
+      super('DisplayState');
+      this.module_ = module;
+    }
+    enter_() {}
+    nextModule(module) {
+      this.transition_(new PrepareState(this.module_, module));
+    }
+  }
+
+  class ClientStateMachine extends stateMachine.Machine {
+    constructor() {
+      super('ClientStateMachine',
+          new DisplayState(ClientModule.newEmptyModule(0)));
+    }
+    nextModule(module) {
+      debug('Requested transition to module', module.name);
+      this.current_.nextModule(module);
     }
   }
 

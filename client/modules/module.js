@@ -16,52 +16,184 @@ limitations under the License.
 define(function(require) {
   'use strict';
 
-  var moduleTicker = require('client/modules/module_ticker');
+  var _ = require('underscore');
+  var L = require('leaflet');
+  require('leaflet-edgebuffer');
+  var Noise = require('noisejs');
+
+  var asset = require('client/asset/asset');
+  var CanvasSurface = require('client/surface/canvas_surface');
   var debug = require('client/util/debug')('wall:client_module');
+  var debugFactory = require('client/util/debug');
   var error = require('client/util/log').error(debug);
+  var fakeRequire = require('lib/fake_require');
+  var geometry = require('lib/geometry');
+  var loadYoutubeApi = require('client/util/load_youtube_api');
+  var moduleAssert = require('lib/assert');
+  var moduleInterface = require('lib/module_interface');
+  var NeighborPersistence = require('client/network/neighbor_persistence');
+  var network = require('client/network/network');
+  var P5Surface = require('client/surface/p5_surface');
+  var peerNetwork = require('client/network/peer');
+  var safeEval = require('lib/eval');
+  var StateManager = require('client/state/state_manager');
+  var Surface = require('client/surface/surface');
+  var ThreeJsSurface = require('client/surface/threejs_surface');
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
-  var moduleInterface = require('lib/module_interface');
+  var moduleTicker = require('client/modules/module_ticker');
 
-  function createNewContainer(def) {
+  
+  
+  function createNewContainer(name) {
     var newContainer = document.createElement('div');
     newContainer.className = 'container';
     newContainer.id = 't-' + timeManager.now();
     newContainer.style.opacity = 0.0;
-    newContainer.setAttribute('moduleName', def.name);
+    newContainer.setAttribute('moduleName', name);
     document.querySelector('#containers').appendChild(newContainer);
     return newContainer;
   }
 
+  // Node modules made available to client-side modules.
+  // Entries with "undefined" are only available on the server;
+  // we mention them here so that the client module can call require()
+  // without throwing.
+  var exposedNodeModules = {
+    NeighborPersistence: NeighborPersistence,
+    noisejs: Noise,
+    assert: moduleAssert,
+    asset: asset,
+    'gl-matrix': undefined,
+    googleapis: undefined,
+    jsfeat: undefined,
+    leaflet: L,
+    loadYoutubeApi: loadYoutubeApi,
+    lwip: undefined,
+    pngparse: undefined,
+    querystring: undefined,
+    random: undefined,
+    request: undefined,
+    underscore: _,
+    x2x: undefined,
+    xml2js: undefined,
+  };
+
+  function loadModule(name, globals, code) {
+    var klass;
+    try {
+      // The namespace available to client modules.
+      // Note that this extends "dependencies", defined below, and also
+      // cf. the server-side version in server/modules/module_defs.js.
+      var sandbox = _.extend({
+        register: function(ignoredServerSide, clientSide) {
+          klass = clientSide;
+        },
+        require: fakeRequire.createEnvironment(exposedNodeModules),
+        ServerModuleInterface: moduleInterface.Server,
+        ClientModuleInterface: moduleInterface.Client,
+        Object: Object,
+        Surface: Surface,
+        CanvasSurface: CanvasSurface,
+        P5Surface: P5Surface,
+        ThreeJsSurface: ThreeJsSurface,
+        geometry: geometry,
+        Promise: Promise,
+        loadYoutubeApi: loadYoutubeApi,
+        debug: debugFactory('wall:module:' + name),
+      }, globals);
+      safeEval(code, sandbox);
+      if (!klass) {
+        throw new Error('Failed to parse module ' + name);
+      }
+      if (!(klass.prototype instanceof moduleInterface.Client)) {
+        throw new Error('Malformed module definition! ' + name);
+      }
+    } catch (e) {
+      console.error('Error loading ' + name, e);
+      error(e);
+    }
+    return klass;
+  }
+
   class ClientModule {
-    constructor(def, klass, globals, titleCard, deadline) {
-      // Module definition -- sent from the server.
-      this.def = def;
-
-      // Module class instance as eval-ed in module_manager.js.
-      this.klass = klass;
-
-      // Global context that was provided to the module.
-      this.globals = globals;
-
+    constructor(name, config, titleCard, code, deadline, geo) {
+      // The module name.
+      this.name = name;
+      
+      // The module config.
+      this.config = config;
+      
+      // The title card instance for this module.
+      this.titleCard = titleCard;
+      
+      // The code for this module.
+      this.code = code;
+      
       // Absolute time when this module is supposed to be visible. Module will
       // actually be faded in by deadline + 5000ms.
       this.deadline = deadline;
-
+      
+      // The wall geometry.
+      this.geo = geo;
+      
+      // Globals that are associated with this module.
+      this.globals = {};
+      
       // The dom container for the module's content.
-      this.container = createNewContainer(def);
-
-      // The modules title card manager.
-      this.titleCard = titleCard;
+      this.container = createNewContainer(name);
 
       // Module class instance.
-      this.instance = new this.klass(def.config);
+      this.instance = null;
+    }
+
+    // Deserializes from the json serialized form of ModuleDef in the server.
+    static deserialize(bits) {
+      return new ClientModule(
+        bits.module.name,
+        bits.module.config,
+        new TitleCard(bits.module),
+        bits.module.def,
+        bits.time,
+        new geometry.Polygon(bits.geo)
+      );
     }
 
     static newEmptyModule(deadline) {
-      var def = {'name': 'empty-module'};
-      return new ClientModule(def, moduleInterface.Client, {},
-          new TitleCard(def), deadline);
+      return new ClientModule(
+        'empty-module',
+        {},
+        new TitleCard({}),
+        'class EmptyModule extends ClientModuleInterface {} register(null, EmptyModule)',
+        deadline,
+        new geometry.Polygon([{x: 0, y:0}])
+      ).instantiate();
+    }
+
+    instantiate() {
+      var moduleNetwork = network.forModule(
+        `${this.geo.extents.serialize()}-${this.deadline}`);
+      var openNetwork = moduleNetwork.open();
+
+      this.globals = {
+        _network: moduleNetwork,
+        network: openNetwork,
+        titleCard: this.titleCard.getModuleAPI(),
+        state: new StateManager(openNetwork),
+        globalWallGeometry: this.geo,
+        wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
+          return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
+        }, this)),
+        peerNetwork: peerNetwork,
+      };
+
+      var clientModuleClass = loadModule(this.name, this.globals, this.code);
+      if (!clientModuleClass) {
+        throw new Error('Failed to load module!');
+      }
+
+      this.instance = new clientModuleClass(this.config);
+      return this;
     }
 
     willBeHiddenSoon() {
