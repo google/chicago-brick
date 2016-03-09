@@ -1,5 +1,17 @@
+
 var NUM_BALLS = 10;
 var INITIAL_RADIUS = 150;
+
+//
+// Helper types & functions.
+//
+function makeRandomColor() {
+    var c = '';
+    while (c.length < 6) {
+        c += (Math.random()).toString(16).substr(-6).substr(-1);
+    }
+    return '#'+c;
+}
 
 function shadeColor(color, percent) {
     // from SO post: http://stackoverflow.com/questions/5560248/programmatically-lighten-or-darken-a-hex-color-or-rgb-and-blend-colors
@@ -74,6 +86,9 @@ Ball.prototype.merge = function(ball) {
     ball.radius = 0;
 };
 
+//
+// Server Module
+//
 class MergeBallsServer extends ServerModuleInterface {
   willBeShownSoon(container, deadline) {
       function getInitialBallPosition(ballradius) {
@@ -91,14 +106,6 @@ class MergeBallsServer extends ServerModuleInterface {
               x: speed * Math.cos(angle),
               y: speed * Math.sin(angle),
           };
-      }
-
-      function makeRandomColor() {
-          var c = '';
-          while (c.length < 6) {
-              c += (Math.random()).toString(16).substr(-6).substr(-1);
-          }
-          return '#'+c;
       }
 
       this.balls = [];
@@ -175,6 +182,9 @@ class MergeBallsServer extends ServerModuleInterface {
   }
 }
 
+//
+// Client Module
+//
 class MergeBallsClient extends ClientModuleInterface {
   finishFadeOut() {
     if (this.surface) {
