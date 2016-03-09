@@ -22,7 +22,6 @@ var random = require('random-js')();
 
 var stateMachine = require('lib/state_machine');
 var time = require('server/util/time');
-var moduleRegistry = require('server/modules/module_registry');
 var library = require('server/modules/library');
 var ServerStateMachine = require('server/modules/server_state_machine');
 var geometry = require('lib/geometry');
@@ -137,7 +136,7 @@ class LoadingState extends stateMachine.State {
   enter_() {
     // Load the playlist.
     var modulePromises = this.context_.playlist.map((module) =>
-        library.load(moduleRegistry.allModules[module].path));
+        library.load(library.allModules[module].path));
     Promise.allSettled(modulePromises).done((results) => {
       // Check to see if any modules were rejected. If so, remove them from the 
       // playlist.
@@ -179,7 +178,7 @@ class TransitionState extends stateMachine.State {
     this.index_ = this.index_ % this.context_.playlist.length;
 
     // We'll attempt to transition the clients to this module.
-    this.module_ = moduleRegistry.allModules[
+    this.module_ = library.allModules[
         this.context_.playlist[this.index_]];
 
     // Tell the server to transition.

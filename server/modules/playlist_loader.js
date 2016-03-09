@@ -21,7 +21,7 @@ var debug = require('debug')('wall:playlist_loader');
 var fs = require('fs');
 
 var Layout = require('server/modules/layout');
-var moduleRegistry = require('server/modules/module_registry');
+var library = require('server/modules/library');
 
 class PlaylistLoader {
 
@@ -39,7 +39,7 @@ class PlaylistLoader {
     if (layout.collection) {
       // Special collection name to run all available modules.
       if (layout.collection == '__ALL__') {
-        return Object.keys(moduleRegistry.allModules);
+        return Object.keys(library.allModules);
       }
       assert(
           layout.collection in collections,
@@ -67,10 +67,10 @@ class PlaylistLoader {
       assert(m.name && (m.extends || m.path), 'Invalid configuration: ' + m);
       if (m.extends) {
         debug('Adding module ' + m.name + ' extending ' + m.extends);
-        moduleRegistry.registerModuleExtension(m.name, m.extends, m.title || '', m.author || '', m.config);
+        library.registerModuleExtension(m.name, m.extends, m.title || '', m.author || '', m.config);
       } else {
         debug('Adding module ' + m.name + ' from ' + m.path);
-        moduleRegistry.registerModule(m.name, m.path, m.title || '', m.author || '', m.config);
+        library.registerModule(m.name, m.path, m.title || '', m.author || '', m.config);
       }
     }
 
@@ -78,7 +78,7 @@ class PlaylistLoader {
       var modules = this.getModulesForLayout_(
           layout, config.collections);
       for (var moduleName of modules) {
-        if (!moduleRegistry.allModules[moduleName]) {
+        if (!library.allModules[moduleName]) {
           throw Error('Unknown module: ' + moduleName);
         }
       }

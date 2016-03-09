@@ -15,6 +15,7 @@ limitations under the License.
 
 'use strict';
 
+const assert = require('assert');
 const fs = require('fs');
 
 const Noise = require('noisejs');
@@ -129,14 +130,52 @@ let loadModuleAtPath = function(path) {
   });
 };
 
+/**
+ * A data class defining a module. This combines a code location
+ * and a set of config parameters, so that we can give different names
+ * to modules that have the same code but different configuration.
+ */
+class Module {
+  constructor(name, path, title, author, config) {
+    this.name = name;
+    this.path = path;
+    this.config = config || {};
+    this.title = title;
+    this.author = author;
+  }
+}
+
+var engineModuleList = [
+  new Module('_faded_out', 'demo_modules/solid/solid.js', '', '', {
+    color: 'black'
+  })
+];
+
 class ModuleDefinitionLibrary {
   constructor() {
+    // A map of name -> Module.
+    // TODO(applmak): Combine this and the modules map below.
+    this.allModules = {};
+    engineModuleList.forEach((m) => this.allModules[m.name] = m);
+    
     // map of path -> promise<string>
     // This map is only populated during the loading process.
     this.moduleLoader = {};
 
     // map of path -> string.
     this.modules = {};
+  }
+  registerModule(name, path, title, author, config) {
+    this.allModules[name] = new Module(name, path,
+        title || '', author || '', config);
+  }
+
+  registerModuleExtension(name, extendsName, title, author, config) {
+    assert(extendsName in this.allModules,
+        'Unknown module "' + extendsName + '"');
+    var orig = this.allModules[extendsName];
+    this.allModules[name] = new Module(name, orig.path,
+        title || orig.title, author || orig.author, config);
   }
   load(path) {
     if (path in this.moduleLoader) {
