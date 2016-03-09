@@ -134,46 +134,49 @@ let loadModuleAtPath = function(path) {
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef {
-  constructor(name, path, title, author, config) {
+  constructor(name, pathOrBaseModule, title, author, config) {
     this.name = name;
-    this.path = path;
     this.config = config || {};
     this.title = title;
     this.author = author;
     
-    // The promise that when set, indicates the module is loaded.
-    this.loadPromise = null;
-    
     // The string source of the module.
     this.def_ = '';
-    
-    this.load_();
+    if (pathOrBaseModule instanceof ModuleDef) {
+      // The promise that when set, indicates the module is loaded.
+      this.loadPromise = pathOrBaseModule.loadPromise.then(() => {
+        this.def_ = pathOrBaseModule.def_;
+      });
+    } else {
+      this.load_(pathOrBaseModule);
+    }
   }
   // Returns a new module def that extends this def with new configuration.
   extend(name, title, author, config) {
-    return new ModuleDef(name, this.path,
+    return new ModuleDef(name, this,
       title || this.title, author || this.author, config);
   }
   // Loads a module from disk asynchronously, assigning def when complete.
-  load_() {
+  load_(path) {
     let loadModule = () => {
       let rewatch = () => {
         // Watch for future changes.
-        let watch = fs.watch(this.path, {persistent: true}, (event) => {
-          debug('Module changed! Reloading', this.path);
+        debug('Watching', path);
+        let watch = fs.watch(path, {persistent: true}, (event) => {
+          debug('Module changed! Reloading', path);
           watch.close();
           loadModule();
         });
       };
     
-      this.loadPromise = loadModuleAtPath(this.path).then((def) => {
-        debug('Loaded', this.path);
+      this.loadPromise = loadModuleAtPath(path).then((def) => {
+        debug('Loaded', path);
         this.def_ = def;
       
         // Start rewatcher.
         rewatch();
       }, (e) => {
-        debug('Error loading ' + this.path);
+        debug('Error loading ' + path);
         debug(e);
       
         // Start rewatcher, despite error.
@@ -213,7 +216,6 @@ class ModuleDef {
   serializeForClient() {
     return {
       name: this.name,
-      path: this.path,
       config: this.config,
       title: this.title,
       author: this.author,
