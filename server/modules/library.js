@@ -15,61 +15,65 @@ limitations under the License.
 
 'use strict';
 
-var fs = require('fs');
+const fs = require('fs');
 
-var debug = require('debug')('wall:library');
-var Module = require('./module_defs');
+const debug = require('debug')('wall:library');
+const Module = require('server/modules/module_defs');
 
-var ModuleDefinitionLibrary = function() {
-  // map of path -> promise<string>
-  // A key only exists during the loading process.
-  this.moduleLoader = {};
+class ModuleDefinitionLibrary {
+  constructor() {
+    // map of path -> promise<string>
+    // A key only exists during the loading process.
+    this.moduleLoader = {};
 
-  // map of path -> string
-  // Only valid modules are stored here.
-  this.modules = {};
-};
-ModuleDefinitionLibrary.prototype.load = function(path) {
-  if (path in this.moduleLoader) {
-    // In the middle of loading... so join.
-    return this.moduleLoader[path];
+    // map of path -> string
+    // Only valid modules are stored here.
+    this.modules = {};
   }
+  load(path) {
+    if (path in this.moduleLoader) {
+      // In the middle of loading... so join.
+      return this.moduleLoader[path];
+    }
 
-  var loadModule = () => {
-    var rewatch = () => {
-      // Clean up in-progress module loading.
-      delete this.moduleLoader[path];
+    let loadModule = () => {
+      let rewatch = () => {
+        // Clean up in-progress module loading.
+        delete this.moduleLoader[path];
 
-      // Watch for future changes.
-      var watch = fs.watch(path, {persistent: true}, (event) => {
-        debug('Module changed! Reloading', path);
-        watch.close();
-        loadModule();
+        // Watch for future changes.
+        let watch = fs.watch(path, {persistent: true}, (event) => {
+          debug('Module changed! Reloading', path);
+          watch.close();
+          loadModule();
+        });
+      };
+    
+      let m = Module.loadModuleAtPath(path).then((def) => {
+        debug('Loaded', path);
+      
+        // Save the updated, valid module.
+        this.modules[path] = def;
+      
+        rewatch();
+      
+        return def;
+      }, (e) => {
+        debug('Error loading ' + path);
+        debug(e);
+      
+        rewatch();
+
+        return Promise.reject(e);
       });
+    
+      this.moduleLoader[path] = m;
+      return m;
     };
-    
-    var m = Module.loadModuleAtPath(path).then((def) => {
-      debug('Loaded', path);
-      
-      // Save the updated, valid module.
-      this.modules[path] = def;
-      
-      rewatch();
-      
-      return def;
-    }, (e) => {
-      debug('Error loading ' + path);
-      debug(e);
-      
-      rewatch();
 
-      return Promise.reject(e);
-    });
-    
-    this.moduleLoader[path] = m;
-    return m;
-  };
+    return loadModule();
+  }
+}
 
-  return loadModule();
-};
+// Export the singleton instance of the library.
 module.exports = new ModuleDefinitionLibrary;
