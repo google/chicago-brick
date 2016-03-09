@@ -38,7 +38,7 @@ function isDisplayInPoly(rect, poly) {
 // by this class, only read.
 class ModuleStateMachine extends stateMachine.Machine {
   constructor(allClients, geo) {
-    super('ModuleSM', new IdleState);
+    super(debug, new IdleState);
 
     // The geo that contains this module sm.
     this.geo_ = geo;

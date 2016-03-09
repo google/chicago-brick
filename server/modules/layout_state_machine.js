@@ -38,7 +38,7 @@ var describeLayout = function(partitions) {
 };
 
 var LayoutStateMachine = function() {
-  stateMachine.Machine.call(this, 'LayoutSM', new IdleState);
+  stateMachine.Machine.call(this, debug, new IdleState);
 
   // All known clients. Maps client ID to ClientControlStateMachine.
   this.context_.clients = {};

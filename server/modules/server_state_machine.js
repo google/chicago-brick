@@ -54,7 +54,7 @@ class RunningModule {
 }
 
 var ServerStateMachine = function(wallGeometry) {
-  stateMachine.Machine.call(this, 'ServerSM', new IdleState);
+  stateMachine.Machine.call(this, debug, new IdleState);
 
   // The geometry of our region of the wall. A single Polygon.
   this.context_.wallGeometry = wallGeometry;
