@@ -46,7 +46,6 @@ var exposedNodeModules = {
   loadYoutubeApi: undefined,
   random: random,
   three: undefined,
-  underscore: _,
 };
 
 // Creates an execution context for server-side modules.
