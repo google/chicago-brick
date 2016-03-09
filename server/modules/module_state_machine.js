@@ -215,8 +215,10 @@ class TransitionState extends stateMachine.State {
     // When the deadline arrives, enter display state.
     debug('Waiting until', this.deadline_);
     Promise.delay(time.until(this.deadline_)).done(() => {
+      let originalIndex = _(this.context_.playlist).findIndex(this.moduleDef_);
+      let duration = this.index_ != originalIndex ? 1 : undefined;
       this.transition_(new DisplayState(
-          this.moduleDef_, this.deadline_, this.index_));
+          this.moduleDef_, this.deadline_, this.index_, duration));
     });
   }
   loadPlaylist(deadline) {
@@ -244,7 +246,7 @@ class TransitionState extends stateMachine.State {
 }
 
 class DisplayState extends stateMachine.State {
-  constructor(moduleDef, deadline, index) {
+  constructor(moduleDef, deadline, index, opt_duration) {
     super('DisplayState');
 
     // The module to tell late clients to transition to.
@@ -253,6 +255,9 @@ class DisplayState extends stateMachine.State {
 
     // What to play from the playlist.
     this.index_ = index;
+
+    // How long to play the module.
+    this.duration_ = opt_duration || 0;
   }
   enter_() {
     if (this.context_.playlist.length > 1) {
@@ -260,11 +265,11 @@ class DisplayState extends stateMachine.State {
 
       // Pad the module duration by 20% so that individual wall partitions
       // transition at slightly different times.
-      var displayDuration = this.context_.moduleDuration +
-          Math.random() * this.context_.moduleDuration / 5;
-      this.deadline_ = time.inFuture(1000 * displayDuration);
+      this.duration_ = this.duration_ || this.context_.moduleDuration +
+          Math.random() * this.context_.moduleDuration / 5 * 1000;
+      this.deadline_ = time.inFuture(this.duration_);
 
-      debug('Displaying ', this.lateClientModuleDef_.name, 'until', this.deadline_);
+      debug('Displaying ', this.lateClientModuleDef_.name, 'until', this.deadline_ , this.duration_);
       Promise.delay(time.until(this.deadline_)).done(() => {
         this.transition_(new TransitionState(
             this.deadline_, this.index_ + 1));
