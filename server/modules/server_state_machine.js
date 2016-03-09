@@ -124,10 +124,9 @@ PrepareState.prototype.enter_ = function() {
   }
 
   // Tell the server module that it will be shown soon.
-  var loadWithTimeout = Promise.race([
-    this.module_.instance.willBeShownSoon(this.deadline_),
-    Promise.delay(time.until(this.deadline_))]);
-  loadWithTimeout.done(() => {
+  // TODO(applmak): Implement a timeout that works.
+  this.module_.instance.willBeShownSoon(this.deadline_);
+  Promise.resolve().done(() => {
     this.transition_(new TransitionState(
         this.oldModule_, this.module_, this.deadline_));
   }, (e) => {
