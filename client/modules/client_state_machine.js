@@ -51,7 +51,17 @@ define(function(require) {
       });
     }
     nextModule(module) {
-      this.transition_(new PrepareState(this.module_, module));
+      // Suddenly, we aren't going to be fading from old -> current, and should 
+      // instead be showing new. But we've already told old and current to get
+      // ready to be hidden & shown (and old is likely still ticking). We should
+      // immediately tell current that it's going to be hidden, and then dispose
+      // of it. Then, we should prepare to transition from old -> new, skipping
+      // current. This ensures that everything gets disposed correctly and we
+      // still meet the module interface contract.
+      this.module_.willBeHiddenSoon();
+      this.module_.dispose();
+      
+      this.transition_(new PrepareState(this.oldModule_, module));
     }
   }
 
