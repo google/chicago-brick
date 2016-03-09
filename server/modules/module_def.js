@@ -15,7 +15,6 @@ limitations under the License.
 
 'use strict';
 
-const assert = require('assert');
 const fs = require('fs');
 
 const Noise = require('noisejs');
@@ -150,10 +149,6 @@ class ModuleDef {
     
     this.load_();
   }
-  static register(def) {
-    assert(!(def.name in ModuleDef.modules), 'Def ' + def.name + ' already exists!');
-    ModuleDef.modules[def.name] = def;
-  }
   // Returns a new module def that extends this def with new configuration.
   extend(name, title, author, config) {
     return new ModuleDef(name, this.path,
@@ -226,12 +221,6 @@ class ModuleDef {
     };
   }
 }
-ModuleDef.modules = {};
-
-// Engine modules.
-ModuleDef.register(new ModuleDef('_faded_out', 'demo_modules/solid/solid.js', '', '', {
-  color: 'black'
-}));
 
 // Export the module def class.
 module.exports = ModuleDef;

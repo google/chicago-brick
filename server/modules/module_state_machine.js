@@ -22,7 +22,7 @@ var random = require('random-js')();
 
 var stateMachine = require('lib/state_machine');
 var time = require('server/util/time');
-var ModuleDef = require('server/modules/module_def');
+var library = require('server/modules/module_library');
 var ServerStateMachine = require('server/modules/server_state_machine');
 var geometry = require('lib/geometry');
 
@@ -85,7 +85,7 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.current_.loadPlaylist(deadline);
   }
   fadeToBlack(deadline) {
-    this.context_.playlist = [ModuleDef.modules['_faded_out']];  // jshint ignore:line
+    this.context_.playlist = [library.modules['_faded_out']];  // jshint ignore:line
     this.context_.moduleDuration = deadline;
     this.current_.loadPlaylist(deadline);
 
