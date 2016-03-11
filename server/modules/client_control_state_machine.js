@@ -23,7 +23,7 @@ var wallGeometry = require('server/util/wall_geometry');
 
 class ClientControlStateMachine extends stateMachine.Machine {
   constructor(client) {
-    super('ClientControlSM: ' + client.socket.id, new IdleState);
+    super(debug, new IdleState);
 
     // Assume the whole wall.
     this.context_.geo = wallGeometry.getGeo();

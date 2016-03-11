@@ -124,8 +124,7 @@ define(function(require) {
 
   class ClientStateMachine extends stateMachine.Machine {
     constructor() {
-      super('ClientStateMachine',
-          new DisplayState(ClientModule.newEmptyModule(0)));
+      super(debug, new DisplayState(ClientModule.newEmptyModule(0)));
     }
     nextModule(module) {
       debug('Requested transition to module', module.name);

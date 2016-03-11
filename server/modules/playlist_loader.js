@@ -23,6 +23,7 @@ var fs = require('fs');
 
 var Layout = require('server/modules/layout');
 var ModuleDef = require('server/modules/module_def');
+var library = require('server/modules/module_library');
 
 class PlaylistLoader {
 
@@ -40,32 +41,32 @@ class PlaylistLoader {
         names = [names[0], names[0]];
       }
       return names.map((n) => {
-        assert(n in ModuleDef.modules, 'Loaded playlist referenced module ' +
+        assert(n in library.modules, 'Loaded playlist referenced module ' +
             n + ' which can\'t be found!');
-        return ModuleDef.modules[n];
+        return library.modules[n];
       });
     }
     if (layout.collection) {
       // Special collection name to run all available modules.
       if (layout.collection == '__ALL__') {
-        return _.values(ModuleDef.modules);
+        return _.values(library.modules);
       }
       assert(
           layout.collection in collections,
           'Unknown collection name: ' + layout.collection);
       
       return collections[layout.collection].map((n) => {
-        assert(n in ModuleDef.modules, 'Loaded playlist\'s collection ' +
+        assert(n in library.modules, 'Loaded playlist\'s collection ' +
           layout.collection + ' references module ' + n +
           ' which can\'t be found!');
-        return ModuleDef.modules[n];
+        return library.modules[n];
       });
     }
     assert('modules' in layout, 'Missing modules list in layout def!');
     return layout.modules.map((n) => {
-      assert(n in ModuleDef.modules, 'Loaded playlist\'s layout mentions ' + 
+      assert(n in library.modules, 'Loaded playlist\'s layout mentions ' + 
         'module ' + n + ' which can\'t be found!');
-      return ModuleDef.modules[n];
+      return library.modules[n];
     });
   }
 
@@ -87,14 +88,14 @@ class PlaylistLoader {
     for (var m of extraModules) {
       assert(m.name && (m.extends || m.path), 'Invalid configuration: ' + m);
       if (m.extends) {
-        assert(m.extends in ModuleDef.modules, 'Module ' + m.name + 
+        assert(m.extends in library.modules, 'Module ' + m.name + 
           ' attempting to extend ' + m.extends + ' which was not found!');
         debug('Adding module ' + m.name + ' extending ' + m.extends);
-        ModuleDef.register(ModuleDef.modules[m.extends].extend(
+        library.register(library.modules[m.extends].extend(
           m.name, m.title, m.author, m.config));
       } else {
         debug('Adding module ' + m.name + ' from ' + m.path);
-        ModuleDef.register(new ModuleDef(m.name, m.path, m.title, m.author, m.config));
+        library.register(new ModuleDef(m.name, m.path, m.title, m.author, m.config));
       }
     }
 

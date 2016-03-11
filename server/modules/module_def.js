@@ -15,7 +15,7 @@ limitations under the License.
 
 'use strict';
 
-const assert = require('assert');
+const EventEmitter = require('events');
 const fs = require('fs');
 
 const Noise = require('noisejs');
@@ -134,51 +134,53 @@ let loadModuleAtPath = function(path) {
  * The ModuleDef class contains all the information necessary to load & 
  * instantiate a module, including code location and config parameters.
  */
-class ModuleDef {
-  constructor(name, path, title, author, config) {
+class ModuleDef extends EventEmitter {
+  constructor(name, pathOrBaseModule, title, author, config) {
+    super();
     this.name = name;
-    this.path = path;
     this.config = config || {};
     this.title = title;
     this.author = author;
     
-    // The promise that when set, indicates the module is loaded.
-    this.loadPromise = null;
-    
     // The string source of the module.
     this.def_ = '';
-    
-    this.load_();
-  }
-  static register(def) {
-    assert(!(def.name in ModuleDef.modules), 'Def ' + def.name + ' already exists!');
-    ModuleDef.modules[def.name] = def;
+    if (pathOrBaseModule instanceof ModuleDef) {
+      // The promise that when set, indicates the module is loaded.
+      this.loadPromise = pathOrBaseModule.loadPromise.then(() => {
+        this.def_ = pathOrBaseModule.def_;
+      });
+    } else {
+      this.load_(pathOrBaseModule);
+    }
   }
   // Returns a new module def that extends this def with new configuration.
   extend(name, title, author, config) {
-    return new ModuleDef(name, this.path,
+    return new ModuleDef(name, this,
       title || this.title, author || this.author, config);
   }
   // Loads a module from disk asynchronously, assigning def when complete.
-  load_() {
+  load_(path) {
     let loadModule = () => {
       let rewatch = () => {
         // Watch for future changes.
-        let watch = fs.watch(this.path, {persistent: true}, (event) => {
-          debug('Module changed! Reloading', this.path);
+        debug('Watching', path);
+        let watch = fs.watch(path, {persistent: true}, (event) => {
+          debug('Module changed! Reloading', path);
           watch.close();
           loadModule();
+          // When the load is finished, tell listeners that we reloaded.
+          this.loadPromise.then(() => this.emit('reloaded'));
         });
       };
     
-      this.loadPromise = loadModuleAtPath(this.path).then((def) => {
-        debug('Loaded', this.path);
+      this.loadPromise = loadModuleAtPath(path).then((def) => {
+        debug('Loaded', path);
         this.def_ = def;
       
         // Start rewatcher.
         rewatch();
       }, (e) => {
-        debug('Error loading ' + this.path);
+        debug('Error loading ' + path);
         debug(e);
       
         // Start rewatcher, despite error.
@@ -218,7 +220,6 @@ class ModuleDef {
   serializeForClient() {
     return {
       name: this.name,
-      path: this.path,
       config: this.config,
       title: this.title,
       author: this.author,
@@ -226,12 +227,6 @@ class ModuleDef {
     };
   }
 }
-ModuleDef.modules = {};
-
-// Engine modules.
-ModuleDef.register(new ModuleDef('_faded_out', 'demo_modules/solid/solid.js', '', '', {
-  color: 'black'
-}));
 
 // Export the module def class.
 module.exports = ModuleDef;
