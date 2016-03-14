@@ -54,15 +54,16 @@ class LiveClientServer extends ServerModuleInterface {
       inst.codeServer.emit('requestCode', { client: { x: 0, y: 0 }});
     });
 
-    network.on('requestCode', function(data) {
-      var key = inst.getClientKey(data.client.x, data.client.y);
-      inst.log(`Client({key}) requested code.`);
-      var response = {
-        client: data.client,
-        code: inst.clientCode[key] || DefaultClientCode(data.client.x, data.client.y)
-      };
-
-      network.emit(`code(${key})`, response);
+    network.on('connect', function(socket) {
+      socket.on('requestCode', function(data) {
+        var key = getClientKey(data.client.x, data.client.y);
+        inst.log(`Client(${key}) requested code.`);
+        var response = {
+          client: data.client,
+          code: inst.clientCode[key] || DefaultClientCode(data.client.x, data.client.y)
+        };
+        network.emit(`code(${key})`, response);
+      });
     });
   }
 }
@@ -92,7 +93,7 @@ class LiveClientClient extends ClientModuleInterface {
 
     // The event we listen to for new code.
     var inst = this;
-    this.newCodeEvent = `code(${cx},${cy})`;
+    this.newCodeEvent = `code(${getClientKey(cx,cy)})`;
     this.newCodeHandler = function(data) {
       debug('Received new code.');
       inst.setClientCode(data.code);
