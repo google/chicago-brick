@@ -272,8 +272,8 @@ class DisplayState extends stateMachine.State {
 
       // Pad the module duration by 20% so that individual wall partitions
       // transition at slightly different times.
-      this.duration_ = this.duration_ || this.context_.moduleDuration +
-          Math.random() * this.context_.moduleDuration / 5 * 1000;
+      this.duration_ = this.duration_ || (this.context_.moduleDuration +
+          Math.random() * this.context_.moduleDuration / 5) * 1000;
       this.deadline_ = time.inFuture(this.duration_);
 
       debug('Displaying ', this.lateClientModuleDef_.name, 'until', this.deadline_ , this.duration_);
