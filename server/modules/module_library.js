@@ -18,8 +18,6 @@ limitations under the License.
 var EventEmitter = require('events');
 var assert = require('assert');
 
-var ModuleDef = require('server/modules/module_def');
-
 class ModuleLibrary extends EventEmitter {
   constructor() {
     super();
@@ -35,14 +33,13 @@ class ModuleLibrary extends EventEmitter {
     def.on('reloaded', () => {
       this.emit('reloaded', def);
     });
+	
+    if (def.name == 'solid') {
+      this.register(def.extend('_faded_out', '', '', {
+        color: 'black'
+      }));
+    }
   }
 }
 
-let library = new ModuleLibrary;
-
-// Engine modules.
-library.register(new ModuleDef('_faded_out', 'demo_modules/solid/solid.js', '', '', {
-  color: 'black'
-}));
-
-module.exports = library;
+module.exports = new ModuleLibrary;
