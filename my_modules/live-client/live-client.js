@@ -54,16 +54,21 @@ class LiveClientServer extends ServerModuleInterface {
       inst.codeServer.emit('requestCode', { client: { x: 0, y: 0 }});
     });
 
-    network.on('connect', function(socket) {
-      socket.on('requestCode', function(data) {
-        var key = getClientKey(data.client.x, data.client.y);
-        inst.log(`Client(${key}) requested code.`);
-        var response = {
-          client: data.client,
-          code: inst.clientCode[key] || DefaultClientCode(data.client.x, data.client.y)
-        };
-        network.emit(`code(${key})`, response);
-      });
+    var clientNetwork = {};
+    clientNetwork['requestCode'] = function(data) {
+      var key = getClientKey(data.client.x, data.client.y);
+      inst.log(`Client(${key}) requested code.`);
+      var response = {
+        client: data.client,
+        code: inst.clientCode[key] || DefaultClientCode(data.client.x, data.client.y)
+      };
+      network.emit(`code(${key})`, response);
+    };
+
+    network.on('connection', function(socket) {
+      for (var key in clientNetwork) {
+        socket.on(key, clientNetwork[key]);
+      }
     });
   }
 }
