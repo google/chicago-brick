@@ -12,7 +12,7 @@ function DefaultClientCode(x, y) {
   canvas.fillStyle = "white";
   canvas.textAlign = "center";
   canvas.textBaseline = "middle";
-  canvas.fillText("${x}, ${y}", canvas.canvas.width/2, canvas.canvas.height/2);
+  canvas.fillText("Code server not available.", canvas.canvas.width/2, canvas.canvas.height/2);
   `;
 }
 
@@ -100,7 +100,7 @@ class LiveClientClient extends ClientModuleInterface {
     var cy = this.surface.virtualOffset.y;
 
     // Use the default code until told otherwise.
-    this.setClientCode(DefaultClientCode(cx,cy));
+    this.setClientCode("");
 
     // The event we listen to for new code.
     var inst = this;
@@ -146,7 +146,7 @@ class LiveClientClient extends ClientModuleInterface {
       code: code,
       draw: new Function('canvas', 'time', 'globalTime', 'screen', code),
       time0: undefined,
-      screen: { x: 0, y: 0, w: this.canvas.canvas.width, h: this.canvas.canvas.height },
+      screen: { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height },
     };
   }
 
