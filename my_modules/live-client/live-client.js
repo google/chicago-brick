@@ -13,7 +13,7 @@ function DefaultClientCode(x, y) {
   canvas.textAlign = "center";
   canvas.textBaseline = "middle";
   canvas.fillText("${x}, ${y}", canvas.canvas.width/2, canvas.canvas.height/2);
-  `
+  `;
 }
 
 function getClientKey(x,y) {
@@ -49,26 +49,32 @@ class LiveClientServer extends ServerModuleInterface {
 
     // Setup socket to receive code from code server.
     inst.codeServer.on('connect', function () {
-      inst.log('Requesting code for all possible clients.');
-      inst.codeServer.emit('requestCode', { client: { x: 1, y: 1 }});
-      inst.codeServer.emit('requestCode', { client: { x: 0, y: 0 }});
+      inst.log('Connected to code server.');
+    });
+    inst.codeServer.on('disconnect', function () {
+      inst.log('Disconnected from code server.');
     });
 
-    var clientNetwork = {};
-    clientNetwork['requestCode'] = function(data) {
-      var key = getClientKey(data.client.x, data.client.y);
-      inst.log(`Client(${key}) requested code.`);
-      var response = {
-        client: data.client,
-        code: inst.clientCode[key] || DefaultClientCode(data.client.x, data.client.y)
-      };
-      network.emit(`code(${key})`, response);
-    };
-
     network.on('connection', function(socket) {
-      for (var key in clientNetwork) {
-        socket.on(key, clientNetwork[key]);
-      }
+      socket.on('requestCode', function(data) {
+        var key = getClientKey(data.client.x, data.client.y);
+        inst.log(`Client(${key}) requested code.`);
+
+        if (key in inst.clientCode) {
+          inst.log(`Sending code to client(${key}).`);
+          var response = {
+            client: data.client,
+            code: inst.clientCode[key] || DefaultClientCode(data.client.x, data.client.y)
+          };
+          network.emit(`code(${key})`, response);
+
+        } else {
+          // If there isn't any code yet, ask the code server. Any code
+          // it sends back will be forwarded to clients automatically.
+          inst.log(`Requesting code for client(${key}) from code server.`);
+          inst.codeServer.emit('requestCode', { client: data.client });
+        }
+      });
     });
   }
 }
@@ -102,7 +108,7 @@ class LiveClientClient extends ClientModuleInterface {
     this.newCodeHandler = function(data) {
       debug('Received new code.');
       inst.setClientCode(data.code);
-    }
+    };
 
     network.on(this.newCodeEvent, this.newCodeHandler);
 
@@ -141,14 +147,13 @@ class LiveClientClient extends ClientModuleInterface {
       draw: new Function('canvas', 'time', 'globalTime', 'screen', code),
       time0: undefined,
       screen: { x: 0, y: 0, w: this.canvas.canvas.width, h: this.canvas.canvas.height },
-    }
+    };
   }
 
   draw(time, delta) {
     this.canvas.draw.rect(this.client.screen, 'black');
 
     this.client.time0 = this.client.time0 || time;
-
     this.client.draw(this.canvas, time - this.client.time0, time, this.client.screen);
   }
 }
