@@ -49,9 +49,17 @@ A namespace of handy geometry utilities.
 
 ### CanvasSurface
 
+A raw HTML5 Canvas surface that you can interact with.
+
 ### ThreeJsSurface
 
+A canvas based on the popular [three.js](http://threejs.org) 3D framework.
+
 ### P5Surface
+
+A canvas based on the [p5js](http://p5js.org) port of processing.  This surface
+is set up to let you operate on the entire wall with minimal changes to your p5
+sketches.
 
 ## network
 
