@@ -31,6 +31,7 @@ const moduleAssert = require('lib/assert');
 const module_interface = require('lib/module_interface');
 const network = require('server/network/network');
 const safeEval = require('lib/eval');
+const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 
 // Node modules made available to server-side modules.
@@ -152,6 +153,16 @@ class ModuleDef extends EventEmitter {
     } else {
       this.load_(pathOrBaseModule);
     }
+  }
+
+  // Returns a custom object for serializing in debug logs.
+  inspect(depth, opts) {
+    return {
+      name: this.name,
+      config: util.inspect(this.config),
+      title: this.title,
+      author: this.author
+    };
   }
   // Returns a new module def that extends this def with new configuration.
   extend(name, title, author, config) {
