@@ -18,7 +18,7 @@ green     #859900  operators, other keywords
 
 .gutter { padding-right: 20px; padding-left: 10px; }
 
-.highlight { background-color: #002b36; color: #93a1a1 }
+.highlight { background-color: #002b36; color: #93a1a1 padding: 10px; }
 .highlight .lineno { color: #586e75 } /* Line Numbers */
 .highlight .c { color: #586e75 } /* Comment */
 .highlight .err { color: #93a1a1 } /* Error */
