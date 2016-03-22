@@ -17,9 +17,12 @@
 
 set -x
 
+WINDOW_SIZE="480,270"
+
 case $(uname) in
 Darwin)
     CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    WINDOW_SIZE="480,292"
     ;;
 *)
     CHROME=google-chrome
@@ -47,12 +50,12 @@ then
   STANDARD_FLAGS="${STANDARD_FLAGS} --show-fps-counter"
 fi
 
-"$CHROME" $STANDARD_FLAGS --window-position=100,370 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=100,370 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=0,1,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client00 &
-"$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=1,1,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client10 &
 sleep 3
-"$CHROME" $STANDARD_FLAGS --window-position=580,100 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=580,100 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=1,0,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client11 &
-"$CHROME" $STANDARD_FLAGS --window-position=100,100 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=100,100 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=0,0,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client01 &
