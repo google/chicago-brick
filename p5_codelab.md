@@ -293,6 +293,3 @@ With the 2x2 configuration you should see something like this:
 
 <iframe width="800" height="600" src="https://www.youtube.com/embed/8VSyTTT10Z0" frameborder="0" allowfullscreen></iframe>
 
-Notice that in the first and third images you can see some misalignment, which
-is to be expected.  At full speed things stay very much in sync (assuming your
-framerate stays high!) and things appear very smooth. 
