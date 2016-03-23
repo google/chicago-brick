@@ -289,11 +289,9 @@ close synchronization even though they are all independent processes.  Ginchy!
 sh ./bin/start_2x2_clients.sh
 ```
 
-With the 2x2 configuration you should see something like the following images:
+With the 2x2 configuration you should see something like this:
 
-![bare bones examples in a 2x2 configuration](images/p5_codelab/bare_bones_2x2_1.png)
-![bare bones examples in a 2x2 configuration](images/p5_codelab/bare_bones_2x2_2.png)
-![bare bones examples in a 2x2 configuration](images/p5_codelab/bare_bones_2x2_3.png)
+<iframe width="420" height="315" src="https://www.youtube.com/embed/8VSyTTT10Z0" frameborder="0" allowfullscreen></iframe>
 
 Notice that in the first and third images you can see some misalignment, which
 is to be expected.  At full speed things stay very much in sync (assuming your
