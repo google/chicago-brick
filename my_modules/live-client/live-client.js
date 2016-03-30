@@ -126,7 +126,7 @@ class LiveClientClient extends ClientModuleInterface {
     };
 
     canvas.draw = {
-      rect: function(rect, style) {
+      rectangle: function(rect, style) {
         var l = rect.left || rect.x;
         var t = rect.top || rect.y;
         var w = rect.width || rect.w;
@@ -134,6 +134,13 @@ class LiveClientClient extends ClientModuleInterface {
 
         canvas.fillStyle = style;
         canvas.fillRect(l, t, w, h);
+      },
+      circle: function(x, y, radius, style) {
+        canvas.fillStyle = style;
+        canvas.beginPath();
+        canvas.arc(x, y, radius, 0, 2 * Math.PI);
+        canvas.fill();
+        canvas.stroke();
       }
     };
 
@@ -151,7 +158,7 @@ class LiveClientClient extends ClientModuleInterface {
   }
 
   draw(time, delta) {
-    this.canvas.draw.rect(this.client.screen, 'black');
+    this.canvas.draw.rectangle(this.client.screen, 'black');
 
     this.client.time0 = this.client.time0 || time;
     this.client.draw(this.canvas, time - this.client.time0, time, this.client.screen);
