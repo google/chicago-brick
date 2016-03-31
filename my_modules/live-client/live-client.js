@@ -17,6 +17,14 @@ canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/
   );
 }
 
+function ClientCodeError(message) {
+  return (
+`canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live - Code Error", "#d50f25", "120px Arial", {textAlign: "center"});
+canvas.writeText(screen.width/2, screen.height/2, "${message}", "white", "80px Arial", {textAlign: "center"});
+canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`
+  );
+}
+
 function getClientKey(x,y) {
   return `${x},${y}`;
 }
@@ -189,20 +197,29 @@ class LiveClientClient extends ClientModuleInterface {
   }
 
   setClientCode(code) {
-    // TODO validate code
+    try {
     this.client = {
       code: code,
       draw: new Function('canvas', 'time', 'globalTime', 'screen', code),
       time0: undefined,
       screen: { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height },
-    };
+    }; } catch (e) {
+      // If there is a syntax error "new Function" will fail, replace code with
+      // error message.
+      this.setClientCode(ClientCodeError(e.message));
+    }
   }
 
   draw(time, delta) {
     this.canvas.draw.rectangle(this.client.screen, 'black');
 
     this.client.time0 = this.client.time0 || time;
-    this.client.draw(this.canvas, time - this.client.time0, time, this.client.screen);
+    try {
+      this.client.draw(this.canvas, time - this.client.time0, time, this.client.screen);
+    } catch (e) {
+      // If there is a runtime error, replace code with error message.
+      this.setClientCode(ClientCodeError(e.message));
+    }
   }
 }
 
