@@ -25,8 +25,8 @@ canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/
   );
 }
 
-function getClientKey(x,y) {
-  return `${x},${y}`;
+function getClientKey(client) {
+  return `${client.x},${client.y}`;
 }
 //
 // Server Module
@@ -62,8 +62,8 @@ class LiveClientServer extends ServerModuleInterface {
     // TODO: These listeners are never removed, fix this.
     inst.codeServer.on('code', function(data) {
       // Make a unique key of the form 'x,y' so we can use a dictionary for clients.
-      var key = getClientKey(data.client.x, data.client.y);
-      inst.log(`Received new code for client(${key}).`);
+      var key = getClientKey(data.client);
+      inst.log(`Received new info for client(${key}).`);
 
       // Cache the code in case the code server goes away.
       inst.clients[key] = data;
@@ -76,7 +76,7 @@ class LiveClientServer extends ServerModuleInterface {
     network.on('connection', function(socket) {
       socket.on('requestCode', function(data) {
 
-        var key = getClientKey(data.client.x, data.client.y);
+        var key = getClientKey(data.client);
         inst.log(`Client(${key}) requested code.`);
         inst.log(`Code server connected: ${inst.codeServer.connected}`);
 
@@ -105,7 +105,7 @@ class LiveClientServer extends ServerModuleInterface {
 
   requestCode(client) {
     // Request code from code server
-    var key = getClientKey(client.x, client.y);
+    var key = getClientKey(client);
     this.log(`Requesting code for client(${key}) from code server.`);
     this.codeServer.emit('requestCode', { client: client });
   }
@@ -126,26 +126,23 @@ class LiveClientClient extends ClientModuleInterface {
   willBeShownSoon(container, deadline) {
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.extendCanvas(this.surface.context);
+    this.screen = { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height };
 
-    // Client coordinates (offset in screens).
-    var cx = this.surface.virtualOffset.x;
-    var cy = this.surface.virtualOffset.y;
-
-    // Use the default code until told otherwise.
-    this.setClientCode("");
-
-    // The event we listen to for new code.
-    var inst = this;
-    this.newCodeEvent = `code(${getClientKey(cx,cy)})`;
-    this.newCodeHandler = function(data) {
-      debug('Received new code.');
-      inst.setClientCode(data.code);
+    // Basic client info.
+    this.client = {
+          x: this.surface.virtualOffset.x,
+          y: this.surface.virtualOffset.y,
     };
 
-    network.on(this.newCodeEvent, this.newCodeHandler);
+    // Use the default code until told otherwise.
+    this.setClientCode({ code: "", controlled: false });
+
+    // The event we listen to for new code.
+    this.newCodeEvent = `code(${getClientKey(this.client)})`;
+    network.on(this.newCodeEvent, this.setClientCode.bind(this));
 
     // Ask for some code to run.
-    network.emit('requestCode', { client: { x: cx, y: cy }});
+    network.emit('requestCode', { client: this.client });
   }
 
   extendCanvas(canvas) {
@@ -196,29 +193,35 @@ class LiveClientClient extends ClientModuleInterface {
     return canvas;
   }
 
-  setClientCode(code) {
+  setClientCode(clientCode) {
+    // Merge the new client code with the existing.
+    this.clientCode = _.extend(this.clientCode || {}, clientCode, { time0: undefined });
+
     try {
-    this.client = {
-      code: code,
-      draw: new Function('canvas', 'time', 'globalTime', 'screen', code),
-      time0: undefined,
-      screen: { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height },
-    }; } catch (e) {
+      this.clientCode.draw = new Function('canvas', 'time', 'globalTime', 'screen', this.clientCode.code);
+    } catch (e) {
       // If there is a syntax error "new Function" will fail, replace code with
       // error message.
-      this.setClientCode(ClientCodeError(e.message));
+      this.setClientCode({ code: ClientCodeError(e.message) });
     }
   }
 
   draw(time, delta) {
-    this.canvas.draw.rectangle(this.client.screen, 'black');
+    this.canvas.draw.rectangle(this.screen, 'black');
 
-    this.client.time0 = this.client.time0 || time;
+    this.clientCode.time0 = this.clientCode.time0 || time;
+
     try {
-      this.client.draw(this.canvas, time - this.client.time0, time, this.client.screen);
+      this.clientCode.draw(this.canvas, time - this.clientCode.time0, time, this.screen);
     } catch (e) {
       // If there is a runtime error, replace code with error message.
-      this.setClientCode(ClientCodeError(e.message));
+      this.setClientCode({ code: ClientCodeError(e.message) });
+    }
+
+    // Draw client info.
+    this.canvas.writeText(10, this.screen.height-20, getClientKey(this.client), "white", "40px Arial");
+    if (this.clientCode.controlled) {
+      this.canvas.draw.circle(this.screen.width - 50, this.screen.height-50, 25, "red");
     }
   }
 }
