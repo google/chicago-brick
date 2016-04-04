@@ -6,6 +6,9 @@ var _ = require('underscore');
 //var CODE_SERVER = "http://130.211.117.91:3001";
 var CODE_SERVER = "http://localhost:3001";
 
+// Colors to highlight controlled clients.
+var HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
+
 //
 // Helper methods
 //
@@ -221,7 +224,9 @@ class LiveClientClient extends ClientModuleInterface {
     // Draw client info.
     this.canvas.writeText(10, this.screen.height-20, getClientKey(this.client), "white", "40px Arial");
     if (this.clientCode.controlled) {
-      this.canvas.draw.circle(this.screen.width - 50, this.screen.height-50, 25, "red");
+      this.canvas.strokeStyle = HIGHLIGHT_COLORS[(this.client.x + this.client.y) % HIGHLIGHT_COLORS.length];
+      this.canvas.lineWidth   = 10;
+      this.canvas.strokeRect(0,0, this.screen.width, this.screen.height);
     }
   }
 }
