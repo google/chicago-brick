@@ -12,10 +12,11 @@ var HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
 //
 // Helper methods
 //
-function DefaultClientCode(text) {
+function DefaultClientCode(client, text) {
   return (
 `canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live!", "#f4c20d", "140px Arial", {textAlign: "center"});
-canvas.writeText(screen.width/2, screen.height/2, "${text}", "white", "100px Arial", {textAlign: "center"});
+canvas.writeText(screen.width/2, screen.height/2-150, "${text}", "white", "100px Arial", {textAlign: "center"});
+canvas.writeText(screen.width/2, screen.height/2+50, "${client.x}, ${client.y}", "white", "180px Arial", {textAlign: "center"});
 canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`
   );
 }
@@ -68,6 +69,9 @@ class LiveClientServer extends ServerModuleInterface {
       var key = getClientKey(data.client);
       inst.log(`Received new info for client(${key}).`);
 
+      // Override empty code
+      data.code = data.code || DefaultClientCode(data.client, "waiting for code...");
+
       // Cache the code in case the code server goes away.
       inst.clients[key] = data;
 
@@ -93,7 +97,7 @@ class LiveClientServer extends ServerModuleInterface {
           inst.log(`Sending cached code to client(${key}).`);
           response = _.defaults(inst.clients[key], {
             client: data.client,
-            code: DefaultClientCode("No code server available")
+            code: DefaultClientCode(data.client, "No code server available")
           });
 
           network.emit(`code(${key})`, response);
