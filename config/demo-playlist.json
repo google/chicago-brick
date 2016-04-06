@@ -37,6 +37,11 @@
       "author": "Matt Handley"
     },
     {
+      "name": "slideshow",
+      "path": "demo_modules/slideshow/slideshow.js",
+      "title": "Slideshow"
+    },
+    {
       "name": "solid",
       "path": "demo_modules/solid/solid.js",
       "title": "Solid Color",
