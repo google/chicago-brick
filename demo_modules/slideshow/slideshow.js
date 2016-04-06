@@ -190,11 +190,6 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
       .then((blob) => URL.createObjectURL(blob))
       .then((url) => {
         var img = document.createElement('img');
-        img.style.position = 'absolute';
-        img.style.top = 0;
-        img.style.left = 0;
-        img.style.width = '100%';
-        img.style.height = '100%';
         img.src = url;
         return img;
       });
@@ -280,7 +275,13 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
 
 class StaticClientDisplayStrategy extends ClientDisplayStrategy {
   display(container, loadedContent) {
-    // Assume loadedContent is an element...
+    // Make the content occupy the full screen.
+    loadedContent.style.position = 'absolute';
+    loadedContent.style.top = 0;
+    loadedContent.style.left = 0;
+    loadedContent.style.width = '100%';
+    loadedContent.style.height = '100%';
+    
     while (container.firstChild) {
       container.removeChild(container.firstChild);
     }
