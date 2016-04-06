@@ -1,7 +1,22 @@
+/* Copyright 2016 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
 var _ = require('underscore');
 
 //
-// Confguration
+// Module Confguration
 //
 let DEFAULT_CONFIG = {
   codeServer: "http://localhost:3001"
@@ -13,20 +28,16 @@ const HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
 // Helper methods
 //
 function DefaultClientCode(client, text) {
-  return (
-`canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live!", "#f4c20d", "140px Arial", {textAlign: "center"});
+  return `canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live!", "#f4c20d", "140px Arial", {textAlign: "center"});
 canvas.writeText(screen.width/2, screen.height/2-150, "${text}", "white", "100px Arial", {textAlign: "center"});
 canvas.writeText(screen.width/2, screen.height/2+50, "${client.x}, ${client.y}", "white", "180px Arial", {textAlign: "center"});
-canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`
-  );
+canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`;
 }
 
 function ClientCodeError(message) {
-  return (
-`canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live - Code Error", "#d50f25", "120px Arial", {textAlign: "center"});
+  return `canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live - Code Error", "#d50f25", "120px Arial", {textAlign: "center"});
 canvas.writeText(screen.width/2, screen.height/2, "${message}", "white", "80px Arial", {textAlign: "center"});
-canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`
-  );
+canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`;
 }
 
 function getClientKey(client) {
@@ -72,7 +83,7 @@ class LiveClientServer extends ServerModuleInterface {
       inst.log(`Received new info for client(${key}).`);
 
       // Override empty code
-      data.code = data.code || DefaultClientCode(data.client, "waiting for code...");
+      data.code = data.code || DefaultClientCode(data.client, `Feed me code at ${inst.config.codeServer}`);
 
       // Cache the code in case the code server goes away.
       inst.clients[key] = data;
@@ -198,7 +209,7 @@ class LiveClientClient extends ClientModuleInterface {
         canvas.fillStyle = style || "white";
         canvas.beginPath();
         canvas.arc(x, y, radius, 0, 2 * Math.PI);
-        canvas.fill();        
+        canvas.fill();
       }
     };
 
