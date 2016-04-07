@@ -18,7 +18,8 @@
     "redux": "^3.3.1",
     "redux-logger": "^2.6.1",
     "redux-thunk": "^2.0.1",
-    "socket.io": "^1.4.5"
+    "socket.io": "^1.4.5",
+    "underscore": "^1.8.3"
   },
   "devDependencies": {
     "babel-cli": "^6.6.5",
