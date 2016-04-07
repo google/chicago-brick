@@ -1,0 +1,5 @@
+{
+  "extends": "../.jshintrc",
+  // Enable Function to be used.  
+  "evil": true
+}

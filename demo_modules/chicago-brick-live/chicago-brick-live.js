@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var _ = require('underscore');
+const _ = require('underscore');
 
 //
 // Module Confguration
@@ -57,7 +57,7 @@ class LiveClientServer extends ServerModuleInterface {
     // of global code changes (e.g., codeserver comes online) and cache code.
     this.clients = {};
 
-    var inst = this;
+    const inst = this;
     this.codeServer = require('socket.io-client')(this.config.codeServer);
 
     // Setup connection to code server.
@@ -95,7 +95,7 @@ class LiveClientServer extends ServerModuleInterface {
     network.on('connection', function(socket) {
       socket.on('requestCode', function(data) {
 
-        var key = getClientKey(data.client);
+        const key = getClientKey(data.client);
         debug(`Client(${key}) requested code.`);
         debug(`Code server connected: ${inst.codeServer.connected}`);
 
@@ -103,7 +103,7 @@ class LiveClientServer extends ServerModuleInterface {
         inst.clients[key] = _.extend(inst.clients[key] || {}, { client: data.client });
         inst.clients[key] = _.defaults(inst.clients[key], { code: undefined });
 
-        var response;
+        let response;
 
         if (inst.clients[key].code || !inst.codeServer.connected) {
           debug(`Sending cached code to client(${key}).`);
@@ -128,7 +128,7 @@ class LiveClientServer extends ServerModuleInterface {
 
   requestCode(client) {
     // Request code from code server
-    var key = getClientKey(client);
+    const key = getClientKey(client);
     debug(`Requesting code for client(${key}) from code server.`);
     this.codeServer.emit('requestCode', { client: client });
   }
@@ -185,7 +185,7 @@ class LiveClientClient extends ClientModuleInterface {
         scale = scale || 1;
 
         // Only load each image once since everything is done in the draw loop.
-        var image = canvas._imageCache[url];
+        let image = canvas._imageCache[url];
 
         if (!image) {
           image = new Image();
@@ -196,13 +196,9 @@ class LiveClientClient extends ClientModuleInterface {
         canvas.drawImage(image, x, y, scale * image.width, scale * image.height);
       },
       rectangle: function(rect, style) {
-        var l = rect.left || rect.x;
-        var t = rect.top || rect.y;
-        var w = rect.width || rect.w;
-        var h = rect.height|| rect.h;
-
         canvas.fillStyle = style || "white";
-        canvas.fillRect(l, t, w, h);
+        canvas.fillRect(rect.left || rect.x, rect.top || rect.y,
+                        rect.width || rect.w, rect.height|| rect.h);
       },
       circle: function(x, y, radius, style) {
         canvas.fillStyle = style || "white";
@@ -220,7 +216,16 @@ class LiveClientClient extends ClientModuleInterface {
     this.clientCode = _.extend(this.clientCode || {}, clientCode, { time0: undefined });
 
     try {
-      this.clientCode.draw = new Function('canvas', 'time', 'globalTime', 'screen', this.clientCode.code);
+      // Draw params.
+      this.clientCode.drawParams = {
+        canvas: this.canvas,
+        time: undefined,
+        globalTime: undefined,
+        screen: this.screen,
+      };
+      const params = _.keys(this.clientCode.drawParams);
+      const params_and_code = params.concat([this.clientCode.code]);
+      this.clientCode.draw = new Function(...params_and_code);
     } catch (e) {
       // If there is a syntax error "new Function" will fail, replace code with
       // error message.
@@ -234,7 +239,11 @@ class LiveClientClient extends ClientModuleInterface {
     this.clientCode.time0 = this.clientCode.time0 || time;
 
     try {
-      this.clientCode.draw(this.canvas, time - this.clientCode.time0, time, this.screen);
+      var params = Object.assign({}, this.clientCode.drawParams);
+      params.time = time - this.clientCode.time0;
+      params.globaltime = time;
+
+      this.clientCode.draw(..._.values(params));
     } catch (e) {
       // If there is a runtime error, replace code with error message.
       this.setClientCode({ code: ClientCodeError(e.message) });
@@ -245,7 +254,7 @@ class LiveClientClient extends ClientModuleInterface {
     if (this.clientCode.controlled) {
       this.canvas.save();
       this.canvas.strokeStyle = HIGHLIGHT_COLORS[(this.client.x + this.client.y) % HIGHLIGHT_COLORS.length];
-      this.canvas.lineWidth   = 10;
+      this.canvas.lineWidth = 10;
       this.canvas.strokeRect(0,0, this.screen.width, this.screen.height);
       this.canvas.restore();
     }
