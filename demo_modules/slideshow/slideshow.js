@@ -189,18 +189,20 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
       .then((resp) => resp.blob())
       .then((blob) => URL.createObjectURL(blob))
       .then((url) => {
-        var img = document.createElement('img');
-        img.src = url;
-        return img;
+        return new Promise((resolve, reject) => {
+          var img = document.createElement('img');
+          img.src = url;
+          // Don't report that we've loaded the image until onload fires.
+          img.addEventListener('load', () => resolve(img));
+        });
       });
   }
 }
 
 // STATIC DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
-// specified in the config. We don't wait for the corresponding element to load
+// specified in the config. We wait for the corresponding element to load 
 // before we show it.
-// TODO(applmak): Fix this.
 class StaticServerDisplayStrategy extends ServerDisplayStrategy {
   constructor(config) {
     super();
