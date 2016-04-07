@@ -49,10 +49,9 @@ function getClientKey(client) {
 class LiveClientServer extends ServerModuleInterface {
   constructor(config) {
     super();
-    this.log = require('debug')('chicago-brick-live');
 
     this.config = _.defaults(config, DEFAULT_CONFIG);
-    this.log(`Attempting to use codeserver at ${this.config.codeServer}`);
+    debug(`Attempting to use codeserver at ${this.config.codeServer}`);
 
     // All clients (x, y) that have ever connected.  Used to notify all clients
     // of global code changes (e.g., codeserver comes online) and cache code.
@@ -63,7 +62,7 @@ class LiveClientServer extends ServerModuleInterface {
 
     // Setup connection to code server.
     inst.codeServer.on('connect', function () {
-      inst.log(`Connected to code server (${inst.config.codeServer}).`);
+      debug(`Connected to code server (${inst.config.codeServer}).`);
 
       // When code server connection is made re-request code for all clients
       // we know about.
@@ -74,13 +73,13 @@ class LiveClientServer extends ServerModuleInterface {
     });
 
     inst.codeServer.on('disconnect', function () {
-      inst.log('Disconnected from code server.');
+      debug('Disconnected from code server.');
     });
 
     inst.codeServer.on('code', function(data) {
       // Make a unique key of the form 'x,y' so we can use a dictionary for clients.
       var key = getClientKey(data.client);
-      inst.log(`Received new info for client(${key}).`);
+      debug(`Received new info for client(${key}).`);
 
       // Override empty code
       data.code = data.code || DefaultClientCode(data.client, `Feed me code at ${inst.config.codeServer}`);
@@ -97,8 +96,8 @@ class LiveClientServer extends ServerModuleInterface {
       socket.on('requestCode', function(data) {
 
         var key = getClientKey(data.client);
-        inst.log(`Client(${key}) requested code.`);
-        inst.log(`Code server connected: ${inst.codeServer.connected}`);
+        debug(`Client(${key}) requested code.`);
+        debug(`Code server connected: ${inst.codeServer.connected}`);
 
         // Track the client
         inst.clients[key] = _.extend(inst.clients[key] || {}, { client: data.client });
@@ -107,7 +106,7 @@ class LiveClientServer extends ServerModuleInterface {
         var response;
 
         if (inst.clients[key].code || !inst.codeServer.connected) {
-          inst.log(`Sending cached code to client(${key}).`);
+          debug(`Sending cached code to client(${key}).`);
           response = _.defaults(inst.clients[key], {
             client: data.client,
             code: DefaultClientCode(data.client, "No code server available")
@@ -130,7 +129,7 @@ class LiveClientServer extends ServerModuleInterface {
   requestCode(client) {
     // Request code from code server
     var key = getClientKey(client);
-    this.log(`Requesting code for client(${key}) from code server.`);
+    debug(`Requesting code for client(${key}) from code server.`);
     this.codeServer.emit('requestCode', { client: client });
   }
 }
