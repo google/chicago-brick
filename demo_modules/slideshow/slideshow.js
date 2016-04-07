@@ -28,6 +28,9 @@ const googleapis = require('googleapis');
 const assert = require('assert');
 const _ = require('underscore');
 
+// DISPATCH TABLES
+// These methods convert a load or display config to specific server or client
+// strategies. New strategies should be added to these methods.
 let parseServerLoadStrategy = (loadConfig) => {
   if (loadConfig.drive) {
     return new LoadFromDriveServerStrategy(loadConfig.drive);
@@ -35,18 +38,18 @@ let parseServerLoadStrategy = (loadConfig) => {
   throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
 };
 
-let parseServerDisplayStrategy = (displayConfig) => {
-  if (displayConfig.static) {
-    return new StaticServerDisplayStrategy(displayConfig.static);
-  }
-  throw new Error('Could not parse display config: ' + Object.keys(displayConfig).join(', '));
-};
-
 let parseClientLoadStrategy = (loadConfig) => {
   if (loadConfig.drive) {
     return new LoadFromDriveClientStrategy(loadConfig.drive);
   }
-  throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
+  throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
+};
+
+let parseServerDisplayStrategy = (displayConfig) => {
+  if (displayConfig.static) {
+    return new StaticServerDisplayStrategy(displayConfig.static);
+  }
+  throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
 };
 
 let parseClientDisplayStrategy = (displayConfig) => {
@@ -56,7 +59,9 @@ let parseClientDisplayStrategy = (displayConfig) => {
   throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
 };
 
-
+// INTERFACES
+// Here, we specify the interfaces for the load and display strategies. There is
+// a separate interface for the server and the client.
 class ServerLoadStrategy {
   init() {
     // Return a promise when initialization is complete.
@@ -106,6 +111,10 @@ class ClientDisplayStrategy {
   }
 }
 
+// LOAD FROM DRIVE STRATEGY
+// Here, we specify the server & client strategies that can load images from a
+// drive folder passed in the config. The drive folder should be shared
+// publicly or with the appropriate credentials.
 class LoadFromDriveServerStrategy extends ServerLoadStrategy {
   constructor(config) {
     super();
@@ -180,18 +189,21 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
       .then((resp) => resp.blob())
       .then((blob) => URL.createObjectURL(blob))
       .then((url) => {
-        var img = document.createElement('img');
-        img.style.position = 'absolute';
-        img.style.top = 0;
-        img.style.left = 0;
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.src = url;
-        return img;
+        return new Promise((resolve, reject) => {
+          var img = document.createElement('img');
+          img.src = url;
+          // Don't report that we've loaded the image until onload fires.
+          img.addEventListener('load', () => resolve(img));
+          img.addEventListener('error', () => reject(new Error));
+        });
       });
   }
 }
 
+// STATIC DISPLAY STRATEGY
+// This display strategy shows a single element per screen, updating at a rate
+// specified in the config. We wait for the corresponding element to load 
+// before we show it.
 class StaticServerDisplayStrategy extends ServerDisplayStrategy {
   constructor(config) {
     super();
@@ -266,7 +278,13 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
 
 class StaticClientDisplayStrategy extends ClientDisplayStrategy {
   display(container, loadedContent) {
-    // Assume loadedContent is an element...
+    // Make the content occupy the full screen.
+    loadedContent.style.position = 'absolute';
+    loadedContent.style.top = 0;
+    loadedContent.style.left = 0;
+    loadedContent.style.width = '100%';
+    loadedContent.style.height = '100%';
+    
     while (container.firstChild) {
       container.removeChild(container.firstChild);
     }
@@ -274,6 +292,7 @@ class StaticClientDisplayStrategy extends ClientDisplayStrategy {
   }
 }
 
+// MODULE DEFINTIONS
 class ImageServer extends ServerModuleInterface {
   constructor(config) {
     super();
