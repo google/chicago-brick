@@ -14,16 +14,18 @@ var server = require('http').createServer();
 var io = require('socket.io')(server);
 var debug = require('debug')('chicago-brick-live:code-server');
 
-var clientCode = require('./client-code');
-import { default as ClientLock } from './client-lock';
+import { ClientLock } from './client-lock';
+import { ClientCodeStore } from './client-code-store';
 
 let clientLock  = new ClientLock();
+// TODO Allow store path to be an argument to the server.
+let clientCodeStore = new ClientCodeStore('client-code');
 
 function GetClientInfo(client) {
   return {
     client: client,
     controlled: clientLock.isLocked(client),
-    code: clientCode.get(client),
+    code: clientCodeStore.get(client),
   };
 }
 
@@ -73,7 +75,7 @@ io.on('connection', function(socket){
     debug('storeCode: ', data);
 
     if (data.token && clientLock.validateToken(data.client, data.token)) {
-      clientCode.put(data.client, data.code);
+      clientCodeStore.put(data.client, data.code);
 
       // Notify all but sender.
       debug('Notifying for ', data.client);

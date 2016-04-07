@@ -11,7 +11,7 @@ limitations under the License.
 ==============================================================================*/
 var expect = require('chai').expect;
 
-import { default as ClientLock } from './client-lock';
+import { ClientLock } from './client-lock';
 
 function client(x,y) { return {x:x, y:y}; }
 

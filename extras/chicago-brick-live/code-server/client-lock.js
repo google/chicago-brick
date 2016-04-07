@@ -9,13 +9,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-var debug = require('debug')('live-client:server:client-lock');
+
+var debug = require('debug')('chicago-brick-live:code-server:client-lock');
 
 function clientKey(client) {
   return `${client.x},${client.y}`;
 }
 
-export default class ClientLock {
+export class ClientLock {
   constructor() {
     this._lockTokens = {};
   }
