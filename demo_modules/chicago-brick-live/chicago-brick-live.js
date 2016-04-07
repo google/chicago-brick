@@ -49,7 +49,7 @@ function getClientKey(client) {
 class LiveClientServer extends ServerModuleInterface {
   constructor(config) {
     super();
-    this.log = require('debug')('module:live_client');
+    this.log = require('debug')('chicago-brick-live');
 
     this.config = _.defaults(config, DEFAULT_CONFIG);
     this.log(`Attempting to use codeserver at ${this.config.codeServer}`);
