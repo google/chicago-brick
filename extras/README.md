@@ -1,13 +1,13 @@
-# Chicago Brick: extras
+# Chicago Brick: Extras
 
 ## What is an extra?
-Extras extend Chicago Brick.
+An extra is an optional addition to Chicago Brick that extends Chicago Brick with new functionality.  
 
 ## An extra should
 - have it's own directory in **extras**
-- maintain it's own depenedencies (e.g., have a package.json)
+- maintain it's own dependencies (e.g., have a package.json)
 - have a README.md describing the extra and any required setup
 
 ## An extra should not
-- add dependencies to Chicago Brick package.json
+- add dependencies to the Chicago Brick package.json
 - be required for Chicago Brick to run
