@@ -84,8 +84,9 @@ class ServerLoadStrategy {
 
 class ClientLoadStrategy {
   loadContent(content) {
-    // Loads content on the client sent from the server. Returns a promise that
-    // is resolved when the content is finished loading.
+    // Loads content specified by the content id. The parameter comes from the 
+    // server version of this strategy by way of the display strategy. The
+    // promise is expected to resolve to an Element.
     return Promise.resolve();
   }  
 }
@@ -95,8 +96,12 @@ class ServerDisplayStrategy {
     // Return a promise when initialization is complete.
     return Promise.resolve();
   }
-  tick(content, time, delta) {
-    // Tell the clients about what to display.
+  tick(time, delta) {
+    // Coordinate with the clients about what should be shown.
+  }
+  newContent(content) {
+    // A notification from the load strategy that new content has been
+    // discovered. The parameter is an array of content identifiers.
   }
   serializeForClient() {
     // Return JSON that can be transmitted to the client and can instantiate
@@ -106,8 +111,12 @@ class ServerDisplayStrategy {
 }
 
 class ClientDisplayStrategy {
-  display(container, loadedContent) {
-    // Display the thing.
+  init(surface, loadStrategy) {
+    // The surface on which the strategy should draw, and the client-side load
+    // strategy, which is invoked when new content is downloaded.
+  }
+  draw(time, delta) {
+    // Update the surface with the content.
   }
 }
 
@@ -209,6 +218,9 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     super();
     this.config = config;
     
+    // Content ids from the server load strategy.
+    this.content = [];
+    
     // Keep track of content indices. When our content array's length doesn't
     // match the length of this array, add the new indices to this array.
     this.nextContentIndices = [];
@@ -217,20 +229,22 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     this.lastUpdate = 0;
     
     let contentHasArrived = new Promise((resolve, reject) => {
-      this.contentArrives = resolve;
+      this.signalContentArrived = resolve;
     });
+    
+    // Tell the clients about content when it arrives.
     network.on('connection', (socket) => {
-      contentHasArrived.then((content) => {
-        this.chooseSomeContent(content, socket);
+      contentHasArrived.then(() => {
+        this.chooseSomeContent(socket);
         return content;
       });
-    });
+    }); 
   }
   init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
   }
-  chooseSomeContent(content, socket) {
+  chooseSomeContent(socket) {
     assert(this.nextContentIndices.length, 'No content to select from!');
     // Choose the next one.
     let index = this.nextContentIndices.shift();
@@ -238,35 +252,31 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     debug('Sending content index ' + index + ' to client.');
     
     // Send it to the specified client.
-    socket.emit('content', content[index]);
+    socket.emit('display:content', this.content[index]);
     // Add this index back to the end of the list of indices.
     this.nextContentIndices.push(index);
   }
-  tick(content, time, delta) {
+  newContent(content) {
+    this.content.push(...content);
+    // We've loaded new content. Generate a list of new indices and shuffle.
+    let newIndices = _.shuffle(_.range(this.nextContentIndices.length, content.length));
+    // Add the content indices.
+    this.nextContentIndices.push(...newIndices);
+
+    this.signalContentArrived();
+  }
+  tick(time, delta) {
     // If there's no content to show, just stop.
-    if (!content || !content.length) {
+    if (!this.content.length) {
       return;
     }
-    
-    assert(content.length >= this.nextContentIndices.length,
-           'Whoa! Weird edge case: We never expect to unload any content!',
-           content.length, this.nextContentIndices.length);
-           
-    if (content.length > this.nextContentIndices.length) {
-      // We've loaded new content. Generate a list of new indices and shuffle.
-      let newIndices = _.shuffle(_.range(this.nextContentIndices.length, content.length));
-      // Add the content indices.
-      this.nextContentIndices.push(...newIndices);
-    }
-    
-    this.contentArrives(content);
     
     // Otherwise, tell a specific client to show a specific bit of content.
     if (time - this.lastUpdate >= this.config.period) {
       // Pick a random client.
       let client = _.sample(network.getClientsInRect(wallGeometry.extents));
       if (client) {
-        this.chooseSomeContent(content, client.socket);
+        this.chooseSomeContent(client.socket);
       }
       this.lastUpdate = time;
     }
@@ -277,18 +287,24 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
 }
 
 class StaticClientDisplayStrategy extends ClientDisplayStrategy {
-  display(container, loadedContent) {
-    // Make the content occupy the full screen.
-    loadedContent.style.position = 'absolute';
-    loadedContent.style.top = 0;
-    loadedContent.style.left = 0;
-    loadedContent.style.width = '100%';
-    loadedContent.style.height = '100%';
-    
-    while (container.firstChild) {
-      container.removeChild(container.firstChild);
-    }
-    container.appendChild(loadedContent);
+  init(surface, loadStrategy) {
+    this.surface = surface;
+    network.on('display:content', (c) => {
+      loadStrategy.loadContent(c).then((content) => {
+        content.style.position = 'absolute';
+        content.style.top = 0;
+        content.style.left = 0;
+        content.style.width = '100%';
+        content.style.height = '100%';
+        
+        // Clear surface.
+        while (this.surface.container.firstChild) {
+          this.surface.container.removeChild(this.surface.container.firstChild);
+        }
+        // Add content.
+        this.surface.container.appendChild(content);
+      });
+    })
   }
 }
 
@@ -302,9 +318,6 @@ class ImageServer extends ServerModuleInterface {
     
     // The display strategy for this run of the module.
     this.displayStrategy = parseServerDisplayStrategy(config.display);
-    
-    // Content downloaded so far.
-    this.content = [];
   }
   willBeShownSoon(deadline) {
     // Start the load strategy initing.
@@ -313,8 +326,7 @@ class ImageServer extends ServerModuleInterface {
       this.loadStrategy.init().then(() => {
         let fetchContent = (opt_paginationToken) => {
           this.loadStrategy.loadMoreContent(opt_paginationToken).then((result) => {
-            this.content.push(...result.content);
-            debug('Total content count: ' + this.content.length);
+            this.displayStrategy.newContent(result.content);
             
             if (result.hasMoreContent) {
               fetchContent(result.paginationToken);
@@ -332,26 +344,26 @@ class ImageServer extends ServerModuleInterface {
     });
   }
   tick(time, delta) {
-    this.displayStrategy.tick(this.content, time, delta);
+    this.displayStrategy.tick(time, delta);
   }
 }
 
 class ImageClient extends ClientModuleInterface {
   willBeShownSoon(container, deadline) {
     this.surface = new Surface(container, wallGeometry);
-    this.initedPromise = new Promise((startInit, reject) => {
+    this.initedPromise = new Promise((resolve, reject) => {
       network.once('init', (config) => {
         this.loadStrategy = parseClientLoadStrategy(config.load);
         this.displayStrategy = parseClientDisplayStrategy(config.display);
-        startInit();
+        this.displayStrategy.init(this.surface, this.loadStrategy);
+        resolve();
       });
     });
-    network.on('content', (content) => {
-      this.initedPromise.then(() => {
-        this.loadStrategy.loadContent(content).then(
-          (loadedContent) => this.displayStrategy.display(container, loadedContent));
-      });
-    });
+  }
+  draw(time, delta) {
+    if (this.displayStrategy) {
+      this.displayStrategy.draw(time, delta);
+    }
   }
 }
 
