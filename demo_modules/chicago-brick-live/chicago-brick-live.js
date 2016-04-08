@@ -138,8 +138,6 @@ class LiveClientServer extends ServerModuleInterface {
 //
 class LiveClientClient extends ClientModuleInterface {
   finishFadeOut() {
-    network.removeListener(this.newCodeEvent, this.newCodeHandler);
-
     if (this.surface) {
       this.surface.destroy();
     }
@@ -193,6 +191,14 @@ class LiveClientClient extends ClientModuleInterface {
         }
 
         canvas.drawImage(image, x, y, scale * image.width, scale * image.height);
+      },
+      line: function(x1, y1, x2, y2, style, lineWidth) {
+        canvas.strokeStyle = style || "white";
+        canvas.lineWidth = lineWidth || 5;
+        canvas.beginPath();
+        canvas.moveTo(x1, y1);
+        canvas.lineTo(x2, y2);
+        canvas.stroke();
       },
       rectangle: function(rect, style) {
         canvas.fillStyle = style || "white";

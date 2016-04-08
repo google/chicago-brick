@@ -11,6 +11,11 @@ canvas.writeText(50, 100, "Hello!", "green");`
 `// Draw a blue circle with radius 80 at x=200, y=350.
 canvas.draw.circle(200, 350, 80, "blue");`
   }, {
+    name: "Draw a line",
+    code:
+`// Draw a 4 pixel wide orange line from (x,y)=(635,25) to (x,y)=(565,532).
+canvas.draw.line(635, 25, 565, 532, "orange", 5);`
+  }, {
     name: "Draw a rectangle",
     code:
 `// Draw a orange rectangle x=400, y=600.
