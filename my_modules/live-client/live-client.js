@@ -3,11 +3,11 @@ var _ = require('underscore');
 //
 // Confguration
 //
-//var CODE_SERVER = "http://130.211.117.91:3001";
-var CODE_SERVER = "http://localhost:3001";
+let DEFAULT_CONFIG = {
+  codeServer: "http://localhost:3001"
+};
 
-// Colors to highlight controlled clients.
-var HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
+const HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
 
 //
 // Helper methods
@@ -40,16 +40,19 @@ class LiveClientServer extends ServerModuleInterface {
     super();
     this.log = require('debug')('module:live_client');
 
-    var inst = this;
-    this.codeServer = require('socket.io-client')(CODE_SERVER);
+    this.config = _.defaults(config, DEFAULT_CONFIG);
+    this.log(`Attempting to use codeserver at ${this.config.codeServer}`);
 
     // All clients (x, y) that have ever connected.  Used to notify all clients
     // of global code changes (e.g., codeserver comes online) and cache code.
     this.clients = {};
 
+    var inst = this;
+    this.codeServer = require('socket.io-client')(this.config.codeServer);
+
     // Setup connection to code server.
     inst.codeServer.on('connect', function () {
-      inst.log(`Connected to code server (${CODE_SERVER}).`);
+      inst.log(`Connected to code server (${inst.config.codeServer}).`);
 
       // When code server connection is made re-request code for all clients
       // we know about.
@@ -63,7 +66,6 @@ class LiveClientServer extends ServerModuleInterface {
       inst.log('Disconnected from code server.');
     });
 
-    // TODO: These listeners are never removed, fix this.
     inst.codeServer.on('code', function(data) {
       // Make a unique key of the form 'x,y' so we can use a dictionary for clients.
       var key = getClientKey(data.client);
@@ -108,6 +110,10 @@ class LiveClientServer extends ServerModuleInterface {
         }
       });
     });
+  }
+
+  dispose() {
+    this.codeServer.close();
   }
 
   requestCode(client) {
@@ -192,8 +198,7 @@ class LiveClientClient extends ClientModuleInterface {
         canvas.fillStyle = style || "white";
         canvas.beginPath();
         canvas.arc(x, y, radius, 0, 2 * Math.PI);
-        canvas.fill();
-        canvas.stroke();
+        canvas.fill();        
       }
     };
 
@@ -228,9 +233,11 @@ class LiveClientClient extends ClientModuleInterface {
     // Draw client info.
     this.canvas.writeText(10, this.screen.height-20, getClientKey(this.client), "white", "40px Arial");
     if (this.clientCode.controlled) {
+      this.canvas.save();
       this.canvas.strokeStyle = HIGHLIGHT_COLORS[(this.client.x + this.client.y) % HIGHLIGHT_COLORS.length];
       this.canvas.lineWidth   = 10;
       this.canvas.strokeRect(0,0, this.screen.width, this.screen.height);
+      this.canvas.restore();
     }
   }
 }

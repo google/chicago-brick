@@ -1,0 +1,30 @@
+// Playlist for local development.
+// Runs all modules in the default configuration.
+
+{
+  "modules": [
+    /*{
+      "name": "Highlander Balls",
+      "path": "my_modules/merge_balls/merge_balls.js",
+      "title": "Play",
+      "author": "Ian Atkinson"
+    },*/
+    {
+      "name": "LiveClient",
+      "path": "my_modules/live-client/live-client.js",
+      "title": "Live Client",
+      "author": "Ian Atkinson",
+      "config": {
+        "codeServer": "http://130.211.117.91:3001"
+      }
+    },
+  ],
+  "playlist": [
+    {
+      "collection": "__ALL__",
+      "duration": 600,
+      "moduleDuration": 600,
+      "maxPartitions": 4,
+    },
+  ],
+}
