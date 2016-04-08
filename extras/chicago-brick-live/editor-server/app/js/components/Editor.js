@@ -156,9 +156,9 @@ class Editor extends React.Component {
               <h3>Add example code</h3>
               <ButtonGroup vertical>
                 {
-                  EXAMPLE_CODE.map(function(ex) {
+                  EXAMPLE_CODE.map((ex) => {
                     return <Button key={ex.name} onClick={this.appendCode.bind(this, ex.code)}>{ex.name}</Button>;
-                  }, this)
+                  })
                 }
               </ButtonGroup>
             </Col>
@@ -170,9 +170,9 @@ class Editor extends React.Component {
 
 var mapDispatchToProps = function(dispatch){
     return {
-        loadCode: function(client) { dispatch(loadRemoteCode(client, codeServer)); },
-        releaseToken: function(client, token) { dispatch(releaseToken(client, token, codeServer)); },
-        storeCode: function(client, code, token) { dispatch(storeRemoteCode(client, code, token, codeServer)); }
+        loadCode: (client) => { dispatch(loadRemoteCode(client, codeServer)); },
+        releaseToken: (client, token) => { dispatch(releaseToken(client, token, codeServer)); },
+        storeCode: (client, code, token) => { dispatch(storeRemoteCode(client, code, token, codeServer)); }
     };
 };
 

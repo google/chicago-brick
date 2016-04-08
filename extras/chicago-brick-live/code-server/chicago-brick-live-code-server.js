@@ -29,10 +29,10 @@ function GetClientInfo(client) {
   };
 }
 
-io.on('connection', function(socket){
+io.on('connection', (socket) => {
   debug(`Client connected (${socket.request.connection.remoteAddress})`);
 
-  socket.on('requestCode', function(data) {
+  socket.on('requestCode', (data) => {
     debug('requestCode: ', data);
     var clientInfo = GetClientInfo(data.client);
 
@@ -42,7 +42,7 @@ io.on('connection', function(socket){
         if(token) {
           // Auto release token when token owner disconnects, this avoids a
           // token that cannot be released.
-          socket.on('disconnect', function() {
+          socket.on('disconnect', () => {
             clientLock.release(data.client, token);
             // Notify all but sender.
             debug('Notifying for ', data.client);
@@ -62,7 +62,7 @@ io.on('connection', function(socket){
     socket.emit('code', clientInfo);
   });
 
-  socket.on('releaseToken', function(data) {
+  socket.on('releaseToken', (data) => {
     debug('releaseToken: ', data);
     clientLock.release(data.client, data.token);
 
@@ -71,7 +71,7 @@ io.on('connection', function(socket){
     socket.broadcast.emit('code', GetClientInfo(data.client));
   });
 
-  socket.on('storeCode', function(data) {
+  socket.on('storeCode', (data) => {
     debug('storeCode: ', data);
 
     if (data.token && clientLock.validateToken(data.client, data.token)) {
@@ -83,11 +83,9 @@ io.on('connection', function(socket){
     }
   });
 
-  socket.on('error', function(e) {
-      debug(`ERROR: ${e}`);
-  });
+  socket.on('error', (e) => { debug(`ERROR: ${e}`); });
 
-  socket.on('disconnect', function() {
+  socket.on('disconnect', () => {
     debug(`Client disconnected (${socket.request.connection.remoteAddress})`);
   });
 });

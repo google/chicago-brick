@@ -57,57 +57,56 @@ class LiveClientServer extends ServerModuleInterface {
     // of global code changes (e.g., codeserver comes online) and cache code.
     this.clients = {};
 
-    const inst = this;
     this.codeServer = require('socket.io-client')(this.config.codeServer);
 
     // Setup connection to code server.
-    inst.codeServer.on('connect', function () {
-      debug(`Connected to code server (${inst.config.codeServer}).`);
+    this.codeServer.on('connect', () => {
+      debug(`Connected to code server (${this.config.codeServer}).`);
 
       // When code server connection is made re-request code for all clients
       // we know about.
       // #TODO Is there any client list provided by brick?
-      for (var key in inst.clients) {
-        inst.requestCode(inst.clients[key].client);
+      for (var key in this.clients) {
+        this.requestCode(this.clients[key].client);
       }
     });
 
-    inst.codeServer.on('disconnect', function () {
+    this.codeServer.on('disconnect', () => {
       debug('Disconnected from code server.');
     });
 
-    inst.codeServer.on('code', function(data) {
+    this.codeServer.on('code', (data) => {
       // Make a unique key of the form 'x,y' so we can use a dictionary for clients.
       var key = getClientKey(data.client);
       debug(`Received new info for client(${key}).`);
 
       // Override empty code
-      data.code = data.code || DefaultClientCode(data.client, `Feed me code at ${inst.config.codeServer}`);
+      data.code = data.code || DefaultClientCode(data.client, `Feed me code at ${this.config.codeServer}`);
 
       // Cache the code in case the code server goes away.
-      inst.clients[key] = data;
+      this.clients[key] = data;
 
       // Forward code to clients.
       network.emit(`code(${key})`, data);
     });
 
     // Handle connections from clients.
-    network.on('connection', function(socket) {
-      socket.on('requestCode', function(data) {
+    network.on('connection', (socket) => {
+      socket.on('requestCode', (data) => {
 
         const key = getClientKey(data.client);
         debug(`Client(${key}) requested code.`);
-        debug(`Code server connected: ${inst.codeServer.connected}`);
+        debug(`Code server connected: ${this.codeServer.connected}`);
 
         // Track the client
-        inst.clients[key] = _.extend(inst.clients[key] || {}, { client: data.client });
-        inst.clients[key] = _.defaults(inst.clients[key], { code: undefined });
+        this.clients[key] = _.extend(this.clients[key] || {}, { client: data.client });
+        this.clients[key] = _.defaults(this.clients[key], { code: undefined });
 
         let response;
 
-        if (inst.clients[key].code || !inst.codeServer.connected) {
+        if (this.clients[key].code || !this.codeServer.connected) {
           debug(`Sending cached code to client(${key}).`);
-          response = _.defaults(inst.clients[key], {
+          response = _.defaults(this.clients[key], {
             client: data.client,
             code: DefaultClientCode(data.client, "No code server available")
           });
@@ -116,7 +115,7 @@ class LiveClientServer extends ServerModuleInterface {
         } else {
           // If there isn't any code yet, ask the code server. Any code
           // it sends back will be forwarded to clients automatically.
-          inst.requestCode(data.client);
+          this.requestCode(data.client);
         }
       });
     });
