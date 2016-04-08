@@ -111,7 +111,7 @@ class LiveClientServer extends ServerModuleInterface {
             code: DefaultClientCode(data.client, "No code server available")
           });
 
-          network.emit(`code(${key})`, response);
+          socket.emit(`code(${key})`, response);
         } else {
           // If there isn't any code yet, ask the code server. Any code
           // it sends back will be forwarded to clients automatically.
