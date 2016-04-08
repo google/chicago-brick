@@ -43,6 +43,29 @@ canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/
 function getClientKey(client) {
   return `${client.x},${client.y}`;
 }
+
+// Code sandboxing
+function sandboxCode(defaultParams, code) {
+  class Sandbox {
+    constructor(defaultParams, code) {
+      this._varNames = Object.keys(defaultParams);
+      this._defaultParams = defaultParams;
+      let varsAndCode = this._varNames.concat([code]);
+      this._function = Function.apply(null, varsAndCode);
+    }
+
+    call(params) {
+      // Get the params in the same order as this._function was created.  Use
+      // the default values a parameter is not in params.
+      const defaultedParams  = this._varNames.map(k => params[k] || this._defaultParams[k]);
+      return this._function.apply(null, defaultedParams);
+    }
+  }
+
+  let sandbox = new Sandbox(defaultParams, code);
+  return function(params) { sandbox.call(params); };
+}
+
 //
 // Server Module
 //
@@ -222,17 +245,16 @@ class LiveClientClient extends ClientModuleInterface {
 
     try {
       // Draw params.
-      this.clientCode.drawParams = {
+      let defaultParams = {
         canvas: this.canvas,
         time: undefined,
         globalTime: undefined,
         screen: this.screen,
       };
-      const params = _.keys(this.clientCode.drawParams);
-      const params_and_code = params.concat([this.clientCode.code]);
-      this.clientCode.draw = new Function(...params_and_code);
+
+      this.clientCode.draw = sandboxCode(defaultParams, this.clientCode.code);
     } catch (e) {
-      // If there is a syntax error "new Function" will fail, replace code with
+      // If there is a syntax error sandboxCode will fail, replace code with
       // error message.
       this.setClientCode({ code: ClientCodeError(e.message) });
     }
@@ -244,11 +266,12 @@ class LiveClientClient extends ClientModuleInterface {
     this.clientCode.time0 = this.clientCode.time0 || time;
 
     try {
-      var params = Object.assign({}, this.clientCode.drawParams);
-      params.time = time - this.clientCode.time0;
-      params.globaltime = time;
+      const params = {
+          time: time - this.clientCode.time0,
+          globalTime: time
+      };
 
-      this.clientCode.draw(..._.values(params));
+      this.clientCode.draw(params);
     } catch (e) {
       // If there is a runtime error, replace code with error message.
       this.setClientCode({ code: ClientCodeError(e.message) });
