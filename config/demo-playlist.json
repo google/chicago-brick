@@ -78,10 +78,7 @@
       "name": "chicago-brick-live",
       "path": "demo_modules/chicago-brick-live/chicago-brick-live.js",
       "title": "Chicago Brick Live",
-      "author": "Ian Atkinson",
-      "config": {
-        "codeServer": "http://localhost:3001"
-      },
+      "author": "Ian Atkinson"
     },
   ],
   "playlist": [
