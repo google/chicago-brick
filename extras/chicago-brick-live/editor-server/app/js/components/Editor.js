@@ -90,9 +90,6 @@ class Editor extends React.Component {
 
     render() {
       var canSaveCode = !!this.props.token;
-      var serverCodeDifferent;
-      if (this.props.code != this.state.code) {
-      }
 
       var fetching;
       var saving;
@@ -132,7 +129,6 @@ class Editor extends React.Component {
 // globalTime: Seconds since all screens started running.
 // screen: Rectangle (left, right, width, height) with extents of screen.`;
       var functionClosing = "}";
-
 
       return (
         <Grid fluid>
