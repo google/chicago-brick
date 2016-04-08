@@ -27,14 +27,14 @@ const HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
 //
 // Helper methods
 //
-function DefaultClientCode(client, text) {
+function defaultClientCode(client, text) {
   return `canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live!", "#f4c20d", "140px Arial", {textAlign: "center"});
 canvas.writeText(screen.width/2, screen.height/2-150, "${text}", "white", "100px Arial", {textAlign: "center"});
 canvas.writeText(screen.width/2, screen.height/2+50, "${client.x}, ${client.y}", "white", "180px Arial", {textAlign: "center"});
 canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`;
 }
 
-function ClientCodeError(message) {
+function clientCodeError(message) {
   return `canvas.writeText(screen.width/2, screen.height/2-300, "Chicago Brick Live - Code Error", "#d50f25", "120px Arial", {textAlign: "center"});
 canvas.writeText(screen.width/2, screen.height/2, "${message}", "white", "80px Arial", {textAlign: "center"});
 canvas.draw.image(10, 10, "https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_272x92dp.png", 0.5);`;
@@ -69,7 +69,7 @@ function sandboxCode(defaultParams, code) {
 //
 // Server Module
 //
-class LiveClientServer extends ServerModuleInterface {
+class ChicagoBrickLiveServer extends ServerModuleInterface {
   constructor(config) {
     super();
 
@@ -104,7 +104,7 @@ class LiveClientServer extends ServerModuleInterface {
       debug(`Received new info for client(${key}).`);
 
       // Override empty code
-      data.code = data.code || DefaultClientCode(data.client, `Feed me code at ${this.config.codeServer}`);
+      data.code = data.code || defaultClientCode(data.client, `Feed me code at ${this.config.codeServer}`);
 
       // Cache the code in case the code server goes away.
       this.clients[key] = data;
@@ -131,7 +131,7 @@ class LiveClientServer extends ServerModuleInterface {
           debug(`Sending cached code to client(${key}).`);
           response = _.defaults(this.clients[key], {
             client: data.client,
-            code: DefaultClientCode(data.client, "No code server available")
+            code: defaultClientCode(data.client, "No code server available")
           });
 
           socket.emit(`code(${key})`, response);
@@ -159,7 +159,7 @@ class LiveClientServer extends ServerModuleInterface {
 //
 // Client Module
 //
-class LiveClientClient extends ClientModuleInterface {
+class ChicagoBrickLiveClient extends ClientModuleInterface {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -256,7 +256,7 @@ class LiveClientClient extends ClientModuleInterface {
     } catch (e) {
       // If there is a syntax error sandboxCode will fail, replace code with
       // error message.
-      this.setClientCode({ code: ClientCodeError(e.message) });
+      this.setClientCode({ code: clientCodeError(e.message) });
     }
   }
 
@@ -274,7 +274,7 @@ class LiveClientClient extends ClientModuleInterface {
       this.clientCode.draw(params);
     } catch (e) {
       // If there is a runtime error, replace code with error message.
-      this.setClientCode({ code: ClientCodeError(e.message) });
+      this.setClientCode({ code: clientCodeError(e.message) });
     }
 
     // Draw client info.
@@ -289,4 +289,4 @@ class LiveClientClient extends ClientModuleInterface {
   }
 }
 
-register(LiveClientServer, LiveClientClient);
+register(ChicagoBrickLiveServer, ChicagoBrickLiveClient);
