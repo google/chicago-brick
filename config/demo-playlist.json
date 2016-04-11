@@ -74,6 +74,12 @@
       "title": "A \"Mandelbrot\" demo",
       "author": "Matt Handley"
     },
+    {
+      "name": "chicago-brick-live",
+      "path": "demo_modules/chicago-brick-live/chicago-brick-live.js",
+      "title": "Chicago Brick Live",
+      "author": "Ian Atkinson"
+    },
   ],
   "playlist": [
     {
