@@ -4,11 +4,14 @@
     "ServerModuleInterface": true,
     "ClientModuleInterface": true,
     "debug": true,
+    "module": true,
+    "define": true,
     "geometry": true,
     "Q": true,
     "Surface": true,
     "wallGeometry": true,
     "loadYoutubeApi": true,
+    "setTimeout": true,
     "YT": true,
     "register": true,
     "network": true,
@@ -17,4 +20,3 @@
   },
   "strict": false
 }
-
