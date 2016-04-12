@@ -5,11 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clienthint": "node_modules/.bin/jshint --exclude-path .gitignore client/*.js client/*/*.js",
-    "serverhint": "node_modules/.bin/jshint --exclude-path .gitignore server/*.js server/*/*.js",
-    "modulehint": "node_modules/.bin/jshint --exclude-path .gitignore demo_modules/*/*.js",
-    "lint": "jshint .",
-    "validate": "npm ls"
+    "jshint": "node_modules/.bin/jshint **/*.js"
   },
   "author": "",
   "license": "MIT",
@@ -44,14 +40,11 @@
     "xml2js": "^0.4.12"
   },
   "pre-commit": [
-    "clienthint",
-    "serverhint",
-    "modulehint"
+    "jshint"
   ],
   "devDependencies": {
     "jshint": "^2.8.0",
     "node-inspector": "^0.12.5",
-    "pre-commit": "^1.0.10",
-    "precommit-hook": "^3.0.0"
+    "pre-commit": "^1.0.10"
   }
 }

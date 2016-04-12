@@ -1,6 +1,7 @@
 {
   "-W041": false,  /* Disable "Use '===' to compare with 0". */
   "-W058": true,  /* Disable 'Missing () invoking a constructor' */
+  "-W126": false,  /* Disable 'Unnecessary grouping operator.' */
   "newcap": false,
   "curly": true,
   "eqeqeq": false,
@@ -13,6 +14,9 @@
   "singleGroups": true,
   "undef": true,
   "unused": "vars",
-  "esnext": true,
-  "predef": ["Path2D"]
+  "esnext": true,  
+  "globals": {
+    "require": true,
+    "console": true
+  }
 }
