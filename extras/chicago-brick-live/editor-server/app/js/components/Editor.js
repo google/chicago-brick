@@ -31,7 +31,7 @@ class Editor extends React.Component {
 
       this.state = {
         serverCodeChanged: false,
-        code: props.code,
+        code: props.code || "",
       };
 
       // Request a remote code load.
