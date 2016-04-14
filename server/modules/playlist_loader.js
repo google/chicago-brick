@@ -84,6 +84,7 @@ class PlaylistLoader {
 
   /** Parses a playlist JSON object into a list of Layouts. */
   parsePlaylist(config) {
+    library.reset();
     var extraModules = config.modules || [];
     for (var m of extraModules) {
       assert(m.name && (m.extends || m.path), 'Invalid configuration: ' + m);

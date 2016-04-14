@@ -40,6 +40,9 @@ class ModuleLibrary extends EventEmitter {
       }));
     }
   }
+  reset() {
+    this.modules = {};
+  }
 }
 
 module.exports = new ModuleLibrary;
