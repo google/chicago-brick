@@ -19,7 +19,8 @@ const _ = require('underscore');
 // Module Confguration
 //
 let DEFAULT_CONFIG = {
-  codeServer: "http://localhost:3001"
+  codeServer: "http://localhost:3001",
+  noCodeMessage: "Feed me code"
 };
 
 const HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
@@ -104,7 +105,7 @@ class ChicagoBrickLiveServer extends ServerModuleInterface {
       debug(`Received new info for client(${key}).`);
 
       // Override empty code
-      data.code = data.code || defaultClientCode(data.client, `Feed me code at ${this.config.codeServer}`);
+      data.code = data.code || defaultClientCode(data.client, this.config.noCodeMessage);
 
       // Cache the code in case the code server goes away.
       this.clients[key] = data;
