@@ -20,6 +20,7 @@ var credentials = require('server/util/credentials');
 
 var SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
+  'https://www.googleapis.com/auth/youtube.readonly'
 ];
 
 var key = null;
