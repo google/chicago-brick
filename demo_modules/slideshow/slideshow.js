@@ -34,13 +34,18 @@ const _ = require('underscore');
 let parseServerLoadStrategy = (loadConfig) => {
   if (loadConfig.drive) {
     return new LoadFromDriveServerStrategy(loadConfig.drive);
+  } else if (loadConfig.youtube) {
+    return new LoadYouTubePlaylistServerStrategy(loadConfig.youtube);
   }
+
   throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
 };
 
 let parseClientLoadStrategy = (loadConfig) => {
   if (loadConfig.drive) {
     return new LoadFromDriveClientStrategy(loadConfig.drive);
+  } else if (loadConfig.youtube) {
+    return new LoadYouTubePlaylistClientStrategy(loadConfig.youtube);
   }
   throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
 };
@@ -213,6 +218,106 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
   }
 }
 
+// LOAD YOUTUBE PLAYLIST STRATEGY
+class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
+  constructor(config) {
+    super();
+    this.config = config;
+    
+    // YouTube data api v3
+    this.api = null;
+  }
+  init() {
+    // Get an authenticated API. When init's promise is resolved, we succeeded.
+    return googleapis.getAuthenticatedClient().then((client) => {
+      debug('Initialized YouTube Client.');
+      this.config.credentials = client.credentials;
+      this.api = client.googleapis.youtube('v3');
+    }, (e) => {
+      throw new Error('Error initializing YouTube Client', e);
+    });
+  }
+  loadMoreContent(opt_paginationToken) {
+    return new Promise((resolve, reject) => 
+      this.api.playlistItems.list({
+        playlistId: this.config.playlistId,
+        pageToken: opt_paginationToken,
+        maxResults: 50,
+        part: 'snippet'
+      }, (err, response) => {
+        if (err) {
+          reject(err);
+        }
+        resolve(response);
+      })
+    ).then((response) => {
+      debug('Downloaded ' + response.items.length + ' more content ids.');
+      return {
+        content: response.items.map((i) => i.snippet.resourceId.videoId),
+        hasMoreContent: !!response.nextPageToken,
+        paginationToken: response.nextPageToken
+      };
+    }, (error) => {
+      debug('Failed to download more youtube content! Delay a bit...');
+      return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
+    });
+  }
+  serializeForClient() {
+    return {youtube: this.config};
+  }
+}
+
+class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
+  constructor(config) {
+    super();
+    this.config = config;
+
+    this.apiLoaded = loadYoutubeApi().then(() => {
+      debug('YouTube API ready');
+    });
+  }
+  loadContent(videoId) {
+    return this.apiLoaded.then(() => {
+      debug('Loading video ' + videoId);
+      let container = document.createElement('div');
+      let player = new YT.Player(container, {
+        height: 1080,
+        width: 1920,
+        videoId: videoId,
+        playerVars: {
+          iv_load_policy: 3,  // Disable annotations.
+          controls: 0,
+          showinfo: 0,
+          loop: 1,
+        },
+        events: {
+          onReady: () => {
+            player.mute();
+            player.cueVideoById({
+              videoId: videoId,
+              startSeconds: 0,
+              suggestedQuality: 'hd1080'
+            });
+          },
+          onStateChange: (e) => {
+            debug('Playback state: ' + e.data);
+            if (e.data == YT.PlayerState.CUED) {
+              player.playVideo();
+              player.pauseVideo();
+              player.seekTo(this.config.seekTo);
+            }
+          },
+          onError: (e) => {
+            reject(e)
+          }
+        },
+      });
+      return player.getIframe();
+    });
+  }
+}
+
+
 // STATIC DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
 // specified in the config. We wait for the corresponding element to load 
@@ -240,7 +345,6 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     network.on('connection', (socket) => {
       contentHasArrived.then(() => {
         this.chooseSomeContent(socket);
-        return content;
       });
     }); 
   }
