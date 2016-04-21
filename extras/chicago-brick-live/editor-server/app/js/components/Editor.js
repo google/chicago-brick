@@ -123,11 +123,12 @@ class Editor extends React.Component {
       }
 
       var functionOpening =
-`function(canvas, time, globalTime, screen) {
+`function(canvas, time, globalTime, screen, artist) {
 // canvas: Javscript canvas object.
 // time: Seconds since code started running.
 // globalTime: Seconds since all screens started running.
-// screen: Rectangle (left, right, width, height) with extents of screen.`;
+// screen: Rectangle (left, right, width, height) with extents of screen.
+// artist: An artist that can draw lines (see the example code for more details.`;
       var functionClosing = "}";
 
       return (
