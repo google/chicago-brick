@@ -262,10 +262,10 @@ class ChicagoBrickLiveClient extends ClientModuleInterface {
   }
 
   draw(time, delta) {
-    this.canvas.draw.rectangle(this.screen, 'black');
-
     this.clientCode.time0 = this.clientCode.time0 || time;
-
+    this.canvas.draw.rectangle(this.screen, 'black');
+              
+    this.canvas.save();
     try {
       const params = {
           time: time - this.clientCode.time0,
@@ -277,6 +277,7 @@ class ChicagoBrickLiveClient extends ClientModuleInterface {
       // If there is a runtime error, replace code with error message.
       this.setClientCode({ code: clientCodeError(e.message) });
     }
+    this.canvas.restore();
 
     // Draw client info.
     this.canvas.writeText(10, this.screen.height-20, getClientKey(this.client), "white", "40px Arial");
