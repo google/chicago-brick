@@ -57,8 +57,8 @@ let parseClientLoadStrategy = (loadConfig) => {
 };
 
 let parseServerDisplayStrategy = (displayConfig) => {
-  if (displayConfig.static) {
-    return new StaticServerDisplayStrategy(displayConfig.static);
+  if (displayConfig.fullscreen) {
+    return new FullscreenServerDisplayStrategy(displayConfig.fullscreen);
   } else if (displayConfig.falling) {
     return new FallingServerDisplayStrategy(displayConfig.falling);
   }
@@ -66,8 +66,8 @@ let parseServerDisplayStrategy = (displayConfig) => {
 };
 
 let parseClientDisplayStrategy = (displayConfig) => {
-  if (displayConfig.static) {
-    return new StaticClientDisplayStrategy(displayConfig.static);
+  if (displayConfig.fullscreen) {
+    return new FullscreenClientDisplayStrategy(displayConfig.fullscreen);
   } else if (displayConfig.falling) {
     return new FallingClientDisplayStrategy(displayConfig.falling);
   }
@@ -412,11 +412,11 @@ class LoadVideoClientStrategy extends ClientLoadStrategy {
 }
 
 
-// STATIC DISPLAY STRATEGY
+// FULLSCREEN DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
 // specified in the config. We wait for the corresponding element to load 
 // before we show it.
-class StaticServerDisplayStrategy extends ServerDisplayStrategy {
+class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
   constructor(config) {
     super();
     this.config = config;
@@ -486,11 +486,11 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     }
   }
   serializeForClient() {
-    return {'static': this.config};
+    return {'fullscreen': this.config};
   }
 }
 
-class StaticClientDisplayStrategy extends ClientDisplayStrategy {
+class FullscreenClientDisplayStrategy extends ClientDisplayStrategy {
   init(surface, loadStrategy) {
     network.emit('display:init');
     this.surface = surface;
