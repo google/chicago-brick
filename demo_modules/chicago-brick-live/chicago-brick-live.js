@@ -158,6 +158,113 @@ class ChicagoBrickLiveServer extends ServerModuleInterface {
 }
 
 //
+// Client helpers
+//
+
+// code.org style artist for drawing lines.
+class Artist {
+    constructor(canvas) {
+        this.canvas = canvas;
+        this.pos = { x: 0, y: 0 };
+        this.angle = 90; // "Looking" right      
+                
+        this.lineWidth = 5;
+        this.style = 'white';
+        
+        this.drawingInProgress = false;        
+    }
+    
+    setLineWidth(w) {
+      if (this.lineWidth != w) {
+        // Execute any incomplete drawing. 
+        this.draw(); 
+        this.lineWidth = w;
+      } 
+      return this;
+    }
+    
+    setStyle(s) { 
+      if (this.style != s) {
+        // Execute any incomplete drawing.
+        this.draw();
+        this.style = s;
+      } 
+      return this;
+    }
+    
+    _beginDrawIfNeeded() {
+      if (!this.drawingInProgress) {
+        this.canvas.save();
+        this.canvas.beginPath();
+        this.canvas.moveTo(this.pos.x, this.pos.y);
+        this.drawingInProgress = true;
+      }
+    }
+    
+    _newPosition(distance) {
+        return { 
+            x: this.pos.x + distance * Math.sin(this.angle * Math.PI / 180),
+            y: this.pos.y + distance * Math.cos(this.angle * Math.PI / 180)
+        }
+    }
+    
+    // Turn by a specified number of degrees.
+    turn(deltaDegrees) { 
+      this.angle += deltaDegrees; 
+      return this; 
+    }
+    
+    // Turn to an angle.    
+    turnTo(degrees) { 
+      this.angle = degrees; 
+      return this; 
+    }
+    
+    // Move drawing a line.
+    move(distance) {
+        this._beginDrawIfNeeded();
+        this.pos = this._newPosition(distance);
+        this.canvas.lineTo(this.pos.x, this.pos.y);       
+        return this; 
+    }
+    
+    // Move to a specific spot.
+    moveTo(x, y) {
+        this._beginDrawIfNeeded();
+        this.pos = { x: x, y: y }
+        this.canvas.lineTo(this.pos.x, this.pos.y);    
+        return this; 
+    }
+    
+    // Jump a distance without drawing a line
+    jump(distance) {
+        this.pos = this._newPosition(distance);
+        this.canvas.moveTo(this.pos.x, this.pos.y);
+        return this;
+    }
+    
+    // Jump to a specific spot.
+    jumpTo(x, y) {
+        this.pos = { x: x, y: y }
+        this.canvas.moveTo(this.pos.x, this.pos.y);
+        return this;
+    } 
+    
+    draw() {
+        if (this.drawingInProgress) {
+            this.canvas.strokeStyle = this.style;
+            this.canvas.lineWidth = this.lineWidth;
+            this.canvas.stroke();
+
+            // Drawing is done, anything else is a new drawing.
+            this.drawingInProgress = false;
+            this.canvas.restore();
+        }
+        return this;
+    }      
+}
+
+//
 // Client Module
 //
 class ChicagoBrickLiveClient extends ClientModuleInterface {
@@ -251,6 +358,7 @@ class ChicagoBrickLiveClient extends ClientModuleInterface {
         time: undefined,
         globalTime: undefined,
         screen: this.screen,
+        artist: null,
       };
 
       this.clientCode.draw = sandboxCode(defaultParams, this.clientCode.code);
@@ -269,10 +377,18 @@ class ChicagoBrickLiveClient extends ClientModuleInterface {
     try {
       const params = {
           time: time - this.clientCode.time0,
-          globalTime: time
+          globalTime: time,
+          artist: new Artist(this.canvas)
       };
 
+      // Put the artist in the middle of the screen. 
+      params.artist.jumpTo(this.screen.width/2, this.screen.height/2);
+      
+      // Run client drawing code.
       this.clientCode.draw(params);
+      
+      // Finish any artist drawing.
+      params.artist.draw();
     } catch (e) {
       // If there is a runtime error, replace code with error message.
       this.setClientCode({ code: clientCodeError(e.message) });
