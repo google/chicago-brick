@@ -28,6 +28,8 @@ const googleapis = require('googleapis');
 const assert = require('assert');
 const _ = require('underscore');
 
+const asset = require('asset');
+
 // DISPATCH TABLES
 // These methods convert a load or display config to specific server or client
 // strategies. New strategies should be added to these methods.
@@ -36,6 +38,8 @@ let parseServerLoadStrategy = (loadConfig) => {
     return new LoadFromDriveServerStrategy(loadConfig.drive);
   } else if (loadConfig.youtube) {
     return new LoadYouTubePlaylistServerStrategy(loadConfig.youtube);
+  } else if (loadConfig.video) {
+    return new LoadVideoServerStrategy(loadConfig.video);
   }
 
   throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
@@ -46,6 +50,8 @@ let parseClientLoadStrategy = (loadConfig) => {
     return new LoadFromDriveClientStrategy(loadConfig.drive);
   } else if (loadConfig.youtube) {
     return new LoadYouTubePlaylistClientStrategy(loadConfig.youtube);
+  } else if (loadConfig.video) {
+    return new LoadVideoClientStrategy(loadConfig.video);
   }
   throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
 };
@@ -92,6 +98,9 @@ class ServerLoadStrategy {
 }
 
 class ClientLoadStrategy {
+  init(surface) {
+    // Init the load strategy with the surface information.
+  }
   loadContent(content) {
     // Loads content specified by the content id. The parameter comes from the 
     // server version of this strategy by way of the display strategy. The
@@ -276,13 +285,16 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
       debug('YouTube API ready');
     });
   }
+  init(surface) {
+    this.surface = surface;
+  }
   loadContent(videoId) {
     return this.apiLoaded.then(() => {
       debug('Loading video ' + videoId);
       let container = document.createElement('div');
       let player = new YT.Player(container, {
-        height: 1080,
-        width: 1920,
+        width: this.surface.container.offsetWidth,
+        height: this.surface.container.offsetHeight,
         videoId: videoId,
         playerVars: {
           iv_load_policy: 3,  // Disable annotations.
@@ -318,6 +330,88 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
 }
 
 
+// LOAD VIDEO STRATEGY
+// This loading strategy knows how to load a normal HTML5-video.
+class LoadVideoServerStrategy extends ServerLoadStrategy {
+  constructor(config) {
+    super();
+    this.config = config;
+  }
+  loadMoreContent(opt_paginationToken) {
+    return Promise.resolve({
+      content: [this.config.file]
+    });
+  }
+  serializeForClient() {
+    return {video: this.config};
+  }
+}
+
+class LoadVideoClientStrategy extends ClientLoadStrategy {
+  constructor(config) {
+    super();
+    this.config = config;
+  }
+  init(surface) {
+    this.surface = surface;
+  }
+  loadContent(url) {
+    return new Promise((resolve, reject) => {
+      let video = document.createElement('video');
+      video.setAttribute('loop', 'loop');
+      video.setAttribute('width', this.surface.virtualRect.w);
+      video.setAttribute('height', this.surface.virtualRect.h);
+      
+      // PREPARE THE URL:
+      let extIndex = url.lastIndexOf('.');
+      let finalUrl = url;
+      // Remove extension.
+      if (extIndex != -1) {
+        finalUrl = url.substring(0, extIndex);
+      }
+      
+      // If we are talking about pre-split video, then we are reading files 
+      // with a specific pattern. Generate the appropriate name for this client.
+      if (this.config.presplit) {
+        finalUrl += `/r${this.surface.virtualOffset.x}c${this.surface.virtualOffset.y}`;
+      }
+      
+      // Add extension back.
+      if (extIndex != -1) {
+        finalUrl += url.substr(extIndex);
+      }
+      
+      // If the url has no protocol, it's an asset.
+      if (finalUrl.indexOf(':') == -1) {
+        finalUrl = asset(`video/${finalUrl}`);
+      }
+      
+      video.src = finalUrl;
+      video.load();
+      video.addEventListener('loadedmetadata', () => {
+        // Scale the video so it's actually the size the element suggests. This
+        // is trickier than it should be because the <video> element
+        // letterboxes its content.
+        let videoProportion = video.videoWidth / video.videoHeight;
+        let containerProportion = this.surface.container.offsetWidth / this.surface.container.offsetHeight;
+        
+        if (containerProportion - videoProportion > 0.001) {
+          let scalex = containerProportion / videoProportion;
+          video.style.transform = `scale3d(${scalex}, 1.0, 1.0)`;
+        } else if (containerProportion - videoProportion < 0.001) {
+          let scaley = videoProportion / containerProportion;
+          video.style.transform = `scale3d(1.0, ${scaley}, 1.0)`;
+        }
+        
+        video.play();
+        
+        resolve(video);
+      });
+    });
+  }
+}
+
+
 // STATIC DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
 // specified in the config. We wait for the corresponding element to load 
@@ -343,8 +437,10 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     
     // Tell the clients about content when it arrives.
     network.on('connection', (socket) => {
-      contentHasArrived.then(() => {
-        this.chooseSomeContent(socket);
+      socket.on('display:init', () => {
+        contentHasArrived.then(() => {
+          this.chooseSomeContent(socket);
+        });
       });
     }); 
   }
@@ -396,6 +492,7 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
 
 class StaticClientDisplayStrategy extends ClientDisplayStrategy {
   init(surface, loadStrategy) {
+    network.emit('display:init');
     this.surface = surface;
     network.on('display:content', (c) => {
       loadStrategy.loadContent(c).then((content) => {
@@ -589,6 +686,7 @@ class ImageClient extends ClientModuleInterface {
       network.once('init', (config) => {
         this.loadStrategy = parseClientLoadStrategy(config.load);
         this.displayStrategy = parseClientDisplayStrategy(config.display);
+        this.loadStrategy.init(this.surface);
         this.displayStrategy.init(this.surface, this.loadStrategy);
         resolve();
       });
