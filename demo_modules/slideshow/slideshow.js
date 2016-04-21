@@ -444,7 +444,8 @@ class LoadVideoClientStrategy extends ClientLoadStrategy {
 //       showing.
 // Config:
 //   period: number - Number of millliseconds that should elapse between the
-//           server refreshing a random client's content.
+//           server refreshing a random client's content. If this is 0 or
+//           undefined, the content will never refresh.
 class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
   constructor(config) {
     super();
@@ -504,14 +505,16 @@ class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
       return;
     }
     
-    // Otherwise, tell a specific client to show a specific bit of content.
-    if (time - this.lastUpdate >= this.config.period) {
-      // Pick a random client.
-      let client = _.sample(network.getClientsInRect(wallGeometry.extents));
-      if (client) {
-        this.chooseSomeContent(client.socket);
+    if (this.config.period) {
+      // Otherwise, tell a specific client to show a specific bit of content.
+      if (time - this.lastUpdate >= this.config.period) {
+        // Pick a random client.
+        let client = _.sample(network.getClientsInRect(wallGeometry.extents));
+        if (client) {
+          this.chooseSomeContent(client.socket);
+        }
+        this.lastUpdate = time;
       }
-      this.lastUpdate = time;
     }
   }
   serializeForClient() {
