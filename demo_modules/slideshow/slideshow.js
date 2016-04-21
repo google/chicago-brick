@@ -57,8 +57,8 @@ let parseClientLoadStrategy = (loadConfig) => {
 };
 
 let parseServerDisplayStrategy = (displayConfig) => {
-  if (displayConfig.static) {
-    return new StaticServerDisplayStrategy(displayConfig.static);
+  if (displayConfig.fullscreen) {
+    return new FullscreenServerDisplayStrategy(displayConfig.fullscreen);
   } else if (displayConfig.falling) {
     return new FallingServerDisplayStrategy(displayConfig.falling);
   }
@@ -66,8 +66,8 @@ let parseServerDisplayStrategy = (displayConfig) => {
 };
 
 let parseClientDisplayStrategy = (displayConfig) => {
-  if (displayConfig.static) {
-    return new StaticClientDisplayStrategy(displayConfig.static);
+  if (displayConfig.fullscreen) {
+    return new FullscreenClientDisplayStrategy(displayConfig.fullscreen);
   } else if (displayConfig.falling) {
     return new FallingClientDisplayStrategy(displayConfig.falling);
   }
@@ -142,6 +142,13 @@ class ClientDisplayStrategy {
 // Here, we specify the server & client strategies that can load images from a
 // drive folder passed in the config. The drive folder should be shared
 // publicly or with the appropriate credentials.
+// TODO(applmak): Make the server-side filter out things the client can't
+// display.
+// TODO(applmak): Maybe make the server-side smarter about subfolders so as to
+// create collections that should play, rather than needing to change the config
+// every time.
+// Config:
+//   folderId: string - Drive folder ID from which to retrieve files.
 class LoadFromDriveServerStrategy extends ServerLoadStrategy {
   constructor(config) {
     super();
@@ -228,6 +235,10 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
 }
 
 // LOAD YOUTUBE PLAYLIST STRATEGY
+// Config:
+//   playlistId: string - Playlist ID that contains the videos we should show.
+//   seekTo: number - Number of seconds into which we should start playing the
+//                    video. This doesn't affect looping behavior.
 class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
   constructor(config) {
     super();
@@ -332,6 +343,14 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
 
 // LOAD VIDEO STRATEGY
 // This loading strategy knows how to load a normal HTML5-video.
+// Config:
+//   file: string - A URL to a file (starting with a protocol, like http://)
+//         or a local asset name (like 'cobra.ext'), which will get rewritten
+//         to video/cobra.ext. Local assets must contain a file extension.
+//   presplit: boolean - If true, assumes that the video has been presplit by an
+//             offline process into multiple files under a video directory. A
+//             file ending with, say cobra.webm, must have presplit files at
+//             cobra/r${R}c${C}.webm.
 class LoadVideoServerStrategy extends ServerLoadStrategy {
   constructor(config) {
     super();
@@ -412,11 +431,21 @@ class LoadVideoClientStrategy extends ClientLoadStrategy {
 }
 
 
-// STATIC DISPLAY STRATEGY
+// FULLSCREEN DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
 // specified in the config. We wait for the corresponding element to load 
 // before we show it.
-class StaticServerDisplayStrategy extends ServerDisplayStrategy {
+// Messages:
+//   display:init() - Sent by client when it is ready to receive content. This
+//       synchonizes a race between content loading on the server and the
+//       client being ready for that content.
+//   display:content(opaqueContentBlob) - Sent by server to inform the client
+//       of new content that has been loaded and that the client should begin 
+//       showing.
+// Config:
+//   period: number - Number of millliseconds that should elapse between the
+//           server refreshing a random client's content.
+class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
   constructor(config) {
     super();
     this.config = config;
@@ -486,11 +515,11 @@ class StaticServerDisplayStrategy extends ServerDisplayStrategy {
     }
   }
   serializeForClient() {
-    return {'static': this.config};
+    return {'fullscreen': this.config};
   }
 }
 
-class StaticClientDisplayStrategy extends ClientDisplayStrategy {
+class FullscreenClientDisplayStrategy extends ClientDisplayStrategy {
   init(surface, loadStrategy) {
     network.emit('display:init');
     this.surface = surface;
@@ -517,6 +546,14 @@ class StaticClientDisplayStrategy extends ClientDisplayStrategy {
 // FALLING DISPLAY STRATEGY
 // Elements fall from the top of the wall to the bottom at the constant speed
 // 'gravity', spawing every 'spawnPeriod' seconds.
+// Messages:
+//   display:content(opaqueContentBlob) - Sent by server to inform the client
+//       of new content that has been loaded and that the client should begin 
+//       showing.
+// Config:
+//   spawnPeriod: number - The number of seconds that should elapse between the
+//                server spawning another falling element.
+//   gravity: number - The speed that images should fall in pixels per second.
 class FallingServerDisplayStrategy extends ServerDisplayStrategy {
   constructor(config) {
     super();
