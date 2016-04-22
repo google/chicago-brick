@@ -239,6 +239,9 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
 //   playlistId: string - Playlist ID that contains the videos we should show.
 //   seekTo: number - Number of seconds into which we should start playing the
 //                    video. This doesn't affect looping behavior.
+//   playThroughPlaylist: boolean - If true, don't just loop a single video, but
+//                        rather, continue playing the next video in the
+//                        playlist.
 class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
   constructor(config) {
     super();
@@ -273,7 +276,12 @@ class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
     ).then((response) => {
       debug('Downloaded ' + response.items.length + ' more content ids.');
       return {
-        content: response.items.map((i) => i.snippet.resourceId.videoId),
+        content: response.items.map((item, index) => {
+          return {
+            videoId: item.snippet.resourceId.videoId,
+            index: index
+          };
+        }),
         hasMoreContent: !!response.nextPageToken,
         paginationToken: response.nextPageToken
       };
@@ -299,39 +307,40 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
   init(surface) {
     this.surface = surface;
   }
-  loadContent(videoId) {
+  loadContent(content) {
     return this.apiLoaded.then(() => {
-      debug('Loading video ' + videoId);
+      debug('Loading video ' + content.videoId);
       let container = document.createElement('div');
       let player = new YT.Player(container, {
         width: this.surface.container.offsetWidth,
         height: this.surface.container.offsetHeight,
-        videoId: videoId,
+        videoId: content.videoId,
         playerVars: {
+          listType: this.config.playThroughPlaylist ? 'playlist' : undefined,
+          list: this.config.playThroughPlaylist ? this.config.playlistId : undefined,
           iv_load_policy: 3,  // Disable annotations.
           controls: 0,
           showinfo: 0,
           loop: 1,
+          start: this.config.seekTo,
+          autoplay: true,
         },
         events: {
           onReady: () => {
+            player.setPlaybackQuality('hd1080');
             player.mute();
-            player.cueVideoById({
-              videoId: videoId,
-              startSeconds: 0,
-              suggestedQuality: 'hd1080'
-            });
-          },
-          onStateChange: (e) => {
-            debug('Playback state: ' + e.data);
-            if (e.data == YT.PlayerState.CUED) {
-              player.playVideo();
-              player.pauseVideo();
-              player.seekTo(this.config.seekTo);
-            }
           },
           onError: (e) => {
             reject(e)
+          },
+          onStateChange: (e) => {
+            debug('state', e.data);
+            if (!this.config.playThroughPlaylist && e.data == YT.PlayerState.ENDED) {
+              // Restart the video. The loop=1 parameter should cause this to 
+              // happen automatically when playing a single video, but it 
+              // doesn't work!
+              player.seekTo(0);
+            }
           }
         },
       });
