@@ -166,32 +166,32 @@ class Artist {
     constructor(canvas) {
         this.canvas = canvas;
         this.pos = { x: 0, y: 0 };
-        this.angle = 90; // "Looking" right      
-                
+        this.angle = 90; // "Looking" right
+
         this.lineWidth = 5;
         this.style = 'white';
-        
-        this.drawingInProgress = false;        
+
+        this.drawingInProgress = false;
     }
-    
+
     setLineWidth(w) {
       if (this.lineWidth != w) {
-        // Execute any incomplete drawing. 
-        this.draw(); 
+        // Execute any incomplete drawing.
+        this.draw();
         this.lineWidth = w;
-      } 
+      }
       return this;
     }
-    
-    setStyle(s) { 
+
+    setStyle(s) {
       if (this.style != s) {
         // Execute any incomplete drawing.
         this.draw();
         this.style = s;
-      } 
+      }
       return this;
     }
-    
+
     _beginDrawIfNeeded() {
       if (!this.drawingInProgress) {
         this.canvas.save();
@@ -200,56 +200,56 @@ class Artist {
         this.drawingInProgress = true;
       }
     }
-    
+
     _newPosition(distance) {
-        return { 
+        return {
             x: this.pos.x + distance * Math.sin(this.angle * Math.PI / 180),
             y: this.pos.y + distance * Math.cos(this.angle * Math.PI / 180)
-        }
+        };
     }
-    
+
     // Turn by a specified number of degrees.
-    turn(deltaDegrees) { 
-      this.angle += deltaDegrees; 
-      return this; 
+    turn(deltaDegrees) {
+      this.angle += deltaDegrees;
+      return this;
     }
-    
-    // Turn to an angle.    
-    turnTo(degrees) { 
-      this.angle = degrees; 
-      return this; 
+
+    // Turn to an angle.
+    turnTo(degrees) {
+      this.angle = degrees;
+      return this;
     }
-    
+
     // Move drawing a line.
     move(distance) {
         this._beginDrawIfNeeded();
         this.pos = this._newPosition(distance);
-        this.canvas.lineTo(this.pos.x, this.pos.y);       
-        return this; 
+        this.canvas.lineTo(this.pos.x, this.pos.y);
+        return this;
     }
-    
+
     // Move to a specific spot.
     moveTo(x, y) {
         this._beginDrawIfNeeded();
-        this.pos = { x: x, y: y }
-        this.canvas.lineTo(this.pos.x, this.pos.y);    
-        return this; 
+        this.pos = { x: x, y: y };
+        this.canvas.lineTo(this.pos.x, this.pos.y);
+        return this;
     }
-    
+
     // Jump a distance without drawing a line
     jump(distance) {
         this.pos = this._newPosition(distance);
         this.canvas.moveTo(this.pos.x, this.pos.y);
         return this;
     }
-    
+
     // Jump to a specific spot.
     jumpTo(x, y) {
-        this.pos = { x: x, y: y }
+        this.pos = { x: x, y: y };
         this.canvas.moveTo(this.pos.x, this.pos.y);
         return this;
-    } 
-    
+    }
+
     draw() {
         if (this.drawingInProgress) {
             this.canvas.strokeStyle = this.style;
@@ -261,7 +261,7 @@ class Artist {
             this.canvas.restore();
         }
         return this;
-    }      
+    }
 }
 
 //
@@ -372,7 +372,7 @@ class ChicagoBrickLiveClient extends ClientModuleInterface {
   draw(time, delta) {
     this.clientCode.time0 = this.clientCode.time0 || time;
     this.canvas.draw.rectangle(this.screen, 'black');
-              
+
     this.canvas.save();
     try {
       const params = {
@@ -381,12 +381,12 @@ class ChicagoBrickLiveClient extends ClientModuleInterface {
           artist: new Artist(this.canvas)
       };
 
-      // Put the artist in the middle of the screen. 
+      // Put the artist in the middle of the screen.
       params.artist.jumpTo(this.screen.width/2, this.screen.height/2);
-      
+
       // Run client drawing code.
       this.clientCode.draw(params);
-      
+
       // Finish any artist drawing.
       params.artist.draw();
     } catch (e) {
