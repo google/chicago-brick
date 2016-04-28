@@ -58,7 +58,7 @@ function sandboxCode(defaultParams, code) {
     call(params) {
       // Get the params in the same order as this._function was created.  Use
       // the default values a parameter is not in params.
-      const defaultedParams  = this._varNames.map(k => params[k] || this._defaultParams[k]);
+      const defaultedParams  = this._varNames.map(k => (k in params) ? params[k] : this._defaultParams[k]);
       return this._function.apply(null, defaultedParams);
     }
   }
