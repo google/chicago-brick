@@ -22,7 +22,8 @@ define(function(require) {
   // Sets up the sizes and scaling factors. The P5 library will take care of creating a canvas.
   // sketch is the actual p5.js code that will be executed.  sketch.setup() will be called at
   // the end of the wall-provided setup() method and draw() will be invoked as well.
-  var P5Surface = function(container, wallGeometry, providedSketch, startTime) {
+  // sketchArgs will be passed along to the constructor call on providedSketchClass.
+  var P5Surface = function(container, wallGeometry, providedSketchClass, startTime, sketchConstructorArgs) {
     Surface.call(this, container, wallGeometry);
     this.realPixelScalingFactors = {
       x : this.container.offsetWidth / this.virtualRect.w,
@@ -50,10 +51,17 @@ define(function(require) {
 
     // p5 must be a P5.js instance.  new P5(...) below takes care of this.
     var scaffolding = function(p5) {
-      surface.sketch = new providedSketch(p5, surface);
+      surface.sketch = new providedSketchClass(p5, surface, sketchConstructorArgs);
 
       p5.wallWidth = wallWidth;
       p5.wallHeight = wallHeight;
+
+      p5.preload = function() {
+        if (typeof(surface.sketch.preload) == "function") {
+          surface.sketch.preload(p5);
+        }
+      }
+
       p5.setup = function() {
         // Videowall required setup.
         p5.createCanvas(processing_canvas_width, processing_canvas_height, p5.webgl);
