@@ -18,6 +18,7 @@ limitations under the License.
 var path = require('path');
 
 var bodyParser = require('body-parser');
+var debug = require('debug')('wall:webapp');
 var express = require('express');
 
 /**
@@ -35,8 +36,8 @@ function create(flags) {
   // used as a normal node dep.
   let base = path.join(__dirname, '..');
 
-  console.log('base is ' + base);
-  console.log('node_modules_dir is ' + flags.node_modules_dir);
+  debug('webapp base dir is ' + base);
+  debug('node_modules_dir is ' + flags.node_modules_dir);
   
   // Sub-app showing the status page.
   var status = express();
@@ -52,7 +53,6 @@ function create(flags) {
     app.use('/asset', express.static(assets_dir));
   }
 
-  
   app.use(express.static(path.join(base, 'client')));
 
   // Needed by control.js for POST requests.
