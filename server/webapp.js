@@ -18,6 +18,7 @@ limitations under the License.
 var path = require('path');
 
 var bodyParser = require('body-parser');
+var debug = require('debug')('wall:webapp');
 var express = require('express');
 
 /**
@@ -34,6 +35,9 @@ function create(flags) {
   // TODO(applmak): Figure out a way so that chicago-brick can be require'd, and
   // used as a normal node dep.
   let base = path.join(__dirname, '..');
+
+  debug('webapp base dir is ' + base);
+  debug('node_modules_dir is ' + flags.node_modules_dir);
   
   // Sub-app showing the status page.
   var status = express();
@@ -44,12 +48,11 @@ function create(flags) {
   app.use('/status', status);
   app.use('/client', express.static(path.join(base, 'client')));
   app.use('/lib', express.static(path.join(base, 'lib')));
-  app.use('/sys', express.static(path.join(base, 'node_modules')));
+  app.use('/sys', express.static(flags.node_modules_dir));
   for (let assets_dir of flags.assets_dir) {
     app.use('/asset', express.static(assets_dir));
   }
 
-  
   app.use(express.static(path.join(base, 'client')));
 
   // Needed by control.js for POST requests.

@@ -27,8 +27,15 @@ var wallGeometry = require('server/util/wall_geometry');
 var Control = require('server/control');
 var webapp = require('server/webapp');
 var credentials = require('server/util/credentials');
+var path = require('path');
 
 var cli = commandLineArgs([
+  {name: 'node_modules_dir', type: String,
+      defaultValue: path.join(__dirname, '..', 'node_modules'),
+      description: 'If you are running a chicago-brick instance where ' +
+          'chicago-brick is a dep and lives in node_modules, you must set ' +
+          'this to your project\'s node_modules dir or the /sys path will ' +
+          'be set to a nonexistent directory.'},
   {name: 'playlist', type: String, alias: 'p',
       defaultValue: 'config/demo-playlist.json'},
   {name: 'assets_dir', type: String, alias: 'd',
