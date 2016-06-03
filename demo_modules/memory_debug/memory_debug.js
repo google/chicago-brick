@@ -13,11 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 // This is a no-op module that shows what is leaking in the framework when we
 // switch modules.
-class MemoryDebugServer extends ServerModuleInterface {}
+class MemoryDebugServer extends ModuleInterface.Server {}
 
-class MemoryDebugClient extends ClientModuleInterface {
+class MemoryDebugClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     // TODO(applmak): Send something this message, maybe?

@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class StarsServer extends ServerModuleInterface {
+const ModuleInterface = require('lib/module_interface');
+
+class StarsServer extends ModuleInterface.Server {
   constructor() {
     super();
     this.stars = [];
@@ -62,7 +64,7 @@ class StarsServer extends ServerModuleInterface {
   }
 }
 
-class StarsClient extends ClientModuleInterface {
+class StarsClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;

@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class ProceduralServer extends ServerModuleInterface {}
+const ModuleInterface = require('lib/module_interface');
+
+class ProceduralServer extends ModuleInterface.Server {}
 
 // This module draws a red square on each screen on the wall. The square's x
 // position is based on the x offset of the screen and the cosine function,
@@ -23,7 +25,7 @@ class ProceduralServer extends ServerModuleInterface {}
 
 // Play with various values of xSpeed, ySpeed and maxDistance to see different
 // patterns.
-class ProceduralClient extends ClientModuleInterface {
+class ProceduralClient extends ModuleInterface.Client {
   willBeShownSoon(container) {
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;

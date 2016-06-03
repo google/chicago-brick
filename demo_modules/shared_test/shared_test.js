@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class SharedTestServer extends ServerModuleInterface {}
+class SharedTestServer extends ModuleInterface.Server {}
 
-class SharedTestClient extends ClientModuleInterface {
+class SharedTestClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

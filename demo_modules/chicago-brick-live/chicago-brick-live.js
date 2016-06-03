@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
 const _ = require('underscore');
 
 //
@@ -70,7 +71,7 @@ function sandboxCode(defaultParams, code) {
 //
 // Server Module
 //
-class ChicagoBrickLiveServer extends ServerModuleInterface {
+class ChicagoBrickLiveServer extends ModuleInterface.Server {
   constructor(config) {
     super();
 
@@ -267,7 +268,7 @@ class Artist {
 //
 // Client Module
 //
-class ChicagoBrickLiveClient extends ClientModuleInterface {
+class ChicagoBrickLiveClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

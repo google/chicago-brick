@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 // This module doesn't display anything but an empty void, but it is the
 // simplest possible module.
-class SimplestServer extends ServerModuleInterface {}
-class SimplestClient extends ClientModuleInterface {}
+class SimplestServer extends ModuleInterface.Server {}
+class SimplestClient extends ModuleInterface.Client {}
 
 register(SimplestServer, SimplestClient);

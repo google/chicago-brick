@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class SolidColorServer extends ServerModuleInterface {}
+const ModuleInterface = require('lib/module_interface');
 
-class SolidColorClient extends ClientModuleInterface {
+class SolidColorServer extends ModuleInterface.Server {}
+
+class SolidColorClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     this.color = config.color || 'red';

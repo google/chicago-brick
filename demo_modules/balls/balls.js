@@ -13,13 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
 var Rectangle = require('lib/rectangle');
 
 var GOOGLE_COLORS = ['#3369E8', '#D50F25', '#EEB211', '#009925'];
 var BALL_RADIUS = 50;
 var NUM_BALLS = 200;
 
-class BallsServer extends ServerModuleInterface {
+class BallsServer extends ModuleInterface.Server {
   willBeShownSoon(container, deadline) {
     this.balls = [];
     var extents = wallGeometry.extents;
@@ -94,7 +95,7 @@ class BallsServer extends ServerModuleInterface {
   }
 }
 
-class BallsClient extends ClientModuleInterface {
+class BallsClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     // We keep track of X data points.

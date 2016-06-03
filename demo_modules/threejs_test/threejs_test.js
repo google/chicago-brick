@@ -13,11 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 var THREE = require('three');
 
-class ThreeJsTestServer extends ServerModuleInterface {}
+class ThreeJsTestServer extends ModuleInterface.Server {}
 
-class ThreeJsTestClient extends ClientModuleInterface {
+class ThreeJsTestClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
