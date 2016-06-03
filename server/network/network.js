@@ -100,9 +100,7 @@ network.openWebSocket = function(server) {
     debug('New client:', socket.id);
     installDisplayClientHandlers(socket);
     // Tell the clients the whole wall geo.
-    // TODO(applmak): This is now uncessary, as we do this when we init clients
-    // for display. Remove this.
-    socket.emit('config', {'geometry': wallGeometry.getGeo().points});
+    socket.emit('config', {});
   });
 };
 
