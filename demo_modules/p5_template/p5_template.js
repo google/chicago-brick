@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class P5TemplateServer extends ServerModuleInterface {
+const ModuleInterface = require('lib/module_interface');
+
+class P5TemplateServer extends ModuleInterface.Server {
   constructor(config, startTime) {
     super();
     debug('P5Template Server!', config);
@@ -43,7 +45,7 @@ class P5TemplateSketch {
   }
 }
 
-class P5TemplateClient extends ClientModuleInterface {
+class P5TemplateClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     debug('P5Template Client!', config);

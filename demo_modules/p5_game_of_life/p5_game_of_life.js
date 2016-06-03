@@ -13,10 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 var numColumns = 184;
 var numRows = 40;
 
-class P5GameOfLifeServer extends ServerModuleInterface {
+class P5GameOfLifeServer extends ModuleInterface.Server {
   constructor(config) {
     super();
     debug('P5GameOfLife Server!', config);
@@ -225,7 +227,7 @@ class P5GameOfLifeSketch {
   }
 }
 
-class P5GameOfLifeClient extends ClientModuleInterface {
+class P5GameOfLifeClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     debug('P5GameOfLife Client!', config);

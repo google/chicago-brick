@@ -13,10 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
 var asset = require('asset');
 var _ = require('underscore');
 
-class HelloWorldServer extends ServerModuleInterface {
+class HelloWorldServer extends ModuleInterface.Server {
   constructor(config) {
     super();
     debug('Hello, world!', config);
@@ -47,7 +48,7 @@ class HelloWorldServer extends ServerModuleInterface {
   }
 }
 
-class HelloWorldClient extends ClientModuleInterface {
+class HelloWorldClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     debug('Hello, world!', config);

@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 // TODO(applmak): Take care of this lint error for real.
 /*jshint loopfunc: true */
 var Rectangle = require('lib/rectangle');
@@ -24,7 +26,7 @@ var assert = require('assert');
 
 var MAX_PARTICLES_PER_CLIENT = 100;
 
-class ParticlesServer extends ServerModuleInterface {
+class ParticlesServer extends ModuleInterface.Server {
   makeParticle(time) {
     var x = Math.random() * wallGeometry.extents.w;
     var y = Math.random() * wallGeometry.extents.h;
@@ -276,7 +278,7 @@ class ParticleEmitter {
   }
 }
 
-class ParticlesClient extends ClientModuleInterface {
+class ParticlesClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     this.noise = new Noise(deadline % 1);
     this.surface = new ThreeJsSurface(container, wallGeometry);

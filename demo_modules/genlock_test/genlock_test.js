@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class GenlockTestServer extends ServerModuleInterface {}
+const ModuleInterface = require('lib/module_interface');
 
-class GenlockTestClient extends ClientModuleInterface {
+class GenlockTestServer extends ModuleInterface.Server {}
+
+class GenlockTestClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

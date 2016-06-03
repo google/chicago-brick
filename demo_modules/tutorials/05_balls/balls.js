@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 var Rectangle = require('lib/rectangle');
 
 var BALL_RADIUS = 50;
@@ -36,7 +38,7 @@ function makeBoxPolygon(x, y, radius) {
   ]);
 }
 
-class BallsServer extends ServerModuleInterface {
+class BallsServer extends ModuleInterface.Server {
   constructor() {
     super();
     this.ballData = makeBallData();
@@ -137,7 +139,7 @@ class BallsServer extends ServerModuleInterface {
   }
 }
 
-class BallsClient extends ClientModuleInterface {
+class BallsClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

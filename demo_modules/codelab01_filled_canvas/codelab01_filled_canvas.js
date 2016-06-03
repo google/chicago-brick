@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class Codelab01FilledCanvasServer extends ServerModuleInterface {}
+const ModuleInterface = require('lib/module_interface');
 
-class Codelab01FilledCanvasClient extends ClientModuleInterface {
+class Codelab01FilledCanvasServer extends ModuleInterface.Server {}
+
+class Codelab01FilledCanvasClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();

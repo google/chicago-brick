@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-class RegistrationServer extends ServerModuleInterface {}
+const ModuleInterface = require('lib/module_interface');
 
-class RegistrationClient extends ClientModuleInterface {
+class RegistrationServer extends ModuleInterface.Server {}
+
+class RegistrationClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     this.speed_ = config.speed || 1;

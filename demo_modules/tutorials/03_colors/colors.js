@@ -13,11 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const ModuleInterface = require('lib/module_interface');
+
 var _ = require('underscore');
 
 // This module introduces the server and network communication.
 // The server selects a new color every second and pushes that to the client.
-class ColorsServer extends ServerModuleInterface {
+class ColorsServer extends ModuleInterface.Server {
   constructor() {
     super();
     this.nextColorTime = 0;
@@ -44,7 +46,7 @@ class ColorsServer extends ServerModuleInterface {
   }
 }
 
-class ColorsClient extends ClientModuleInterface {
+class ColorsClient extends ModuleInterface.Client {
   constructor() {
     super();
     this.color_ = 'black';

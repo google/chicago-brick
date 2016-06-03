@@ -24,6 +24,7 @@ limitations under the License.
  * the time this module was created.
  */
 
+const ModuleInterface = require('lib/module_interface');
 const googleapis = require('googleapis');
 const assert = require('assert');
 const _ = require('underscore');
@@ -689,7 +690,7 @@ class FallingClientDisplayStrategy extends ClientDisplayStrategy {
 
 
 // MODULE DEFINTIONS
-class ImageServer extends ServerModuleInterface {
+class ImageServer extends ModuleInterface.Server {
   constructor(config) {
     super();
     
@@ -728,7 +729,7 @@ class ImageServer extends ServerModuleInterface {
   }
 }
 
-class ImageClient extends ClientModuleInterface {
+class ImageClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     this.surface = new Surface(container, wallGeometry);
     this.initedPromise = new Promise((resolve, reject) => {
