@@ -91,7 +91,6 @@ define(function(require) {
         CanvasSurface: CanvasSurface,
         P5Surface: P5Surface,
         ThreeJsSurface: ThreeJsSurface,
-        loadYoutubeApi: loadYoutubeApi,
         debug: debugFactory('wall:module:' + name),
       }, globals);
       safeEval(code, sandbox);
