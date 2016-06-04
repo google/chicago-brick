@@ -74,7 +74,6 @@ define(function(require) {
     querystring: undefined,
     random: undefined,
     request: undefined,
-    underscore: _,
     x2x: undefined,
     xml2js: undefined,
   };
