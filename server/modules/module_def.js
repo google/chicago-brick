@@ -25,7 +25,6 @@ const _ = require('underscore');
 const debug = require('debug')('wall:library');
 const fakeRequire = require('lib/fake_require');
 const googleapis = require('server/util/googleapis');
-const moduleAssert = require('lib/assert');
 const module_interface = require('lib/module_interface');
 const network = require('server/network/network');
 const safeEval = require('lib/eval');
@@ -38,7 +37,6 @@ const wallGeometry = require('server/util/wall_geometry');
 // without throwing.
 var exposedNodeModules = {
   NeighborPersistence: undefined,
-  assert: moduleAssert,
   asset: function(){},
   googleapis: googleapis,
   leaflet: undefined,

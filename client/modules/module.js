@@ -28,7 +28,6 @@ define(function(require) {
   var fakeRequire = require('lib/fake_require');
   var geometry = require('lib/geometry');
   var loadYoutubeApi = require('client/util/load_youtube_api');
-  var moduleAssert = require('lib/assert');
   var moduleInterface = require('lib/module_interface');
   var NeighborPersistence = require('client/network/neighbor_persistence');
   var network = require('client/network/network');
@@ -60,7 +59,6 @@ define(function(require) {
   // without throwing.
   var exposedNodeModules = {
     NeighborPersistence: NeighborPersistence,
-    assert: moduleAssert,
     asset: asset,
     'gl-matrix': undefined,
     googleapis: undefined,

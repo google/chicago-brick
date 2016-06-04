@@ -22,7 +22,7 @@ var _ = require('underscore');
 var THREE = require('three');
 var NeighborPersistence = require('NeighborPersistence');
 var Noise = require('noisejs');
-var assert = require('assert');
+var assert = require('lib/assert');
 
 var MAX_PARTICLES_PER_CLIENT = 100;
 
