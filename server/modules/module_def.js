@@ -51,8 +51,6 @@ var exposedNodeModules = {
 // Cf. the client-side version in client/modules/module_manager.js.
 function serverSandbox(name, opt_dependencies) {
   return _.extend({
-    ServerModuleInterface: module_interface.Server,
-    ClientModuleInterface: module_interface.Client,
     debug : debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
     require: fakeRequire.createEnvironment(exposedNodeModules),
@@ -81,13 +79,13 @@ let loadAndVerifyScript = function(name, script) {
     }
     if (!(serverSideModuleDef.prototype instanceof module_interface.Server)) {
       debug(
-          'Module\'s server-side module did not implement ServerModuleInterface!');
+          'Module\'s server-side module did not implement module_interface.Server!');
       return null;
     }
     if (clientSideModuleDef &&
         !(clientSideModuleDef.prototype instanceof module_interface.Client)) {
       debug(
-          'Module\'s client-side module did not implement ClientModuleInterface!');
+          'Module\'s client-side module did not implement module_interface.Client!');
       return null;
     }
     // Send the WHOLE script to the client, or it will only see the constructor!

@@ -87,8 +87,6 @@ define(function(require) {
           klass = clientSide;
         },
         require: fakeRequire.createEnvironment(exposedNodeModules),
-        ServerModuleInterface: moduleInterface.Server,
-        ClientModuleInterface: moduleInterface.Client,
         Surface: Surface,
         CanvasSurface: CanvasSurface,
         P5Surface: P5Surface,
@@ -158,7 +156,7 @@ define(function(require) {
         'empty-module',
         {},
         new TitleCard({}),
-        'class EmptyModule extends ClientModuleInterface {} register(null, EmptyModule)',
+        'var ModuleInterface = require("lib/module_interface"); class EmptyModule extends ModuleInterface.Client {} register(null, EmptyModule)',
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
       ).instantiate();

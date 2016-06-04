@@ -50,7 +50,7 @@ limitations under the License.
  *   class="custom-title-card".  At any time, the custom card can be replaced
  *   with the config-based card by calling titleCard.useDefaultCard();
  *   Example:
- *     class BallsClient extends ClientModuleInterface {
+ *     class BallsClient extends ModuleInterface.Client {
  *       constructor(config) { }
  *       willBeShownSoon(container, deadline) {
  *         var customCard = titleCard.useCustomCard();
