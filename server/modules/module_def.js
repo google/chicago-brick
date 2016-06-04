@@ -25,7 +25,6 @@ const _ = require('underscore');
 
 const debug = require('debug')('wall:library');
 const fakeRequire = require('lib/fake_require');
-const geometry = require('lib/geometry');
 const googleapis = require('server/util/googleapis');
 const moduleAssert = require('lib/assert');
 const module_interface = require('lib/module_interface');
@@ -59,7 +58,6 @@ function serverSandbox(name, opt_dependencies) {
     Promise: Promise,
     debug : debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
-    geometry: geometry,
     require: fakeRequire.createEnvironment(exposedNodeModules),
   }, opt_dependencies || {});
 }

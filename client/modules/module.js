@@ -96,7 +96,6 @@ define(function(require) {
         CanvasSurface: CanvasSurface,
         P5Surface: P5Surface,
         ThreeJsSurface: ThreeJsSurface,
-        geometry: geometry,
         Promise: Promise,
         loadYoutubeApi: loadYoutubeApi,
         debug: debugFactory('wall:module:' + name),

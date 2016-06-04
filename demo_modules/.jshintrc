@@ -7,7 +7,6 @@
     "ClientModuleInterface": false,
     "debug": false,
     "game": false,
-    "geometry": false,
     "globalWallGeometry": false,
     "Headers": false,
     "network": false,
