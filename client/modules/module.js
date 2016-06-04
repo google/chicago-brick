@@ -19,7 +19,6 @@ define(function(require) {
   var _ = require('underscore');
   var L = require('leaflet');
   require('leaflet-edgebuffer');
-  var Noise = require('noisejs');
 
   var asset = require('client/asset/asset');
   var CanvasSurface = require('client/surface/canvas_surface');
@@ -61,7 +60,6 @@ define(function(require) {
   // without throwing.
   var exposedNodeModules = {
     NeighborPersistence: NeighborPersistence,
-    noisejs: Noise,
     assert: moduleAssert,
     asset: asset,
     'gl-matrix': undefined,

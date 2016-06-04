@@ -18,7 +18,6 @@ limitations under the License.
 const EventEmitter = require('events');
 const fs = require('fs');
 
-const Noise = require('noisejs');
 const debugFactory = require('debug');
 const random = require('random-js')();
 const _ = require('underscore');
@@ -39,7 +38,6 @@ const wallGeometry = require('server/util/wall_geometry');
 // without throwing.
 var exposedNodeModules = {
   NeighborPersistence: undefined,
-  Noise: Noise,
   assert: moduleAssert,
   asset: function(){},
   googleapis: googleapis,
