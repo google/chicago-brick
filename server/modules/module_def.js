@@ -53,7 +53,6 @@ function serverSandbox(name, opt_dependencies) {
   return _.extend({
     ServerModuleInterface: module_interface.Server,
     ClientModuleInterface: module_interface.Client,
-    Promise: Promise,
     debug : debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
     require: fakeRequire.createEnvironment(exposedNodeModules),

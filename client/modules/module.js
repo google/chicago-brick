@@ -89,12 +89,10 @@ define(function(require) {
         require: fakeRequire.createEnvironment(exposedNodeModules),
         ServerModuleInterface: moduleInterface.Server,
         ClientModuleInterface: moduleInterface.Client,
-        Object: Object,
         Surface: Surface,
         CanvasSurface: CanvasSurface,
         P5Surface: P5Surface,
         ThreeJsSurface: ThreeJsSurface,
-        Promise: Promise,
         loadYoutubeApi: loadYoutubeApi,
         debug: debugFactory('wall:module:' + name),
       }, globals);
