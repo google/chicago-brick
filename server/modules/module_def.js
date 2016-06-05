@@ -18,16 +18,13 @@ limitations under the License.
 const EventEmitter = require('events');
 const fs = require('fs');
 
-const Noise = require('noisejs');
 const debugFactory = require('debug');
 const random = require('random-js')();
 const _ = require('underscore');
 
 const debug = require('debug')('wall:library');
 const fakeRequire = require('lib/fake_require');
-const geometry = require('lib/geometry');
 const googleapis = require('server/util/googleapis');
-const moduleAssert = require('lib/assert');
 const module_interface = require('lib/module_interface');
 const network = require('server/network/network');
 const safeEval = require('lib/eval');
@@ -40,8 +37,6 @@ const wallGeometry = require('server/util/wall_geometry');
 // without throwing.
 var exposedNodeModules = {
   NeighborPersistence: undefined,
-  Noise: Noise,
-  assert: moduleAssert,
   asset: function(){},
   googleapis: googleapis,
   leaflet: undefined,
@@ -54,12 +49,8 @@ var exposedNodeModules = {
 // Cf. the client-side version in client/modules/module_manager.js.
 function serverSandbox(name, opt_dependencies) {
   return _.extend({
-    ServerModuleInterface: module_interface.Server,
-    ClientModuleInterface: module_interface.Client,
-    Promise: Promise,
     debug : debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
-    geometry: geometry,
     require: fakeRequire.createEnvironment(exposedNodeModules),
   }, opt_dependencies || {});
 }
@@ -86,13 +77,13 @@ let loadAndVerifyScript = function(name, script) {
     }
     if (!(serverSideModuleDef.prototype instanceof module_interface.Server)) {
       debug(
-          'Module\'s server-side module did not implement ServerModuleInterface!');
+          'Module\'s server-side module did not implement module_interface.Server!');
       return null;
     }
     if (clientSideModuleDef &&
         !(clientSideModuleDef.prototype instanceof module_interface.Client)) {
       debug(
-          'Module\'s client-side module did not implement ClientModuleInterface!');
+          'Module\'s client-side module did not implement module_interface.Client!');
       return null;
     }
     // Send the WHOLE script to the client, or it will only see the constructor!

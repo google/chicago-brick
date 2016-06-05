@@ -26,7 +26,7 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const googleapis = require('googleapis');
-const assert = require('assert');
+const assert = require('lib/assert');
 const _ = require('underscore');
 
 const asset = require('asset');

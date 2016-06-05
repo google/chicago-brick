@@ -19,7 +19,6 @@ define(function(require) {
   var _ = require('underscore');
   var L = require('leaflet');
   require('leaflet-edgebuffer');
-  var Noise = require('noisejs');
 
   var asset = require('client/asset/asset');
   var CanvasSurface = require('client/surface/canvas_surface');
@@ -29,7 +28,6 @@ define(function(require) {
   var fakeRequire = require('lib/fake_require');
   var geometry = require('lib/geometry');
   var loadYoutubeApi = require('client/util/load_youtube_api');
-  var moduleAssert = require('lib/assert');
   var moduleInterface = require('lib/module_interface');
   var NeighborPersistence = require('client/network/neighbor_persistence');
   var network = require('client/network/network');
@@ -61,8 +59,6 @@ define(function(require) {
   // without throwing.
   var exposedNodeModules = {
     NeighborPersistence: NeighborPersistence,
-    noisejs: Noise,
-    assert: moduleAssert,
     asset: asset,
     'gl-matrix': undefined,
     googleapis: undefined,
@@ -74,7 +70,6 @@ define(function(require) {
     querystring: undefined,
     random: undefined,
     request: undefined,
-    underscore: _,
     x2x: undefined,
     xml2js: undefined,
   };
@@ -90,16 +85,10 @@ define(function(require) {
           klass = clientSide;
         },
         require: fakeRequire.createEnvironment(exposedNodeModules),
-        ServerModuleInterface: moduleInterface.Server,
-        ClientModuleInterface: moduleInterface.Client,
-        Object: Object,
         Surface: Surface,
         CanvasSurface: CanvasSurface,
         P5Surface: P5Surface,
         ThreeJsSurface: ThreeJsSurface,
-        geometry: geometry,
-        Promise: Promise,
-        loadYoutubeApi: loadYoutubeApi,
         debug: debugFactory('wall:module:' + name),
       }, globals);
       safeEval(code, sandbox);
@@ -164,7 +153,7 @@ define(function(require) {
         'empty-module',
         {},
         new TitleCard({}),
-        'class EmptyModule extends ClientModuleInterface {} register(null, EmptyModule)',
+        'var ModuleInterface = require("lib/module_interface"); class EmptyModule extends ModuleInterface.Client {} register(null, EmptyModule)',
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
       ).instantiate();

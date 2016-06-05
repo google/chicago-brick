@@ -4,10 +4,8 @@
   "globals": {
     "CanvasSurface": false,
     "chrome": false,
-    "ClientModuleInterface": false,
     "debug": false,
     "game": false,
-    "geometry": false,
     "globalWallGeometry": false,
     "Headers": false,
     "network": false,
@@ -17,7 +15,6 @@
     "register": false,
     "state": false,
     "Surface": false,
-    "ServerModuleInterface": false,
     "ThreeJsSurface": false,
     "wallGeometry": false,
     "YT": false
