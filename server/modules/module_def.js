@@ -37,7 +37,6 @@ const wallGeometry = require('server/util/wall_geometry');
 // without throwing.
 var exposedNodeModules = {
   leaflet: undefined,
-  three: undefined,
 };
 
 // Creates an execution context for server-side modules.

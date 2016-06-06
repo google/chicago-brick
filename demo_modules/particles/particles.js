@@ -19,7 +19,6 @@ const ModuleInterface = require('lib/module_interface');
 /*jshint loopfunc: true */
 var Rectangle = require('lib/rectangle');
 var _ = require('underscore');
-var THREE = require('three');
 var Noise = require('noisejs');
 var assert = require('lib/assert');
 
@@ -279,6 +278,7 @@ class ParticleEmitter {
 
 class ParticlesClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
+    const THREE = require('three');
     this.noise = new Noise(deadline % 1);
     const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);

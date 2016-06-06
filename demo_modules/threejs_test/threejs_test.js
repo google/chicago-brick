@@ -15,8 +15,6 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 
-var THREE = require('three');
-
 class ThreeJsTestServer extends ModuleInterface.Server {}
 
 class ThreeJsTestClient extends ModuleInterface.Client {
@@ -27,6 +25,7 @@ class ThreeJsTestClient extends ModuleInterface.Client {
   }
 
   willBeShownSoon(container, deadline) {
+    const THREE = require('three');
     this.startTime = deadline;
     const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);
