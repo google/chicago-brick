@@ -39,7 +39,6 @@ var exposedNodeModules = {
   NeighborPersistence: undefined,
   asset: function(){},
   leaflet: undefined,
-  random: random,
   three: undefined,
 };
 

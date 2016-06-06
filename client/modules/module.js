@@ -61,7 +61,6 @@ define(function(require) {
     lwip: undefined,
     pngparse: undefined,
     querystring: undefined,
-    random: undefined,
     request: undefined,
     x2x: undefined,
     xml2js: undefined,
