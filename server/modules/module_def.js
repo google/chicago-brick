@@ -36,7 +36,6 @@ const wallGeometry = require('server/util/wall_geometry');
 // we mention them here so that the server module can call require()
 // without throwing.
 var exposedNodeModules = {
-  asset: function(){},
   leaflet: undefined,
   three: undefined,
 };

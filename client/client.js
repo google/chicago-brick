@@ -17,6 +17,7 @@ define(function(require) {
   'use strict';
   // TODO(applmak): MUST we have these?
   require('lib/assert');
+  require('client/asset/asset');
   require('client/network/neighbor_persistence');
   require('client/surface/surface');
   require('client/surface/canvas_surface');

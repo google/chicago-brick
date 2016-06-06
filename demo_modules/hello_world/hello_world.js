@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-var asset = require('asset');
 var _ = require('underscore');
 
 class HelloWorldServer extends ModuleInterface.Server {
@@ -73,6 +72,8 @@ class HelloWorldClient extends ModuleInterface.Client {
   }
 
   willBeShownSoon(container, deadline) {
+    const asset = require('client/asset/asset');
+    
     this.startTime = deadline;
     const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);

@@ -28,8 +28,6 @@ const ModuleInterface = require('lib/module_interface');
 const assert = require('lib/assert');
 const _ = require('underscore');
 
-const asset = require('asset');
-
 // DISPATCH TABLES
 // These methods convert a load or display config to specific server or client
 // strategies. New strategies should be added to these methods.
@@ -414,6 +412,7 @@ class LoadVideoClientStrategy extends ClientLoadStrategy {
       
       // If the url has no protocol, it's an asset.
       if (finalUrl.indexOf(':') == -1) {
+        const asset = require('client/asset/asset');
         finalUrl = asset(`video/${finalUrl}`);
       }
       

@@ -20,7 +20,6 @@ define(function(require) {
   var L = require('leaflet');
   require('leaflet-edgebuffer');
 
-  var asset = require('client/asset/asset');
   var debug = require('client/util/debug')('wall:client_module');
   var debugFactory = require('client/util/debug');
   var error = require('client/util/log').error(debug);
@@ -52,7 +51,6 @@ define(function(require) {
   // we mention them here so that the client module can call require()
   // without throwing.
   var exposedNodeModules = {
-    asset: asset,
     'gl-matrix': undefined,
     jsfeat: undefined,
     leaflet: L,
