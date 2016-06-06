@@ -281,7 +281,9 @@ class ParticleEmitter {
 class ParticlesClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     this.noise = new Noise(deadline % 1);
+    const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);
+    const CanvasSurface = require('client/surface/canvas_surface');
     this.debugCanvas = new CanvasSurface(container, wallGeometry);
     this.debugCanvas.canvas.addEventListener('click', (e) => {
       this.persistence_.addData({

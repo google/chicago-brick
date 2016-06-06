@@ -731,6 +731,7 @@ class ImageServer extends ModuleInterface.Server {
 
 class ImageClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
+    const Surface = require('client/surface/surface');
     this.surface = new Surface(container, wallGeometry);
     this.initedPromise = new Promise((resolve, reject) => {
       network.once('init', (config) => {

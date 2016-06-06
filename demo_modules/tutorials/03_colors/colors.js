@@ -61,6 +61,7 @@ class ColorsClient extends ModuleInterface.Client {
   }
 
   willBeShownSoon(container) {
+    const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
   }

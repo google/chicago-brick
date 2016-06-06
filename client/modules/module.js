@@ -21,7 +21,6 @@ define(function(require) {
   require('leaflet-edgebuffer');
 
   var asset = require('client/asset/asset');
-  var CanvasSurface = require('client/surface/canvas_surface');
   var debug = require('client/util/debug')('wall:client_module');
   var debugFactory = require('client/util/debug');
   var error = require('client/util/log').error(debug);
@@ -31,12 +30,9 @@ define(function(require) {
   var moduleInterface = require('lib/module_interface');
   var NeighborPersistence = require('client/network/neighbor_persistence');
   var network = require('client/network/network');
-  var P5Surface = require('client/surface/p5_surface');
   var peerNetwork = require('client/network/peer');
   var safeEval = require('lib/eval');
   var StateManager = require('client/state/state_manager');
-  var Surface = require('client/surface/surface');
-  var ThreeJsSurface = require('client/surface/threejs_surface');
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
@@ -85,10 +81,6 @@ define(function(require) {
           klass = clientSide;
         },
         require: fakeRequire.createEnvironment(exposedNodeModules),
-        Surface: Surface,
-        CanvasSurface: CanvasSurface,
-        P5Surface: P5Surface,
-        ThreeJsSurface: ThreeJsSurface,
         debug: debugFactory('wall:module:' + name),
       }, globals);
       safeEval(code, sandbox);

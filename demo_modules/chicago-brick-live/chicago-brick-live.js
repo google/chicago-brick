@@ -276,6 +276,7 @@ class ChicagoBrickLiveClient extends ModuleInterface.Client {
   }
 
   willBeShownSoon(container, deadline) {
+    const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.extendCanvas(this.surface.context);
     this.screen = { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height };

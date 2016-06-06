@@ -67,6 +67,7 @@ class StarsServer extends ModuleInterface.Server {
 
 class StarsClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
+    const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
   }

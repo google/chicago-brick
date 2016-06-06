@@ -28,6 +28,7 @@ class ThreeJsTestClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     this.startTime = deadline;
+    const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);
 
     var geometry = new THREE.BoxGeometry(3, 3, 3);
