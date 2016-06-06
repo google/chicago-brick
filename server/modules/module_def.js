@@ -40,7 +40,6 @@ var exposedNodeModules = {
   asset: function(){},
   googleapis: googleapis,
   leaflet: undefined,
-  loadYoutubeApi: undefined,
   random: random,
   three: undefined,
 };

@@ -26,7 +26,6 @@ define(function(require) {
   var error = require('client/util/log').error(debug);
   var fakeRequire = require('lib/fake_require');
   var geometry = require('lib/geometry');
-  var loadYoutubeApi = require('client/util/load_youtube_api');
   var moduleInterface = require('lib/module_interface');
   var NeighborPersistence = require('client/network/neighbor_persistence');
   var network = require('client/network/network');
@@ -60,7 +59,6 @@ define(function(require) {
     googleapis: undefined,
     jsfeat: undefined,
     leaflet: L,
-    loadYoutubeApi: loadYoutubeApi,
     lwip: undefined,
     pngparse: undefined,
     querystring: undefined,

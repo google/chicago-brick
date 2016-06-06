@@ -16,10 +16,12 @@ limitations under the License.
 define(function(require) {
   'use strict';
   // TODO(applmak): MUST we have these?
+  require('lib/assert');
   require('client/surface/surface');
   require('client/surface/canvas_surface');
   require('client/surface/p5_surface');
   require('client/surface/threejs_surface');
+  require('client/util/load_youtube_api');
   
   var network = require('client/network/network');
   var ModuleManager = require('client/modules/module_manager');

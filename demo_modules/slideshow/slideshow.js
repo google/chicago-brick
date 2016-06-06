@@ -301,6 +301,7 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
     super();
     this.config = config;
 
+    const loadYoutubeApi = require('client/util/load_youtube_api');
     this.apiLoaded = loadYoutubeApi().then(() => {
       debug('YouTube API ready');
     });
