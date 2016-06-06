@@ -25,7 +25,6 @@ limitations under the License.
  */
 
 const ModuleInterface = require('lib/module_interface');
-const googleapis = require('googleapis');
 const assert = require('lib/assert');
 const _ = require('underscore');
 
@@ -159,6 +158,7 @@ class LoadFromDriveServerStrategy extends ServerLoadStrategy {
     this.driveClient = null;
   }
   init() {
+    const googleapis = require('server/util/googleapis');
     // Get an authenticated API. When init's promise is resolved, we succeeded.
     return googleapis.getAuthenticatedClient().then((client) => {
       debug('Initialized Drive Client.');
@@ -253,6 +253,7 @@ class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
   }
   init() {
     // Get an authenticated API. When init's promise is resolved, we succeeded.
+    const googleapis = require('server/util/googleapis');
     return googleapis.getAuthenticatedClient().then((client) => {
       debug('Initialized YouTube Client.');
       this.config.credentials = client.credentials;

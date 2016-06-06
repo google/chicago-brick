@@ -38,7 +38,6 @@ const wallGeometry = require('server/util/wall_geometry');
 var exposedNodeModules = {
   NeighborPersistence: undefined,
   asset: function(){},
-  googleapis: googleapis,
   leaflet: undefined,
   random: random,
   three: undefined,

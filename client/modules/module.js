@@ -56,7 +56,6 @@ define(function(require) {
     NeighborPersistence: NeighborPersistence,
     asset: asset,
     'gl-matrix': undefined,
-    googleapis: undefined,
     jsfeat: undefined,
     leaflet: L,
     lwip: undefined,
