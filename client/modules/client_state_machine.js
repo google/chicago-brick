@@ -33,21 +33,33 @@ define(function(require) {
       super('PrepareState');
 
       this.oldModule_ = oldModule;
-      this.module_ = module.instantiate();
+      this.module_ = module;
     }
     enter_() {
-      // Tell the modules that we're going to switch soon.
+      // First, tell the old module that we're going to hide it.
       this.oldModule_.willBeHiddenSoon();
-      if (!this.module_.willBeShownSoon()) {
-        // Error in new module code...We can't go back to just
-        // displaying the old module because we already told it we'll be done
-        // with it soon. Instead, clean up, then setup a transition to empty.
-        this.module_.dispose();
-        this.module_ = ClientModule.newEmptyModule(this.module_.deadline);
-        debug('Transitioning to empty module due to willBeShownSoon exception.');
-      }
+      
+      // Tell the new module to instantiate, which may require loading deps.
+      let moduleDone = this.module_.instantiate().then(() => {
+        // Now that it's loaded, tell it that it will be shown soon.
+        if (!this.module_.willBeShownSoon()) {
+          // Error in new module code...We can't go back to just
+          // displaying the old module because we already told it we'll be done
+          // with it soon. Instead, clean up, then setup a transition to empty.
+          this.module_.dispose();
+          this.module_ = ClientModule.newEmptyModule(this.module_.deadline);
+          debug('Transitioning to empty module due to willBeShownSoon exception.');
+        }
+      });
+      
+      // Tell the modules that we're going to switch soon.
       Promise.delay(timeManager.until(this.module_.deadline)).done(() => {
-        this.transition_(new TransitionState(this.oldModule_, this.module_));
+        if (!this.module_.instance) {
+          debug('Attempted to transition to module that did not init in time!');
+        }
+        moduleDone.then(() => {
+          this.transition_(new TransitionState(this.oldModule_, this.module_));
+        });
       });
     }
     nextModule(module) {
@@ -58,8 +70,10 @@ define(function(require) {
       // of it. Then, we should prepare to transition from old -> new, skipping
       // current. This ensures that everything gets disposed correctly and we
       // still meet the module interface contract.
-      this.module_.willBeHiddenSoon();
-      this.module_.dispose();
+      if (this.module_.instance) {
+        this.module_.willBeHiddenSoon();
+        this.module_.dispose();
+      }
       
       this.transition_(new PrepareState(this.oldModule_, module));
     }

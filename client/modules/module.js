@@ -88,54 +88,58 @@ define(function(require) {
     }
 
     static newEmptyModule(deadline) {
-      return new ClientModule(
+      let ret = new ClientModule(
         'empty-module',
         {},
         new TitleCard({}),
         'var ModuleInterface = require("lib/module_interface"); class EmptyModule extends ModuleInterface.Client {} register(null, EmptyModule)',
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
-      ).instantiate();
+      );
+      ret.instantiate();
+      return ret;
     }
 
     instantiate() {
-      var moduleNetwork = network.forModule(
-        `${this.geo.extents.serialize()}-${this.deadline}`);
-      var openNetwork = moduleNetwork.open();
+      return new Promise((resolve, reject) => {
+        var moduleNetwork = network.forModule(
+          `${this.geo.extents.serialize()}-${this.deadline}`);
+        var openNetwork = moduleNetwork.open();
 
-      // The namespace available to client modules.
-      // cf. the server-side version in server/modules/module_defs.js.
-      var classes = {};
-      this.globals = {
-        register: register.create(classes),
-        require: require,
-        debug: debugFactory('wall:module:' + this.name),
-        _network: moduleNetwork,
-        network: openNetwork,
-        titleCard: this.titleCard.getModuleAPI(),
-        state: new StateManager(openNetwork),
-        globalWallGeometry: this.geo,
-        wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
-          return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
-        }, this)),
-        peerNetwork: peerNetwork,
-      };
+        // The namespace available to client modules.
+        // cf. the server-side version in server/modules/module_defs.js.
+        var classes = {};
+        this.globals = {
+          register: register.create(classes),
+          require: require,
+          debug: debugFactory('wall:module:' + this.name),
+          _network: moduleNetwork,
+          network: openNetwork,
+          titleCard: this.titleCard.getModuleAPI(),
+          state: new StateManager(openNetwork),
+          globalWallGeometry: this.geo,
+          wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
+            return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
+          }, this)),
+          peerNetwork: peerNetwork,
+        };
 
-      try {
-        safeEval(this.code, this.globals);
-      } catch (e) {
-        console.error('Error loading ' + this.name, e);
-        error(e);
-      }
-      if (!classes.client) {
-        throw new Error('Failed to parse module ' + this.name);
-      }
-      if (!(classes.client.prototype instanceof moduleInterface.Client)) {
-        throw new Error('Malformed module definition! ' + this.name);
-      }
+        try {
+          safeEval(this.code, this.globals);
+        } catch (e) {
+          console.error('Error loading ' + this.name, e);
+          error(e);
+        }
+        if (!classes.client) {
+          throw new Error('Failed to parse module ' + this.name);
+        }
+        if (!(classes.client.prototype instanceof moduleInterface.Client)) {
+          throw new Error('Malformed module definition! ' + this.name);
+        }
 
-      this.instance = new classes.client(this.config);
-      return this;
+        this.instance = new classes.client(this.config);
+        resolve();
+      });
     }
 
     willBeHiddenSoon() {
