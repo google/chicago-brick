@@ -30,6 +30,7 @@ const network = require('server/network/network');
 const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
+const register = require('lib/register');
 
 // Creates an execution context for server-side modules.
 // Cf. the client-side version in client/modules/module_manager.js.
@@ -45,29 +46,26 @@ function serverSandbox(name, opt_dependencies) {
 // Returns a ModuleDefinition or null, in the case of an error.
 let loadAndVerifyScript = function(name, script) {
   try {
-    var serverSideModuleDef, clientSideModuleDef;
+    var defs = {};
     var sandbox = _.extend({
-      register: function(serverSide, clientSide) {
-        serverSideModuleDef = serverSide;
-        clientSideModuleDef = clientSide;
-      },
+      register: register.create(defs),
       network: network,
       // In verify mode, the local wall geometry is the same as the global.
       wallGeometry: wallGeometry.getGeo(),
     }, serverSandbox(name));
     safeEval(script, sandbox);
     debug('Parsed correctly');
-    if (!serverSideModuleDef) {
+    if (!defs.server) {
       debug('Module did not register a server-side module!');
       return null;
     }
-    if (!(serverSideModuleDef.prototype instanceof module_interface.Server)) {
+    if (!(defs.server.prototype instanceof module_interface.Server)) {
       debug(
           'Module\'s server-side module did not implement module_interface.Server!');
       return null;
     }
-    if (clientSideModuleDef &&
-        !(clientSideModuleDef.prototype instanceof module_interface.Client)) {
+    if (defs.client &&
+        !(defs.client.prototype instanceof module_interface.Client)) {
       debug(
           'Module\'s client-side module did not implement module_interface.Client!');
       return null;
@@ -190,18 +188,15 @@ class ModuleDef extends EventEmitter {
   // dynamically. Basically, make this module's 'require' somehow delegate to
   // this particular instantiation.
   instantiate(additionalGlobals, deadline) {
-    
-    var serverSideModuleDef;
+    var defs = {};
     var sandbox = _.extend({
-      register: function(serverSide, unused) {
-        serverSideModuleDef = serverSide;
-      },
+      register: register.create(defs),
     }, serverSandbox(this.name, additionalGlobals));
     // Use safeEval to actually run the script so that Node doesn't leak
     // anything: https://github.com/nodejs/node/issues/3113
     safeEval(this.def_, sandbox);
     
-    return new serverSideModuleDef(this.config, deadline);
+    return new defs.server(this.config, deadline);
   }
   
   // Returns a JSON-serializable form of this for transmission to the client.

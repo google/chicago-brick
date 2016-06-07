@@ -31,7 +31,7 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-
+  const register = require('lib/register');
   
   
   function createNewContainer(name) {
@@ -45,30 +45,28 @@ define(function(require) {
   }
 
   function loadModule(name, globals, code) {
-    var klass;
+    var defs = {};
     try {
       // The namespace available to client modules.
       // Note that this extends "dependencies", defined below, and also
       // cf. the server-side version in server/modules/module_defs.js.
       var sandbox = _.extend({
-        register: function(ignoredServerSide, clientSide) {
-          klass = clientSide;
-        },
+        register: register.create(defs),
         require: require,
         debug: debugFactory('wall:module:' + name),
       }, globals);
       safeEval(code, sandbox);
-      if (!klass) {
+      if (!defs.client) {
         throw new Error('Failed to parse module ' + name);
       }
-      if (!(klass.prototype instanceof moduleInterface.Client)) {
+      if (!(defs.client.prototype instanceof moduleInterface.Client)) {
         throw new Error('Malformed module definition! ' + name);
       }
     } catch (e) {
       console.error('Error loading ' + name, e);
       error(e);
     }
-    return klass;
+    return defs.client;
   }
 
   class ClientModule {
