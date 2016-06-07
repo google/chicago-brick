@@ -31,21 +31,13 @@ const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 
-// Node modules made available to server-side modules.
-// Entries with "undefined" are only available on the client;
-// we mention them here so that the server module can call require()
-// without throwing.
-var exposedNodeModules = {
-  leaflet: undefined,
-};
-
 // Creates an execution context for server-side modules.
 // Cf. the client-side version in client/modules/module_manager.js.
 function serverSandbox(name, opt_dependencies) {
   return _.extend({
     debug : debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
-    require: fakeRequire.createEnvironment(exposedNodeModules),
+    require: require,
   }, opt_dependencies || {});
 }
 
