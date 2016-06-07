@@ -17,8 +17,6 @@ define(function(require) {
   'use strict';
 
   var _ = require('underscore');
-  var L = require('leaflet');
-  require('leaflet-edgebuffer');
 
   var debug = require('client/util/debug')('wall:client_module');
   var debugFactory = require('client/util/debug');
@@ -53,7 +51,6 @@ define(function(require) {
   var exposedNodeModules = {
     'gl-matrix': undefined,
     jsfeat: undefined,
-    leaflet: L,
     lwip: undefined,
     pngparse: undefined,
     querystring: undefined,
