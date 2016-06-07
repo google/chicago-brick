@@ -44,21 +44,6 @@ define(function(require) {
     return newContainer;
   }
 
-  // Node modules made available to client-side modules.
-  // Entries with "undefined" are only available on the server;
-  // we mention them here so that the client module can call require()
-  // without throwing.
-  var exposedNodeModules = {
-    'gl-matrix': undefined,
-    jsfeat: undefined,
-    lwip: undefined,
-    pngparse: undefined,
-    querystring: undefined,
-    request: undefined,
-    x2x: undefined,
-    xml2js: undefined,
-  };
-
   function loadModule(name, globals, code) {
     var klass;
     try {
@@ -69,7 +54,7 @@ define(function(require) {
         register: function(ignoredServerSide, clientSide) {
           klass = clientSide;
         },
-        require: fakeRequire.createEnvironment(exposedNodeModules),
+        require: require,
         debug: debugFactory('wall:module:' + name),
       }, globals);
       safeEval(code, sandbox);
