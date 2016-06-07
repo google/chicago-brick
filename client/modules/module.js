@@ -44,31 +44,6 @@ define(function(require) {
     return newContainer;
   }
 
-  function loadModule(name, globals, code) {
-    var defs = {};
-    try {
-      // The namespace available to client modules.
-      // Note that this extends "dependencies", defined below, and also
-      // cf. the server-side version in server/modules/module_defs.js.
-      var sandbox = _.extend({
-        register: register.create(defs),
-        require: require,
-        debug: debugFactory('wall:module:' + name),
-      }, globals);
-      safeEval(code, sandbox);
-      if (!defs.client) {
-        throw new Error('Failed to parse module ' + name);
-      }
-      if (!(defs.client.prototype instanceof moduleInterface.Client)) {
-        throw new Error('Malformed module definition! ' + name);
-      }
-    } catch (e) {
-      console.error('Error loading ' + name, e);
-      error(e);
-    }
-    return defs.client;
-  }
-
   class ClientModule {
     constructor(name, config, titleCard, code, deadline, geo) {
       // The module name.
@@ -128,7 +103,13 @@ define(function(require) {
         `${this.geo.extents.serialize()}-${this.deadline}`);
       var openNetwork = moduleNetwork.open();
 
+      // The namespace available to client modules.
+      // cf. the server-side version in server/modules/module_defs.js.
+      var classes = {};
       this.globals = {
+        register: register.create(classes),
+        require: require,
+        debug: debugFactory('wall:module:' + this.name),
         _network: moduleNetwork,
         network: openNetwork,
         titleCard: this.titleCard.getModuleAPI(),
@@ -140,12 +121,20 @@ define(function(require) {
         peerNetwork: peerNetwork,
       };
 
-      var clientModuleClass = loadModule(this.name, this.globals, this.code);
-      if (!clientModuleClass) {
-        throw new Error('Failed to load module!');
+      try {
+        safeEval(this.code, this.globals);
+      } catch (e) {
+        console.error('Error loading ' + this.name, e);
+        error(e);
+      }
+      if (!classes.client) {
+        throw new Error('Failed to parse module ' + this.name);
+      }
+      if (!(classes.client.prototype instanceof moduleInterface.Client)) {
+        throw new Error('Malformed module definition! ' + this.name);
       }
 
-      this.instance = new clientModuleClass(this.config);
+      this.instance = new classes.client(this.config);
       return this;
     }
 
