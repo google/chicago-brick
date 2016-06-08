@@ -25,11 +25,8 @@ limitations under the License.
  */
 
 const ModuleInterface = require('lib/module_interface');
-const googleapis = require('googleapis');
 const assert = require('lib/assert');
 const _ = require('underscore');
-
-const asset = require('asset');
 
 // DISPATCH TABLES
 // These methods convert a load or display config to specific server or client
@@ -159,6 +156,7 @@ class LoadFromDriveServerStrategy extends ServerLoadStrategy {
     this.driveClient = null;
   }
   init() {
+    const googleapis = require('server/util/googleapis');
     // Get an authenticated API. When init's promise is resolved, we succeeded.
     return googleapis.getAuthenticatedClient().then((client) => {
       debug('Initialized Drive Client.');
@@ -253,6 +251,7 @@ class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
   }
   init() {
     // Get an authenticated API. When init's promise is resolved, we succeeded.
+    const googleapis = require('server/util/googleapis');
     return googleapis.getAuthenticatedClient().then((client) => {
       debug('Initialized YouTube Client.');
       this.config.credentials = client.credentials;
@@ -301,6 +300,7 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
     super();
     this.config = config;
 
+    const loadYoutubeApi = require('client/util/load_youtube_api');
     this.apiLoaded = loadYoutubeApi().then(() => {
       debug('YouTube API ready');
     });
@@ -412,6 +412,7 @@ class LoadVideoClientStrategy extends ClientLoadStrategy {
       
       // If the url has no protocol, it's an asset.
       if (finalUrl.indexOf(':') == -1) {
+        const asset = require('client/asset/asset');
         finalUrl = asset(`video/${finalUrl}`);
       }
       
@@ -731,6 +732,7 @@ class ImageServer extends ModuleInterface.Server {
 
 class ImageClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
+    const Surface = require('client/surface/surface');
     this.surface = new Surface(container, wallGeometry);
     this.initedPromise = new Promise((resolve, reject) => {
       network.once('init', (config) => {

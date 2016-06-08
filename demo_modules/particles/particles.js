@@ -19,8 +19,6 @@ const ModuleInterface = require('lib/module_interface');
 /*jshint loopfunc: true */
 var Rectangle = require('lib/rectangle');
 var _ = require('underscore');
-var THREE = require('three');
-var NeighborPersistence = require('NeighborPersistence');
 var Noise = require('noisejs');
 var assert = require('lib/assert');
 
@@ -280,8 +278,11 @@ class ParticleEmitter {
 
 class ParticlesClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
+    const THREE = require('three');
     this.noise = new Noise(deadline % 1);
+    const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);
+    const CanvasSurface = require('client/surface/canvas_surface');
     this.debugCanvas = new CanvasSurface(container, wallGeometry);
     this.debugCanvas.canvas.addEventListener('click', (e) => {
       this.persistence_.addData({
@@ -382,6 +383,7 @@ class ParticlesClient extends ModuleInterface.Client {
     return peerNetwork.open(deadline).then((peer) => {
       debug('Connected to peer network.');
       this.peer_ = peer;
+      const NeighborPersistence = require('client/network/neighbor_persistence');
       this.persistence_ = new NeighborPersistence(this.surface.virtualRectNoBezel, peer);
       network.on('newParticle', (newParticle) => {
         // When the server sends us something, it's definitely relevant.

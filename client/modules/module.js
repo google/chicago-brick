@@ -17,30 +17,21 @@ define(function(require) {
   'use strict';
 
   var _ = require('underscore');
-  var L = require('leaflet');
-  require('leaflet-edgebuffer');
 
-  var asset = require('client/asset/asset');
-  var CanvasSurface = require('client/surface/canvas_surface');
   var debug = require('client/util/debug')('wall:client_module');
   var debugFactory = require('client/util/debug');
   var error = require('client/util/log').error(debug);
   var fakeRequire = require('lib/fake_require');
   var geometry = require('lib/geometry');
-  var loadYoutubeApi = require('client/util/load_youtube_api');
   var moduleInterface = require('lib/module_interface');
-  var NeighborPersistence = require('client/network/neighbor_persistence');
   var network = require('client/network/network');
-  var P5Surface = require('client/surface/p5_surface');
   var peerNetwork = require('client/network/peer');
   var safeEval = require('lib/eval');
   var StateManager = require('client/state/state_manager');
-  var Surface = require('client/surface/surface');
-  var ThreeJsSurface = require('client/surface/threejs_surface');
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-
+  const register = require('lib/register');
   
   
   function createNewContainer(name) {
@@ -53,56 +44,29 @@ define(function(require) {
     return newContainer;
   }
 
-  // Node modules made available to client-side modules.
-  // Entries with "undefined" are only available on the server;
-  // we mention them here so that the client module can call require()
-  // without throwing.
-  var exposedNodeModules = {
-    NeighborPersistence: NeighborPersistence,
-    asset: asset,
-    'gl-matrix': undefined,
-    googleapis: undefined,
-    jsfeat: undefined,
-    leaflet: L,
-    loadYoutubeApi: loadYoutubeApi,
-    lwip: undefined,
-    pngparse: undefined,
-    querystring: undefined,
-    random: undefined,
-    request: undefined,
-    x2x: undefined,
-    xml2js: undefined,
-  };
-
   function loadModule(name, globals, code) {
-    var klass;
+    var defs = {};
     try {
       // The namespace available to client modules.
       // Note that this extends "dependencies", defined below, and also
       // cf. the server-side version in server/modules/module_defs.js.
       var sandbox = _.extend({
-        register: function(ignoredServerSide, clientSide) {
-          klass = clientSide;
-        },
-        require: fakeRequire.createEnvironment(exposedNodeModules),
-        Surface: Surface,
-        CanvasSurface: CanvasSurface,
-        P5Surface: P5Surface,
-        ThreeJsSurface: ThreeJsSurface,
+        register: register.create(defs),
+        require: require,
         debug: debugFactory('wall:module:' + name),
       }, globals);
       safeEval(code, sandbox);
-      if (!klass) {
+      if (!defs.client) {
         throw new Error('Failed to parse module ' + name);
       }
-      if (!(klass.prototype instanceof moduleInterface.Client)) {
+      if (!(defs.client.prototype instanceof moduleInterface.Client)) {
         throw new Error('Malformed module definition! ' + name);
       }
     } catch (e) {
       console.error('Error loading ' + name, e);
       error(e);
     }
-    return klass;
+    return defs.client;
   }
 
   class ClientModule {

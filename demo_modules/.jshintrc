@@ -2,7 +2,6 @@
   "extends": "../.jshintrc",
   "browser": true,
   "globals": {
-    "CanvasSurface": false,
     "chrome": false,
     "debug": false,
     "game": false,
@@ -10,12 +9,9 @@
     "Headers": false,
     "network": false,
     "peerNetwork": false,
-    "P5Surface": false,
     "require": false,
     "register": false,
     "state": false,
-    "Surface": false,
-    "ThreeJsSurface": false,
     "wallGeometry": false,
     "YT": false
   },
