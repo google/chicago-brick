@@ -73,6 +73,9 @@ define(function(require) {
 
       // Module class instance.
       this.instance = null;
+
+      // Network instance for this module.
+      this.network = null;
     }
 
     // Deserializes from the json serialized form of ModuleDef in the server.
@@ -102,9 +105,9 @@ define(function(require) {
 
     instantiate() {
       return new Promise((resolve, reject) => {
-        var moduleNetwork = network.forModule(
+        this.network = network.forModule(
           `${this.geo.extents.serialize()}-${this.deadline}`);
-        var openNetwork = moduleNetwork.open();
+        var openNetwork = this.network.open();
 
         // The namespace available to client modules.
         // cf. the server-side version in server/modules/module_defs.js.
@@ -113,7 +116,6 @@ define(function(require) {
           register: register.create(classes),
           require: require,
           debug: debugFactory('wall:module:' + this.name),
-          _network: moduleNetwork,
           network: openNetwork,
           titleCard: this.titleCard.getModuleAPI(),
           state: new StateManager(openNetwork),
@@ -203,10 +205,8 @@ define(function(require) {
       this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 
-      // TODO(bmt): Make this a member variable of ClientModule rather than
-      // reaching into the globals.
-      if (this.globals._network) {
-        this.globals._network.close();
+      if (this.network) {
+        this.network.close();
       }
       try {
         this.instance.finishFadeOut();
