@@ -31,6 +31,7 @@ const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 const register = require('lib/register');
+const geometry = require('lib/geometry');
 
 const read = (path) => {
   return new Promise(function(resolve, reject) {
@@ -44,28 +45,34 @@ const read = (path) => {
   });
 };
 
-const evalModule = (contents, sandbox) => {
+const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   let classes = {};
+
+  let sandbox = {
+    network,
+    game,
+    state,
+    wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
+      return {
+        x: p.x - layoutGeometry.extents.x,
+        y: p.y - layoutGeometry.extents.y
+      };
+    })),
+    debug: debugFactory('wall:module:' + name),
+    globalWallGeometry: wallGeometry.getGeo(),
+    register: register.create(classes),
+    require,
+  };
+  
   // Use safeEval to actually run the script so that Node doesn't leak
   // anything: https://github.com/nodejs/node/issues/3113
-  safeEval(contents, _.extend({
-    register: register.create(classes),
-    require: require,
-  }, sandbox));
+  safeEval(contents, sandbox);
   return classes;
 };
 
-const verify = (contents) => {
-  // Set up fake globals.
-  var fakeSandbox = {
-    network: network,
-    wallGeometry: wallGeometry.getGeo(),
-    globalWallGeometry: wallGeometry.getGeo(),
-    debug: function() {}
-  };
-  
-  // Attempt to eval.
-  const classes = evalModule(contents, fakeSandbox);
+const verify = (name, contents) => {
+  // Eval using fake globals.
+  const classes = evalModule(contents, name, wallGeometry.getGeo(), {}, {}, {});
   
   if (!classes.server) {
     debug('Module did not register a server-side module!');
@@ -142,6 +149,7 @@ class ModuleDef extends EventEmitter {
       };
     
       this.loadPromise = read(path).then((contents) => {
+        debug('Read ' + path);
         // Prepend a directive to make sure the module runs in strict mode.
         // Append a directive that tells Chrome and Node that the client script
         // is, in fact, a file. This makes debugging these far simpler.
@@ -150,10 +158,12 @@ class ModuleDef extends EventEmitter {
         // Start rewatcher, regardless of status.
         rewatch();
         
-        if (verify(contents)) {
+        if (verify(this.name, contents)) {
+          debug('Verified ' + path);
           this.def_ = contents;
         } else {
-          throw new Error('Script at "' + path + '" is not verifiable!');
+          debug('Failed verification at ' + path);
+          Promise.reject(new Error('Script at "' + path + '" is not verifiable!'));
         }
       }, (e) => {
         debug(path + ' not found!');
@@ -162,6 +172,9 @@ class ModuleDef extends EventEmitter {
         // Intentionally do not restart watcher.
         // Allow users to note that this module failed to load correctly.
         return Promise.reject(e);
+      }).catch((e) => {
+        debug(e);
+        throw e;
       });
     };
 
@@ -175,12 +188,8 @@ class ModuleDef extends EventEmitter {
   // per-module globals (like network, which required 'deadline') to occur
   // dynamically. Basically, make this module's 'require' somehow delegate to
   // this particular instantiation.
-  instantiate(additionalGlobals, deadline) {
-    let sandbox = _.extend({
-      debug : debugFactory('wall:module:' + this.name),
-      globalWallGeometry: wallGeometry.getGeo(),
-    }, additionalGlobals);
-    let classes = evalModule(this.def_, sandbox);
+  instantiate(layoutGeometry, network, game, state, deadline) {
+    let classes = evalModule(this.def_, this.name, layoutGeometry, network, game, state);
     return new classes.server(this.config, deadline);
   }
   

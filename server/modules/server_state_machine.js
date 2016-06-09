@@ -19,12 +19,11 @@ var debug = require('debug')('wall:server_state_machine');
 
 var stateMachine = require('lib/state_machine');
 var logError = require('server/util/log').error(debug);
-var game = require('server/game/game');
 var time = require('server/util/time');
 var network = require('server/network/network');
-var StateManager = require('server/state/state_manager');
 var moduleTicker = require('server/modules/module_ticker');
-var geometry = require('lib/geometry');
+const game = require('server/game/game');
+const StateManager = require('server/state/state_manager');
 
 class RunningModule {
   constructor(moduleDef) {
@@ -32,27 +31,15 @@ class RunningModule {
     this.instance = null;
   }
 
-  instantiate(wallGeometry, deadline) {
-    const INSTANTIATION_ID = `${wallGeometry.extents.serialize()}-${deadline}`;
+  instantiate(layoutGeometry, deadline) {
+    const INSTANTIATION_ID = `${layoutGeometry.extents.serialize()}-${deadline}`;
     this.network = network.forModule(INSTANTIATION_ID);
     this.gameManager = game.forModule(INSTANTIATION_ID);
 
     var openNetwork = this.network.open();
     this.state = new StateManager(openNetwork);
     
-    var sandbox = {
-      network: openNetwork,
-      game: this.gameManager,
-      state: this.state,
-      wallGeometry: new geometry.Polygon(wallGeometry.points.map((p) => {
-        return {
-          x: p.x - wallGeometry.extents.x,
-          y: p.y - wallGeometry.extents.y
-        };
-      })),
-    };
-    
-    this.instance = this.moduleDef.instantiate(sandbox, deadline);
+    this.instance = this.moduleDef.instantiate(layoutGeometry, openNetwork, this.gamemanager, this.state, deadline);
   }
 
   tick(now, delta) {
