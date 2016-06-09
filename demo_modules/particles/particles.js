@@ -17,10 +17,14 @@ const ModuleInterface = require('lib/module_interface');
 
 // TODO(applmak): Take care of this lint error for real.
 /*jshint loopfunc: true */
-var Rectangle = require('lib/rectangle');
-var _ = require('underscore');
-var Noise = require('noisejs');
-var assert = require('lib/assert');
+const Rectangle = require('lib/rectangle');
+const _ = require('underscore');
+const Noise = require('noisejs');
+const assert = require('lib/assert');
+const wallGeometry = require('wallGeometry');
+const debug = require('debug');
+const network = require('network');
+
 
 var MAX_PARTICLES_PER_CLIENT = 100;
 

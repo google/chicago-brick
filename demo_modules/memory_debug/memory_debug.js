@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
+const network = require('network');
 
 // This is a no-op module that shows what is leaking in the framework when we
 // switch modules.

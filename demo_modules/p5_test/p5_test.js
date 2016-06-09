@@ -14,6 +14,8 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
+const debug = require('debug');
 
 class P5TestServer extends ModuleInterface.Server {
   constructor(config, startTime) {

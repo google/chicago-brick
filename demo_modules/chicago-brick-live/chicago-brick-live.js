@@ -15,6 +15,9 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const _ = require('underscore');
+const debug = require('debug');
+const network = require('network');
+const wallGeometry = require('wallGeometry');
 
 //
 // Module Confguration

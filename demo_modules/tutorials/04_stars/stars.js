@@ -15,6 +15,8 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
+const wallGeometry = require('wallGeometry');
+const state = require('state');
 
 class StarsServer extends ModuleInterface.Server {
   constructor() {

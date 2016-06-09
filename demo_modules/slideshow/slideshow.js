@@ -27,6 +27,9 @@ limitations under the License.
 const ModuleInterface = require('lib/module_interface');
 const assert = require('lib/assert');
 const _ = require('underscore');
+const wallGeometry = require('wallGeometry');
+const debug = require('wallGeometry');
+const network = require('network');
 
 // DISPATCH TABLES
 // These methods convert a load or display config to specific server or client

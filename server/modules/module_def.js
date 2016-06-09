@@ -18,11 +18,11 @@ limitations under the License.
 const EventEmitter = require('events');
 const fs = require('fs');
 
-const debugFactory = require('debug');
 const random = require('random-js')();
 const _ = require('underscore');
 
 const debug = require('debug')('wall:library');
+const debugFactory = require('debug');
 const fakeRequire = require('lib/fake_require');
 const googleapis = require('server/util/googleapis');
 const module_interface = require('lib/module_interface');
@@ -47,21 +47,25 @@ const read = (path) => {
 
 const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   let classes = {};
-
   let sandbox = {
-    network,
-    game,
-    state,
-    wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
-      return {
-        x: p.x - layoutGeometry.extents.x,
-        y: p.y - layoutGeometry.extents.y
-      };
-    })),
-    debug: debugFactory('wall:module:' + name),
-    globalWallGeometry: wallGeometry.getGeo(),
+    // The main registration function.
     register: register.create(classes),
-    require,
+    // A fake require that first checks to see if the require is one of our
+    // per-invocation dependencies. If so, uses that. Otherwise, delegates to
+    // normal require.
+    require: fakeRequire.createEnvironment({
+      network,
+      game,
+      state,
+      wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
+        return {
+          x: p.x - layoutGeometry.extents.x,
+          y: p.y - layoutGeometry.extents.y
+        };
+      })),
+      debug: debugFactory('wall:module:' + name),
+      globalWallGeometry: wallGeometry.getGeo(),
+    })
   };
   
   // Use safeEval to actually run the script so that Node doesn't leak

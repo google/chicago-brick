@@ -33,7 +33,6 @@ define(function(require) {
   var moduleTicker = require('client/modules/module_ticker');
   const register = require('lib/register');
   
-  
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
     newContainer.className = 'container';
@@ -76,6 +75,9 @@ define(function(require) {
 
       // Network instance for this module.
       this.network = null;
+
+      // The name of the requirejs context for this module.
+      this.contextName = null;
     }
 
     // Deserializes from the json serialized form of ModuleDef in the server.
@@ -104,34 +106,41 @@ define(function(require) {
     }
 
     instantiate() {
-      return new Promise((resolve, reject) => {
-        this.network = network.forModule(
-          `${this.geo.extents.serialize()}-${this.deadline}`);
-        var openNetwork = this.network.open();
-
-        // The namespace available to client modules.
-        // cf. the server-side version in server/modules/module_defs.js.
-        var classes = {};
-        this.globals = {
+      this.network = network.forModule(
+        `${this.geo.extents.serialize()}-${this.deadline}`);
+      let openNetwork = this.network.open();
+    
+      this.contextName = 'module-' + this.deadline;
+    
+      return fakeRequire.createEnvironment(this.contextName, {
+        debug: debugFactory('wall:module:' + this.name),
+        network: openNetwork,
+        titleCard: this.titleCard.getModuleAPI(),
+        state: new StateManager(openNetwork),
+        globalWallGeometry: this.geo,
+        wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
+          return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
+        }, this)),
+        peerNetwork: peerNetwork
+      }).then((moduleRequire) => {
+        let classes = {};
+        let sandbox = {
           register: register.create(classes),
-          require: require,
-          debug: debugFactory('wall:module:' + this.name),
-          network: openNetwork,
-          titleCard: this.titleCard.getModuleAPI(),
-          state: new StateManager(openNetwork),
-          globalWallGeometry: this.geo,
-          wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
-            return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
-          }, this)),
-          peerNetwork: peerNetwork,
+          require: moduleRequire,
         };
-
         try {
-          safeEval(this.code, this.globals);
+          safeEval(this.code, sandbox);
         } catch (e) {
           console.error('Error loading ' + this.name, e);
           error(e);
         }
+    
+        // Reset the context back to the default require context.
+        // TODO(applmak): Is this actually necessary?
+        requirejs.config({
+          context: '_'
+        });
+    
         if (!classes.client) {
           throw new Error('Failed to parse module ' + this.name);
         }
@@ -140,7 +149,6 @@ define(function(require) {
         }
 
         this.instance = new classes.client(this.config);
-        resolve();
       });
     }
 
@@ -205,6 +213,9 @@ define(function(require) {
       this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 
+      // Remove the module-specific requirejs context.
+      fakeRequire.deleteEnvironment(this.contextName);
+      
       if (this.network) {
         this.network.close();
       }
