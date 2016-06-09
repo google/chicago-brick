@@ -222,8 +222,16 @@ class TransitionState extends stateMachine.State {
     // When the deadline arrives, enter display state.
     debug('Waiting until', this.deadline_);
     Promise.delay(time.until(this.deadline_)).done(() => {
-      let originalIndex = _(this.context_.playlist).findIndex(this.moduleDef_);
-      let duration = this.index_ != originalIndex ? 1 : undefined;
+      // We don't have a clean way to transition to any state but the display
+      // state. That means that if the playlist changes behind us, we can't
+      // abort playing the current module. To save time, cut the duration to 
+      // only 1 second. Since any playlist change is a new module def (right?),
+      // we can use object identity to check for this condition.
+      // TODO(applmak): Double-check the identity bit.
+      let duration = _(this.context_.playlist).contains(this.moduleDef_) ? undefined : 1;
+      if (duration) {
+        debug('Using short duration for reasons...', this.index_);
+      }
       this.transition_(new DisplayState(
           this.moduleDef_, this.deadline_, this.index_, duration));
     });
