@@ -80,6 +80,25 @@
       "title": "Chicago Brick Live",
       "author": "Ian Atkinson"
     },
+    {
+      "name": "cta",
+      "extends": "slideshow",
+      "config": {
+        "load": {
+          "youtube": {
+            "playlistId": "PLCJZjGFB_wA72YhaYl5XtuRVqC9q4EwG-",
+            "seekTo": 47,
+            "playThroughPlaylist": true
+          }
+        },
+        "display": {
+          "fullscreen": {
+            "period": 0,
+            "gravity": 100
+          }
+        }
+      }
+    },
   ],
   "playlist": [
     {
