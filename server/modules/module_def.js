@@ -18,11 +18,11 @@ limitations under the License.
 const EventEmitter = require('events');
 const fs = require('fs');
 
-const debugFactory = require('debug');
 const random = require('random-js')();
 const _ = require('underscore');
 
 const debug = require('debug')('wall:library');
+const debugFactory = require('debug');
 const fakeRequire = require('lib/fake_require');
 const googleapis = require('server/util/googleapis');
 const module_interface = require('lib/module_interface');
@@ -31,79 +31,71 @@ const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 const register = require('lib/register');
+const geometry = require('lib/geometry');
 
-// Creates an execution context for server-side modules.
-// Cf. the client-side version in client/modules/module_manager.js.
-function serverSandbox(name, opt_dependencies) {
-  return _.extend({
-    debug : debugFactory('wall:module:' + name),
-    globalWallGeometry: wallGeometry.getGeo(),
-    require: require,
-  }, opt_dependencies || {});
-}
-
-// Verifies that the script (as a string) is valid, according to our spec.
-// Returns a ModuleDefinition or null, in the case of an error.
-let loadAndVerifyScript = function(name, script) {
-  try {
-    var defs = {};
-    var sandbox = _.extend({
-      register: register.create(defs),
-      network: network,
-      // In verify mode, the local wall geometry is the same as the global.
-      wallGeometry: wallGeometry.getGeo(),
-    }, serverSandbox(name));
-    safeEval(script, sandbox);
-    debug('Parsed correctly');
-    if (!defs.server) {
-      debug('Module did not register a server-side module!');
-      return null;
-    }
-    if (!(defs.server.prototype instanceof module_interface.Server)) {
-      debug(
-          'Module\'s server-side module did not implement module_interface.Server!');
-      return null;
-    }
-    if (defs.client &&
-        !(defs.client.prototype instanceof module_interface.Client)) {
-      debug(
-          'Module\'s client-side module did not implement module_interface.Client!');
-      return null;
-    }
-    // Send the WHOLE script to the client, or it will only see the constructor!
-    return script;
-  } catch (e) {
-    debug('Failed to load script!', e);
-    debug(e.stack);
-    return null;
-  }
-};
-
-// Schedules a module to be loaded at 'path', verifies that it's valid, and
-// returns promise that will be resolved if valid or rejected if not.
-let loadModuleAtPath = function(path) {
+const read = (path) => {
   return new Promise(function(resolve, reject) {
     fs.readFile(path, 'utf-8', function(err, content) {
       if (err) {
         reject(err);
-        return;
-      }
-      // Prepend a directive to make sure the module runs in strict mode.
-      // Append a directive that tells Chrome and Node that the client script
-      // is, in fact, a file. This makes debugging these far simpler.
-      content = `"use strict";${content}\n//# sourceURL=${path}\n`;
-      try {
-        var moduleDef = loadAndVerifyScript(path, content);
-        if (!moduleDef) {
-          // Not verifiable! Abort!
-          throw new Error('Script at "' + path + '" is not verifiable!');
-        }
-        resolve(moduleDef);
-      } catch (e) {
-        reject(e);
+      } else {
+        resolve(content);
       }
     });
   });
+};
+
+const evalModule = (contents, name, layoutGeometry, network, game, state) => {
+  let classes = {};
+  let sandbox = {
+    // The main registration function.
+    register: register.create(classes),
+    // A fake require that first checks to see if the require is one of our
+    // per-invocation dependencies. If so, uses that. Otherwise, delegates to
+    // normal require.
+    require: fakeRequire.createEnvironment({
+      network,
+      game,
+      state,
+      wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
+        return {
+          x: p.x - layoutGeometry.extents.x,
+          y: p.y - layoutGeometry.extents.y
+        };
+      })),
+      debug: debugFactory('wall:module:' + name),
+      globalWallGeometry: wallGeometry.getGeo(),
+    })
+  };
+  
+  // Use safeEval to actually run the script so that Node doesn't leak
+  // anything: https://github.com/nodejs/node/issues/3113
+  safeEval(contents, sandbox);
+  return classes;
+};
+
+const verify = (name, contents) => {
+  // Eval using fake globals.
+  const classes = evalModule(contents, name, wallGeometry.getGeo(), {}, {}, {});
+  
+  if (!classes.server) {
+    debug('Module did not register a server-side module!');
+    return false;
+  }
+  if (!(classes.server.prototype instanceof module_interface.Server)) {
+    debug('Module\'s server-side module did not implement module_interface.Server!');
+    return false;
+  }
+  if (!classes.client) {
+    debug('Module did not register a client-side module!');
+    return false;
+  }  
+  if (!(classes.client.prototype instanceof module_interface.Client)) {
+    debug('Module\'s client-side module did not implement module_interface.Client!');
+    return false;
+  }
+  
+  return true;
 };
 
 /**
@@ -126,7 +118,7 @@ class ModuleDef extends EventEmitter {
         this.def_ = pathOrBaseModule.def_;
       });
     } else {
-      this.load_(pathOrBaseModule);
+      this.loadAndWatch_(pathOrBaseModule);
     }
   }
 
@@ -144,8 +136,9 @@ class ModuleDef extends EventEmitter {
     return new ModuleDef(name, this,
       title || this.title, author || this.author, config);
   }
+  
   // Loads a module from disk asynchronously, assigning def when complete.
-  load_(path) {
+  loadAndWatch_(path) {
     let loadModule = () => {
       let rewatch = () => {
         // Watch for future changes.
@@ -159,21 +152,33 @@ class ModuleDef extends EventEmitter {
         });
       };
     
-      this.loadPromise = loadModuleAtPath(path).then((def) => {
-        debug('Loaded', path);
-        this.def_ = def;
-      
-        // Start rewatcher.
+      this.loadPromise = read(path).then((contents) => {
+        debug('Read ' + path);
+        // Prepend a directive to make sure the module runs in strict mode.
+        // Append a directive that tells Chrome and Node that the client script
+        // is, in fact, a file. This makes debugging these far simpler.
+        contents = `"use strict";${contents}\n//# sourceURL=${path}\n`;
+        
+        // Start rewatcher, regardless of status.
         rewatch();
+        
+        if (verify(this.name, contents)) {
+          debug('Verified ' + path);
+          this.def_ = contents;
+        } else {
+          debug('Failed verification at ' + path);
+          Promise.reject(new Error('Script at "' + path + '" is not verifiable!'));
+        }
       }, (e) => {
-        debug('Error loading ' + path);
+        debug(path + ' not found!');
         debug(e);
       
-        // Start rewatcher, despite error.
-        rewatch();
-
+        // Intentionally do not restart watcher.
         // Allow users to note that this module failed to load correctly.
         return Promise.reject(e);
+      }).catch((e) => {
+        debug(e);
+        throw e;
       });
     };
 
@@ -187,16 +192,9 @@ class ModuleDef extends EventEmitter {
   // per-module globals (like network, which required 'deadline') to occur
   // dynamically. Basically, make this module's 'require' somehow delegate to
   // this particular instantiation.
-  instantiate(additionalGlobals, deadline) {
-    var defs = {};
-    var sandbox = _.extend({
-      register: register.create(defs),
-    }, serverSandbox(this.name, additionalGlobals));
-    // Use safeEval to actually run the script so that Node doesn't leak
-    // anything: https://github.com/nodejs/node/issues/3113
-    safeEval(this.def_, sandbox);
-    
-    return new defs.server(this.config, deadline);
+  instantiate(layoutGeometry, network, game, state, deadline) {
+    let classes = evalModule(this.def_, this.name, layoutGeometry, network, game, state);
+    return new classes.server(this.config, deadline);
   }
   
   // Returns a JSON-serializable form of this for transmission to the client.

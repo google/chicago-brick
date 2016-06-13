@@ -14,8 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-
-var _ = require('underscore');
+const wallGeometry = require('wallGeometry');
+const network = require('network');
+const _ = require('underscore');
 
 // This module introduces the server and network communication.
 // The server selects a new color every second and pushes that to the client.

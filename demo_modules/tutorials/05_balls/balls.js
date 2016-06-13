@@ -15,8 +15,9 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
-
-var Rectangle = require('lib/rectangle');
+const wallGeometry = require('wallGeometry');
+const state = require('state');
+const Rectangle = require('lib/rectangle');
 
 var BALL_RADIUS = 50;
 

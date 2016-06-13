@@ -33,7 +33,6 @@ define(function(require) {
   var moduleTicker = require('client/modules/module_ticker');
   const register = require('lib/register');
   
-  
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
     newContainer.className = 'container';
@@ -73,6 +72,12 @@ define(function(require) {
 
       // Module class instance.
       this.instance = null;
+
+      // Network instance for this module.
+      this.network = null;
+
+      // The name of the requirejs context for this module.
+      this.contextName = null;
     }
 
     // Deserializes from the json serialized form of ModuleDef in the server.
@@ -88,29 +93,27 @@ define(function(require) {
     }
 
     static newEmptyModule(deadline) {
-      return new ClientModule(
+      let ret = new ClientModule(
         'empty-module',
         {},
         new TitleCard({}),
         'var ModuleInterface = require("lib/module_interface"); class EmptyModule extends ModuleInterface.Client {} register(null, EmptyModule)',
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
-      ).instantiate();
+      );
+      ret.instantiate();
+      return ret;
     }
 
     instantiate() {
-      var moduleNetwork = network.forModule(
+      this.network = network.forModule(
         `${this.geo.extents.serialize()}-${this.deadline}`);
-      var openNetwork = moduleNetwork.open();
-
-      // The namespace available to client modules.
-      // cf. the server-side version in server/modules/module_defs.js.
-      var classes = {};
-      this.globals = {
-        register: register.create(classes),
-        require: require,
+      let openNetwork = this.network.open();
+    
+      this.contextName = 'module-' + this.deadline;
+    
+      return fakeRequire.createEnvironment(this.contextName, {
         debug: debugFactory('wall:module:' + this.name),
-        _network: moduleNetwork,
         network: openNetwork,
         titleCard: this.titleCard.getModuleAPI(),
         state: new StateManager(openNetwork),
@@ -118,24 +121,35 @@ define(function(require) {
         wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
           return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
         }, this)),
-        peerNetwork: peerNetwork,
-      };
+        peerNetwork: peerNetwork
+      }).then((moduleRequire) => {
+        let classes = {};
+        let sandbox = {
+          register: register.create(classes),
+          require: moduleRequire,
+        };
+        try {
+          safeEval(this.code, sandbox);
+        } catch (e) {
+          console.error('Error loading ' + this.name, e);
+          error(e);
+        }
+    
+        // Reset the context back to the default require context.
+        // TODO(applmak): Is this actually necessary?
+        requirejs.config({
+          context: '_'
+        });
+    
+        if (!classes.client) {
+          throw new Error('Failed to parse module ' + this.name);
+        }
+        if (!(classes.client.prototype instanceof moduleInterface.Client)) {
+          throw new Error('Malformed module definition! ' + this.name);
+        }
 
-      try {
-        safeEval(this.code, this.globals);
-      } catch (e) {
-        console.error('Error loading ' + this.name, e);
-        error(e);
-      }
-      if (!classes.client) {
-        throw new Error('Failed to parse module ' + this.name);
-      }
-      if (!(classes.client.prototype instanceof moduleInterface.Client)) {
-        throw new Error('Malformed module definition! ' + this.name);
-      }
-
-      this.instance = new classes.client(this.config);
-      return this;
+        this.instance = new classes.client(this.config);
+      });
     }
 
     willBeHiddenSoon() {
@@ -199,10 +213,11 @@ define(function(require) {
       this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 
-      // TODO(bmt): Make this a member variable of ClientModule rather than
-      // reaching into the globals.
-      if (this.globals._network) {
-        this.globals._network.close();
+      // Remove the module-specific requirejs context.
+      fakeRequire.deleteEnvironment(this.contextName);
+      
+      if (this.network) {
+        this.network.close();
       }
       try {
         this.instance.finishFadeOut();

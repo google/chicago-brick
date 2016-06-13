@@ -14,6 +14,8 @@ limitations under the License.
 ==============================================================================*/
 
 class SharedTestServer extends ModuleInterface.Server {}
+const wallGeometry = require('wallGeometry');
+const state = require('state');
 
 class SharedTestClient extends ModuleInterface.Client {
   finishFadeOut() {

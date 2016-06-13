@@ -19,37 +19,42 @@ var debug = require('debug')('wall:server_state_machine');
 
 var stateMachine = require('lib/state_machine');
 var logError = require('server/util/log').error(debug);
-var game = require('server/game/game');
 var time = require('server/util/time');
 var network = require('server/network/network');
-var StateManager = require('server/state/state_manager');
 var moduleTicker = require('server/modules/module_ticker');
-var geometry = require('lib/geometry');
+const game = require('server/game/game');
+const StateManager = require('server/state/state_manager');
 
 class RunningModule {
-  constructor(moduleDef, globals) {
+  constructor(moduleDef) {
     this.moduleDef = moduleDef;
-    this.globals = globals;
     this.instance = null;
   }
 
-  instantiate(deadline) {
-    this.instance = this.moduleDef.instantiate(this.globals, deadline);
+  instantiate(layoutGeometry, deadline) {
+    const INSTANTIATION_ID = `${layoutGeometry.extents.serialize()}-${deadline}`;
+    this.network = network.forModule(INSTANTIATION_ID);
+    this.gameManager = game.forModule(INSTANTIATION_ID);
+
+    var openNetwork = this.network.open();
+    this.state = new StateManager(openNetwork);
+    
+    this.instance = this.moduleDef.instantiate(layoutGeometry, openNetwork, this.gamemanager, this.state, deadline);
   }
 
   tick(now, delta) {
     this.instance.tick(now, delta);
-    this.globals.state.send();
+    this.state.send();
   }
 
   dispose() {
     this.instance.dispose();
 
     // Also clean up a stray singleton.
-    this.globals._network.close();
+    this.network.close();
 
     // Clean up game sockets.
-    this.globals.game.dispose();
+    this.gameManager.dispose();
   }
 }
 
@@ -91,32 +96,9 @@ var PrepareState = function(oldModule, moduleDef, deadline) {
 };
 PrepareState.prototype = Object.create(stateMachine.State.prototype);
 PrepareState.prototype.enter_ = function() {
-  // The various singletons that the framework exposes to the module interface
-  // that are module-specific and, hence, have module-specific cleanup.
-  var networkInstance = network.forModule(
-      `${this.context_.wallGeometry.extents.serialize()}-${this.deadline_}`);
-  var gameManager = game.forModule(
-      `${this.context_.wallGeometry.extents.serialize()}-${this.deadline_}`);
-  var openNetwork = networkInstance.open();
-
-  var globals = {
-    _network: networkInstance,
-    network: openNetwork,
-    game: gameManager,
-    state: new StateManager(openNetwork),
-    // Translate the local geometry so that it starts at (0, 0).
-    wallGeometry: new geometry.Polygon(
-        this.context_.wallGeometry.points.map((p) => {
-          return {
-            x: p.x - this.context_.wallGeometry.extents.x,
-            y: p.y - this.context_.wallGeometry.extents.y
-          };
-        })),
-  };
-
   // The module we're trying to load.
-  this.module_ = new RunningModule(this.moduleDef_, globals);
-  this.module_.instantiate(this.deadline_);
+  this.module_ = new RunningModule(this.moduleDef_);
+  this.module_.instantiate(this.context_.wallGeometry, this.deadline_);
 
   // Tell the old server module that it will be hidden soon.
   if (this.oldModule_) {

@@ -15,6 +15,10 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
+const wallGeometry = require('wallGeometry');
+const network = require('network');
+const debug = require('debug');
+
 
 var numColumns = 184;
 var numRows = 40;

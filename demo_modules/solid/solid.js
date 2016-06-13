@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
 
 class SolidColorServer extends ModuleInterface.Server {}
 

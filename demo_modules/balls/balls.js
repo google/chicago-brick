@@ -15,7 +15,10 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
-var Rectangle = require('lib/rectangle');
+const Rectangle = require('lib/rectangle');
+
+const network = require('network');
+const wallGeometry = require('wallGeometry');
 
 var GOOGLE_COLORS = ['#3369E8', '#D50F25', '#EEB211', '#009925'];
 var BALL_RADIUS = 50;
