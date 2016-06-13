@@ -28,7 +28,7 @@ const ModuleInterface = require('lib/module_interface');
 const assert = require('lib/assert');
 const _ = require('underscore');
 const wallGeometry = require('wallGeometry');
-const debug = require('wallGeometry');
+const debug = require('debug');
 const network = require('network');
 
 // DISPATCH TABLES
