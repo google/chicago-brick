@@ -21,14 +21,15 @@ const Rectangle = require('lib/rectangle');
 const _ = require('underscore');
 const Noise = require('noisejs');
 const assert = require('lib/assert');
-const wallGeometry = require('wallGeometry');
-const debug = require('debug');
-const network = require('network');
 
 
 var MAX_PARTICLES_PER_CLIENT = 100;
 
 class ParticlesServer extends ModuleInterface.Server {
+  constructor(config, services) {
+    super();
+    this.network = services.locate('network');
+  }
   makeParticle(time) {
     var x = Math.random() * wallGeometry.extents.w;
     var y = Math.random() * wallGeometry.extents.h;
@@ -59,7 +60,7 @@ class ParticlesServer extends ModuleInterface.Server {
     for (var c = 0; c < 10; ++c) {
       var newParticle = this.makeParticle(time);
       var r = Rectangle.centeredAt(newParticle.x, newParticle.y, 0, 0);
-      network.getClientsInRect(r).forEach((client) => {
+      this.network.getClientsInRect(r).forEach((client) => {
         client.socket.emit('newParticle', newParticle);
       });
     }
@@ -281,13 +282,19 @@ class ParticleEmitter {
 }
 
 class ParticlesClient extends ModuleInterface.Client {
+  constructor(config, services) {
+    this.debug = services.locate('debug');
+    this.network = services.locate('network');
+    this.wallGeometry = services.locate('wallGeometry');
+    this.peerNetwork = services.locate('peerNetwork');
+  }
   willBeShownSoon(container, deadline) {
     const THREE = require('three');
     this.noise = new Noise(deadline % 1);
     const ThreeJsSurface = require('client/surface/threejs_surface');
-    this.surface = new ThreeJsSurface(container, wallGeometry);
+    this.surface = new ThreeJsSurface(container, this.wallGeometry);
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.debugCanvas = new CanvasSurface(container, wallGeometry);
+    this.debugCanvas = new CanvasSurface(container, this.wallGeometry);
     this.debugCanvas.canvas.addEventListener('click', (e) => {
       this.persistence_.addData({
         x: 100,
@@ -384,12 +391,12 @@ class ParticlesClient extends ModuleInterface.Client {
     this.surface.camera.updateProjectionMatrix();
     
     this.idToIndex_ = {};
-    return peerNetwork.open(deadline).then((peer) => {
-      debug('Connected to peer network.');
+    return this.peerNetwork.open(deadline).then((peer) => {
+      this.debug('Connected to peer network.');
       this.peer_ = peer;
       const NeighborPersistence = require('client/network/neighbor_persistence');
       this.persistence_ = new NeighborPersistence(this.surface.virtualRectNoBezel, peer);
-      network.on('newParticle', (newParticle) => {
+      this.network.on('newParticle', (newParticle) => {
         // When the server sends us something, it's definitely relevant.
         this.persistence_.addData(newParticle);
       });
@@ -418,7 +425,7 @@ class ParticlesClient extends ModuleInterface.Client {
       );
       if (index == -1) {
         // Our emitter is full! Just drop this particle.
-        debug('Emitter is full!', data._id);
+        this.debug('Emitter is full!', data._id);
         return false;
       }
       
@@ -485,7 +492,7 @@ class ParticlesClient extends ModuleInterface.Client {
       }
       return true;
     }, (data) => {
-      debug('Removing particle ' + data._id);
+      this.debug('Removing particle ' + data._id);
       // When we delete a particle, we should remove it from our emitter.
       assert(data._id in this.idToIndex_, 'Attempting to remove a particle ' + data._id + ' that isn\'t in the index map!');
       var index = this.idToIndex_[data._id];

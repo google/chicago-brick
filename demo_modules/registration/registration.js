@@ -14,13 +14,13 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
 
 class RegistrationServer extends ModuleInterface.Server {}
 
 class RegistrationClient extends ModuleInterface.Client {
-  constructor(config) {
+  constructor(config, services) {
     super();
+    this.wallGeometry = services.locate('wallGeometry');
     this.speed_ = config.speed || 1;
   }
 
@@ -32,7 +32,7 @@ class RegistrationClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
+    this.surface = new CanvasSurface(container, this.wallGeometry);
     this.canvas = this.surface.context;
   }
 

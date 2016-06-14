@@ -15,8 +15,6 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
-const wallGeometry = require('wallGeometry');
-const state = require('state');
 const Rectangle = require('lib/rectangle');
 
 var BALL_RADIUS = 50;
@@ -41,9 +39,11 @@ function makeBoxPolygon(x, y, radius) {
 }
 
 class BallsServer extends ModuleInterface.Server {
-  constructor() {
+  constructor(config, services) {
     super();
     this.ballData = makeBallData();
+    this.wallGeometry = services.locate('wallGeometry');
+    this.state = services.locate('state');
   }
 
   willBeShownSoon() {
@@ -60,11 +60,11 @@ class BallsServer extends ModuleInterface.Server {
       
       // Generate this ball's collision box:
       var ballPolygon = makeBoxPolygon(this.ballData.x, this.ballData.y, BALL_RADIUS);
-    } while (!geometry.isInsidePolygon(ballPolygon, wallGeometry));
+    } while (!geometry.isInsidePolygon(ballPolygon, this.wallGeometry));
     
     // Move the ball towards the center of the wall.
-    var wallCenterX = wallGeometry.extents.x + wallGeometry.extents.w/2;
-    var wallCenterY = wallGeometry.extents.y + wallGeometry.extents.h/2;
+    var wallCenterX = this.wallGeometry.extents.x + this.wallGeometry.extents.w/2;
+    var wallCenterY = this.wallGeometry.extents.y + this.wallGeometry.extents.h/2;
     
     this.ballData.vx = wallCenterX - this.ballData.x;
     this.ballData.vy = wallCenterY - this.ballData.y;
@@ -74,7 +74,7 @@ class BallsServer extends ModuleInterface.Server {
     this.ballData.vx *= 300/speed;
     this.ballData.vy *= 300/speed;
     
-    state.create('balldata', {
+    this.state.create('balldata', {
       x: 'NumberLerpInterpolator',
       y: 'NumberLerpInterpolator',
       vx: 'ValueNearestInterpolator',
@@ -98,12 +98,12 @@ class BallsServer extends ModuleInterface.Server {
         // If we move outside of it, flip the appropriate direction.
         var newBallPolygon = makeBoxPolygon(newX, newY, BALL_RADIUS);
 
-        if (geometry.isInsidePolygon(newBallPolygon, wallGeometry)) {
+        if (geometry.isInsidePolygon(newBallPolygon, this.wallGeometry)) {
           //debug('No collision found!', timeLeft);
           break;
         } else {
           // Figure out which line we are passing through...
-          var intersection = geometry.intersectPolygonPolygon(newBallPolygon, wallGeometry);
+          var intersection = geometry.intersectPolygonPolygon(newBallPolygon, this.wallGeometry);
           if (!intersection) {
             //debug('intersection error', newBallPolygon.extents.serialize(), wallGeometry.extents.serialize());
             throw new Error('We moved through the polygon, but couldn\'t find an intersection');
@@ -137,11 +137,16 @@ class BallsServer extends ModuleInterface.Server {
       }
     } while (true);
     
-    state.get('balldata').set(this.ballData, time);
+    this.state.get('balldata').set(this.ballData, time);
   }
 }
 
 class BallsClient extends ModuleInterface.Client {
+  constructor(config, services) {
+    super();
+    this.wallGeometry = services.locate('wallGeometry');
+    this.state = services.locate('state');
+  }
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -150,7 +155,7 @@ class BallsClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
+    this.surface = new CanvasSurface(container, this.wallGeometry);
     this.canvas = this.surface.context;
   }
 
@@ -159,7 +164,7 @@ class BallsClient extends ModuleInterface.Client {
     this.canvas.fillStyle = 'black';
     this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
     
-    var data = state.get('balldata');
+    var data = this.state.get('balldata');
     if (!data) {
       return;
     }

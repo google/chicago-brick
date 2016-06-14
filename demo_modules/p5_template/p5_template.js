@@ -14,14 +14,12 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
-const debug = require('debug');
 
 class P5TemplateServer extends ModuleInterface.Server {
-  constructor(config, startTime) {
+  constructor(config, services) {
     super();
+    let debug = services.locate('debug');
     debug('P5Template Server!', config);
-    this.startTime = startTime;
   }
 }
 
@@ -48,8 +46,10 @@ class P5TemplateSketch {
 }
 
 class P5TemplateClient extends ModuleInterface.Client {
-  constructor(config) {
+  constructor(config, services) {
     super();
+    let debug = services.locate('debug');
+    this.wallGeometry = services.locate('wallGeometry');
     debug('P5Template Client!', config);
   }
 
@@ -63,7 +63,7 @@ class P5TemplateClient extends ModuleInterface.Client {
     this.startTime = deadline;
 
     const P5Surface = require('client/surface/p5_surface');
-    this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
+    this.surface = new P5Surface(container, this.wallGeometry, P5TemplateSketch, deadline);
   }
 
   draw(time, delta) {

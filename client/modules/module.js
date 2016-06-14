@@ -31,6 +31,7 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
+  const serviceLocator = require('lib/service_locator');
   
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
@@ -127,17 +128,7 @@ define(function(require) {
         window.register.contexts = {};
       }
       
-      return fakeRequire.createEnvironment(this.contextName, {
-        debug: debugFactory('wall:module:' + this.name),
-        network: openNetwork,
-        titleCard: this.titleCard.getModuleAPI(),
-        state: new StateManager(openNetwork),
-        globalWallGeometry: this.geo,
-        wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
-          return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
-        }, this)),
-        peerNetwork: peerNetwork
-      }).then((moduleRequire) => {
+      return fakeRequire.createEnvironment(this.contextName, {}).then((moduleRequire) => {
         let sandbox = {
           require: moduleRequire,
         };
@@ -164,7 +155,19 @@ define(function(require) {
           throw new Error('Malformed module definition! ' + this.name);
         }
 
-        this.instance = new classes.client(this.config);
+        this.services = serviceLocator.create({
+          debug: () => debugFactory('wall:module:' + this.name),
+          network: () => openNetwork,
+          titleCard: () => this.titleCard.getModuleAPI(),
+          state: () => new StateManager(openNetwork),
+          globalWallGeometry: () => this.geo,
+          wallGeometry: () => new geometry.Polygon(this.geo.points.map(function(p) {
+            return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
+          }, this)),
+          peerNetwork: () => peerNetwork
+        });
+      
+        this.instance = new classes.client(this.config, this.services);
       });
     }
 

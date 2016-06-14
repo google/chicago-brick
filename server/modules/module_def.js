@@ -31,6 +31,7 @@ const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 const geometry = require('lib/geometry');
+const serviceLocator = require('lib/service_locator');
 
 const read = (path) => {
   return new Promise(function(resolve, reject) {
@@ -44,7 +45,7 @@ const read = (path) => {
   });
 };
 
-const evalModule = (contents, name, layoutGeometry, network, game, state) => {
+const evalModule = (contents) => {
   let classes = {};
   let sandbox = {
     // The main registration function.
@@ -55,19 +56,7 @@ const evalModule = (contents, name, layoutGeometry, network, game, state) => {
     // A fake require that first checks to see if the require is one of our
     // per-invocation dependencies. If so, uses that. Otherwise, delegates to
     // normal require.
-    require: fakeRequire.createEnvironment({
-      network,
-      game,
-      state,
-      wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
-        return {
-          x: p.x - layoutGeometry.extents.x,
-          y: p.y - layoutGeometry.extents.y
-        };
-      })),
-      debug: debugFactory('wall:module:' + name),
-      globalWallGeometry: wallGeometry.getGeo(),
-    })
+    require: fakeRequire.createEnvironment({}),
   };
   
   // Use safeEval to actually run the script so that Node doesn't leak
@@ -196,7 +185,21 @@ class ModuleDef extends EventEmitter {
   // this particular instantiation.
   instantiate(layoutGeometry, network, game, state, deadline) {
     let classes = evalModule(this.def_, this.name, layoutGeometry, network, game, state);
-    return new classes.server(this.config, deadline);
+    let services = serviceLocator.create({
+      network: () => network,
+      game: () => game,
+      state: () => state,
+      wallGeometry: () => new geometry.Polygon(layoutGeometry.points.map((p) => {
+        return {
+          x: p.x - layoutGeometry.extents.x,
+          y: p.y - layoutGeometry.extents.y
+        };
+      })),
+      debug: () => debugFactory('wall:module:' + this.name),
+      globalWallGeometry: () => wallGeometry.getGeo(),
+    });
+    
+    return new classes.server(this.config, services);
   }
   
   // Returns a JSON-serializable form of this for transmission to the client.

@@ -15,9 +15,6 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const _ = require('underscore');
-const debug = require('debug');
-const network = require('network');
-const wallGeometry = require('wallGeometry');
 
 //
 // Module Confguration
@@ -75,11 +72,15 @@ function sandboxCode(defaultParams, code) {
 // Server Module
 //
 class ChicagoBrickLiveServer extends ModuleInterface.Server {
-  constructor(config) {
+  constructor(config, services) {
     super();
 
+    this.debug = services.locate('debug');
+    let network = services.locate('network');
+    
     this.config = _.defaults(config, DEFAULT_CONFIG);
-    debug(`Attempting to use codeserver at ${this.config.codeServer}`);
+    
+    this.debug(`Attempting to use codeserver at ${this.config.codeServer}`);
 
     // All clients (x, y) that have ever connected.  Used to notify all clients
     // of global code changes (e.g., codeserver comes online) and cache code.
@@ -89,7 +90,7 @@ class ChicagoBrickLiveServer extends ModuleInterface.Server {
 
     // Setup connection to code server.
     this.codeServer.on('connect', () => {
-      debug(`Connected to code server (${this.config.codeServer}).`);
+      this.debug(`Connected to code server (${this.config.codeServer}).`);
 
       // When code server connection is made re-request code for all clients
       // we know about.
@@ -100,13 +101,13 @@ class ChicagoBrickLiveServer extends ModuleInterface.Server {
     });
 
     this.codeServer.on('disconnect', () => {
-      debug('Disconnected from code server.');
+      this.debug('Disconnected from code server.');
     });
 
     this.codeServer.on('code', (data) => {
       // Make a unique key of the form 'x,y' so we can use a dictionary for clients.
       var key = getClientKey(data.client);
-      debug(`Received new info for client(${key}).`);
+      this.debug(`Received new info for client(${key}).`);
 
       // Override empty code
       data.code = data.code || defaultClientCode(data.client, this.config.noCodeMessage);
@@ -123,8 +124,8 @@ class ChicagoBrickLiveServer extends ModuleInterface.Server {
       socket.on('requestCode', (data) => {
 
         const key = getClientKey(data.client);
-        debug(`Client(${key}) requested code.`);
-        debug(`Code server connected: ${this.codeServer.connected}`);
+        this.debug(`Client(${key}) requested code.`);
+        this.debug(`Code server connected: ${this.codeServer.connected}`);
 
         // Track the client
         this.clients[key] = _.extend(this.clients[key] || {}, { client: data.client });
@@ -133,7 +134,7 @@ class ChicagoBrickLiveServer extends ModuleInterface.Server {
         let response;
 
         if (this.clients[key].code || !this.codeServer.connected) {
-          debug(`Sending cached code to client(${key}).`);
+          this.debug(`Sending cached code to client(${key}).`);
           response = _.defaults(this.clients[key], {
             client: data.client,
             code: defaultClientCode(data.client, "No code server available")
@@ -156,7 +157,7 @@ class ChicagoBrickLiveServer extends ModuleInterface.Server {
   requestCode(client) {
     // Request code from code server
     const key = getClientKey(client);
-    debug(`Requesting code for client(${key}) from code server.`);
+    this.debug(`Requesting code for client(${key}) from code server.`);
     this.codeServer.emit('requestCode', { client: client });
   }
 }
@@ -272,6 +273,11 @@ class Artist {
 // Client Module
 //
 class ChicagoBrickLiveClient extends ModuleInterface.Client {
+  constructor(config, services) {
+    super();
+    this.wallGeometry = services.locate('wallGeometry');
+    this.network = services.locate('network');
+  }
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -280,14 +286,14 @@ class ChicagoBrickLiveClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
+    this.surface = new CanvasSurface(container, this.wallGeometry);
     this.canvas = this.extendCanvas(this.surface.context);
     this.screen = { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height };
 
     // Basic client info.
     this.client = {
-          x: this.surface.virtualOffset.x,
-          y: this.surface.virtualOffset.y,
+      x: this.surface.virtualOffset.x,
+      y: this.surface.virtualOffset.y,
     };
 
     // Use the default code until told otherwise.
@@ -295,10 +301,10 @@ class ChicagoBrickLiveClient extends ModuleInterface.Client {
 
     // The event we listen to for new code.
     this.newCodeEvent = `code(${getClientKey(this.client)})`;
-    network.on(this.newCodeEvent, this.setClientCode.bind(this));
+    this.network.on(this.newCodeEvent, this.setClientCode.bind(this));
 
     // Ask for some code to run.
-    network.emit('requestCode', { client: this.client });
+    this.network.emit('requestCode', { client: this.client });
   }
 
   extendCanvas(canvas) {
@@ -381,9 +387,9 @@ class ChicagoBrickLiveClient extends ModuleInterface.Client {
     this.canvas.save();
     try {
       const params = {
-          time: time - this.clientCode.time0,
-          globalTime: time,
-          artist: new Artist(this.canvas)
+        time: time - this.clientCode.time0,
+        globalTime: time,
+        artist: new Artist(this.canvas)
       };
 
       // Put the artist in the middle of the screen.

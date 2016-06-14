@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
 
 class ProceduralServer extends ModuleInterface.Server {}
 
@@ -27,9 +26,13 @@ class ProceduralServer extends ModuleInterface.Server {}
 // Play with various values of xSpeed, ySpeed and maxDistance to see different
 // patterns.
 class ProceduralClient extends ModuleInterface.Client {
+  constructor(config, services) {
+    super();
+    this.wallGeometry = services.locate('wallGeometry');
+  }
   willBeShownSoon(container) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
+    this.surface = new CanvasSurface(container, this.wallGeometry);
     this.canvas = this.surface.context;
 
     // Don't put things in draw that don't change from frame to frame.

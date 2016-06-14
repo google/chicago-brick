@@ -15,18 +15,18 @@ limitations under the License.
 
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
-const wallGeometry = require('wallGeometry');
-const network = require('network');
-const debug = require('debug');
 
 
 var numColumns = 184;
 var numRows = 40;
 
 class P5GameOfLifeServer extends ModuleInterface.Server {
-  constructor(config) {
+  constructor(config, services) {
     super();
-    debug('P5GameOfLife Server!', config);
+    this.debug = services.locate('debug');
+    this.network = services.locate('network');
+    
+    this.debug('P5GameOfLife Server!', config);
 
     this.numTicks = 0;
     this.numTicksBetweenIterations = 2;
@@ -95,7 +95,7 @@ class P5GameOfLifeServer extends ModuleInterface.Server {
     this.gameBoard = this.tmpBoard;
     this.tmpBoard = temp;
 
-    network.emit('board', {
+    this.network.emit('board', {
       board : this.gameBoard,
     });
   }
@@ -233,8 +233,12 @@ class P5GameOfLifeSketch {
 }
 
 class P5GameOfLifeClient extends ModuleInterface.Client {
-  constructor(config) {
+  constructor(config, services) {
     super();
+    let debug = services.locate('debug');
+    let network = services.locate('network');
+    this.wallGeometry = services.locate('wallGeometry');
+    
     debug('P5GameOfLife Client!', config);
     this.image = null;
     this.surface = null;
@@ -254,7 +258,7 @@ class P5GameOfLifeClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const P5Surface = require('client/surface/p5_surface');
-    this.surface = new P5Surface(container, wallGeometry, P5GameOfLifeSketch, deadline);
+    this.surface = new P5Surface(container, this.wallGeometry, P5GameOfLifeSketch, deadline);
   }
 
   draw(time, delta) {

@@ -14,23 +14,22 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
-const network = require('network');
 const _ = require('underscore');
 
 // This module introduces the server and network communication.
 // The server selects a new color every second and pushes that to the client.
 class ColorsServer extends ModuleInterface.Server {
-  constructor() {
+  constructor(config, services) {
     super();
     this.nextColorTime = 0;
+    this.network = services.locate('network');
   }
 
   tick(time, delta) {
     if (time > this.nextColorTime) {
       this.nextColorTime = time + 1000;
 
-      network.emit('colorChange', {
+      this.network.emit('colorChange', {
         color : _.sample([
           'red',
           'green',
@@ -48,11 +47,14 @@ class ColorsServer extends ModuleInterface.Server {
 }
 
 class ColorsClient extends ModuleInterface.Client {
-  constructor() {
+  constructor(config, services) {
     super();
     this.color_ = 'black';
     this.nextColor_ = 'black';
     this.switchTime_ = Infinity;
+    
+    let network = services.locate('network');
+    this.wallGeometry = services.locate('wallGeometry');
     
     var self = this;
     network.on('colorChange', function handleColor(data) {
@@ -63,7 +65,7 @@ class ColorsClient extends ModuleInterface.Client {
 
   willBeShownSoon(container) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
+    this.surface = new CanvasSurface(container, this.wallGeometry);
     this.canvas = this.surface.context;
   }
 

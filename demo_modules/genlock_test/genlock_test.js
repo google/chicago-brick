@@ -14,11 +14,14 @@ limitations under the License.
 ==============================================================================*/
 
 const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
 
 class GenlockTestServer extends ModuleInterface.Server {}
 
 class GenlockTestClient extends ModuleInterface.Client {
+  constructor(config, services) {
+    super();
+    this.wallGeometry = services.locate('wallGeometry');
+  }
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -27,7 +30,7 @@ class GenlockTestClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
+    this.surface = new CanvasSurface(container, this.wallGeometry);
     this.canvas = this.surface.context;
 
     // Despite the background and text colors changing, the rest of the text
