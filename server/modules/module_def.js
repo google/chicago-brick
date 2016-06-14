@@ -30,7 +30,6 @@ const network = require('server/network/network');
 const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
-const register = require('lib/register');
 const geometry = require('lib/geometry');
 
 const read = (path) => {
@@ -49,7 +48,10 @@ const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   let classes = {};
   let sandbox = {
     // The main registration function.
-    register: register.create(classes),
+    register: function(server, client) {
+      classes.server = server;
+      classes.client = client;
+    },
     // A fake require that first checks to see if the require is one of our
     // per-invocation dependencies. If so, uses that. Otherwise, delegates to
     // normal require.

@@ -31,7 +31,6 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-  const register = require('lib/register');
   
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
@@ -111,7 +110,23 @@ define(function(require) {
       let openNetwork = this.network.open();
     
       this.contextName = 'module-' + this.deadline;
-    
+      
+      // Ensure that there's a registration function in the global namespace.
+      if (!window.register) {
+        window.register = function(server, client) {
+          // In the future, we'll be requiring using requirejs. When that
+          // happens, we'll only know _which_ script is doing its thing by
+          // looking at the requirejscontext stored on the current script. Until
+          // that day, just look at a side-channel global that we set below.
+          let script = document.currentScript;
+          let contextName = script ?
+              script.getAttribute('data-requirecontext') :
+              window.currentContextName;
+          window.register.contexts[contextName] = {server, client};
+        };
+        window.register.contexts = {};
+      }
+      
       return fakeRequire.createEnvironment(this.contextName, {
         debug: debugFactory('wall:module:' + this.name),
         network: openNetwork,
@@ -123,17 +138,18 @@ define(function(require) {
         }, this)),
         peerNetwork: peerNetwork
       }).then((moduleRequire) => {
-        let classes = {};
         let sandbox = {
-          register: register.create(classes),
           require: moduleRequire,
         };
+        window.currentContextName = this.contextName;
         try {
           safeEval(this.code, sandbox);
         } catch (e) {
           console.error('Error loading ' + this.name, e);
           error(e);
         }
+    
+        let classes = window.register.contexts[this.contextName];
     
         // Reset the context back to the default require context.
         // TODO(applmak): Is this actually necessary?
