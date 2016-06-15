@@ -13,37 +13,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
+const wallGeometry = require('wallGeometry');
+const state = require('state');
 
 class StarsServer extends ModuleInterface.Server {
-  constructor(config, services) {
+  constructor() {
     super();
     this.stars = [];
-    this.wallGeometry = services.locate('wallGeometry');
-    this.state = services.locate('state');
   }
 
   willBeShownSoon() {
     // Randomly create the stars.
     for (var i = 0; i < 1000; ++i) {
-      this.stars.push({x: Math.random() * this.wallGeometry.extents.w,
-                       y: Math.random() * this.wallGeometry.extents.h});
+      this.stars.push({x: Math.random() * wallGeometry.extents.w,
+                       y: Math.random() * wallGeometry.extents.h});
     }
     
-    this.state.create('stars', [{
+    state.create('stars', [{
       x: 'NumberLerpInterpolator',
       y: 'NumberLerpInterpolator',
     }]);
   }
 
   tick(time, delta) {
-    var centerX = this.wallGeometry.extents.x + this.wallGeometry.extents.w/2;
-    var centerY = this.wallGeometry.extents.y + this.wallGeometry.extents.h/2;
-    this.stars.forEach((star, index) => {
+    var centerX = wallGeometry.extents.x + wallGeometry.extents.w/2;
+    var centerY = wallGeometry.extents.y + wallGeometry.extents.h/2;
+    this.stars.forEach(function(star, index) {
       if (star.x === Infinity) {
         var width = 300;
-        var height = width * this.wallGeometry.extents.h / this.wallGeometry.extents.w;
+        var height = width * wallGeometry.extents.h / wallGeometry.extents.w;
         star.x = (Math.random()-0.5) * width;
         star.y = (Math.random()-0.5) * height;
         star.x += centerX;
@@ -56,26 +57,21 @@ class StarsServer extends ModuleInterface.Server {
       star.x += dx * delta / 1000;
       star.y += dy * delta / 1000;
       
-      if (!geometry.isInsideRect(this.wallGeometry.extents, star.x, star.y)) {
+      if (!geometry.isInsideRect(wallGeometry.extents, star.x, star.y)) {
         // Ensure the lerp lerps off screen.
         star.x = Infinity;
         star.y = Infinity;
       }
     });
     
-    this.state.get('stars').set(this.stars, time);
+    state.get('stars').set(this.stars, time);
   }
 }
 
 class StarsClient extends ModuleInterface.Client {
-  constructor(config, services) {
-    super();
-    this.wallGeometry = services.locate('wallGeometry');
-    this.state = services.locate('state');
-  }
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, this.wallGeometry);
+    this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
   }
 
@@ -84,7 +80,7 @@ class StarsClient extends ModuleInterface.Client {
     this.canvas.fillStyle = 'black';
     this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
     
-    var starsState = this.state.get('stars');
+    var starsState = state.get('stars');
     if (!starsState) {
       return;
     }
@@ -94,8 +90,8 @@ class StarsClient extends ModuleInterface.Client {
       return;
     }
 
-    var centerX = this.wallGeometry.extents.x + this.wallGeometry.extents.w/2;
-    var centerY = this.wallGeometry.extents.y + this.wallGeometry.extents.h/2;
+    var centerX = wallGeometry.extents.x + wallGeometry.extents.w/2;
+    var centerY = wallGeometry.extents.y + wallGeometry.extents.h/2;
     
     // Push a transform.
     this.surface.pushOffset();

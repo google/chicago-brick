@@ -13,15 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
 
 class SolidColorServer extends ModuleInterface.Server {}
 
 class SolidColorClient extends ModuleInterface.Client {
-  constructor(config, services) {
+  constructor(config) {
     super();
     this.color = config.color || 'red';
-    this.wallGeometry = services.locate('wallGeometry');
   }
 
   finishFadeOut() {
@@ -31,7 +32,7 @@ class SolidColorClient extends ModuleInterface.Client {
   }
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, this.wallGeometry);
+    this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
   }
   draw(time, delta) {

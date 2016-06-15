@@ -13,16 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const _ = require('underscore');
+const debug = require('debug');
+const network = require('network');
 
 class HelloWorldServer extends ModuleInterface.Server {
-  constructor(config, services) {
+  constructor(config) {
     super();
-    this.debug = services.locate('debug');
-    this.network = services.locate('network');
-    
-    this.debug('Hello, world!', config);
+    debug('Hello, world!', config);
     this.nextcolorTime = 0;
   }
 
@@ -31,7 +31,7 @@ class HelloWorldServer extends ModuleInterface.Server {
     // broadcast to clients.
     if (!this.nextColorTime) {
       this.nextColorTime = time + 1000;
-      this.network.emit('color', {
+      network.emit('color', {
         color : _.sample([
           'red',
           'green',
@@ -44,21 +44,17 @@ class HelloWorldServer extends ModuleInterface.Server {
         ]),
         time : this.nextColorTime
       });
-      this.debug('choose color', this.nextColorTime);
+      debug('choose color', this.nextColorTime);
       Promise.delay(1100).then((function() { this.nextColorTime = 0; }).bind(this));
     }
   }
 }
 
 class HelloWorldClient extends ModuleInterface.Client {
-  constructor(config, services) {
+  constructor(config) {
     super();
     
-    this.debug = services.locate('debug');
-    this.wallGeometry = services.locate('wallGeometry');
-    this.network = services.locate('network');
-    
-    this.debug('Hello, world!', config);
+    debug('Hello, world!', config);
     this.color = config.color;
     this.nextColor = null;
     this.nextColorTime = 0;
@@ -66,8 +62,8 @@ class HelloWorldClient extends ModuleInterface.Client {
     this.surface = null;
 
     var client = this;
-    this.network.on('color', (data) => {
-      this.debug('handle color', data);
+    network.on('color', function handleColor(data) {
+      debug('handle color', data);
       client.nextColor = data.color;
       client.nextColorTime = data.time;
     });
@@ -84,14 +80,16 @@ class HelloWorldClient extends ModuleInterface.Client {
     
     this.startTime = deadline;
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, this.wallGeometry);
+    const wallGeometry = require('wallGeometry');
+    this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
 
     // Load the image asset.
-    return new Promise((resolve, reject) => {
-      this.image = new Image;
-      this.image.onload = resolve;
-      this.image.src = asset('fractal.gif');
+    var self = this;
+    return new Promise(function(resolve, reject) {
+      self.image = new Image;
+      self.image.onload = resolve;
+      self.image.src = asset('fractal.gif');
     });
   }
 

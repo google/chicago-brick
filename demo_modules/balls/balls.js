@@ -13,24 +13,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
 const Rectangle = require('lib/rectangle');
+
+const network = require('network');
+const wallGeometry = require('wallGeometry');
 
 var GOOGLE_COLORS = ['#3369E8', '#D50F25', '#EEB211', '#009925'];
 var BALL_RADIUS = 50;
 var NUM_BALLS = 200;
 
 class BallsServer extends ModuleInterface.Server {
-  constructor(config, services) {
-    super();
-    this.services = services;
-    
-    this.wallGeometry = this.services.locate('wallGeometry');
-  }
   willBeShownSoon(container, deadline) {
     this.balls = [];
-    var extents = this.wallGeometry.extents;
+    var extents = wallGeometry.extents;
     var spawnRect = new Rectangle(
       extents.x + BALL_RADIUS,
       extents.y + BALL_RADIUS,
@@ -49,7 +47,7 @@ class BallsServer extends ModuleInterface.Server {
 
   tick(time, delta) {
     // Move the balls a bit.
-    this.balls.forEach((ball, index) => {
+    this.balls.forEach(function(ball, index) {
       var nx = ball.x + ball.vx * delta / 2.0;
       var ny = ball.y + ball.vy * delta / 2.0;
             
@@ -62,9 +60,9 @@ class BallsServer extends ModuleInterface.Server {
       // BUT we can assume that all balls start inside.
       
       // If we are moving outside of the wall...
-      if (!geometry.isInsidePolygon(newPolygon, this.wallGeometry)) {
+      if (!geometry.isInsidePolygon(newPolygon, wallGeometry)) {
         // Figure out which line we are passing through...
-        var intersection = geometry.intersectPolygonPolygon(newPolygon, this.wallGeometry);
+        var intersection = geometry.intersectPolygonPolygon(newPolygon, wallGeometry);
         if (intersection) {
           // We definitely need to flip, because we are leaving the wall.
           // Figure out if this is a horizontal line.
@@ -88,7 +86,6 @@ class BallsServer extends ModuleInterface.Server {
       ball.y = ny;
     });
     
-    let network = this.services.locate('network');
     network.emit('balls', {time: time, balls: this.balls});
   }
 
@@ -104,16 +101,13 @@ class BallsServer extends ModuleInterface.Server {
 }
 
 class BallsClient extends ModuleInterface.Client {
-  constructor(config, services) {
+  constructor(config) {
     super();
     // We keep track of X data points.
     // Each data point is of the form (time, balls).
     // We lerp between the times to figure out what we are doing.
     this.balls = [];
-    
-    this.wallGeometry = services.locate('wallGeometry');
     var client = this;
-    let network = services.locate('network');
     network.on('balls', function handleBalls(balls) {
       var t = balls.time;
       // Lie about when the balls came in so that the draw method, which is 
@@ -134,7 +128,7 @@ class BallsClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, this.wallGeometry);
+    this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
   }
 

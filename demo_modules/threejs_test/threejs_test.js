@@ -13,14 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
 
 class ThreeJsTestServer extends ModuleInterface.Server {}
 
 class ThreeJsTestClient extends ModuleInterface.Client {
-  constructor(config, services) {
-    this.wallGeometry = services.locate('wallGeometry');
-  }
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -31,7 +30,7 @@ class ThreeJsTestClient extends ModuleInterface.Client {
     const THREE = require('three');
     this.startTime = deadline;
     const ThreeJsSurface = require('client/surface/threejs_surface');
-    this.surface = new ThreeJsSurface(container, this.wallGeometry);
+    this.surface = new ThreeJsSurface(container, wallGeometry);
 
     var geometry = new THREE.BoxGeometry(3, 3, 3);
     var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });

@@ -31,7 +31,6 @@ const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 const geometry = require('lib/geometry');
-const serviceLocator = require('lib/service_locator');
 
 const read = (path) => {
   return new Promise(function(resolve, reject) {
@@ -45,18 +44,31 @@ const read = (path) => {
   });
 };
 
-const evalModule = (contents) => {
+const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   let classes = {};
   let sandbox = {
-    // The main registration function.
-    register: function(server, client) {
-      classes.server = server;
-      classes.client = client;
-    },
     // A fake require that first checks to see if the require is one of our
     // per-invocation dependencies. If so, uses that. Otherwise, delegates to
     // normal require.
-    require: fakeRequire.createEnvironment({}),
+    require: fakeRequire.createEnvironment({
+      network,
+      game,
+      state,
+      wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
+        return {
+          x: p.x - layoutGeometry.extents.x,
+          y: p.y - layoutGeometry.extents.y
+        };
+      })),
+      debug: debugFactory('wall:module:' + name),
+      globalWallGeometry: wallGeometry.getGeo(),
+      
+      // The main registration function.
+      register: function(server, client) {
+        classes.server = server;
+        classes.client = client;
+      },
+    })
   };
   
   // Use safeEval to actually run the script so that Node doesn't leak
@@ -208,29 +220,8 @@ class ModuleDef extends EventEmitter {
   // dynamically. Basically, make this module's 'require' somehow delegate to
   // this particular instantiation.
   instantiate(layoutGeometry, network, game, state, deadline) {
-    if (!this.valid) {
-      if (this.def) {
-        debug('Instantiating invalid module with last valid version.', this.name, this.path);
-      } else {
-        throw new Error('Attempted to instantiate invalid module (' + this.name + ' @ ' + this.path + ') with no valid version!');
-      }
-    }
     let classes = evalModule(this.def, this.name, layoutGeometry, network, game, state);
-    let services = serviceLocator.create({
-      network: () => network,
-      game: () => game,
-      state: () => state,
-      wallGeometry: () => new geometry.Polygon(layoutGeometry.points.map((p) => {
-        return {
-          x: p.x - layoutGeometry.extents.x,
-          y: p.y - layoutGeometry.extents.y
-        };
-      })),
-      debug: () => debugFactory('wall:module:' + this.name),
-      globalWallGeometry: () => wallGeometry.getGeo(),
-    });
-    
-    return new classes.server(this.config, services);
+    return new classes.server(this.config, deadline);
   }
   
   // Returns a JSON-serializable form of this for transmission to the client.

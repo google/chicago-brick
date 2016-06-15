@@ -31,7 +31,6 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-  const serviceLocator = require('lib/service_locator');
   
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
@@ -111,26 +110,25 @@ define(function(require) {
       let openNetwork = this.network.open();
     
       this.contextName = 'module-' + this.deadline;
+      let classes = {};
       
-      // Ensure that there's a registration function in the global namespace.
-      if (!window.register) {
-        window.register = function(server, client) {
-          // Use a side-channel to report on server & client.
-          window.registerContext = {server, client};
-        };
-      }
-      
-      return fakeRequire.createEnvironment(this.contextName, {}).then((moduleRequire) => {
-        return new Promise((resolve) => {
-          // Load the module @ path under the new require context, in order to
-          // avoid polluting our main require context.
+      return fakeRequire.createEnvironment(this.contextName, {
+        debug: debugFactory('wall:module:' + this.name),
+        network: openNetwork,
+        titleCard: this.titleCard.getModuleAPI(),
+        state: new StateManager(openNetwork),
+        globalWallGeometry: this.geo,
+        wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
+          return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
+        }, this)),
+        peerNetwork: peerNetwork,
+        register: (server, client) => {
+          classes.server = server;
+          classes.client = client;
+        },
+      }).then((moduleRequire) => {
+        return new Promise((resolve, reject) => {
           moduleRequire([this.path], () => {
-            // Read the current defs from our register side-channel.
-            let classes = window.registerContext;
-            if (!classes) {
-              throw new Error('Module failed to register classes! ' + this.name);
-            }
-    
             // Remove the module-specific requirejs context. This will force the
             // next require of this module to go to the server, as we're
             // essentially invalidating the local cache of files by trashing
@@ -145,22 +143,9 @@ define(function(require) {
             if (!(classes.client.prototype instanceof moduleInterface.Client)) {
               throw new Error('Malformed module definition! ' + this.name);
             }
-
-            this.services = serviceLocator.create({
-              debug: () => debugFactory('wall:module:' + this.name),
-              network: () => openNetwork,
-              titleCard: () => this.titleCard.getModuleAPI(),
-              state: () => new StateManager(openNetwork),
-              globalWallGeometry: () => this.geo,
-              wallGeometry: () => new geometry.Polygon(this.geo.points.map(function(p) {
-                return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
-              }, this)),
-              peerNetwork: () => peerNetwork
-            });
-      
-            this.instance = new classes.client(this.config, this.services);
+            this.instance = new classes.client(this.config);
             resolve();
-          });
+          }, reject);
         });
       });
     }

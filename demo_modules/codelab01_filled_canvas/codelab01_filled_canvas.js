@@ -13,15 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
 
 class Codelab01FilledCanvasServer extends ModuleInterface.Server {}
 
 class Codelab01FilledCanvasClient extends ModuleInterface.Client {
-  constructor(config, services) {
-    super();
-    this.wallGeometry = services.locate('wallGeometry');
-  }
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -30,7 +28,7 @@ class Codelab01FilledCanvasClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, this.wallGeometry);
+    this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
 
     // Despite the background and text colors changing, the rest of the text

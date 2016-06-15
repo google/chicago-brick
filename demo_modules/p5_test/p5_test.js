@@ -13,13 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
+const debug = require('debug');
 
 class P5TestServer extends ModuleInterface.Server {
-  constructor(config, services) {
+  constructor(config, startTime) {
     super();
-    let debug = services.locate('debug');
     debug('P5Test Server!', config);
+    this.startTime = startTime;
   }
 }
 
@@ -78,10 +81,8 @@ class P5TestSketch {
 }
 
 class P5TestClient extends ModuleInterface.Client {
-  constructor(config, services) {
+  constructor(config) {
     super();
-    this.wallGeometry = services.locate('wallGeometry');
-    let debug = services.locate('debug');
     debug('P5Test Client!', config);
     this.image = null;
     this.surface = null;
@@ -97,7 +98,7 @@ class P5TestClient extends ModuleInterface.Client {
     this.startTime = deadline;
 
     const P5Surface = require('client/surface/p5_surface');
-    this.surface = new P5Surface(container, this.wallGeometry, P5TestSketch, deadline);
+    this.surface = new P5Surface(container, wallGeometry, P5TestSketch, deadline);
   }
 
   draw(time, delta) {

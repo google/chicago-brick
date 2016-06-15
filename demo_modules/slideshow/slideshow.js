@@ -24,14 +24,18 @@ limitations under the License.
  * the time this module was created.
  */
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const assert = require('lib/assert');
 const _ = require('underscore');
+const wallGeometry = require('wallGeometry');
+const debug = require('debug');
+const network = require('network');
 
 // DISPATCH TABLES
 // These methods convert a load or display config to specific server or client
 // strategies. New strategies should be added to these methods.
-let parseServerLoadStrategy = (loadConfig, services) => {
+let parseServerLoadStrategy = (loadConfig) => {
   if (loadConfig.drive) {
     return new LoadFromDriveServerStrategy(loadConfig.drive);
   } else if (loadConfig.youtube) {
@@ -76,7 +80,7 @@ let parseClientDisplayStrategy = (displayConfig) => {
 // Here, we specify the interfaces for the load and display strategies. There is
 // a separate interface for the server and the client.
 class ServerLoadStrategy {
-  init(services) {
+  init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
   }
@@ -96,7 +100,7 @@ class ServerLoadStrategy {
 }
 
 class ClientLoadStrategy {
-  init(surface, services) {
+  init(surface) {
     // Init the load strategy with the surface information.
   }
   loadContent(content) {
@@ -108,7 +112,7 @@ class ClientLoadStrategy {
 }
 
 class ServerDisplayStrategy {
-  init(services) {
+  init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
   }
@@ -127,7 +131,7 @@ class ServerDisplayStrategy {
 }
 
 class ClientDisplayStrategy {
-  init(surface, loadStrategy, services) {
+  init(surface, loadStrategy) {
     // The surface on which the strategy should draw, and the client-side load
     // strategy, which is invoked when new content is downloaded.
   }
@@ -155,13 +159,11 @@ class LoadFromDriveServerStrategy extends ServerLoadStrategy {
     // Drive client API v2.
     this.driveClient = null;
   }
-  init(services) {
-    this.debug = services.locate('debug');
-    
+  init() {
     const googleapis = require('server/util/googleapis');
     // Get an authenticated API. When init's promise is resolved, we succeeded.
     return googleapis.getAuthenticatedClient().then((client) => {
-      this.debug('Initialized Drive Client.');
+      debug('Initialized Drive Client.');
       this.config.credentials = client.credentials;
       this.driveClient = client.googleapis.drive('v2');
     }, (e) => {
@@ -181,14 +183,14 @@ class LoadFromDriveServerStrategy extends ServerLoadStrategy {
         resolve(response);
       })
     ).then((response) => {
-      this.debug('Downloaded ' + response.items.length + ' more content ids.');
+      debug('Downloaded ' + response.items.length + ' more content ids.');
       return {
         content: response.items.map((i) => i.id),
         hasMoreContent: !!response.nextPageToken,
         paginationToken: response.nextPageToken
       };
     }, (error) => {
-      this.debug('Failed to download more drive content! Delay a bit...');
+      debug('Failed to download more drive content! Delay a bit...');
       return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
     });
   }
@@ -202,9 +204,6 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
     super();
     this.config = config;
   }
-  init(surface, services) {
-    this.debug = services.locate('debug');
-  }
   loadContent(fileId) {
     const API_BASE_URL = 'https://www.googleapis.com/drive/v2';
     
@@ -217,7 +216,7 @@ class LoadFromDriveClientStrategy extends ClientLoadStrategy {
         if (res.ok) {
           return res;
         }
-        this.debug('Failed to load! Retrying...');
+        debug('Failed to load! Retrying...');
         // wait a random amount of time between 1000 and 5000 ms.
         return Promise.delay(Math.random() * 4000 + 1000).then(() => fetchImage());
       });
@@ -254,12 +253,11 @@ class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
     // YouTube data api v3
     this.api = null;
   }
-  init(services) {
-    this.debug = services.locate('debug');
+  init() {
     // Get an authenticated API. When init's promise is resolved, we succeeded.
     const googleapis = require('server/util/googleapis');
     return googleapis.getAuthenticatedClient().then((client) => {
-      this.debug('Initialized YouTube Client.');
+      debug('Initialized YouTube Client.');
       this.config.credentials = client.credentials;
       this.api = client.googleapis.youtube('v3');
     }, (e) => {
@@ -280,7 +278,7 @@ class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
         resolve(response);
       })
     ).then((response) => {
-      this.debug('Downloaded ' + response.items.length + ' more content ids.');
+      debug('Downloaded ' + response.items.length + ' more content ids.');
       return {
         content: response.items.map((item, index) => {
           return {
@@ -292,7 +290,7 @@ class LoadYouTubePlaylistServerStrategy extends ServerLoadStrategy {
         paginationToken: response.nextPageToken
       };
     }, (error) => {
-      this.debug('Failed to download more youtube content! Delay a bit...');
+      debug('Failed to download more youtube content! Delay a bit...');
       return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
     });
   }
@@ -307,15 +305,16 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
     this.config = config;
 
     const loadYoutubeApi = require('client/util/load_youtube_api');
-    this.apiLoaded = loadYoutubeApi();
+    this.apiLoaded = loadYoutubeApi().then(() => {
+      debug('YouTube API ready');
+    });
   }
-  init(surface, services) {
+  init(surface) {
     this.surface = surface;
-    this.debug = services.locate('debug');
   }
   loadContent(content) {
     return this.apiLoaded.then(() => {
-      this.debug('Loading video ' + content.videoId);
+      debug('Loading video ' + content.videoId);
       let container = document.createElement('div');
       let player = new YT.Player(container, {
         width: this.surface.container.offsetWidth,
@@ -340,7 +339,7 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
             reject(e)
           },
           onStateChange: (e) => {
-            this.debug('state', e.data);
+            debug('state', e.data);
             if (!this.config.playThroughPlaylist && e.data == YT.PlayerState.ENDED) {
               // Restart the video. The loop=1 parameter should cause this to 
               // happen automatically when playing a single video, but it 
@@ -476,25 +475,21 @@ class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
     
     // The time we last updated a display.
     this.lastUpdate = 0;
-  }
-  init(services) {
-    this.network = services.locate('network');
-    this.debug = services.locate('debug');
-    this.wallGeometry = services.locate('wallGeometry');
     
     let contentHasArrived = new Promise((resolve, reject) => {
       this.signalContentArrived = resolve;
     });
     
     // Tell the clients about content when it arrives.
-    this.network.on('connection', (socket) => {
+    network.on('connection', (socket) => {
       socket.on('display:init', () => {
         contentHasArrived.then(() => {
           this.chooseSomeContent(socket);
         });
       });
     }); 
-    
+  }
+  init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
   }
@@ -503,7 +498,7 @@ class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
     // Choose the next one.
     let index = this.nextContentIndices.shift();
     
-    this.debug('Sending content index ' + index + ' to client.');
+    debug('Sending content index ' + index + ' to client.');
     
     // Send it to the specified client.
     socket.emit('display:content', this.content[index]);
@@ -529,7 +524,7 @@ class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
       // Otherwise, tell a specific client to show a specific bit of content.
       if (time - this.lastUpdate >= this.config.period) {
         // Pick a random client.
-        let client = _.sample(this.network.getClientsInRect(this.wallGeometry.extents));
+        let client = _.sample(network.getClientsInRect(wallGeometry.extents));
         if (client) {
           this.chooseSomeContent(client.socket);
         }
@@ -543,8 +538,7 @@ class FullscreenServerDisplayStrategy extends ServerDisplayStrategy {
 }
 
 class FullscreenClientDisplayStrategy extends ClientDisplayStrategy {
-  init(surface, loadStrategy, services) {
-    let network = services.locate('network');
+  init(surface, loadStrategy) {
     network.emit('display:init');
     this.surface = surface;
     network.on('display:content', (c) => {
@@ -593,11 +587,7 @@ class FallingServerDisplayStrategy extends ServerDisplayStrategy {
     // The time we last updated a display.
     this.lastUpdate = 0;
   }
-  init(services) {
-    this.debug = services.locate('debug');
-    this.network = services.locate('network');
-    this.wallGeometry = services.locate('wallGeometry');
-    
+  init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
   }
@@ -606,12 +596,12 @@ class FallingServerDisplayStrategy extends ServerDisplayStrategy {
     // Choose the next one.
     let index = this.nextContentIndices.shift();
     
-    this.debug('Sending content index ' + index + ' to client.');
+    debug('Sending content index ' + index + ' to client.');
     
     // Generate falling content.
     let fallingImage = {
       content: this.content[index],
-      x: Math.random() * this.wallGeometry.extents.w,
+      x: Math.random() * wallGeometry.extents.w,
       y: -2000,
       rx: Math.random() - 0.5,
       ry: Math.random() - 0.5,
@@ -620,7 +610,7 @@ class FallingServerDisplayStrategy extends ServerDisplayStrategy {
     };
     
     // Send it to all clients.
-    this.network.emit('display:content', fallingImage);
+    network.emit('display:content', fallingImage);
     // Add this index back to the end of the list of indices.
     this.nextContentIndices.push(index);
   }
@@ -653,9 +643,7 @@ class FallingClientDisplayStrategy extends ClientDisplayStrategy {
     super();
     this.config = config;
   }
-  init(surface, loadStrategy, services) {
-    let network = services.locate('network');
-    
+  init(surface, loadStrategy) {
     this.surface = surface;
 
     // Because we are relying on CSS to do our transforms, we need to work in
@@ -708,11 +696,8 @@ class FallingClientDisplayStrategy extends ClientDisplayStrategy {
 
 // MODULE DEFINTIONS
 class ImageServer extends ModuleInterface.Server {
-  constructor(config, services) {
+  constructor(config) {
     super();
-    
-    this.services = services;
-    this.network = services.locate('network');
     
     // The load strategy for this run of the module.
     this.loadStrategy = parseServerLoadStrategy(config.load);
@@ -723,8 +708,8 @@ class ImageServer extends ModuleInterface.Server {
   willBeShownSoon(deadline) {
     // Start the load strategy initing.
     let loadingComplete = Promise.all([
-      this.displayStrategy.init(this.services),
-      this.loadStrategy.init(this.services).then(() => {
+      this.displayStrategy.init(),
+      this.loadStrategy.init().then(() => {
         let fetchContent = (opt_paginationToken) => {
           this.loadStrategy.loadMoreContent(opt_paginationToken).then((result) => {
             this.displayStrategy.newContent(result.content);
@@ -737,7 +722,7 @@ class ImageServer extends ModuleInterface.Server {
         fetchContent();
       })
     ]);
-    this.network.on('connection', (socket) => {
+    network.on('connection', (socket) => {
       loadingComplete.then(() => socket.emit('init', {
         load: this.loadStrategy.serializeForClient(),
         display: this.displayStrategy.serializeForClient()
@@ -750,21 +735,15 @@ class ImageServer extends ModuleInterface.Server {
 }
 
 class ImageClient extends ModuleInterface.Client {
-  constructor(config, services) {
-    this.services = services;
-    this.debug = services.locate('debug');
-    this.wallGeometry = services.locate('wallGeometry');
-    this.network = services.locate('network');
-  }
   willBeShownSoon(container, deadline) {
     const Surface = require('client/surface/surface');
     this.surface = new Surface(container, wallGeometry);
     this.initedPromise = new Promise((resolve, reject) => {
-      this.network.once('init', (config) => {
+      network.once('init', (config) => {
         this.loadStrategy = parseClientLoadStrategy(config.load);
         this.displayStrategy = parseClientDisplayStrategy(config.display);
-        this.loadStrategy.init(this.surface, this.services);
-        this.displayStrategy.init(this.surface, this.loadStrategy, this.services);
+        this.loadStrategy.init(this.surface);
+        this.displayStrategy.init(this.surface, this.loadStrategy);
         resolve();
       });
     });

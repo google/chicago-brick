@@ -16,6 +16,7 @@ limitations under the License.
 // This file doesn't get automagically wrapped by our /module handler on the
 // server, so we manually wrap with a define call.
 define(function(require) {
+  const register = require('register');
   const ModuleInterface = require("lib/module_interface");
 
   class EmptyModule extends ModuleInterface.Client {}
