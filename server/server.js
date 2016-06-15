@@ -45,6 +45,9 @@ var cli = commandLineArgs([
       description: 'List of directories of modules and assets.  Everything ' +
           'under these dirs will be available under ' +
           '/asset/{whatever is under your directories}.'},
+  {name: 'module_dir', type: String,
+      defaultValue: ['demo_modules'], multiple: true,
+      description: 'A directory that will be served to clients that contains module code. May be specified multiple times.'},
   {name: 'module', type: String, alias: 'm', multiple: true,
       description: 'Runs only the selected module or modules.'},
   {name: 'help', type: Boolean},

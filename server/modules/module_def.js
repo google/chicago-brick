@@ -21,7 +21,7 @@ const fs = require('fs');
 const random = require('random-js')();
 const _ = require('underscore');
 
-const debug = require('debug')('wall:library');
+const debug = require('debug')('wall:module_def');
 const debugFactory = require('debug');
 const fakeRequire = require('lib/fake_require');
 const googleapis = require('server/util/googleapis');
@@ -101,15 +101,37 @@ class ModuleDef extends EventEmitter {
     this.title = title;
     this.author = author;
     
-    // The string source of the module.
-    this.def_ = '';
+    // The path to the main file of the module.
+    this.path = '';
+    
+    // If true, the module has no parse errors in its source.
+    this.valid = false;
+    
+    // The most recently validated source to the module.
+    this.def = '';
+    
     if (pathOrBaseModule instanceof ModuleDef) {
-      // The promise that when set, indicates the module is loaded.
-      this.loadPromise = pathOrBaseModule.loadPromise.then(() => {
-        this.def_ = pathOrBaseModule.def_;
-      });
+      let base = pathOrBaseModule;
+      this.path = base.path;
+
+      let updateValidity = () => {
+        this.valid = base.valid;
+        if (this.valid) {
+          this.def = base.def;
+        }
+      };
+      
+      // When the base is loaded, check its valid status.
+      base.whenLoadedPromise.then(updateValidity);
+      
+      // I'm loaded when my base is loaded.
+      this.whenLoadedPromise = base.whenLoadedPromise;
+      
+      // Also, register for any reloads, and reset validity.
+      base.on('reloaded', updateValidity);
     } else {
-      this.loadAndWatch_(pathOrBaseModule);
+      this.path = pathOrBaseModule;
+      this.checkValidity_();
     }
   }
 
@@ -117,6 +139,7 @@ class ModuleDef extends EventEmitter {
   inspect(depth, opts) {
     return {
       name: this.name,
+      path: this.path,
       config: util.inspect(this.config),
       title: this.title,
       author: this.author
@@ -129,45 +152,46 @@ class ModuleDef extends EventEmitter {
   }
   
   // Loads a module from disk asynchronously, assigning def when complete.
-  loadAndWatch_(path) {
+  checkValidity_() {
     let loadModule = () => {
       let rewatch = () => {
         // Watch for future changes.
-        debug('Watching', path);
-        let watch = fs.watch(path, {persistent: true}, (event) => {
-          debug('Module changed! Reloading', path);
+        debug('Watching', this.path);
+        let watch = fs.watch(this.path, {persistent: true}, (event) => {
+          debug('Module changed! Reloading', this.path);
           watch.close();
           loadModule();
           // When the load is finished, tell listeners that we reloaded.
-          this.loadPromise.then(() => this.emit('reloaded'));
+          this.whenLoadedPromise.then(() => this.emit('reloaded'));
         });
       };
     
-      this.loadPromise = read(path).then((contents) => {
-        debug('Read ' + path);
+      this.whenLoadedPromise = read(this.path).then((contents) => {
+        debug('Read ' + this.path);
         // Prepend a directive to make sure the module runs in strict mode.
         // Append a directive that tells Chrome and Node that the client script
         // is, in fact, a file. This makes debugging these far simpler.
-        contents = `"use strict";${contents}\n//# sourceURL=${path}\n`;
+        contents = `"use strict";${contents}\n//# sourceURL=${this.path}\n`;
         
         // Start rewatcher, regardless of status.
         rewatch();
         
         if (verify(this.name, contents)) {
-          debug('Verified ' + path);
-          this.def_ = contents;
+          debug('Verified ' + this.path);
+          this.valid = true;
+          this.def = contents;
         } else {
-          debug('Failed verification at ' + path);
-          Promise.reject(new Error('Script at "' + path + '" is not verifiable!'));
+          debug('Failed verification at ' + this.path);
+          Promise.reject(new Error('Script at "' + this.path + '" is not verifiable!'));
         }
       }, (e) => {
-        debug(path + ' not found!');
-        debug(e);
+        debug(this.path + ' not found!');
       
         // Intentionally do not restart watcher.
         // Allow users to note that this module failed to load correctly.
         return Promise.reject(e);
       }).catch((e) => {
+        this.valid = false;
         debug(e);
         throw e;
       });
@@ -184,7 +208,14 @@ class ModuleDef extends EventEmitter {
   // dynamically. Basically, make this module's 'require' somehow delegate to
   // this particular instantiation.
   instantiate(layoutGeometry, network, game, state, deadline) {
-    let classes = evalModule(this.def_, this.name, layoutGeometry, network, game, state);
+    if (!this.valid) {
+      if (this.def) {
+        debug('Instantiating invalid module with last valid version.', this.name, this.path);
+      } else {
+        throw new Error('Attempted to instantiate invalid module (' + this.name + ' @ ' + this.path + ') with no valid version!');
+      }
+    }
+    let classes = evalModule(this.def, this.name, layoutGeometry, network, game, state);
     let services = serviceLocator.create({
       network: () => network,
       game: () => game,
@@ -206,10 +237,10 @@ class ModuleDef extends EventEmitter {
   serializeForClient() {
     return {
       name: this.name,
+      path: this.path,
       config: this.config,
       title: this.title,
       author: this.author,
-      def: this.def_
     };
   }
 }

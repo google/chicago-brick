@@ -44,18 +44,18 @@ define(function(require) {
   }
 
   class ClientModule {
-    constructor(name, config, titleCard, code, deadline, geo) {
+    constructor(name, path, config, titleCard, deadline, geo) {
       // The module name.
       this.name = name;
       
+      // The path to the main file of this module.
+      this.path = path;
+
       // The module config.
       this.config = config;
       
       // The title card instance for this module.
       this.titleCard = titleCard;
-      
-      // The code for this module.
-      this.code = code;
       
       // Absolute time when this module is supposed to be visible. Module will
       // actually be faded in by deadline + 5000ms.
@@ -84,9 +84,9 @@ define(function(require) {
     static deserialize(bits) {
       return new ClientModule(
         bits.module.name,
+        bits.module.path,
         bits.module.config,
         new TitleCard(bits.module),
-        bits.module.def,
         bits.time,
         new geometry.Polygon(bits.geo)
       );
@@ -95,9 +95,9 @@ define(function(require) {
     static newEmptyModule(deadline) {
       let ret = new ClientModule(
         'empty-module',
+        'client/modules/empty_module.js',
         {},
         new TitleCard({}),
-        'var ModuleInterface = require("lib/module_interface"); class EmptyModule extends ModuleInterface.Client {} register(null, EmptyModule)',
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
       );
@@ -115,59 +115,53 @@ define(function(require) {
       // Ensure that there's a registration function in the global namespace.
       if (!window.register) {
         window.register = function(server, client) {
-          // In the future, we'll be requiring using requirejs. When that
-          // happens, we'll only know _which_ script is doing its thing by
-          // looking at the requirejscontext stored on the current script. Until
-          // that day, just look at a side-channel global that we set below.
-          let script = document.currentScript;
-          let contextName = script ?
-              script.getAttribute('data-requirecontext') :
-              window.currentContextName;
-          window.register.contexts[contextName] = {server, client};
+          // Use a side-channel to report on server & client.
+          window.registerContext = {server, client};
         };
-        window.register.contexts = {};
       }
       
       return fakeRequire.createEnvironment(this.contextName, {}).then((moduleRequire) => {
-        let sandbox = {
-          require: moduleRequire,
-        };
-        window.currentContextName = this.contextName;
-        try {
-          safeEval(this.code, sandbox);
-        } catch (e) {
-          console.error('Error loading ' + this.name, e);
-          error(e);
-        }
+        return new Promise((resolve) => {
+          // Load the module @ path under the new require context, in order to
+          // avoid polluting our main require context.
+          moduleRequire([this.path], () => {
+            // Read the current defs from our register side-channel.
+            let classes = window.registerContext;
+            if (!classes) {
+              throw new Error('Module failed to register classes! ' + this.name);
+            }
     
-        let classes = window.register.contexts[this.contextName];
+            // Remove the module-specific requirejs context. This will force the
+            // next require of this module to go to the server, as we're
+            // essentially invalidating the local cache of files by trashing
+            // this context. Furthermore, as our server will serve this up with
+            // a no-cache header, we'll always get fresh code.
+            fakeRequire.deleteEnvironment(this.contextName);
     
-        // Reset the context back to the default require context.
-        // TODO(applmak): Is this actually necessary?
-        requirejs.config({
-          context: '_'
-        });
-    
-        if (!classes.client) {
-          throw new Error('Failed to parse module ' + this.name);
-        }
-        if (!(classes.client.prototype instanceof moduleInterface.Client)) {
-          throw new Error('Malformed module definition! ' + this.name);
-        }
+            // Sanity checks on requested code.
+            if (!classes.client) {
+              throw new Error('Failed to parse module ' + this.name);
+            }
+            if (!(classes.client.prototype instanceof moduleInterface.Client)) {
+              throw new Error('Malformed module definition! ' + this.name);
+            }
 
-        this.services = serviceLocator.create({
-          debug: () => debugFactory('wall:module:' + this.name),
-          network: () => openNetwork,
-          titleCard: () => this.titleCard.getModuleAPI(),
-          state: () => new StateManager(openNetwork),
-          globalWallGeometry: () => this.geo,
-          wallGeometry: () => new geometry.Polygon(this.geo.points.map(function(p) {
-            return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
-          }, this)),
-          peerNetwork: () => peerNetwork
-        });
+            this.services = serviceLocator.create({
+              debug: () => debugFactory('wall:module:' + this.name),
+              network: () => openNetwork,
+              titleCard: () => this.titleCard.getModuleAPI(),
+              state: () => new StateManager(openNetwork),
+              globalWallGeometry: () => this.geo,
+              wallGeometry: () => new geometry.Polygon(this.geo.points.map(function(p) {
+                return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
+              }, this)),
+              peerNetwork: () => peerNetwork
+            });
       
-        this.instance = new classes.client(this.config, this.services);
+            this.instance = new classes.client(this.config, this.services);
+            resolve();
+          });
+        });
       });
     }
 
@@ -232,9 +226,6 @@ define(function(require) {
       this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 
-      // Remove the module-specific requirejs context.
-      fakeRequire.deleteEnvironment(this.contextName);
-      
       if (this.network) {
         this.network.close();
       }

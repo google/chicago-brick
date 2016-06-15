@@ -144,7 +144,7 @@ class LoadingState extends stateMachine.State {
   }
   enter_() {
     // Load the playlist.
-    var modulePromises = this.context_.playlist.map((m) => m.loadPromise);
+    var modulePromises = this.context_.playlist.map((m) => m.whenLoadedPromise);
     Promise.allSettled(modulePromises).done((results) => {
       // Check to see if any modules were rejected. If so, remove them from the 
       // playlist.

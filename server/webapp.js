@@ -52,6 +52,44 @@ function create(flags) {
   for (let assets_dir of flags.assets_dir) {
     app.use('/asset', express.static(assets_dir));
   }
+  // Also, serve the modules on /modules
+  let moduleHandler = (function() {
+    // As we want to wrap the static-serve middleware response, and it's
+    // designed to not let you do that, really, we create a fake res object
+    // that can capture what the middleware would have written.
+    let write = null, end = null;
+    
+    return (req, res, next) => {
+      write = res.write;
+      end = res.end;
+
+      // Disable caching of module code.
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    
+      res.write = function() {
+        // Remove the length header.
+        res.removeHeader('Content-Length');
+    
+        // After headers, but before the real content, add the wrapping marker.
+        write.call(res, 'define(function(require) {\n');
+        write.apply(res, Array.from(arguments));
+        // Restore original write function, so subsequent writes work just fine.
+        res.write = write;
+      };
+      res.end = function() {
+        write.call(res, '});\n');
+        end.apply(res, Array.from(arguments));
+        res.end = end;
+      };
+    
+      next();
+    };
+  })();
+  for (let dir of flags.module_dir) {
+    app.use(`/${dir}`, moduleHandler, express.static(dir));
+  }
 
   app.use(express.static(path.join(base, 'client')));
 
