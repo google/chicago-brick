@@ -305,6 +305,7 @@ class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
     this.config = config;
 
     const loadYoutubeApi = require('client/util/load_youtube_api');
+    debug('Loading YouTube API');
     this.apiLoaded = loadYoutubeApi().then(() => {
       debug('YouTube API ready');
     });
@@ -723,10 +724,19 @@ class ImageServer extends ModuleInterface.Server {
       })
     ]);
     network.on('connection', (socket) => {
-      loadingComplete.then(() => socket.emit('init', {
+      let initHandler = () => socket.emit('init', {
         load: this.loadStrategy.serializeForClient(),
         display: this.displayStrategy.serializeForClient()
-      }));
+      });
+      // Depending on when the client loads and we load, the client might send 
+      // the req_init before we are listening for it, or we might finish loading
+      // and send our init event before the client is listening for it!
+      // To fix this, we listen for a one-time event from the client, req_init,
+      // which will cause us to send the init event. Then, we might send 1 or 2
+      // init messages, and we leave it up to the client to not process it
+      // twice.
+      loadingComplete.then(initHandler);
+      socket.once('req_init', initHandler);
     });
   }
   tick(time, delta) {
@@ -739,6 +749,8 @@ class ImageClient extends ModuleInterface.Client {
     const Surface = require('client/surface/surface');
     this.surface = new Surface(container, wallGeometry);
     this.initedPromise = new Promise((resolve, reject) => {
+      debug('Waiting for network init...');
+      network.emit('req_init');
       network.once('init', (config) => {
         this.loadStrategy = parseClientLoadStrategy(config.load);
         this.displayStrategy = parseClientDisplayStrategy(config.display);
