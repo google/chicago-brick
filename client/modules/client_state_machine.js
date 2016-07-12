@@ -53,6 +53,7 @@ define(function(require) {
       });
       
       // Tell the modules that we're going to switch soon.
+      debug('Delaying in prepare state for ' + timeManager.until(this.module_.deadline));
       Promise.delay(timeManager.until(this.module_.deadline)).done(() => {
         if (!this.module_.instance) {
           debug('Attempted to transition to module that did not init in time!');
