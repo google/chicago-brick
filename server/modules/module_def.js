@@ -46,9 +46,8 @@ const read = (path) => {
 
 const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   let classes = {};
-  // A fake require that first checks to see if the require is one of our
-  // per-invocation dependencies. If so, uses that. Otherwise, delegates to
-  // normal require.
+  
+  // Inject our deps into node's require environment.
   let fakeRequireInstance = fakeRequire.createEnvironment({
     network,
     game,
@@ -68,25 +67,19 @@ const evalModule = (contents, name, layoutGeometry, network, game, state) => {
       classes.client = client;
     },
   });
+  
   let sandbox = {
     require: fakeRequireInstance,
     serverRequire: fakeRequireInstance
   };
-  
-  // Listen, before we eval, we MUST make sure that we don't cache any of the
-  // files referenced here. To do this, we copy the keys of the current cache
-  // and compute the difference, deleting those entries afterward.
-  let loadedDeps = Object.keys(require.cache);
   
   // Use safeEval to actually run the script so that Node doesn't leak
   // anything: https://github.com/nodejs/node/issues/3113
   // TODO(applmak): Convert this to just a require of this file.
   safeEval(contents, sandbox);
   
-  // Remove any new cache entries added.
-  let newDeps = _.difference(Object.keys(require.cache), loadedDeps);
-  debug('Module ' + name + ' added deps:', newDeps);
-  newDeps.forEach((k) => delete require.cache[k]);
+  // Clean up our mess.
+  fakeRequireInstance.destroy();
   
   return classes;
 };
