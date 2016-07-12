@@ -13,23 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-(function(factory) {
-  if (typeof define === 'function' && define.amd) {
-    // AMD. Register as an anonymous module.
-    define([], factory);
-  } else if (typeof exports === 'object') {
-    // Node. Does not work with strict CommonJS, but
-    // only CommonJS-like environments that support module.exports,
-    // like Node.
-    module.exports = factory();
-  }
-}(function() {
-  return {
-    create: function(result) {
-      return function(serverSide, clientSide) {
-        result.server = serverSide;
-        result.client = clientSide;
-      };
-    }
-  };
-}));
+// This file doesn't get automagically wrapped by our /module handler on the
+// server, so we manually wrap with a define call.
+define(function(require) {
+  const register = require('register');
+  const ModuleInterface = require("lib/module_interface");
+
+  class EmptyModule extends ModuleInterface.Client {}
+  register(null, EmptyModule);
+});

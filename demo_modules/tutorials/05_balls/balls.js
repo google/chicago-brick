@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const geometry = require('lib/geometry');
 const wallGeometry = require('wallGeometry');

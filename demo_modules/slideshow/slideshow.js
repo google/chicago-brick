@@ -24,6 +24,7 @@ limitations under the License.
  * the time this module was created.
  */
 
+const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const assert = require('lib/assert');
 const _ = require('underscore');

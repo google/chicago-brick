@@ -31,7 +31,6 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-  const register = require('lib/register');
   
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
@@ -44,18 +43,18 @@ define(function(require) {
   }
 
   class ClientModule {
-    constructor(name, config, titleCard, code, deadline, geo) {
+    constructor(name, path, config, titleCard, deadline, geo) {
       // The module name.
       this.name = name;
       
+      // The path to the main file of this module.
+      this.path = path;
+
       // The module config.
       this.config = config;
       
       // The title card instance for this module.
       this.titleCard = titleCard;
-      
-      // The code for this module.
-      this.code = code;
       
       // Absolute time when this module is supposed to be visible. Module will
       // actually be faded in by deadline + 5000ms.
@@ -84,9 +83,9 @@ define(function(require) {
     static deserialize(bits) {
       return new ClientModule(
         bits.module.name,
+        bits.module.path,
         bits.module.config,
         new TitleCard(bits.module),
-        bits.module.def,
         bits.time,
         new geometry.Polygon(bits.geo)
       );
@@ -95,9 +94,9 @@ define(function(require) {
     static newEmptyModule(deadline) {
       let ret = new ClientModule(
         'empty-module',
+        'client/modules/empty_module.js',
         {},
         new TitleCard({}),
-        'var ModuleInterface = require("lib/module_interface"); class EmptyModule extends ModuleInterface.Client {} register(null, EmptyModule)',
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
       );
@@ -111,7 +110,8 @@ define(function(require) {
       let openNetwork = this.network.open();
     
       this.contextName = 'module-' + this.deadline;
-    
+      let classes = {};
+      
       return fakeRequire.createEnvironment(this.contextName, {
         debug: debugFactory('wall:module:' + this.name),
         network: openNetwork,
@@ -121,34 +121,32 @@ define(function(require) {
         wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
           return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
         }, this)),
-        peerNetwork: peerNetwork
+        peerNetwork: peerNetwork,
+        register: (server, client) => {
+          classes.server = server;
+          classes.client = client;
+        },
       }).then((moduleRequire) => {
-        let classes = {};
-        let sandbox = {
-          register: register.create(classes),
-          require: moduleRequire,
-        };
-        try {
-          safeEval(this.code, sandbox);
-        } catch (e) {
-          console.error('Error loading ' + this.name, e);
-          error(e);
-        }
+        return new Promise((resolve, reject) => {
+          moduleRequire([this.path], () => {
+            // Remove the module-specific requirejs context. This will force the
+            // next require of this module to go to the server, as we're
+            // essentially invalidating the local cache of files by trashing
+            // this context. Furthermore, as our server will serve this up with
+            // a no-cache header, we'll always get fresh code.
+            fakeRequire.deleteEnvironment(this.contextName);
     
-        // Reset the context back to the default require context.
-        // TODO(applmak): Is this actually necessary?
-        requirejs.config({
-          context: '_'
+            // Sanity checks on requested code.
+            if (!classes.client) {
+              throw new Error('Failed to parse module ' + this.name);
+            }
+            if (!(classes.client.prototype instanceof moduleInterface.Client)) {
+              throw new Error('Malformed module definition! ' + this.name);
+            }
+            this.instance = new classes.client(this.config);
+            resolve();
+          }, reject);
         });
-    
-        if (!classes.client) {
-          throw new Error('Failed to parse module ' + this.name);
-        }
-        if (!(classes.client.prototype instanceof moduleInterface.Client)) {
-          throw new Error('Malformed module definition! ' + this.name);
-        }
-
-        this.instance = new classes.client(this.config);
       });
     }
 
@@ -213,9 +211,6 @@ define(function(require) {
       this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 
-      // Remove the module-specific requirejs context.
-      fakeRequire.deleteEnvironment(this.contextName);
-      
       if (this.network) {
         this.network.close();
       }
