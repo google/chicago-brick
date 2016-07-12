@@ -99,6 +99,23 @@
         }
       }
     },
+    {
+      "name": "roller-coasters",
+      "extends": "slideshow",
+      "config": {
+        "load": {
+          "youtube": {
+            "playlistId": "PLF4DCD1EE19D50969",
+            "playThroughPlaylist": true
+          }
+        },
+        "display": {
+          "fullscreen": {
+            "period": 0,
+          }
+        }
+      }
+    },
   ],
   "playlist": [
     {
