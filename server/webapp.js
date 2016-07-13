@@ -73,7 +73,7 @@ function create(flags) {
         res.removeHeader('Content-Length');
     
         // After headers, but before the real content, add the wrapping marker.
-        write.call(res, 'define(function(require) {\n');
+        write.call(res, 'define(function(require, exports, module) {\n');
         write.apply(res, Array.from(arguments));
         // Restore original write function, so subsequent writes work just fine.
         res.write = write;

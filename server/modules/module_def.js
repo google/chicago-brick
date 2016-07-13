@@ -46,29 +46,31 @@ const read = (path) => {
 
 const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   let classes = {};
+  // A fake require that first checks to see if the require is one of our
+  // per-invocation dependencies. If so, uses that. Otherwise, delegates to
+  // normal require.
+  let fakeRequireInstance = fakeRequire.createEnvironment({
+    network,
+    game,
+    state,
+    wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
+      return {
+        x: p.x - layoutGeometry.extents.x,
+        y: p.y - layoutGeometry.extents.y
+      };
+    })),
+    debug: debugFactory('wall:module:' + name),
+    globalWallGeometry: wallGeometry.getGeo(),
+    
+    // The main registration function.
+    register: function(server, client) {
+      classes.server = server;
+      classes.client = client;
+    },
+  });
   let sandbox = {
-    // A fake require that first checks to see if the require is one of our
-    // per-invocation dependencies. If so, uses that. Otherwise, delegates to
-    // normal require.
-    require: fakeRequire.createEnvironment({
-      network,
-      game,
-      state,
-      wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
-        return {
-          x: p.x - layoutGeometry.extents.x,
-          y: p.y - layoutGeometry.extents.y
-        };
-      })),
-      debug: debugFactory('wall:module:' + name),
-      globalWallGeometry: wallGeometry.getGeo(),
-      
-      // The main registration function.
-      register: function(server, client) {
-        classes.server = server;
-        classes.client = client;
-      },
-    })
+    require: fakeRequireInstance,
+    serverRequire: fakeRequireInstance
   };
   
   // Listen, before we eval, we MUST make sure that we don't cache any of the
