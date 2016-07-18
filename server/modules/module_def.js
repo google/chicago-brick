@@ -166,8 +166,12 @@ class ModuleDef extends EventEmitter {
   }
   // Returns a new module def that extends this def with new configuration.
   extend(name, title, author, config) {
-    return new ModuleDef(name, this,
-      title || this.title, author || this.author, config);
+    return new ModuleDef(
+      name,
+      this,
+      title === undefined ? '' : (title || this.title),
+      author === undefined ? '' : (author || this.author),
+      config);
   }
   
   // Loads a module from disk asynchronously, assigning def when complete.
