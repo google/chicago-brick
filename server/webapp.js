@@ -79,8 +79,14 @@ function create(flags) {
         res.write = write;
       };
       res.end = function() {
-        write.call(res, '});\n');
-        end.apply(res, Array.from(arguments));
+        let args = Array.from(arguments);
+        if (args.length) {
+          // Stuff to send... use normal write to send it.
+          write.apply(res, args);
+        } else {
+          write.call(res, '});\n');
+        }
+        end.call(res);
         res.end = end;
       };
     
