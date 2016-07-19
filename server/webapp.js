@@ -20,6 +20,7 @@ var path = require('path');
 var bodyParser = require('body-parser');
 var debug = require('debug')('wall:webapp');
 var express = require('express');
+const _ = require('underscore');
 
 /**
  * Creates the main ExpressJS web app.
@@ -94,6 +95,15 @@ function create(flags) {
     };
   })();
   for (let dir of flags.module_dir) {
+    // If the module_dir contains a subdirectory, the modules therein will
+    // reference things relative to that (for example, module_dir=node_modules/
+    // chicago_brick/demo_modules). As a temporary hack, we should publish
+    // demo_modules as well, so those local require('demo_modules/...') will
+    // work.
+    let pathToExpose = _.last(dir.split('/'));
+    if (pathToExpose != dir) {
+      app.use(`/${pathToExpose}`, moduleHandler, express.static(dir));
+    }
     app.use(`/${dir}`, moduleHandler, express.static(dir));
   }
 
