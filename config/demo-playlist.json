@@ -132,6 +132,22 @@
         }
       }
     },
+    {
+      "name": "google-cultural-institute",
+      "extends": "slideshow",
+      "config": {
+        "load": {
+          "gstatic": {
+            "url": "https://www.gstatic.com/culturalinstitute/tabext/imax.json",
+          }
+        },
+        "display": {
+          "fullscreen": {
+            "period": 5000,
+          }
+        }
+      }
+    },
   ],
   "playlist": [
     {
