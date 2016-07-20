@@ -116,6 +116,22 @@
         }
       }
     },
+    {
+      "name": "flickr-chicago",
+      "extends": "slideshow",
+      "config": {
+        "load": {
+          "flickr": {
+            "query": "chicago"
+          }
+        },
+        "display": {
+          "fullscreen": {
+            "period": 3000,
+          }
+        }
+      }
+    },
   ],
   "playlist": [
     {

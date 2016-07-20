@@ -23,6 +23,7 @@
     "leaflet": "^1.0.0-beta.2",
     "leaflet-edgebuffer": "colllin/Leaflet.EdgeBuffer#patch-1",
     "lwip": "chadwatson/lwip.git#fix-node6",
+    "node-fetch": "^1.5.3",
     "noisejs": "^2.1.0",
     "p5": "^0.4.22",
     "peer": "^0.2.8",

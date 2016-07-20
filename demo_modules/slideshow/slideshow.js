@@ -34,6 +34,7 @@ const network = require('network');
 const LoadFromDriveStrategy = require('demo_modules/slideshow/load_from_drive');
 const LoadFromYouTubePlaylistStrategy = require('demo_modules/slideshow/load_from_youtube');
 const LoadVideoStrategy = require('demo_modules/slideshow/load_video');
+const LoadFromFlickrStrategy = require('demo_modules/slideshow/load_from_flickr');
 
 const FullscreenDisplayStrategy = require('demo_modules/slideshow/fullscreen_display');
 const FallingDisplayStrategy = require('demo_modules/slideshow/falling_display');
@@ -48,6 +49,8 @@ let parseServerLoadStrategy = (loadConfig) => {
     return new LoadFromYouTubePlaylistStrategy.Server(loadConfig.youtube);
   } else if (loadConfig.video) {
     return new LoadVideoStrategy.Server(loadConfig.video);
+  } else if (loadConfig.flickr) {
+    return new LoadFromFlickrStrategy.Server(loadConfig.flickr);
   }
 
   throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
@@ -60,6 +63,8 @@ let parseClientLoadStrategy = (loadConfig) => {
     return new LoadFromYouTubePlaylistStrategy.Client(loadConfig.youtube);
   } else if (loadConfig.video) {
     return new LoadVideoStrategy.Client(loadConfig.video);
+  } else if (loadConfig.flickr) {
+    return new LoadFromFlickrStrategy.Client(loadConfig.flickr);
   }
   throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
 };
