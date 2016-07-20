@@ -114,6 +114,7 @@ define(function(require) {
       
       return fakeRequire.createEnvironment(this.contextName, {
         debug: debugFactory('wall:module:' + this.name),
+        game: undefined,
         network: openNetwork,
         titleCard: this.titleCard.getModuleAPI(),
         state: new StateManager(openNetwork),
