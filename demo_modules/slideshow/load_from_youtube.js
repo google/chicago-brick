@@ -26,6 +26,8 @@ const serverRequire = require('lib/server_require');
 //   playThroughPlaylist: boolean - If true, don't just loop a single video, but
 //                        rather, continue playing the next video in the
 //                        playlist.
+//   sync: boolean - If true, keep the videos sync'd across their displays.
+
 class LoadYouTubePlaylistServerStrategy extends interfaces.ServerLoadStrategy {
   constructor(config) {
     super();
@@ -91,8 +93,9 @@ class LoadYouTubePlaylistClientStrategy extends interfaces.ClientLoadStrategy {
       debug('YouTube API ready');
     });
   }
-  init(surface) {
+  init(surface, startTime) {
     this.surface = surface;
+    this.startTime = startTime;
   }
   loadContent(content) {
     return this.apiLoaded.then(() => {
@@ -131,7 +134,50 @@ class LoadYouTubePlaylistClientStrategy extends interfaces.ClientLoadStrategy {
           }
         },
       });
-      return player.getIframe();
+      
+      let video = player.getIframe();
+      if (this.config.sync) {
+        video.draw = (time, delta) => {
+          // When restarting a server, time can wind backwards. If we ever see
+          // this case, just flip out.
+          if (delta <= 0 || !player.getDuration) {
+            return;
+          }
+          
+          let duration = player.getDuration() * 1000.0;
+          
+          // We want the videos to be sync'd to some ideal clock. We use the 
+          // server's clock, as guessed by the client.
+          let correctTime = ((time - this.startTime) % duration + duration) % duration;
+          
+          // The video is currently here:
+          let actualTime = player.getCurrentTime() * 1000.0;
+        
+          // If these times are off by a lot, we should seek to the right time.
+          // We can't always seek, because the HTML5 video spec doesn't specify
+          // the granuality of seeking, and browsers round by as much as 250ms 
+          // in practice!
+          if (Math.abs(actualTime - correctTime) > 3000) {
+            video.lastSeekTime = video.lastSeekTime || time;
+            // Don't seek too often! YouTube doesn't like that!
+            if (time - video.lastSeekTime > 3000) {
+              debug('seek', actualTime, correctTime);
+              player.seekTo(correctTime / 1000.0, true);
+              video.lastSeekTime = time;
+            }
+          } else {
+            // The time difference is too small to rely on seeking, so let's
+            // adjust the playback speed of the video in order to gradually 
+            // sync the videos.
+            let msOff = correctTime - actualTime;
+            
+            let rate = msOff >= 33 ? 2.0 : msOff <= -33 ? 0.5 : 1.0;
+            player.setPlaybackRate(rate);
+          }
+        };
+      }
+
+      return video;
     });
   }
 }

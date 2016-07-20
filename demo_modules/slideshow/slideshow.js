@@ -147,7 +147,7 @@ class ImageClient extends ModuleInterface.Client {
       network.once('init', (config) => {
         this.loadStrategy = parseClientLoadStrategy(config.load);
         this.displayStrategy = parseClientDisplayStrategy(config.display);
-        this.loadStrategy.init(this.surface);
+        this.loadStrategy.init(this.surface, deadline);
         this.displayStrategy.init(this.surface, this.loadStrategy);
         resolve();
       });
