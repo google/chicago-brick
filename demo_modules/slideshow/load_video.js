@@ -68,7 +68,7 @@ class LoadVideoClientStrategy extends interfaces.ClientLoadStrategy {
       // If we are talking about pre-split video, then we are reading files 
       // with a specific pattern. Generate the appropriate name for this client.
       if (this.config.presplit) {
-        finalUrl += `/r${this.surface.virtualOffset.x}c${this.surface.virtualOffset.y}`;
+        finalUrl += `/r${this.surface.virtualOffset.y}c${this.surface.virtualOffset.x}`;
       }
       
       // Add extension back.
