@@ -114,10 +114,13 @@ class FullscreenServerDisplayStrategy extends interfaces.ServerDisplayStrategy {
 
 class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
   init(surface, loadStrategy) {
+    this.content = null;
     network.emit('display:init');
     this.surface = surface;
     network.on('display:content', (c) => {
       loadStrategy.loadContent(c).then((content) => {
+        // One piece of content per client.
+        this.content = content;
         content.style.position = 'absolute';
         content.style.top = 0;
         content.style.left = 0;
@@ -131,7 +134,12 @@ class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
         // Add content.
         this.surface.container.appendChild(content);
       });
-    })
+    });
+  }
+  draw(time, delta) {
+    if (this.content && this.content.draw) {
+      this.content.draw(time, delta);
+    }
   }
 }
 

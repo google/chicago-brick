@@ -132,6 +132,10 @@ class FallingClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
   }
   draw(time, delta) {
     this.content = this.content.filter((c) => {
+      if (c.draw) {
+        c.draw(time, delta);
+      }
+      
       let l = (time - c.start);
       let y = c.y + l * this.config.gravity / 1000;
       if (y > this.surface.wallRect.h + 2000) {

@@ -39,13 +39,14 @@ class ServerLoadStrategy {
 }
 
 class ClientLoadStrategy {
-  init(surface) {
-    // Init the load strategy with the surface information.
+  init(surface, deadline) {
+    // Init the load strategy with the surface information and a timestamp that
+    // is guaranteed to be shared among all clients.
   }
   loadContent(content) {
-    // Loads content specified by the content id. The parameter comes from the 
-    // server version of this strategy by way of the display strategy. The
-    // promise is expected to resolve to an Element.
+    // Loads content specified by the content id. The first parameter comes 
+    // from the  server version of this strategy by way of the display 
+    // strategy. The promise is expected to resolve to an Element.
     return Promise.resolve();
   }  
 }

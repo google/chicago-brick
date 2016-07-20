@@ -27,6 +27,7 @@ const interfaces = require('demo_modules/slideshow/interfaces');
 //             offline process into multiple files under a video directory. A
 //             file ending with, say cobra.webm, must have presplit files at
 //             cobra/r${R}c${C}.webm.
+//   sync: boolean - If true, keep the videos sync'd across their displays.
 class LoadVideoServerStrategy extends interfaces.ServerLoadStrategy {
   constructor(config) {
     super();
@@ -47,8 +48,9 @@ class LoadVideoClientStrategy extends interfaces.ClientLoadStrategy {
     super();
     this.config = config;
   }
-  init(surface) {
+  init(surface, startTime) {
     this.surface = surface;
+    this.startTime = startTime;
   }
   loadContent(url) {
     return new Promise((resolve, reject) => {
@@ -80,6 +82,42 @@ class LoadVideoClientStrategy extends interfaces.ClientLoadStrategy {
       if (finalUrl.indexOf(':') == -1) {
         const asset = require('client/asset/asset');
         finalUrl = asset(`video/${finalUrl}`);
+      }
+      
+      if (this.config.sync) {
+        video.draw = (time, delta) => {
+          // When restarting a server, time can wind backwards. If we ever see
+          // this case, just flip out.
+          if (delta <= 0) {
+            return;
+          }
+          
+          let duration = video.duration * 1000.0;
+          
+          // We want the videos to be sync'd to some ideal clock. We use the 
+          // server's clock, as guessed by the client.
+          let correctTime = ((time - this.startTime) % duration + duration) % duration;
+          
+          // The video is currently here:
+          let actualTime = video.currentTime * 1000.0;
+        
+          // If these times are off by a lot, we should seek to the right time.
+          // We can't always seek, because the HTML5 video spec doesn't specify
+          // the granuality of seeking, and browsers round by as much as 250ms 
+          // in practice!
+          if (Math.abs(actualTime - correctTime) > 3000) {
+            debug('seek', actualTime, correctTime);
+            video.currentTime = correctTime / 1000.0;
+          } else {
+            // The time difference is too small to rely on seeking, so let's
+            // adjust the playback speed of the video in order to gradually 
+            // sync the videos.
+            let msOff = correctTime - actualTime;
+            
+            let rate = msOff >= 33 ? 2 : msOff <= -33 ? 0.5 : 1.0;
+            video.playbackRate = rate;
+          }
+        };
       }
       
       video.src = finalUrl;
