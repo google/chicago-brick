@@ -39,7 +39,7 @@ class RunningModule {
     var openNetwork = this.network.open();
     this.state = new StateManager(openNetwork);
     
-    this.instance = this.moduleDef.instantiate(layoutGeometry, openNetwork, this.gamemanager, this.state, deadline);
+    this.instance = this.moduleDef.instantiate(layoutGeometry, openNetwork, this.gameManager, this.state, deadline);
   }
 
   tick(now, delta) {
