@@ -22,8 +22,6 @@ requirejs.config({
   paths : {
     'clock-skew' : 'sys/clock-skew/lib/clock_skew',
     'gl-matrix': 'sys/gl-matrix/dist/gl-matrix-min',
-    'leaflet': 'sys/leaflet/dist/leaflet',
-    'leaflet-edgebuffer': 'sys/leaflet-edgebuffer/src/leaflet.edgebuffer',
     'noisejs': 'sys/noisejs/index',
     'p5' : 'sys/p5/lib/p5',
     'p5.dom' : 'sys/p5/lib/addons/p5.dom',
@@ -37,10 +35,6 @@ requirejs.config({
 
   // example of using a shim, to load non AMD libraries (such as underscore)
   shim : {
-    'leaflet': {exports: 'L'},
-    'leaflet-edgebuffer': {
-      deps: ['leaflet'],
-    },
     'noisejs': {exports: 'Noise'},
     'peer': {exports: 'Peer'},
     'three': {exports: 'THREE'},
