@@ -168,7 +168,6 @@ class BigImageCarouselSketch {
           }
       }
     }
-      p5.text("X Zero is " + x_zero, this.surface.virtualRect.x + 50, this.surface.virtualRect.y + 100);
   }
 }
 
