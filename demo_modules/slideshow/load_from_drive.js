@@ -90,20 +90,18 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
         headers: new Headers({
           'Authorization': 'Bearer ' + this.config.credentials.access_token
         })
-      }).then((res) => {
+      }).then(res => {
         if (res.ok) {
           return res;
         }
-        debug('Failed to load! Retrying...');
-        // wait a random amount of time between 1000 and 5000 ms.
-        return Promise.delay(Math.random() * 4000 + 1000).then(() => fetchImage());
+        debug(`Failed to load! ${fileId}`);
       });
     };
     
     return fetchImage()
-      .then((resp) => resp.blob())
-      .then((blob) => URL.createObjectURL(blob))
-      .then((url) => {
+      .then(resp => resp.blob())
+      .then(blob => URL.createObjectURL(blob))
+      .then(url => {
         return new Promise((resolve, reject) => {
           var img = document.createElement('img');
           img.src = url;
