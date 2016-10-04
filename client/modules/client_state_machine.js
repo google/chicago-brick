@@ -17,10 +17,12 @@ define(function(require) {
   'use strict';
   require('lib/promise');
 
-  var stateMachine = require('lib/state_machine');
-  var timeManager = require('client/util/time');
-  var ClientModule = require('client/modules/module');
-  var debug = require('client/util/debug')('wall:client_state_machine');
+  const ClientModule = require('client/modules/module');
+  const stateMachine = require('lib/state_machine2');
+  const timeManager = require('client/util/time');
+
+  const debug = require('client/util/debug')('wall:client_state_machine');
+  const logError = require('client/util/log').error(debug);
 
   // The PrepareState gives the client module time to load assets. From the
   // beginning of the state, the module has about 60 seconds to load everything
@@ -30,12 +32,20 @@ define(function(require) {
   // module.
   class PrepareState extends stateMachine.State {
     constructor(oldModule, module) {
-      super('PrepareState');
+      super();
 
+      // Currently showing...
       this.oldModule_ = oldModule;
+      
+      // Next one to get ready.
       this.module_ = module;
+      
+      // Timer
+      this.timer_ = null;
     }
-    enter_() {
+    enter(transition) {
+      this.transition_ = transition;
+      
       // First, tell the old module that we're going to hide it.
       this.oldModule_.willBeHiddenSoon();
       
@@ -45,23 +55,27 @@ define(function(require) {
         if (!this.module_.willBeShownSoon()) {
           // Error in new module code...We can't go back to just
           // displaying the old module because we already told it we'll be done
-          // with it soon. Instead, clean up, then setup a transition to empty.
+          // with it soon. Instead, clean up, then pass control back to the 
+          // machine via its error handler.
           this.module_.dispose();
-          this.module_ = ClientModule.newEmptyModule(this.module_.deadline);
-          debug('Transitioning to empty module due to willBeShownSoon exception.');
+          throw new Error(`Failed to prepare from ${this.oldModule_.name} to ${this.module_.name}`);
         }
       });
       
       // Tell the modules that we're going to switch soon.
       debug('Delaying in prepare state for ' + timeManager.until(this.module_.deadline));
-      Promise.delay(timeManager.until(this.module_.deadline)).done(() => {
+      this.timer_ = setTimeout(() => {
         if (!this.module_.instance) {
           debug('Attempted to transition to module that did not init in time!');
         }
         moduleDone.then(() => {
-          this.transition_(new TransitionState(this.oldModule_, this.module_));
+          transition(new TransitionState(this.oldModule_, this.module_));
         });
-      });
+      }, timeManager.until(this.module_.deadline));
+    }
+    exit() {
+      // Clear any pending transition.
+      clearTimeout(this.timer_);
     }
     nextModule(module) {
       // Suddenly, we aren't going to be fading from old -> current, and should 
@@ -84,7 +98,7 @@ define(function(require) {
   // that the transition must happen sync'd across all clients.
   class TransitionState extends stateMachine.State {
     constructor(oldModule, module) {
-      super('TransitionState');
+      super();
 
       // The module to fade out.
       this.oldModule_ = oldModule;
@@ -95,30 +109,40 @@ define(function(require) {
       // If while in the middle of a transition, we get a request to go
       // somewhere else, we save that, and do so asap.
       this.savedModule_ = null;
+      
+      // Timer.
+      this.timer_ = null;
     }
-    enter_() {
-      var fadeDeadline = this.module_.deadline + 5000;
+    enter(transition) {
+      // Give ourselves 5 seconds to fade.
+      let fadeDeadline = this.module_.deadline + 5000;
 
       // Start the transition!
       this.oldModule_.fadeOut(fadeDeadline);
       if (!this.module_.fadeIn(fadeDeadline)) {
         this.module_.dispose();
-        this.module_ = ClientModule.newEmptyModule(this.module_.deadline);
-        debug('Transitioning to empty module due to fadeIn exception.');
+        // Throw, so that the state machine catches the exception.
+        throw new Error(`Failed to transition from ${this.oldModule_.name} to ${this.module_.name}`);
       }
 
-      // Wait until the deadline.
-      Promise.delay(timeManager.until(fadeDeadline)).done(() => {
+      // Wait until the visual effect is complete.
+      this.timer_ = setTimeout(() => {
         this.oldModule_.dispose();
 
+        // While we were doing the effect, we received a request for a new
+        // module. Prepare that one now.
         if (this.savedModule_) {
           // Concurrent request to change to new module!
-          this.transition_(new PrepareState(this.module_, this.savedModule_));
+          transition(new PrepareState(this.module_, this.savedModule_));
         } else {
           // Otherwise, display the module!
-          this.transition_(new DisplayState(this.module_));
+          transition(new DisplayState(this.module_));
         }
-      });
+      }, timeManager.until(fadeDeadline));
+    }
+    exit() {
+      // Clear any timeout set.
+      clearTimeout(this.timer_);
     }
     nextModule(module) {
       this.savedModule_ = module;
@@ -128,10 +152,12 @@ define(function(require) {
   // Displays a module until told to show a new one.
   class DisplayState extends stateMachine.State {
     constructor(module) {
-      super('DisplayState');
+      super();
       this.module_ = module;
     }
-    enter_() {}
+    enter(transition) {
+      this.transition_ = transition;
+    }
     nextModule(module) {
       this.transition_(new PrepareState(this.module_, module));
     }
@@ -139,11 +165,21 @@ define(function(require) {
 
   class ClientStateMachine extends stateMachine.Machine {
     constructor() {
-      super(debug, new DisplayState(ClientModule.newEmptyModule(0)));
+      // Initially, we tell the clients to show a blank screen.
+      super(new DisplayState(ClientModule.newEmptyModule()), debug);
     }
     nextModule(module) {
       debug('Requested transition to module', module.name);
-      this.current_.nextModule(module);
+      // Transition according to current state rules.
+      this.state.nextModule(module);
+    }
+    handleError(error) {
+      logError(error);
+      // If we bubble up an error this far, we transition instantly back to a 
+      // blank screen.
+      this.transitionTo(new DisplayState(ClientModule.newEmptyModule()));
+      // Re-enable the state machine.
+      this.driveMachine();
     }
   }
 
