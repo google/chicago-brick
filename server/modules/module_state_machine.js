@@ -41,7 +41,7 @@ class ModuleStateMachine extends stateMachine.Machine {
     super(debug, new IdleState);
 
     // The geo that contains this module sm.
-    this.geo_ = geo;
+    this.context_.geo_ = geo;
 
     // Map of ID to ClientControlStateMachine for all clients.
     this.allClients_ = allClients;
@@ -53,8 +53,6 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.context_.clients = _.pick(allClients, (client) =>
         isDisplayInPoly(client.getClientInfo().rect, geo));
 
-    _.each(this.context_.clients, (clientSM) => clientSM.setGeo(geo));
-
     this.context_.playlist = null;
     this.context_.moduleDuration = null;
     
@@ -64,12 +62,11 @@ class ModuleStateMachine extends stateMachine.Machine {
     library.on('reloaded', this.reloadHandler);
   }
   newClient(client) {
-    if (!isDisplayInPoly(client.rect, this.geo_)) {
+    if (!isDisplayInPoly(client.rect, this.context_.geo_)) {
       return false;
     }
 
     this.context_.clients[client.socket.id] = this.allClients_[client.socket.id];
-    this.context_.clients[client.socket.id].setGeo(this.geo_);
     this.current_.newClient(client);
     return true;
   }
@@ -106,7 +103,7 @@ class ModuleStateMachine extends stateMachine.Machine {
     return this.current_.playModule(moduleName);
   }
   getGeo() {
-    return this.geo_;
+    return this.context_.geo_;
   }
   getDeadlineOfNextTransition() {
     return this.current_.getDeadline();
@@ -216,7 +213,7 @@ class TransitionState extends stateMachine.State {
 
     // Tell each client to do the module.
     _.each(this.context_.clients, function(clientState) {
-      clientState.nextModule(this.moduleDef_, this.deadline_);
+      clientState.nextModule(this.moduleDef_, this.deadline_, this.context_.geo_);
     }, this);
 
     // When the deadline arrives, enter display state.
@@ -243,7 +240,7 @@ class TransitionState extends stateMachine.State {
   newClient(client) {
     // Tell the new guy to load the next module NOW.
     this.context_.clients[client.socket.id].nextModule(
-        this.moduleDef_, this.deadline_);
+        this.moduleDef_, this.deadline_, this.context_.geo_);
   }
   playModule(moduleName) {
     var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);

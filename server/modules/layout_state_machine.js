@@ -84,7 +84,7 @@ LayoutStateMachine.prototype.getClientState = function() {
     ret.push({
       module: client.getModuleName(),
       rect: client.getClientInfo().rect,
-      state: client.getState(),
+      state: client.state.getName(),
     });
   }
   return ret;

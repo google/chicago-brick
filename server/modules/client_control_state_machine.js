@@ -14,36 +14,34 @@ limitations under the License.
 ==============================================================================*/
 
 'use strict';
-require('lib/promise');
-var debug = require('debug')('wall:client_control_state_machine');
 
-var stateMachine = require('lib/state_machine');
-var time = require('server/util/time');
-var wallGeometry = require('server/util/wall_geometry');
+const stateMachine = require('lib/state_machine2');
+const time = require('server/util/time');
+const wallGeometry = require('server/util/wall_geometry');
+
+const debug = require('debug')('wall:client_control_state_machine');
+const logError = require('server/util/log').error(debug);
 
 class ClientControlStateMachine extends stateMachine.Machine {
   constructor(client) {
-    super(debug, new IdleState);
+    super(new IdleState, debug);
 
-    // Assume the whole wall.
-    this.context_.geo = wallGeometry.getGeo();
-
-    // Remember the client.
-    this.context_.client = client;
-
-    // The current module, for monitoring purposes.
-    // Updated by the states when a transition occurs.
-    this.context_.moduleName = null;
+    // Assign client socket to context so that states can communicate with the
+    // client.
+    this.setContext({client});
   }
-  nextModule(moduleDef, deadline) {
-    debug('Told to go to', moduleDef.name, 'by', deadline);
-    this.current_.nextModule(moduleDef, deadline);
+  nextModule(moduleDef, deadline, geo) {
+    this.state.nextModule(moduleDef, deadline, geo);
   }
-  setGeo(geo) {
-    this.context_.geo = geo;
+  handleError(error) {
+    logError(error);
+    // It's unexpected that we'll ever get into an error state here. If we do, we transition immediately to Idle and await further instructions.
+    this.transitionTo(new IdleState);
+    // Re-enable the state machine.
+    this.driveMachine();
   }
   getModuleName() {
-    return this.context_.moduleName;
+    return this.state.getModuleName();
   }
   getClientInfo() {
     return this.context_.client;
@@ -51,54 +49,73 @@ class ClientControlStateMachine extends stateMachine.Machine {
 }
 
 class IdleState extends stateMachine.State {
-  constructor() {
-    super('IdleState');
+  enter(transition) {
+    this.transition_ = transition;
   }
-  enter_() {
-    this.context_.moduleName = null;
+  nextModule(moduleDef, deadline, geo) {
+    this.transition_(new PrepareState(moduleDef, deadline, geo));
   }
-  nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(moduleDef, deadline));
+  getModuleName() {
+    return '<None>';
   }
 }
 
 class PrepareState extends stateMachine.State {
-  constructor(moduleDef, deadline) {
-    super('PrepareState');
+  constructor(moduleDef, deadline, geo) {
+    super();
 
     // Server-side module info.
     this.moduleDef_ = moduleDef;
 
     // The deadline at which we should transition to the new module.
     this.deadline_ = deadline;
+    
+    // The geometry of the wall.
+    this.geo_ = geo;
+    
+    this.timer_ = null;
   }
-  enter_() {
-    this.context_.moduleName = this.moduleDef_.name;
-
-    // Tell the clients to load.
-    this.context_.client.socket.emit('loadModule', {
+  enter(transition, context) {
+    this.transition_ = transition;
+    let client = context.client;
+    
+    // Tell the client to load the relevant module.
+    client.socket.emit('loadModule', {
       module: this.moduleDef_.serializeForClient(),
       time: this.deadline_,
-      geo: this.context_.geo.points
+      geo: this.geo_.points
     });
 
-    Promise.delay(time.until(this.deadline_)).done((function() {
-      this.transition_(new DisplayState);
-    }).bind(this));
+    this.timer_ = setTimeout(() => {
+      transition(new DisplayState(this.moduleDef_));
+    }, time.until(this.deadline_));
   }
-  nextModule(moduleDef, deadline) {
-    // Return right away.
-    this.transition_(new PrepareState(moduleDef, deadline));
+  exit() {
+    clearTimeout(this.timer_);
+  }
+  nextModule(moduleDef, deadline, geo) {
+    // Even if waiting for the client to do something, prepare a new module
+    // immediately.
+    this.transition_(new PrepareState(moduleDef, deadline, geo));
+  }
+  getModuleName() {
+    return this.moduleDef_.name;
   }
 }
 
 class DisplayState extends stateMachine.State {
-  constructor() {
-    super('DisplayState');
+  constructor(moduleDef) {
+    super();
+    this.moduleDef_ = moduleDef;
   }
-  enter_() {}
-  nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(moduleDef, deadline));
+  enter(transition) {
+    this.transition_ = transition;
+  }
+  nextModule(moduleDef, deadline, geo) {
+    this.transition_(new PrepareState(moduleDef, deadline, geo));
+  }
+  getModuleName() {
+    return this.moduleDef_.name;
   }
 }
 
