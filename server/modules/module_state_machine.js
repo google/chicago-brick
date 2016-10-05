@@ -196,20 +196,7 @@ class TransitionState extends stateMachine.State {
     this.moduleDef_ = this.context_.playlist[this.index_];
 
     // Tell the server to transition.
-    this.context_.server.nextModule(this.moduleDef_, this.deadline_);
-    this.context_.server
-        .monitorState((state) => {
-          return state.name_ == 'ErrorState' || state.name_ == 'TransitionState';
-        }).then(() => {
-          if (this.context_.server.getState() == 'ErrorState') {
-            debug('Advancing to next module soon due to error state');
-            // Wait a bit so that if we only have one module (as in
-            // development mode) we don't throw errors in a tight loop.
-            this.deadline_ = time.inFuture(2000);
-            Promise.delay(2000).then(() => this.transition_(
-                new TransitionState(time.inFuture(5000), this.index_ + 1)));
-          }
-        });
+    this.context_.server.nextModule(this.moduleDef_, this.deadline_, this.context_.geo_);
 
     // Tell each client to do the module.
     _.each(this.context_.clients, function(clientState) {
@@ -298,7 +285,7 @@ class DisplayState extends stateMachine.State {
   newClient(client) {
     // Tell the new guy to load the next module NOW.
     this.context_.clients[client.socket.id].nextModule(
-        this.lateClientModuleDef_, this.lateClientDeadline_);
+        this.lateClientModuleDef_, this.lateClientDeadline_, this.context_.geo_);
   }
   playModule(moduleName) {
     var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);

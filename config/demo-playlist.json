@@ -139,6 +139,6 @@
       "duration": 600,
       "moduleDuration": 60,
       "maxPartitions": 4,
-    },
+    }
   ],
 }
