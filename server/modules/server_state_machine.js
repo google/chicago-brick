@@ -21,7 +21,7 @@ const assert = require('lib/assert');
 const game = require('server/game/game');
 const moduleTicker = require('server/modules/module_ticker');
 const network = require('server/network/network');
-const stateMachine = require('lib/state_machine2');
+const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
 
 const debug = require('debug')('wall:server_state_machine');
@@ -102,16 +102,23 @@ class ServerStateMachine extends stateMachine.Machine {
   nextModule(moduleDef, deadline) {
     this.state.nextModule(moduleDef, deadline);
   }
-  stop() {
-    this.state.stop();
+  stop(deadline) {
+    this.state.stop(deadline);
   }
   handleError(error) {
     logError(error);
     // Tell machine to stop (the behavior of which changes depending on the
     // current state).
     this.stop();
-    // Restart the machine.
+    
+    // Now, the machine is stopped (no transitions will have any effect, ever).
+    // Also, we're either in the IdleState, or are trying to transition there.
+    // Before we restart the machine, schedule a transition to ErrorState.
+    this.transitionTo(new ErrorState);
     this.driveMachine();
+  }
+  restartMachineAfterError() {
+    this.transitionTo(new IdleState);
   }
 }
 
@@ -122,7 +129,13 @@ class IdleState extends stateMachine.State {
   nextModule(moduleDef, deadline) {
     this.transition_(new PrepareState(RunningModule.newEmptyModule(), moduleDef, deadline));
   }
-  stop() {}
+  stop(deadline) {}
+}
+
+// Sink state. Machine can only change states via external transition.
+class ErrorState extends stateMachine.State {
+  nextModule(moduleDef, deadline) {}
+  stop(deadline) {}
 }
 
 class PrepareState extends stateMachine.State {
@@ -169,10 +182,12 @@ class PrepareState extends stateMachine.State {
     clearTimeout(this.timer_);
   }
   nextModule(moduleDef, deadline) {
-    // If we are preparing to show some things, but then suddenly we're told
-    // to go somewhere else, we need to meet the module interface contract by
-    // telling the module that we are going to hide it at the old deadline.
-    this.module_.willBeHiddenSoon(this.deadline_);
+    if (this.module_) {
+      // If we are preparing to show some things, but then suddenly we're told
+      // to go somewhere else, we need to meet the module interface contract by
+      // telling the module that we are going to hide it at the old deadline.
+      this.module_.willBeHiddenSoon(this.deadline_);
+    }
     
     // Now, we're already told the old module that we are hiding it, 
     // and we'll tell it we're going to hide it again with a different deadline.
@@ -180,7 +195,12 @@ class PrepareState extends stateMachine.State {
     // willBeHiddenSoon.
     this.transition_(new PrepareState(this.oldModule_, moduleDef, deadline));
   }
-  stop() {
+  stop(deadline) {
+    if (this.module_) {
+      this.module_.willBeHiddenSoon(deadline);
+      // Clean up any network things left over.
+      this.module_.dispose();
+    }
     this.transition_(new IdleState);
   }
 }
@@ -229,10 +249,10 @@ class TransitionState extends stateMachine.State {
     this.savedModuleDef_ = moduleDef;
     this.savedDeadline_ = deadline;
   }
-  stop() {
+  stop(deadline) {
     // When we're in the middle of a transition, we have to stop both modules.
-    this.oldModule_.willBeHiddenSoon(0);
-    this.module_.willBeHiddenSoon(0);
+    this.oldModule_.willBeHiddenSoon(deadline);
+    this.module_.willBeHiddenSoon(deadline);
     moduleTicker.remove(this.oldModule_);
     moduleTicker.remove(this.module_);
     this.transition_(new IdleState);
@@ -252,8 +272,8 @@ class DisplayState extends stateMachine.State {
   nextModule(moduleDef, deadline) {
     this.transition_(new PrepareState(this.module_, moduleDef, deadline));
   }
-  stop() {
-    this.module_.willBeHiddenSoon(0);
+  stop(deadline) {
+    this.module_.willBeHiddenSoon(deadline);
     moduleTicker.remove(this.module_);
     this.transition_(new IdleState);
   }

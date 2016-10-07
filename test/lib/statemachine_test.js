@@ -1,4 +1,4 @@
-const statemachine = require('lib/state_machine2');
+const statemachine = require('lib/state_machine');
 const chai = require('chai');
 const sinon = require('sinon');
 const sinonChai = require('sinon-chai');

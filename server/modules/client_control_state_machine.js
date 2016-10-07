@@ -15,7 +15,7 @@ limitations under the License.
 
 'use strict';
 
-const stateMachine = require('lib/state_machine2');
+const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 
@@ -45,6 +45,10 @@ class ClientControlStateMachine extends stateMachine.Machine {
   }
   getClientInfo() {
     return this.context_.client;
+  }
+  stop(deadline) {
+    this.transitionTo(new IdleState);
+    this.context_.client.socket.emit('stop', {deadline});
   }
 }
 

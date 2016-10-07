@@ -31,7 +31,8 @@ define(function(require) {
 
       // Server has asked us to load a new module.
       network.on('loadModule',
-        (bits) => this.stateMachine.nextModule(ClientModule.deserialize(bits)));
+          bits => this.stateMachine.nextModule(ClientModule.deserialize(bits)));
+      network.on('stop', bits => this.stateMachine.stop(bits.deadline));
     }
   }
 

@@ -55,6 +55,7 @@ module.exports = {
       }
       return true;
     })
-    debug('Remove: We are now ticking ' + modulesToTick.length + ' modules');
+    debug('Remove: We are now ticking ' + modulesToTick.length + ' modules',
+        modulesToTick.map((m) => m.moduleDef.name).join(', '));
   }
 };

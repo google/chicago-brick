@@ -16,206 +16,210 @@ limitations under the License.
 'use strict';
 
 require('lib/promise');
-var _ = require('underscore');
-var debug = require('debug')('wall:layout_state_machine');
+const _ = require('underscore');
+const debug = require('debug')('wall:layout_state_machine');
+const assert = require('lib/assert');
 
-var stateMachine = require('lib/state_machine');
-var time = require('server/util/time');
-var wallGeometry = require('server/util/wall_geometry');
-var ClientControlStateMachine = require('server/modules/client_control_state_machine');
-var ModuleStateMachine = require('server/modules/module_state_machine');
+const logError = require('server/util/log').error(debug);
+const stateMachine = require('lib/state_machine');
+const time = require('server/util/time');
+const wallGeometry = require('server/util/wall_geometry');
+const ClientControlStateMachine = require('server/modules/client_control_state_machine');
+const ModuleStateMachine = require('server/modules/module_state_machine');
 
-var describeLayout = function(partitions) {
-  var layout = [];
-  partitions.forEach((moduleSM) => {
-    layout.push({
-      geo: moduleSM.getGeo(),
-      deadline: moduleSM.getDeadlineOfNextTransition(),
-      state: moduleSM.getState()
-    });
-  });
-  return layout;
-};
+function describeLayout(partitions) {
+  return partitions.map(moduleSM => ({
+    geo: moduleSM.getGeo(),
+    deadline: moduleSM.getDeadlineOfNextTransition(),
+    state: moduleSM.state.getName(),
+  }));
+}
 
-var LayoutStateMachine = function() {
-  stateMachine.Machine.call(this, debug, new IdleState);
+class LayoutStateMachine extends stateMachine.Machine {
+  constructor() {
+    super(new IdleState, debug);
 
-  // All known clients. Maps client ID to ClientControlStateMachine.
-  this.context_.clients = {};
-
-  // A playlist here is a list of layouts.
-  this.context_.playlist = null;
-  this.context_.index = 0;
-};
-LayoutStateMachine.prototype = Object.create(stateMachine.Machine.prototype);
-LayoutStateMachine.prototype.newClient = function(client) {
-  this.context_.clients[client.socket.id] =
-      new ClientControlStateMachine(client);
-  this.current_.newClient(client);
-};
-LayoutStateMachine.prototype.dropClient = function(id) {
-  this.current_.dropClient(id);
-  delete this.context_.clients[id];
-};
-LayoutStateMachine.prototype.setPlaylist = function(playlist) {
-  debug('set playlist', playlist);
-  this.context_.playlist = playlist;
-  this.context_.index = 0;
-  this.current_.didUpdatePlaylist();
-};
-LayoutStateMachine.prototype.skipAhead = function() {
-  this.context_.index = (this.context_.index + 1) %
-      this.context_.playlist.length;
-  this.current_.didUpdatePlaylist();
-};
-LayoutStateMachine.prototype.getPlaylist = function() {
-  return {
-    playlist: this.context_.playlist,
-    index: this.context_.index,
-  };
-};
-LayoutStateMachine.prototype.getLayout = function() {
-  return this.current_.getLayout();
-};
-LayoutStateMachine.prototype.getClientState = function() {
-  var ret = [];
-  for (var key in this.context_.clients) {
-    var client = this.context_.clients[key];
-    ret.push({
-      module: client.getModuleName(),
-      rect: client.getClientInfo().rect,
-      state: client.state.getName(),
+    this.setContext({
+      // All known clients. Maps client ID to ClientControlStateMachine.
+      clients: {}
     });
   }
-  return ret;
-};
-LayoutStateMachine.prototype.playModule = function(moduleName) {
-  return this.current_.playModule(moduleName);
-};
-
-var IdleState = function() {
-  stateMachine.State.call(this, 'IdleState');
-};
-IdleState.prototype = Object.create(stateMachine.State.prototype);
-IdleState.prototype.enter_ = function() {};
-IdleState.prototype.didUpdatePlaylist = function() {
-  this.transition_(new TransitionToNewLayoutState);
-};
-IdleState.prototype.newClient = function(client) {};
-IdleState.prototype.dropClient = function(id) {};
-IdleState.prototype.getLayout = function() {
-  return {
-    partitions: [],
-    wall: wallGeometry.getGeo(),
-  };
-};
-IdleState.prototype.playModule = function(moduleName) {
-  return false;
-};
-
-var TransitionToNewLayoutState = function() {
-  stateMachine.State.call(this, 'TransitionToNewLayoutState');
-
-  // The partition to use when asked to display a particular module.
-  this.nextPartition_ = 0;
-};
-TransitionToNewLayoutState.prototype = Object.create(
-    stateMachine.State.prototype);
-TransitionToNewLayoutState.prototype.enter_ = function() {
-  this.layout_ = this.context_.playlist[this.context_.index];
-  this.context_.index = (this.context_.index + 1) %
-      this.context_.playlist.length;
-  debug('Layout is now', this.layout_);
-
-  // Repartition the wall.
-  var geos = wallGeometry.partitionGeo(this.layout_.maxPartitions);
-  this.partitions_ = geos.map((geo) => {
-    return new ModuleStateMachine(this.context_.clients, geo);
-  });
-
-  // Transition in 5 seconds.
-  var deadline = time.inFuture(5000);
-
-  debug(
-      'Fading ' + this.partitions_.length + ' screens in at ' + deadline);
-  this.partitions_.forEach((sm) => {
-    sm.loadPlaylist(this.layout_, deadline);
-  });
-
-  // If we have more than one layout, schedule the next one.
-  if (this.context_.playlist.length > 1) {
-    Promise.delay(this.layout_.duration * 1000)
-        .then(() => this.transition_(new FadeOutLayoutState(this.partitions_)));
+  handleError(error) {
+    logError(error);
+    this.transitionTo(new IdleState);
+    this.driveMachine();
   }
-};
-TransitionToNewLayoutState.prototype.didUpdatePlaylist = function() {
-  this.transition_(new FadeOutLayoutState(this.partitions_));
-};
-TransitionToNewLayoutState.prototype.newClient = function(client) {
-  // Which partition is this in?
-  var moduleSM = _.find(this.partitions_, function(moduleSM) {
-    return moduleSM.newClient(client);
-  });
-  if (!moduleSM) {
-    // Client tried to connect outside the wall geometry.
-    throw new Error(
-        'New client ' + client.socket.id + ' has no module sm! ' +
-            this.partitions_.length);
+  newClient(clientInfo) {
+    this.context_.clients[clientInfo.socket.id] =
+        new ClientControlStateMachine(clientInfo);
+    this.state.newClient(clientInfo);
   }
-};
-TransitionToNewLayoutState.prototype.dropClient = function(id) {
-  _.each(this.partitions_, function(moduleSM) {
-    return moduleSM.dropClient(id);
-  });
-};
-TransitionToNewLayoutState.prototype.getLayout = function() {
-  return {
-    partitions: describeLayout(this.partitions_),
-    wall: wallGeometry.getGeo(),
-  };
-};
-TransitionToNewLayoutState.prototype.playModule = function(moduleName) {
-  debug('Requested to play module ' + moduleName);
-  var success = this.partitions_[this.nextPartition_].playModule(moduleName);
-  this.nextPartition_ = (this.nextPartition_ + 1) % this.partitions_.length;
-  return success;
-};
+  dropClient(id) {
+    this.state.dropClient(id);
+    delete this.context_.clients[id];
+  }
+  setPlaylist(layouts) {
+    this.state.setLayouts(layouts);
+  }
+  skipAhead() {
+    this.state.skipAhead();
+  }
+  getPlaylist() {
+    return this.state.getPlaylist();
+  }
+  getLayout() {
+    return this.state.getLayout();
+  }
+  getClientState() {
+    return Object.keys(this.context_.clients)
+        .map(k => this.context_.clients[k])
+        .map(c => {
+          return {
+            module: c.getModuleName(),
+            rect: c.getClientInfo().rect,
+            state: c.state.getName()
+          };
+        });
+  }
+  playModule(moduleName) {
+    return this.state.playModule(moduleName);
+  }
+}
 
-var FadeOutLayoutState = function(partitions) {
-  stateMachine.State.call(this, 'FadeOutLayoutState');
+class IdleState extends stateMachine.State {
+  enter(transition) {
+    this.transition_ = transition;
+  }
+  newClient(client) {}
+  dropClient(id) {}
+  setLayouts(layouts) {
+    this.transition_(new DisplayState(layouts, 0));
+  }
+  skipAhead() {}
+  getPlaylist() {
+    // TODO(applmak): Fix the playlist reporting to not depend on the layout.
+    return {};
+  }
+  getLayout() {
+    return {
+      partitions: [],
+      wall: wallGeometry.getGeo(),
+    }
+  }
+  playModule(moduleName) {}
+}
 
-  // The layout to fade out.
-  this.partitions_ = partitions;
+class DisplayState extends stateMachine.State {
+  constructor(layouts, beginFadeInDeadline, index = 0) {
+    super();
+    
+    this.layouts_ = layouts;
+    this.index_ = index;
+    
+    assert(index < layouts.length);
+    this.layout_ = layouts[index];
+    
+    this.timer_ = null;
+    
+    this.beginFadeInDeadline_ = beginFadeInDeadline;
+  }
+  enter(transition, context) {
+    this.transition_ = transition;
+    this.partition_ = wallGeometry.partitionGeo(this.layout_.maxPartitions)
+        .map(geo => new ModuleStateMachine(context.clients, geo));
+    debug(`Fading ${this.partition_.length} layouts in at ${this.beginFadeInDeadline_}`);
+    this.partition_.forEach(sm => sm.loadPlaylist(this.layout_, this.beginFadeInDeadline_));
 
-  // The time to fade out.
-  this.deadline_ = time.inFuture(5000);
-};
-FadeOutLayoutState.prototype = Object.create(stateMachine.State.prototype);
-FadeOutLayoutState.prototype.enter_ = function() {
-  debug('Fading out at ' + this.deadline_);
+    if (this.layouts_.length > 1) {
+      this.timer_ = setTimeout(() => {
+        transition(new FadeOutState(this.layouts_, this.index_, this.partition_));
+      }, this.layout_.duration * 1000);
+    }
+  }
+  exit() {
+    clearTimeout(this.timer_);
+  }
+  newClient(clientInfo) {
+    // Assign to a partition.
+    let moduleSM = this.partition_.find(sm => sm.newClient(clientInfo));
+    if (!moduleSM) {
+      // Client tried to connect outside the wall geometry.
+      throw new Error(`New client ${clientInfo.socket.id} has no module sm!`);
+    }
+  }
+  dropClient(id) {
+    this.partition_.forEach(m => m.dropClient(id));
+  }
+  skipAhead() {
+    this.transition_(new FadeOutState(this.layouts_, this.index_, this.partition_));
+  }
+  setLayouts(layouts) {
+    this.transition_(new FadeOutState(layouts, -1, this.partition_));
+  }
+  getPlaylist() {
+    // TODO(applmak): Fix the playlist reporting to not depend on the layout.
+    return {
+      playlist: this.layouts_,
+      index: this.index_,
+    };
+  }
+  getLayout() {
+    return {
+      partitions: describeLayout(this.partition_),
+      wall: wallGeometry.getGeo(),
+    };
+  }
+  playModule(moduleName) {
+    return this.partition_.some(sm => sm.playModule(moduleName));
+  }
+}
 
-  Promise.all(this.partitions_.map((sm) => sm.fadeToBlack(this.deadline_)))
-      .then(() => this.transition_(new TransitionToNewLayoutState));
-};
-FadeOutLayoutState.prototype.didUpdatePlaylist = function() {
-  // We'll fade in soon enough.
-};
-FadeOutLayoutState.prototype.newClient = function() {
-  // We'll fade in soon enough & repartition.
-};
-FadeOutLayoutState.prototype.dropClient = function() {
-  // We'll fade in soon enough & repartition.
-};
-FadeOutLayoutState.prototype.getLayout = function() {
-  return {
-    partitions: describeLayout(this.partitions_),
-    wall: wallGeometry.getGeo(),
-  };
-};
-FadeOutLayoutState.prototype.playModule = function(moduleName) {
-  // TODO: better would be to save up the module for the next layout.
-  return false;
-};
-
+class FadeOutState extends stateMachine.State {
+  constructor(layouts, index, partition) {
+    super();
+    
+    this.layouts_ = layouts;
+    this.index_ = index;
+    this.partition_ = partition;
+    
+    assert(index < layouts.length);
+    
+    this.timer_ = null;
+  }
+  enter(transition) {
+    this.transition_ = transition;
+    let deadline = time.inFuture(5000);
+    debug(`Fading out ${this.partition_.length} layouts at ${deadline} ms`);
+    this.partition_.forEach(sm => sm.fadeToBlack(deadline));
+    this.timer_ = setTimeout(() => {
+      let index = (this.index_ + 1) % this.layouts_.length;
+      transition(new DisplayState(this.layouts_, deadline + 5000, index));
+    }, 5000);
+  }
+  exit() {
+    clearTimeout(this.timer_);
+  }
+  newClient(clientInfo) {}
+  dropClient(id) {}
+  skipAhead() {}
+  setLayouts(layouts) {
+    this.layouts_ = layouts;
+    this.index_ = -1;
+  }
+  getPlaylist() {
+    // TODO(applmak): Fix the playlist reporting to not depend on the layout.
+    return {
+      playlist: this.layouts_,
+      index: this.index_,
+    };
+  }
+  getLayout() {
+    return {
+      partitions: describeLayout(this.partition_),
+      wall: wallGeometry.getGeo(),
+    };
+  }
+  playModule(moduleName) {}
+}
 
 module.exports = LayoutStateMachine;

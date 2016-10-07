@@ -18,7 +18,7 @@ define(function(require) {
   require('lib/promise');
 
   const ClientModule = require('client/modules/module');
-  const stateMachine = require('lib/state_machine2');
+  const stateMachine = require('lib/state_machine');
   const timeManager = require('client/util/time');
 
   const debug = require('client/util/debug')('wall:client_state_machine');
@@ -180,6 +180,9 @@ define(function(require) {
       this.transitionTo(new DisplayState(ClientModule.newEmptyModule()));
       // Re-enable the state machine.
       this.driveMachine();
+    }
+    stop(deadline) {
+      this.nextModule(ClientModule.newEmptyModule(deadline));
     }
   }
 
