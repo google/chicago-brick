@@ -16,7 +16,8 @@ limitations under the License.
 'use strict';
 
 var PeerServer = require('peer').PeerServer;
-var commandLineArgs = require('command-line-args');
+const commandLineArgs = require('command-line-args');
+const commandLineUsage = require('command-line-usage');
 var debug = require('debug')('wall:server');
 
 var game = require('./game/game');
@@ -29,7 +30,7 @@ var webapp = require('server/webapp');
 var credentials = require('server/util/credentials');
 var path = require('path');
 
-var cli = commandLineArgs([
+const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
       defaultValue: path.join(__dirname, '..', 'node_modules'),
       description: 'If you are running a chicago-brick instance where ' +
@@ -60,10 +61,10 @@ var cli = commandLineArgs([
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String}
-]);
-var flags = cli.parse();
+];
+let flags = commandLineArgs(FLAG_DEFS);
 if (flags.help) {
-  console.log('Available flags: ' + cli.getUsage());
+  console.log('Available flags: ' + commandLineUsage({optionList: FLAG_DEFS}));
   process.exit();
 }
 debug('flags', flags);
