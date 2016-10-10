@@ -17,12 +17,13 @@
 
 set -x
 
-NODE=node
 if [[ $NODEDEBUG ]]; then
-  NODE=./node_modules/node-inspector/bin/node-debug.js
+  INSPECT="--debug-brk --inspect"
+else
+  INSPECT=""
 fi
 
-DEBUG=wall:* NODE_PATH=. $NODE server/server.js \
+DEBUG=wall:* NODE_PATH=. node $INSPECT server/server.js \
   --use_geometry '[{"right":2},{"down":2},{"left":2},{"up":2}]' \
   --assets_dir demo_assets \
   $@
