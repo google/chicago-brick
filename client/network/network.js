@@ -43,8 +43,14 @@ define(function(require) {
       return {
         open: function() {
           var baseAddr = location.protocol + '//' + location.host;
-          var addr = `${baseAddr}/${externalNspName}?id=${id}&rect=${info.virtualRectNoBezel.serialize()}`;
-          moduleSocket = io(addr, {multiplex: false});
+          var addr = `${baseAddr}/${externalNspName}`;
+          moduleSocket = io(addr, {
+            multiplex: false,
+            query: {
+              id,
+              rect: info.virtualRectNoBezel.serialize()
+            }
+          });
           debug('Opened per-module socket @ ' + externalNspName);
           return moduleSocket;
         },

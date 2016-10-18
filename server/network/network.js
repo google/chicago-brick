@@ -122,9 +122,9 @@ network.forModule = function(id) {
   var clients = [];
   return {
     open: function() {
-      debug('Opened per-module socket @ ' + id);
+      debug('Opened per-module socket @ ' + id, internalNspName);
       console.assert(!io.nsps[internalNspName]);
-      var nsp = io.of(externalNspName);
+      var nsp = io.of(internalNspName);
 
       // Expose ioClient via network module.
       nsp.openExternalSocket = function(host) {
