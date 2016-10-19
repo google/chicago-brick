@@ -17,72 +17,125 @@ limitations under the License.
 require('lib/promise');
 
 const StateManager = require('server/state/state_manager');
-const debug = require('debug')('wall:server_state_machine');
+const assert = require('lib/assert');
 const game = require('server/game/game');
-const logError = require('server/util/log').error(debug);
 const moduleTicker = require('server/modules/module_ticker');
 const network = require('server/network/network');
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
 
+const debug = require('debug')('wall:server_state_machine');
+const logError = require('server/util/log').error(debug);
 
 class RunningModule {
-  constructor(moduleDef) {
-    this.moduleDef = moduleDef;
-    this.instance = null;
+  static newEmptyModule() {
+    return new RunningModule;
   }
-
-  instantiate(layoutGeometry, deadline) {
-    const INSTANTIATION_ID = `${layoutGeometry.extents.serialize()}-${deadline}`;
-    this.network = network.forModule(INSTANTIATION_ID);
-    this.gameManager = game.forModule(INSTANTIATION_ID);
-
-    var openNetwork = this.network.open();
-    this.state = new StateManager(openNetwork);
+  constructor(moduleDef, geo, deadline) {
+    this.moduleDef = moduleDef;
+    this.geo = geo;
+    this.deadline = deadline;
     
-    this.instance = this.moduleDef.instantiate(layoutGeometry, openNetwork, this.gameManager, this.state, deadline);
+    if (this.moduleDef) {
+      const INSTANTIATION_ID = `${geo.extents.serialize()}-${deadline}`;
+      this.network = network.forModule(INSTANTIATION_ID);
+      this.gameManager = game.forModule(INSTANTIATION_ID);
+    }
+  }
+  
+  // This is a separate method in order to guard against exceptions in 
+  // instantiate.
+  instantiate() {
+    if (this.moduleDef) {
+      let openNetwork = this.network.open();
+      this.stateManager = new StateManager(openNetwork);
+      this.instance = this.moduleDef.instantiate(this.geo, openNetwork, this.gameManager, this.stateManager, this.deadline);
+    }
   }
 
   tick(now, delta) {
-    this.instance.tick(now, delta);
-    this.state.send();
+    if (this.instance) {
+      this.instance.tick(now, delta);
+      this.stateManager.send();
+    }
   }
 
   dispose() {
-    this.instance.dispose();
-
-    // Also clean up a stray singleton.
-    this.network.close();
-
-    // Clean up game sockets.
-    this.gameManager.dispose();
+    if (this.instance) {
+      this.instance.dispose();
+    }
+    if (this.moduleDef) {
+      // Clean up game sockets.
+      this.gameManager.dispose();
+    
+      // This also cleans up stateManager.
+      this.network.close();
+    }
+  }
+  
+  willBeHiddenSoon(deadline) {
+    if (this.instance) {
+      this.instance.willBeHiddenSoon(deadline);
+    }
+  }
+  
+  willBeShownSoon(deadline) {
+    if (this.instance) {
+      let ret = this.instance.willBeShownSoon(deadline);
+      if (!ret) {
+        logError(new Error(`Module ${this.moduleDef.name} should return a promise from willBeShownSoon`));
+        return Promise.resolve();
+      }
+      return ret;
+    }
+    return Promise.resolve();
   }
 }
 
 class ServerStateMachine extends stateMachine.Machine {
   constructor(wallGeometry) {
-    super(debug, new IdleState);
+    super(new IdleState, debug);
 
     // The geometry of our region of the wall. A single Polygon.
-    this.context_.wallGeometry = wallGeometry;
+    this.setContext({geo: wallGeometry});
   }
   nextModule(moduleDef, deadline) {
-    this.current_.nextModule(moduleDef, deadline);
+    this.state.nextModule(moduleDef, deadline);
   }
-  stop() {
-    this.current_.stop();
+  stop(deadline) {
+    this.state.stop(deadline);
+  }
+  handleError(error) {
+    logError(error);
+    // Tell machine to stop (the behavior of which changes depending on the
+    // current state).
+    this.stop();
+    
+    // Now, the machine is stopped (no transitions will have any effect, ever).
+    // Also, we're either in the IdleState, or are trying to transition there.
+    // Before we restart the machine, schedule a transition to ErrorState.
+    this.transitionTo(new ErrorState);
+    this.driveMachine();
+  }
+  restartMachineAfterError() {
+    this.transitionTo(new IdleState);
   }
 }
 
 class IdleState extends stateMachine.State {
-  constructor() {
-    super('IdleState');
+  enter(transition) {
+    this.transition_ = transition;
   }
-  enter_() {}
   nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(null, moduleDef, deadline));
+    this.transition_(new PrepareState(RunningModule.newEmptyModule(), moduleDef, deadline));
   }
-  stop() {}
+  stop(deadline) {}
+}
+
+// Sink state. Machine can only change states via external transition.
+class ErrorState extends stateMachine.State {
+  nextModule(moduleDef, deadline) {}
+  stop(deadline) {}
 }
 
 class PrepareState extends stateMachine.State {
@@ -95,42 +148,66 @@ class PrepareState extends stateMachine.State {
     // The module to load.
     this.moduleDef_ = moduleDef;
 
+    // The new module.
+    this.module_ = null;
+    
     // The deadline at which we should transition to the new module.
     this.deadline_ = deadline;
+    
+    this.timer_ = null;
   }
-  enter_() {
+  enter(transition, context) {
+    this.transition_ = transition;
+    
     // The module we're trying to load.
-    this.module_ = new RunningModule(this.moduleDef_);
-    this.module_.instantiate(this.context_.wallGeometry, this.deadline_);
+    this.module_ = new RunningModule(this.moduleDef_, context.geo, this.deadline_);
+    this.module_.instantiate();
 
     // Tell the old server module that it will be hidden soon.
-    if (this.oldModule_) {
-      this.oldModule_.instance.willBeHiddenSoon(this.deadline_);
-    }
+    this.oldModule_.willBeHiddenSoon(this.deadline_);
 
     // Tell the server module that it will be shown soon.
-    // TODO(applmak): Implement a timeout that works.
-    this.module_.instance.willBeShownSoon(this.deadline_);
-    Promise.resolve().done(() => {
-      this.transition_(new TransitionState(
-          this.oldModule_, this.module_, this.deadline_));
-    }, (e) => {
-      logError(e);
-      debug('Entering error state for module ' + this.module_.moduleDef.name);
-      this.transition_(new ErrorState);
+    this.module_.willBeShownSoon(this.deadline_).then(() => {
+      transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
     });
+    
+    // Schedule a timer to trip if we take too long. We'll transition anyway,
+    // though.
+    this.timer_ = setTimeout(() => {
+      logError(new Error(`Preparation timeout for module ${this.moduleDef_.name}`));
+      transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
+    }, time.until(this.deadline_));
+  }
+  exit() {
+    clearTimeout(this.timer_);
   }
   nextModule(moduleDef, deadline) {
+    if (this.module_) {
+      // If we are preparing to show some things, but then suddenly we're told
+      // to go somewhere else, we need to meet the module interface contract by
+      // telling the module that we are going to hide it at the old deadline.
+      this.module_.willBeHiddenSoon(this.deadline_);
+    }
+    
+    // Now, we're already told the old module that we are hiding it, 
+    // and we'll tell it we're going to hide it again with a different deadline.
+    // TODO(applmak): We should tighten up the API here to avoid the double
+    // willBeHiddenSoon.
     this.transition_(new PrepareState(this.oldModule_, moduleDef, deadline));
   }
-  stop() {
+  stop(deadline) {
+    if (this.module_) {
+      this.module_.willBeHiddenSoon(deadline);
+      // Clean up any network things left over.
+      this.module_.dispose();
+    }
     this.transition_(new IdleState);
   }
 }
 
 class TransitionState extends stateMachine.State {
   constructor(oldModule, module, deadline) {
-    super('TransitionState');
+    super();
 
     // The module that we're trying to unload.
     this.oldModule_ = oldModule;
@@ -138,86 +215,66 @@ class TransitionState extends stateMachine.State {
     // The module we're trying to load.
     this.module_ = module;
 
-    // The deadline at which we should transition to the new module.
+    // The deadline at which we should start transitioning to the new module.
     this.deadline_ = deadline;
+
+    this.timer_ = null;
 
     this.savedModuleDef_ = null;
     this.savedDeadline_ = 0;
   }
-  enter_() {
+  enter(transition) {
+    this.transition_ = transition;
     // 5 second transition.
-    var endTransition = this.deadline_ + 5000;
-    // Time to transition, I think, but just in case, let's double-check.
-    Promise.delay(time.until(this.deadline_)).done(() => {
-      // TODO(applmak): Figure out if it's worth it to tell the server that we
-      // are going to be fading in/out.
-      // Tell the old server modules that they will be hidden soon.
-      // modulesToTick.forEach((function(module) {
-      //   module.beginFadeOut(this.deadline_);
-      // }).bind(this));
-
+    let endTransition = this.deadline_ + 5000;
+    this.timer_ = setTimeout(() => {
       moduleTicker.add(this.module_);
-      // this.module_.beginFadeIn(this.deadline_);
 
-      debug('start transition', this.deadline_);
-      Promise.delay(time.until(endTransition)).done(() => {
-        debug('end transition', endTransition);
-
-        if (this.oldModule_) {
-          moduleTicker.remove(this.oldModule_);
-        }
-        // this.module_.finishFadeIn();
-
+      this.timer_ = setTimeout(() => {
+        moduleTicker.remove(this.oldModule_);
+        
         if (this.savedModuleDef_) {
           this.transition_(new PrepareState(
               this.module_, this.savedModuleDef_, this.savedDeadline_));
         } else {
           this.transition_(new DisplayState(this.module_));
         }
-      });
-    });
+      }, time.until(endTransition));
+    }, time.until(this.deadline_));
+  }
+  exit() {
+    clearTimeout(this.timer_);
   }
   nextModule(moduleDef, deadline) {
     this.savedModuleDef_ = moduleDef;
     this.savedDeadline_ = deadline;
   }
-  stop() {
-    if (this.oldModule_) {
-      moduleTicker.remove(this.oldModule_);
-    }
+  stop(deadline) {
+    // When we're in the middle of a transition, we have to stop both modules.
+    this.oldModule_.willBeHiddenSoon(deadline);
+    this.module_.willBeHiddenSoon(deadline);
+    moduleTicker.remove(this.oldModule_);
+    moduleTicker.remove(this.module_);
     this.transition_(new IdleState);
   }
 }
 
 class DisplayState extends stateMachine.State {
   constructor(module) {
-    super('DisplayState');
+    super();
 
     // The module currently on display.
     this.module_ = module;
   }
-  enter_() {}
+  enter(transition) {
+    this.transition_ = transition;
+  }
   nextModule(moduleDef, deadline) {
-    this.transition_(
-        new PrepareState(this.module_, moduleDef, deadline));
+    this.transition_(new PrepareState(this.module_, moduleDef, deadline));
   }
-  stop() {
-    if (this.module_) {
-      moduleTicker.remove(this.module_);
-    }
-    this.transition_(new IdleState);
-  }
-}
-
-class ErrorState extends stateMachine.State {
-  constructor() {
-    super('ErrorState');
-  }
-  enter_() {}
-  nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(null, moduleDef, deadline));
-  }
-  stop() {
+  stop(deadline) {
+    this.module_.willBeHiddenSoon(deadline);
+    moduleTicker.remove(this.module_);
     this.transition_(new IdleState);
   }
 }

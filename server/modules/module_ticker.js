@@ -48,8 +48,14 @@ module.exports = {
         modulesToTick.map((m) => m.moduleDef.name).join(', '));
   },
   remove: function(module) {
-    modulesToTick.find((m) => m === module).dispose();
-    modulesToTick = modulesToTick.filter((m) =>  m !== module);
-    debug('Remove: We are now ticking ' + modulesToTick.length + ' modules');
+    modulesToTick = modulesToTick.filter(m => {
+      if (m === module) {
+        m.dispose();
+        return false;
+      }
+      return true;
+    })
+    debug('Remove: We are now ticking ' + modulesToTick.length + ' modules',
+        modulesToTick.map((m) => m.moduleDef.name).join(', '));
   }
 };

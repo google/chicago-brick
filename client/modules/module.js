@@ -91,20 +91,21 @@ define(function(require) {
       );
     }
 
-    static newEmptyModule(deadline) {
-      let ret = new ClientModule(
+    static newEmptyModule(deadline = 0) {
+      return new ClientModule(
         'empty-module',
-        'client/modules/empty_module.js',
+        '',
         {},
         new TitleCard({}),
         deadline,
         new geometry.Polygon([{x: 0, y:0}])
       );
-      ret.instantiate();
-      return ret;
     }
 
     instantiate() {
+      if (!this.path) {
+        return Promise.resolve();
+      }
       this.network = network.forModule(
         `${this.geo.extents.serialize()}-${this.deadline}`);
       let openNetwork = this.network.open();
@@ -152,6 +153,9 @@ define(function(require) {
     }
 
     willBeHiddenSoon() {
+      if (!this.path) {
+        return true;
+      }
       try {
         this.instance.willBeHiddenSoon();
       } catch(e) {
@@ -162,6 +166,9 @@ define(function(require) {
 
     // Returns true if module is still OK.
     willBeShownSoon() {
+      if (!this.path) {
+        return true;
+      }
       try {
         this.instance.willBeShownSoon(this.container, this.deadline);
         return true;
@@ -174,6 +181,9 @@ define(function(require) {
 
     // Returns true if module is still OK.
     fadeIn(deadline) {
+      if (!this.path) {
+        return true;
+      }
       try {
         this.instance.beginFadeIn(deadline);
       } catch(e) {
@@ -196,6 +206,9 @@ define(function(require) {
     }
 
     fadeOut(deadline) {
+      if (!this.path) {
+        return true;
+      }
       this.titleCard.exit();
       try {
         this.instance.beginFadeOut(deadline);
@@ -209,6 +222,9 @@ define(function(require) {
     }
 
     dispose() {
+      if (!this.path) {
+        return true;
+      }
       this.titleCard.exit();  // Just in case.
       moduleTicker.remove(this.instance);
 

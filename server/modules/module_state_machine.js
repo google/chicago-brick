@@ -16,15 +16,17 @@ limitations under the License.
 'use strict';
 require('lib/promise');
 
-var _ = require('underscore');
-var debug = require('debug')('wall:module_state_machine');
-var random = require('random-js')();
+const _ = require('underscore');
+const debug = require('debug')('wall:module_state_machine');
+const random = require('random-js')();
+const assert = require('lib/assert');
+const logError = require('server/util/log').error(debug);
 
-var stateMachine = require('lib/state_machine');
-var time = require('server/util/time');
-var library = require('server/modules/module_library');
-var ServerStateMachine = require('server/modules/server_state_machine');
-var geometry = require('lib/geometry');
+const stateMachine = require('lib/state_machine');
+const time = require('server/util/time');
+const library = require('server/modules/module_library');
+const ServerStateMachine = require('server/modules/server_state_machine');
+const geometry = require('lib/geometry');
 
 function isDisplayInPoly(rect, poly) {
   // find the center point of this display:
@@ -38,285 +40,201 @@ function isDisplayInPoly(rect, poly) {
 // by this class, only read.
 class ModuleStateMachine extends stateMachine.Machine {
   constructor(allClients, geo) {
-    super(debug, new IdleState);
-
-    // The geo that contains this module sm.
-    this.geo_ = geo;
+    super(new IdleState, debug);
 
     // Map of ID to ClientControlStateMachine for all clients.
     this.allClients_ = allClients;
 
-    // Server module controller by the module state machine.
-    this.context_.server = new ServerStateMachine(geo);
+    this.setContext({
+      geo,
+      server: new ServerStateMachine(geo),
+      clients: Object.keys(allClients)
+          .map(k => allClients[k])
+          .filter(c => isDisplayInPoly(c.getClientInfo().rect, geo)),
+    })
 
-    // Clients controlled by the module state machine.
-    this.context_.clients = _.pick(allClients, (client) =>
-        isDisplayInPoly(client.getClientInfo().rect, geo));
-
-    _.each(this.context_.clients, (clientSM) => clientSM.setGeo(geo));
-
-    this.context_.playlist = null;
-    this.context_.moduleDuration = null;
-    
-    this.reloadHandler = (moduleDef) => {
+    this.reloadHandler = moduleDef => {
       this.playModule(moduleDef.name);
     };
     library.on('reloaded', this.reloadHandler);
   }
-  newClient(client) {
-    if (!isDisplayInPoly(client.rect, this.geo_)) {
+  handleError(error) {
+    logError(error);
+    this.transitionTo(new IdleState);
+    this.driveMachine();
+  }
+  // Turn off the state machine.
+  fadeToBlack(deadline) {
+    library.removeListener('reloaded', this.reloadHandler);
+
+    // Tell the clients to stop.
+    this.context_.clients.forEach(c => c.stop(deadline));
+    
+    // Tell the server to stop.
+    this.context_.server.stop(deadline);
+
+    // Set us back to idle, awaiting further instructions.
+    this.transitionTo(new IdleState);
+  }
+  newClient(clientInfo) {
+    if (!isDisplayInPoly(clientInfo.rect, this.context_.geo)) {
       return false;
     }
 
-    this.context_.clients[client.socket.id] = this.allClients_[client.socket.id];
-    this.context_.clients[client.socket.id].setGeo(this.geo_);
-    this.current_.newClient(client);
+    let client = this.allClients_[clientInfo.socket.id];
+    this.context_.clients.push(client);
+    this.state.newClient(client, this.context_.geo);
     return true;
   }
   dropClient(id) {
-    if (!(id in this.context_.clients)) {
+    let client = this.allClients_[id];
+    
+    let i = this.context_.clients.findIndex(c => c === client);
+    
+    if (i == -1) {
       return false;
     }
 
-    delete this.context_.clients[id];
+    this.context_.clients.splice(i, 1);
 
     return true;
   }
   loadPlaylist(layout, deadline) {
-    debug('switch to layout', layout);
-    this.context_.playlist = layout.modules.slice(0);
-    random.shuffle(this.context_.playlist);
-    this.context_.moduleDuration = layout.moduleDuration;
-    this.current_.loadPlaylist(deadline);
-  }
-  fadeToBlack(deadline) {
-    library.removeListener('reloaded', this.reloadHandler);
+    // Copy the playlist & shuffle.
+    let playlist = Array.from(layout.modules);
+    random.shuffle(playlist);
     
-    this.context_.playlist = [library.modules['_faded_out']];  // jshint ignore:line
-    this.context_.moduleDuration = deadline;
-    this.current_.loadPlaylist(deadline);
-
-    // Return a promise that will be resolved when the state machine is
-    // idling (technically, in Display state with a black-screen module).
-    return this.context_.server.monitorState(function(state) {
-      return state.name_ == 'DisplayState';
-    }).then(() => this.stop());
+    // Load the modules referenced in this playlist.
+    Promise.allSettled(playlist.map(m => m.whenLoadedPromise)).done(results => {
+      // Check to see if any modules were rejected. If so, remove them from the 
+      // playlist before requesting the state machine to execute anything.
+      let filteredPlaylist = playlist.filter(
+          (module, index) => results[index].status == 'resolved');
+      if (filteredPlaylist.length > 0) {
+        this.transitionTo(new DisplayState(filteredPlaylist, layout, deadline));
+      } else {
+        throw new Error('Playlist has no modules!');
+      }
+    });
   }
   playModule(moduleName) {
-    return this.current_.playModule(moduleName);
+    // Note: this will throw if the module is not in the current playlist, as
+    // we have no def for it.
+    // TODO(applmak): Handle this better.
+    this.state.playModule(moduleName);
   }
   getGeo() {
-    return this.geo_;
+    return this.context_.geo;
   }
   getDeadlineOfNextTransition() {
-    return this.current_.getDeadline();
-  }
-  stop() {
-    this.context_.server.stop();
+    return this.state.getDeadline();
   }
 }
 
 class IdleState extends stateMachine.State {
-  constructor() {
-    super('IdleState');
-  }
-  enter_() {}
-  loadPlaylist(deadline) {
-    this.transition_(new LoadingState(deadline));
+  enter(transition) {
+    this.transition_ = transition;
   }
   newClient(client) {}
   playModule(moduleName) {
-    return false;
+    throw new Error(`No module named ${moduleName}`);
   }
   getDeadline() {
     return Infinity;
   }
 }
 
-class LoadingState extends stateMachine.State {
-  constructor(deadline) {
-    super('LoadingState');
+class DisplayState extends stateMachine.State {
+  constructor(playlist, layout, deadline, index = 0) {
+    super();
 
-    this.indexOfModuleToPlayWhenLoaded_ = 0;
+    this.layout_ = layout;
+    this.playlist_ = playlist;
+    
+    // Index cannot be out of bounds.
+    assert(index < playlist.length);
+    this.index_ = index;
 
-    // The time at which we should swap to the new playlist.
-    this.deadline_ = deadline;
-  }
-  enter_() {
-    // Load the playlist.
-    var modulePromises = this.context_.playlist.map((m) => m.whenLoadedPromise);
-    Promise.allSettled(modulePromises).done((results) => {
-      // Check to see if any modules were rejected. If so, remove them from the 
-      // playlist.
-      this.context_.playlist = this.context_.playlist.filter((module, index) => {
-        if (results[index].status != 'resolved') {
-          debug('Removing ' + module + ' from the playlist!');
-        }
-        return results[index].status == 'resolved';
-      });
-      this.transition_(new TransitionState(this.deadline_, this.indexOfModuleToPlayWhenLoaded_));
-    });
-  }
-  loadPlaylist(deadline) {
-    // Stop any prior async work from continuing.
-    // The fact that we still be in the 'map' above is no big deal, we'll just
-    // extra disk i/o.
-    this.transition_(new LoadingState(deadline));
-  }
-  newClient(client) {}
-  playModule(moduleName) {
-    var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);
-    if (index != -1) {
-      debug('Will play module ' + moduleName + ' when loading is complete.');
-      this.indexOfModuleToPlayWhenLoaded_ = index;
-      return true;
-    }
-    debug('Could not find requested module ' + moduleName);
-    return false;
-  }
-  getDeadline() {
-    return this.deadline_;
-  }
-}
-
-class TransitionState extends stateMachine.State {
-  constructor(deadline, opt_index) {
-    super('TransitionState');
-
-    // If no next item passed, choose the first one.
-    this.index_ = opt_index || 0;
-
+    this.displayDuration_ = this.layout_.moduleDuration * 1000;
     this.deadline_ = deadline;
     
     // The current moduleDef we are attempting to show or showing.
-    this.moduleDef_ = null;
+    this.moduleDef_ = playlist[index];
+    
+    this.timer_ = null;
   }
-  enter_() {
-    // Check for wrapping.
-    this.index_ = this.index_ % this.context_.playlist.length;
-
-    // We'll attempt to transition the clients to this module.
-    this.moduleDef_ = this.context_.playlist[this.index_];
-
-    // Tell the server to transition.
-    this.context_.server.nextModule(this.moduleDef_, this.deadline_);
-    this.context_.server
-        .monitorState((state) => {
-          return state.name_ == 'ErrorState' || state.name_ == 'TransitionState';
-        }).then(() => {
-          if (this.context_.server.getState() == 'ErrorState') {
-            debug('Advancing to next module soon due to error state');
-            // Wait a bit so that if we only have one module (as in
-            // development mode) we don't throw errors in a tight loop.
-            this.deadline_ = time.inFuture(2000);
-            Promise.delay(2000).then(() => this.transition_(
-                new TransitionState(time.inFuture(5000), this.index_ + 1)));
-          }
-        });
-
-    // Tell each client to do the module.
-    _.each(this.context_.clients, function(clientState) {
-      clientState.nextModule(this.moduleDef_, this.deadline_);
-    }, this);
-
-    // When the deadline arrives, enter display state.
-    debug('Waiting until', this.deadline_);
-    Promise.delay(time.until(this.deadline_)).done(() => {
-      // We don't have a clean way to transition to any state but the display
-      // state. That means that if the playlist changes behind us, we can't
-      // abort playing the current module. To save time, cut the duration to 
-      // only 1 second. Since any playlist change is a new module def (right?),
-      // we can use object identity to check for this condition.
-      // TODO(applmak): Double-check the identity bit.
-      let duration = _(this.context_.playlist).contains(this.moduleDef_) ? undefined : 1;
-      if (duration) {
-        debug('Using short duration for reasons...', this.index_);
+  enter(transition, context) {
+    this.transition_ = transition;
+    
+    debug(`Displaying ${this.moduleDef_.name} starting at ${this.deadline_}`);
+    
+    // Tell the server to transition to this new module.
+    context.server.nextModule(this.moduleDef_, this.deadline_, context.geo);
+    // Be prepared for the server to go to error state.
+    let errorHandler = () => {
+      if (!this.timer_) {
+        // We're leaving the state anyway.
+        return;
       }
-      this.transition_(new DisplayState(
-          this.moduleDef_, this.deadline_, this.index_, duration));
-    });
+      if (context.server.state.getName() == 'ErrorState') {
+        // We transitioned to the error state!
+        debug(`Error encountered in server module ${this.moduleDef_.name}`);
+        // Allow the server to transition internally (back to idle).
+        context.server.restartMachineAfterError();
+        
+        // Remove the module from the list.
+        this.playlist_.splice(this.index_, 1);
+        
+        if (this.playlist_.length == 0) {
+          throw new Error('No modules left in playlist!');
+        }
+
+        // Go to the next module in 5 seconds.
+        let nextModuleIndex = this.index_ % this.playlist_.length;
+        this.transition_(new DisplayState(this.playlist_, this.layout_, time.inFuture(5000), nextModuleIndex));
+      } else {
+        context.server.getTransitionPromise().then(errorHandler);
+      }
+    };
+    context.server.getTransitionPromise().then(errorHandler);
+
+    // Tell each client to transition to the module.
+    context.clients.forEach(client => client.nextModule(this.moduleDef_, this.deadline_, context.geo));
+
+    // Transition to the next thing in the playlist when the deadline + the 
+    // duration pass.
+    let durationBeforePrepare = Math.max(this.displayDuration_ - 5000, 0);
+    let prepareDeadline = this.deadline_ + durationBeforePrepare;
+    let fadeStartDeadline = this.deadline_ + this.displayDuration_;
+    debug('Waiting until', this.deadline_, prepareDeadline);
+    this.timer_ = setTimeout(() => {
+      if (this.playlist_.length == 0) {
+        throw new Error('No modules left in playlist!');
+      }
+      let nextModuleIndex = (this.index_ + 1) % this.playlist_.length;
+      debug(`Begin preparing to transition to ${this.playlist_[nextModuleIndex].name} (item ${nextModuleIndex} of ${this.playlist_.length})`);
+      this.transition_(new DisplayState(this.playlist_, this.layout_, fadeStartDeadline, nextModuleIndex));
+    }, time.until(prepareDeadline));
   }
-  loadPlaylist(deadline) {
-    // We changed the layout... immediately load the new playlist.
-    this.transition_(new LoadingState(deadline));
+  exit() {
+    clearTimeout(this.timer_);
+    // Signal that we are leaving.
+    this.timer_ = null;
   }
-  newClient(client) {
+  newClient(client, geo) {
     // Tell the new guy to load the next module NOW.
-    this.context_.clients[client.socket.id].nextModule(
-        this.moduleDef_, this.deadline_);
+    client.nextModule(this.moduleDef_, this.deadline_, geo);
   }
   playModule(moduleName) {
-    var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);
-    if (index != -1) {
-      debug('Will play module ' + moduleName + ' just as soon as current transition completes!');
-      this.index_ = index;
-      return true;
+    // Find what index that is.
+    var index = this.playlist_.findIndex(m => m.name == moduleName);
+    if (index == -1) {
+      throw new Error(`Unable to find module ${moduleName} in the playlist!`);
     }
-    debug('Could not find requested module ' + moduleName);
-    return false;
+    this.transition_(new DisplayState(this.playlist_, this.layout_, time.inFuture(0), index));
   }
   getDeadline() {
-    return this.deadline_;
-  }
-}
-
-class DisplayState extends stateMachine.State {
-  constructor(moduleDef, deadline, index, opt_duration) {
-    super('DisplayState');
-
-    // The module to tell late clients to transition to.
-    this.lateClientModuleDef_ = moduleDef;
-    this.lateClientDeadline_ = deadline;
-
-    // What to play from the playlist.
-    this.index_ = index;
-
-    // How long to play the module.
-    this.duration_ = opt_duration || 0;
-  }
-  enter_() {
-    if (this.context_.playlist.length > 1) {
-      // Hold for a while, then transition to the next module.
-
-      // Pad the module duration by 20% so that individual wall partitions
-      // transition at slightly different times.
-      this.duration_ = this.duration_ || (this.context_.moduleDuration +
-          Math.random() * this.context_.moduleDuration / 5) * 1000;
-      this.deadline_ = time.inFuture(this.duration_);
-
-      debug('Displaying ', this.lateClientModuleDef_.name, 'until', this.deadline_ , this.duration_);
-      Promise.delay(time.until(this.deadline_)).done(() => {
-        this.transition_(new TransitionState(
-            this.deadline_, this.index_ + 1));
-      });
-    } else {
-      debug('Displaying ', this.lateClientModuleDef_.name);
-      this.deadline_ = Infinity;
-    }
-  }
-  loadPlaylist(deadline) {
-    // We changed the layout... immediately load the new playlist.
-    this.transition_(new LoadingState(deadline));
-  }
-  newClient(client) {
-    // Tell the new guy to load the next module NOW.
-    this.context_.clients[client.socket.id].nextModule(
-        this.lateClientModuleDef_, this.lateClientDeadline_);
-  }
-  playModule(moduleName) {
-    var index = _.findIndex(this.context_.playlist, (d) => d.name == moduleName);
-    if (index != -1) {
-      debug('Found requested module ' + moduleName, index);
-      this.index_ = index;
-      // Transition immediately.
-      this.transition_(new TransitionState(time.now(), index));
-      return true;
-    }
-    debug('Could not find requested module ' + moduleName);
-    return false;
-  }
-  getDeadline() {
-    return this.deadline_;
+    return this.deadline_ + this.displayDuration_;
   }
 }
 
