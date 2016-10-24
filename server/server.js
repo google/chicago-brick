@@ -29,6 +29,7 @@ var Control = require('server/control');
 var webapp = require('server/webapp');
 var credentials = require('server/util/credentials');
 var path = require('path');
+const monitor = require('server/monitoring/monitor');
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
@@ -60,7 +61,8 @@ const FLAG_DEFS = [
   {name: 'max_partitions', type: Number},
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
-  {name: 'credential_dir', type: String}
+  {name: 'credential_dir', type: String},
+  {name: 'enable_monitoring', type: Boolean}
 ];
 let flags = commandLineArgs(FLAG_DEFS);
 if (flags.help) {
@@ -135,3 +137,6 @@ network.on('lost-client', function(id) {
   manager.dropClient(id);
 });
 
+if (flags.enable_monitoring) {
+  monitor.enable();
+}

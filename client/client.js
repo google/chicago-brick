@@ -20,11 +20,17 @@ define(function(require) {
   var ModuleManager = require('client/modules/module_manager');
   var debug = require('client/util/debug');
   var info = require('client/util/info');
+  const monitor = require('client/monitoring/monitor');
+  const location = require('client/util/location');
 
   debug.enable('wall:*');
 
   // Open our socket to the server.
   network.openConnection(info.virtualRectNoBezel);
+
+  if (location.monitor) {
+    monitor.enable();
+  }
 
   // Ready to receive some code!
   var manager = new ModuleManager;

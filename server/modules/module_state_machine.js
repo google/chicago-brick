@@ -27,6 +27,7 @@ const time = require('server/util/time');
 const library = require('server/modules/module_library');
 const ServerStateMachine = require('server/modules/server_state_machine');
 const geometry = require('lib/geometry');
+const monitor = require('server/monitoring/monitor');
 
 function isDisplayInPoly(rect, poly) {
   // find the center point of this display:
@@ -59,12 +60,27 @@ class ModuleStateMachine extends stateMachine.Machine {
     library.on('reloaded', this.reloadHandler);
   }
   handleError(error) {
+    if (monitor.isEnabled()) {
+      monitor.update({module: {
+        time: time.now(),
+        event: error.toString()
+      }});
+    }
+    
     logError(error);
     this.transitionTo(new IdleState);
     this.driveMachine();
   }
   // Turn off the state machine.
   fadeToBlack(deadline) {
+    if (monitor.isEnabled()) {
+      monitor.update({module: {
+        time: time.now(),
+        event: 'fade-to-black',
+        deadline: deadline
+      }});
+    }
+    
     library.removeListener('reloaded', this.reloadHandler);
 
     // Tell the clients to stop.
@@ -100,6 +116,14 @@ class ModuleStateMachine extends stateMachine.Machine {
     return true;
   }
   loadPlaylist(layout, deadline) {
+    if (monitor.isEnabled()) {
+      monitor.update({module: {
+        time: time.now(),
+        event: 'load-playlist',
+        deadline: deadline
+      }});
+    }
+    
     // Copy the playlist & shuffle.
     let playlist = Array.from(layout.modules);
     random.shuffle(playlist);
@@ -118,6 +142,12 @@ class ModuleStateMachine extends stateMachine.Machine {
     });
   }
   playModule(moduleName) {
+    if (monitor.isEnabled()) {
+      monitor.update({module: {
+        time: time.now(),
+        event: moduleName
+      }});
+    }
     // Note: this will throw if the module is not in the current playlist, as
     // we have no def for it.
     // TODO(applmak): Handle this better.
@@ -133,6 +163,13 @@ class ModuleStateMachine extends stateMachine.Machine {
 
 class IdleState extends stateMachine.State {
   enter(transition) {
+    if (monitor.isEnabled()) {
+      monitor.update({module: {
+        time: time.now(),
+        state: this.getName(),
+      }});
+    }
+    
     this.transition_ = transition;
   }
   newClient(client) {}
@@ -167,6 +204,14 @@ class DisplayState extends stateMachine.State {
     this.transition_ = transition;
     
     debug(`Displaying ${this.moduleDef_.name} starting at ${this.deadline_}`);
+    
+    if (monitor.isEnabled()) {
+      monitor.update({module: {
+        time: time.now(),
+        deadline: this.deadline_,
+        state: this.getName(),
+      }});
+    }
     
     // Tell the server to transition to this new module.
     context.server.nextModule(this.moduleDef_, this.deadline_, context.geo);

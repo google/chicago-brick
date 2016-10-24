@@ -81,3 +81,48 @@ div[debug] {
     font: 180px Podkova,sans-serif;
     z-index: 1000;
 }
+
+.beam {
+    position: absolute;
+    background-color: white;
+    width: 1px;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+}
+
+.monitor {
+    color: white;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    flex-flow: column nowrap;
+    font-weight: bolder;
+    font: 15px monospace;
+}
+
+.time-label {
+    height: 20px;
+}
+
+.timeline {
+    background-color: rgba(127, 127, 127, 0.5);
+    height: 40px;
+    margin: 2px 0px;
+}
+
+.label.early {
+    float: left;
+}
+.label.late {
+    float: right;
+}
+.label.now {
+  position: absolute;
+  padding-left: 10px;
+  left: 50%;
+}

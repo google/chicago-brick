@@ -19,6 +19,8 @@ define(function(require) {
   var debug = require('client/util/debug')('wall:network');
   var info = require('client/util/info');
   var socket;
+  
+  let ready, readyPromise = new Promise(r => ready = r);
 
   return {
     // Open the connection with the server once the display properties are
@@ -28,6 +30,7 @@ define(function(require) {
       if (opt_displayRect) {
         socket.on('config', function(config) {
           socket.emit('config-response', opt_displayRect.serialize());
+          ready();
         });
       }
     },
@@ -36,7 +39,10 @@ define(function(require) {
     removeListener : function(event, callback) {
       socket.removeListener(event, callback);
     },
-    send : function(event, data) { socket.emit(event, data); },
+    whenReady: readyPromise,
+    send: function(event, data) {
+      socket.emit(event, data);
+    },
     forModule : function(id) {
       var moduleSocket;
       var externalNspName = `module${id.replace(/[^0-9]/g, 'X')}`;

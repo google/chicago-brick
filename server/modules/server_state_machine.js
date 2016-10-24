@@ -26,6 +26,7 @@ const time = require('server/util/time');
 
 const debug = require('debug')('wall:server_state_machine');
 const logError = require('server/util/log').error(debug);
+const monitor = require('server/monitoring/monitor');
 
 class RunningModule {
   static newEmptyModule() {
@@ -100,12 +101,34 @@ class ServerStateMachine extends stateMachine.Machine {
     this.setContext({geo: wallGeometry});
   }
   nextModule(moduleDef, deadline) {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        event: `nextModule: ${moduleDef.name}`,
+        deadline: deadline
+      }});
+    }
     this.state.nextModule(moduleDef, deadline);
   }
   stop(deadline) {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        event: `stop`,
+        deadline: deadline
+      }});
+    }
+    
     this.state.stop(deadline);
   }
   handleError(error) {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        event: error.toString(),
+      }});
+    }
+    
     logError(error);
     // Tell machine to stop (the behavior of which changes depending on the
     // current state).
@@ -125,6 +148,12 @@ class ServerStateMachine extends stateMachine.Machine {
 class IdleState extends stateMachine.State {
   enter(transition) {
     this.transition_ = transition;
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        state: this.getName(),
+      }});
+    }
   }
   nextModule(moduleDef, deadline) {
     this.transition_(new PrepareState(RunningModule.newEmptyModule(), moduleDef, deadline));
@@ -134,6 +163,14 @@ class IdleState extends stateMachine.State {
 
 // Sink state. Machine can only change states via external transition.
 class ErrorState extends stateMachine.State {
+  enter() {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        state: this.getName(),
+      }});
+    }
+  }
   nextModule(moduleDef, deadline) {}
   stop(deadline) {}
 }
@@ -157,6 +194,14 @@ class PrepareState extends stateMachine.State {
     this.timer_ = null;
   }
   enter(transition, context) {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        state: this.getName(),
+        deadline: this.deadline_
+      }});
+    }
+    
     this.transition_ = transition;
     
     // The module we're trying to load.
@@ -224,6 +269,14 @@ class TransitionState extends stateMachine.State {
     this.savedDeadline_ = 0;
   }
   enter(transition) {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        state: this.getName(),
+        deadline: this.deadline_
+      }});
+    }
+    
     this.transition_ = transition;
     // 5 second transition.
     let endTransition = this.deadline_ + 5000;
@@ -267,6 +320,13 @@ class DisplayState extends stateMachine.State {
     this.module_ = module;
   }
   enter(transition) {
+    if (monitor.isEnabled()) {
+      monitor.update({server: {
+        time: time.now(),
+        state: this.getName(),
+      }});
+    }
+    
     this.transition_ = transition;
   }
   nextModule(moduleDef, deadline) {
