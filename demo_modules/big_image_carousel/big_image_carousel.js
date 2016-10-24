@@ -26,10 +26,9 @@ class BigImageCarouselSketch {
   constructor(p5, surface, extraArgs) {
     this.p5 = p5;
     this.surface = surface;
-    this.tiles = null; 
+    this.tiles = null;
 
     this.image_list_config = extraArgs;
-
   }
 
   preload() {
@@ -39,7 +38,7 @@ class BigImageCarouselSketch {
 
     const asset = require('client/asset/asset');
 
-    this.tiles = new Array(); 
+    this.tiles = new Array();
     for (let path in this.image_list_config) {
       let images = this.image_list_config[path];
       for (let i in images) {
@@ -69,7 +68,7 @@ class BigImageCarouselSketch {
       let initial_sum_tile_width = this.sum_tile_width;
       while (this.sum_tile_width < this.surface.wallRect.w) {
         this.tiles = this.tiles.concat(this.tiles);
-        this.sum_tile_width += initial_sum_tile_width; 
+        this.sum_tile_width += initial_sum_tile_width;
       }
     }
 
@@ -95,15 +94,15 @@ class BigImageCarouselSketch {
     let x_0 = Math.floor((((t - this.surface.startTime) / 9) % (2*this.sum_tile_width)) - this.sum_tile_width);
 
     // for each iteration:
-    // - translate x zero 
+    // - translate x zero
     // - fit all of the tiles necessary into a given window (the overall width))
     // states:
     //  - only draw positive
     //  - draw negative and positive
-    //  - 
+    //  -
     // from all of the images, figure out the total width.  That strip will be the thing that cycles.
 
-    // if sum of all image widths > wall width, identify the starting 
+    // if sum of all image widths > wall width, identify the starting
     let x_offset = x_0;
     // walk backwards through the list to draw the tail end until we have no more of it.
     // Draw the "positive" images.
