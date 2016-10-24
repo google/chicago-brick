@@ -26,7 +26,7 @@ class BigImageCarouselSketch {
   constructor(p5, surface, extraArgs) {
     this.p5 = p5;
     this.surface = surface;
-    this.tiles = null; 
+    this.tiles = null;
 
     this.image_list_config = extraArgs;
   }
@@ -34,18 +34,18 @@ class BigImageCarouselSketch {
   preload() {
     var p5 = this.p5;
 
-    this.y_index = this.surface.virtualRect.y / this.surface.virtualRect.h;
+    this.backgroundColor = p5.color(120);
 
     const asset = require('client/asset/asset');
 
-    this.tiles = new Array(); 
+    this.tiles = new Array();
     for (let path in this.image_list_config) {
       let images = this.image_list_config[path];
       for (let i in images) {
         // TODO(jgessner): switch to functional style.
         let image = images[i];
         for (let x = 0; x < image.num_x_tiles; x++) {
-          let tilePath = asset(path + image.name + '_tile_' + x + '_' + this.y_index + '.' + image.extension);
+          let tilePath = asset(path + image.name + '_tile-' + x + '_' + this.surface.virtualOffset.y + '.' + image.extension);
           this.tiles.push(p5.loadImage(tilePath));
         }
       }
@@ -55,7 +55,9 @@ class BigImageCarouselSketch {
   setup() {
     var p5 = this.p5;
 
-    p5.fill(200, 0, 100);
+    p5.noFill();
+    p5.stroke(255, 0, 0);
+    p5.strokeWeight(4);
     // Each instance will only ever draw images from one Y offset, but many X offsets.
 
     this.sum_tile_width = 0;
@@ -66,8 +68,13 @@ class BigImageCarouselSketch {
       let initial_sum_tile_width = this.sum_tile_width;
       while (this.sum_tile_width < this.surface.wallRect.w) {
         this.tiles = this.tiles.concat(this.tiles);
-        this.sum_tile_width += initial_sum_tile_width; 
+        this.sum_tile_width += initial_sum_tile_width;
       }
+    }
+
+    // Pre-draw the images off-screen so we don't need to load them or decode them while drawing.
+    for (let i in this.tiles) {
+      p5.image(this.tiles[i], -10000, -10000);
     }
   }
 
@@ -78,25 +85,24 @@ class BigImageCarouselSketch {
       return;
     }
 
-    if (this.y_index == null) {
+    if (this.surface.virtualOffset.y == null) {
       return;
     }
 
-    p5.background(120);
-
     // x_0 is the actual position that the first tile should be drawn at.
-    let x_0 = (((t - this.surface.startTime) / 9) % (2*this.sum_tile_width)) - this.sum_tile_width;
+    // Make sure to draw integer pixel positions or performance will suffer.
+    let x_0 = Math.floor((((t - this.surface.startTime) / 9) % (2*this.sum_tile_width)) - this.sum_tile_width);
 
     // for each iteration:
-    // - translate x zero 
+    // - translate x zero
     // - fit all of the tiles necessary into a given window (the overall width))
     // states:
     //  - only draw positive
     //  - draw negative and positive
-    //  - 
+    //  -
     // from all of the images, figure out the total width.  That strip will be the thing that cycles.
 
-    // if sum of all image widths > wall width, identify the starting 
+    // if sum of all image widths > wall width, identify the starting
     let x_offset = x_0;
     // walk backwards through the list to draw the tail end until we have no more of it.
     // Draw the "positive" images.
@@ -105,11 +111,9 @@ class BigImageCarouselSketch {
       let image = this.tiles[x];
       let right_x = x_offset + image.width;
         // Do we need to draw this image?
-        if ((x_offset >= this.surface.virtualRect.x &&
-            x_offset <= screen_right_edge)
+        if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge)
             ||
-            (right_x >= this.surface.virtualRect.x &&
-             right_x < screen_right_edge)) {
+            (right_x >= this.surface.virtualRect.x && right_x < screen_right_edge)) {
           p5.image(image, x_offset, this.surface.virtualRect.y);
         }
       x_offset += image.width;
@@ -122,11 +126,9 @@ class BigImageCarouselSketch {
           let image = this.tiles[x];
           let right_x = x_offset + image.width;
             // Do we need to draw this image?
-            if ((x_offset >= this.surface.virtualRect.x &&
-                x_offset <= screen_right_edge)
+            if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge)
                 ||
-                (right_x >= this.surface.virtualRect.x &&
-                 right_x < screen_right_edge)) {
+                (right_x >= this.surface.virtualRect.x && right_x < screen_right_edge)) {
               p5.image(image, x_offset, this.surface.virtualRect.y);
             }
           x_offset += image.width;
@@ -141,11 +143,9 @@ class BigImageCarouselSketch {
         x_offset -= image.width;
         let right_x = x_offset + image.width;
           // Do we need to draw this image?
-          if ((x_offset >= this.surface.virtualRect.x &&
-              x_offset <= screen_right_edge)
+          if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge)
               ||
-              (right_x >= this.surface.virtualRect.x &&
-               right_x < screen_right_edge)) {
+              (right_x >= this.surface.virtualRect.x && right_x < screen_right_edge)) {
             p5.image(image, x_offset, this.surface.virtualRect.y);
           }
       }
