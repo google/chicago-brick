@@ -21,6 +21,7 @@ const wallGeometry = require('server/util/wall_geometry');
 
 const debug = require('debug')('wall:client_control_state_machine');
 const logError = require('server/util/log').error(debug);
+const monitor = require('server/monitoring/monitor');
 
 class ClientControlStateMachine extends stateMachine.Machine {
   constructor(client) {

@@ -26,6 +26,7 @@ const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 const ClientControlStateMachine = require('server/modules/client_control_state_machine');
 const ModuleStateMachine = require('server/modules/module_state_machine');
+const monitor = require('server/monitoring/monitor');
 
 function describeLayout(partitions) {
   return partitions.map(moduleSM => ({
@@ -50,19 +51,53 @@ class LayoutStateMachine extends stateMachine.Machine {
     this.driveMachine();
   }
   newClient(clientInfo) {
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        event: `newClient: ${clientInfo.rect.serialize()}`,
+      }});
+    }
     this.context_.clients[clientInfo.socket.id] =
         new ClientControlStateMachine(clientInfo);
     this.state.newClient(clientInfo);
   }
   dropClient(id) {
+    if (id in this.context_.clients) {
+      let rect = this.context_.clients[id].getClientInfo().rect;
+      if (monitor.isEnabled()) {
+        monitor.update({layout: {
+          time: time.now(),
+          event: `dropClient: ${rect.serialize()}`,
+        }});
+      }
+    } else {
+      if (monitor.isEnabled()) {
+        monitor.update({layout: {
+          time: time.now(),
+          event: `dropClient: id ${id}`,
+        }});
+      }
+    }
     this.state.dropClient(id);
     delete this.context_.clients[id];
   }
   setPlaylist(layouts) {
     this.state.setLayouts(layouts);
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        event: `setPlaylist`,
+      }});
+    }
   }
   skipAhead() {
     this.state.skipAhead();
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        event: `skipAhead`,
+      }});
+    }
   }
   getPlaylist() {
     return this.state.getPlaylist();
@@ -82,12 +117,24 @@ class LayoutStateMachine extends stateMachine.Machine {
         });
   }
   playModule(moduleName) {
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        event: `playModule: ${moduleName}`,
+      }});
+    }
     return this.state.playModule(moduleName);
   }
 }
 
 class IdleState extends stateMachine.State {
   enter(transition) {
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        state: this.getName()
+      }});
+    }
     this.transition_ = transition;
   }
   newClient(client) {}
@@ -124,6 +171,14 @@ class DisplayState extends stateMachine.State {
     this.beginFadeInDeadline_ = beginFadeInDeadline;
   }
   enter(transition, context) {
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        state: this.getName(),
+        deadline: this.beginFadeInDeadline_
+      }});
+    }
+    
     this.transition_ = transition;
     this.partition_ = wallGeometry.partitionGeo(this.layout_.maxPartitions)
         .map(geo => new ModuleStateMachine(context.clients, geo));
@@ -187,8 +242,16 @@ class FadeOutState extends stateMachine.State {
     this.timer_ = null;
   }
   enter(transition) {
-    this.transition_ = transition;
     let deadline = time.inFuture(5000);
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        state: this.getName(),
+        deadline: deadline
+      }});
+    }
+    
+    this.transition_ = transition;
     debug(`Fading out ${this.partition_.length} layouts at ${deadline} ms`);
     this.partition_.forEach(sm => sm.fadeToBlack(deadline));
     this.timer_ = setTimeout(() => {

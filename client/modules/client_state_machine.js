@@ -23,6 +23,7 @@ define(function(require) {
 
   const debug = require('client/util/debug')('wall:client_state_machine');
   const logError = require('client/util/log').error(debug);
+  const monitor = require('client/monitoring/monitor');
 
   // The PrepareState gives the client module time to load assets. From the
   // beginning of the state, the module has about 60 seconds to load everything
@@ -44,6 +45,13 @@ define(function(require) {
       this.timer_ = null;
     }
     enter(transition) {
+      if (monitor.isEnabled()) {
+        monitor.update({client:{
+          state: this.getName(),
+          time: timeManager.now(),
+          deadline: this.module_.deadline
+        }});
+      }
       this.transition_ = transition;
       
       // First, tell the old module that we're going to hide it.
@@ -117,6 +125,14 @@ define(function(require) {
       // Give ourselves 5 seconds to fade.
       let fadeDeadline = this.module_.deadline + 5000;
 
+      if (monitor.isEnabled()) {
+        monitor.update({client: {
+          state: this.getName(),
+          time: timeManager.now(),
+          deadline: fadeDeadline
+        }});
+      }
+      
       // Start the transition!
       this.oldModule_.fadeOut(fadeDeadline);
       if (!this.module_.fadeIn(fadeDeadline)) {
@@ -157,6 +173,12 @@ define(function(require) {
     }
     enter(transition) {
       this.transition_ = transition;
+      if (monitor.isEnabled()) {
+        monitor.update({client: {
+          state: this.getName(),
+          time: timeManager.now()
+        }});
+      }
     }
     nextModule(module) {
       this.transition_(new PrepareState(this.module_, module));
@@ -169,11 +191,27 @@ define(function(require) {
       super(new DisplayState(ClientModule.newEmptyModule()), debug);
     }
     nextModule(module) {
+      if (monitor.isEnabled()) {
+        monitor.update({client: {
+          event: `nextModule: ${module.name}`,
+          time: timeManager.now(),
+          deadline: module.deadline
+        }});
+      }
+      
       debug('Requested transition to module', module.name);
       // Transition according to current state rules.
       this.state.nextModule(module);
     }
     handleError(error) {
+      if (monitor.isEnabled()) {
+        monitor.update({client: {
+          event: error.toString(),
+          time: timeManager.now(),
+          color: [255, 0, 0]
+        }});
+      }
+      
       logError(error);
       // If we bubble up an error this far, we transition instantly back to a 
       // blank screen.
