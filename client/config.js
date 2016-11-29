@@ -27,7 +27,7 @@ requirejs.config({
     'p5.dom' : 'sys/p5/lib/addons/p5.dom',
     'peer': 'sys/peerjs/dist/peer',
     'querystring': 'sys/qs/dist/qs',
-    'socket.io' : 'sys/socket.io-client/socket.io',
+    'socket.io' : 'sys/socket.io-client/dist/socket.io',
     'three' : 'sys/three/three',
     'underscore' : 'sys/underscore/underscore',
     'vm-shim' : 'sys/vm-shim/vm-shim',
