@@ -4,6 +4,12 @@
 {
   "modules": [
     {
+      "name": "chaos",
+      "path": "demo_modules/chaos/chaos.js",
+      "title": "Chaos Theory",
+      "author": "Matt Cruikshank"
+    },
+    {
       "name": "balls",
       "path": "demo_modules/balls/balls.js",
       "title": "Bouncing Balls",
