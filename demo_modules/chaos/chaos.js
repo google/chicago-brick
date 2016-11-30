@@ -21,7 +21,7 @@ const Rectangle = require('lib/rectangle');
 const network = require('network');
 const wallGeometry = require('wallGeometry');
 
-var GOOGLE_COLORS = ['#3369e8', '#d50f25', '#eeb211', '#009925'];
+var GOOGLE_COLORS = ['#3369e8', '#d50f25', '#eeb211', '#009925', '#FFFFFF'];
 
 class ChaosServer extends ModuleInterface.Server {
 }
@@ -75,10 +75,17 @@ class ChaosClient extends ModuleInterface.Client {
       }
     }
 
-    this.points = 3 + 2 * Math.floor((Math.random() * 3));
+    do {
+        this.points = 3 + Math.floor((Math.random() * 10));
+    } while (this.points == 4);
     this.alpha = Math.random() * 360.0; // degrees of random rotation to add
     this.oldx = Math.floor((Math.random() * this.surface.virtualRect.w));
     this.oldy = Math.floor((Math.random() * this.surface.virtualRect.h));
+    
+    this.positions = new Array(this.points);
+    for (var p = 0; p < this.points; ++p) {
+        this.positions[p] = this.position(p);    
+    }
   }
 
   setPixel(x, y) {
@@ -108,16 +115,16 @@ class ChaosClient extends ModuleInterface.Client {
   }
 
   draw(time, delta) {
-    if (Math.random() < 0.005) {
+    if (Math.random() < 0.001) {
         this.initialize();
     }
-    var steps = 100000;
+    var steps = 10000;
     if (this.points == 3) {
         steps = steps / 10;
     }
     for (var intervals = 0; intervals < steps; intervals++) {
         var count = Math.floor((Math.random() * this.points));
-        var p = this.position(count);
+        var p = this.positions[count];
         
         var x = (this.oldx + p[0]) / 2.0;
         var y = (this.oldy + p[1]) / 2.0;
