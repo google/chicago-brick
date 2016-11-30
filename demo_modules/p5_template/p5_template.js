@@ -65,6 +65,7 @@ class P5TemplateClient extends ModuleInterface.Client {
 
     const P5Surface = require('client/surface/p5_surface');
     this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
+    return Promise.resolve();
   }
 
   draw(time, delta) {

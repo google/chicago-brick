@@ -39,6 +39,7 @@ class ThreeJsTestClient extends ModuleInterface.Client {
 
     this.surface.camera.position.set(0, 0, 5);
     this.surface.camera.updateProjectionMatrix();
+    return Promise.resolve();
   }
 
   draw(time, delta) {

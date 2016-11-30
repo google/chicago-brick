@@ -35,6 +35,7 @@ class RegistrationClient extends ModuleInterface.Client {
     const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
+    return Promise.resolve();
   }
 
   draw(time, delta) {

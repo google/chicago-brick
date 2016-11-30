@@ -30,6 +30,7 @@ class SharedTestClient extends ModuleInterface.Client {
     this.canvas = this.surface.context;
     this.clientId = 'client' + this.surface.virtualRect.x + this.surface.virtualRect.y;
     state.create(this.clientId, 'ValueNearestInterpolator');
+    return Promise.resolve();
   }
 
   draw(time, delta) {
