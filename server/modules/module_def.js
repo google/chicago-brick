@@ -23,7 +23,7 @@ const _ = require('underscore');
 
 const debug = require('debug')('wall:module_def');
 const debugFactory = require('debug');
-const fakeRequire = require('lib/fake_require');
+const fakeRequire = require('server/fake_require');
 const googleapis = require('server/util/googleapis');
 const module_interface = require('lib/module_interface');
 const network = require('server/network/network');
