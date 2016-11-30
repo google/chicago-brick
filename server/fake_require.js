@@ -13,7 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var _ = require('underscore');
+const _ = require('underscore');
+
 // Server-side takes just an env. This is sorta complicated, but simpler than
 // the client-side case because we are synchronous.
 //  - Our goal is to be able to require a file that lives on the server from
@@ -35,6 +36,8 @@ module.exports = {
     // First, create a list of the the current valid deps, so we can remove
     // any new ones that appear when it's time to clean up.
     let loadedDeps = Object.keys(require.cache);
+    // We also need to track this module's deps, too.
+    let originalChildren = Array.from(module.children);
     
     // Next, tell the Module._resolveFilename method to ignore our special
     // deps.
@@ -65,7 +68,10 @@ module.exports = {
       
       // Remove new cache entries.
       let newDeps = _.difference(Object.keys(require.cache), loadedDeps);
-      newDeps.forEach((k) => delete require.cache[k]);
+      newDeps.forEach(k => delete require.cache[k]);
+
+      // Also, remove these entries from MY module's children list.
+      module.children = originalChildren;
     };
     
     return ret;
