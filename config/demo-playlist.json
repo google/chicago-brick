@@ -10,6 +10,12 @@
       "author": "Matt Handley"
     },
     {
+      "name": "chaos",
+      "path": "demo_modules/chaos/chaos.js",
+      "title": "Chaos Theory",
+      "author": "Matt Cruikshank"
+    },
+    {
       "name": "genlock-test",
       "path": "demo_modules/genlock_test/genlock_test.js",
     },
