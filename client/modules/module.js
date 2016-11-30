@@ -21,7 +21,7 @@ define(function(require) {
   var debug = require('client/util/debug')('wall:client_module');
   var debugFactory = require('client/util/debug');
   var error = require('client/util/log').error(debug);
-  var fakeRequire = require('lib/fake_require');
+  var fakeRequire = require('client/fake_require');
   var geometry = require('lib/geometry');
   var moduleInterface = require('lib/module_interface');
   var network = require('client/network/network');
