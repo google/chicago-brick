@@ -46,7 +46,6 @@ class ChaosServer extends ModuleInterface.Server {
                 var size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) * makeRadius;
                 
                 var fit = true;
-                var nearest = wallGeometry.extents.w;
                 for (var otherShape = 0; otherShape < shapeCount; ++otherShape) {
                     var myx = posx - this.shapes[otherShape].posx;
                     var myy = posy - this.shapes[otherShape].posy;
@@ -54,9 +53,6 @@ class ChaosServer extends ModuleInterface.Server {
                     var distSq = myx * myx + myy * myy;
                     var dist = Math.sqrt(distSq);
                     var newDist = dist - this.shapes[otherShape].size;
-                    
-                    nearest = Math.min(nearest, newDist);
-                    
                     var rad = size + this.shapes[otherShape].size;
                     var radSq = rad * rad;
                     
@@ -220,10 +216,6 @@ class ChaosClient extends ModuleInterface.Client {
         this.initialize();
         this.oldtime = this.time;
     }
-    if (Math.random() < 0.001) {
-        //this.initialize();
-    }
-    
     var client = this;
     
     for (var shape = 0; shape < this.shapes.length; ++shape) {
@@ -276,3 +268,4 @@ class ChaosClient extends ModuleInterface.Client {
 }
 
 register(ChaosServer, ChaosClient);
+
