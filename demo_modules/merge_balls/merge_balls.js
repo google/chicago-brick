@@ -1,4 +1,14 @@
 
+const register = require('register');
+const ModuleInterface = require('lib/module_interface');
+const geometry = require('lib/geometry');
+const Rectangle = require('lib/rectangle');
+const state = require('state');
+
+const network = require('network');
+const wallGeometry = require('wallGeometry');
+
+
 var NUM_BALLS = 10;
 var INITIAL_RADIUS = 150;
 
@@ -89,7 +99,7 @@ Ball.prototype.merge = function(ball) {
 //
 // Server Module
 //
-class MergeBallsServer extends ServerModuleInterface {
+class MergeBallsServer extends ModuleInterface.Server {
   willBeShownSoon(container, deadline) {
       function getInitialBallPosition(ballradius) {
           var rect = wallGeometry.extents;
@@ -185,7 +195,7 @@ class MergeBallsServer extends ServerModuleInterface {
 //
 // Client Module
 //
-class MergeBallsClient extends ClientModuleInterface {
+class MergeBallsClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
@@ -193,6 +203,7 @@ class MergeBallsClient extends ClientModuleInterface {
   }
 
   willBeShownSoon(container, deadline) {
+    const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
   }
