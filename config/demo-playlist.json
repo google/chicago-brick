@@ -16,6 +16,12 @@
       "author": "Matt Cruikshank"
     },
     {
+      "name": "merge-balls",
+      "path": "demo_modules/merge_balls/merge_balls.js",
+      "title": "Hungry Hungry Circles",
+      "author": "Ian Atkinson"
+    },
+    {
       "name": "genlock-test",
       "path": "demo_modules/genlock_test/genlock_test.js",
     },
