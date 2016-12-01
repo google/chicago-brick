@@ -91,6 +91,7 @@ class ChaosClient extends ModuleInterface.Client {
   setPixel(x, y) {
     x = parseInt(x, 10);
     y = parseInt(y, 10);
+    if ((x < 0) || (y < 0) || (x >= this.surface.virtualRect.w) || (y >= this.surface.virtualRect.h)) return;
     var i = (y * this.surface.virtualRect.w + x) * 4;
 
     var v = this.raw[y * this.surface.virtualRect.w + x];
