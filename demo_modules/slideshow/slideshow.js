@@ -35,6 +35,7 @@ const LoadFromDriveStrategy = require('demo_modules/slideshow/load_from_drive');
 const LoadFromYouTubePlaylistStrategy = require('demo_modules/slideshow/load_from_youtube');
 const LoadVideoStrategy = require('demo_modules/slideshow/load_video');
 const LoadFromFlickrStrategy = require('demo_modules/slideshow/load_from_flickr');
+const LoadFromGstaticStrategy = require('demo_modules/slideshow/load_from_gstatic');
 
 const FullscreenDisplayStrategy = require('demo_modules/slideshow/fullscreen_display');
 const FallingDisplayStrategy = require('demo_modules/slideshow/falling_display');
@@ -51,8 +52,9 @@ let parseServerLoadStrategy = (loadConfig) => {
     return new LoadVideoStrategy.Server(loadConfig.video);
   } else if (loadConfig.flickr) {
     return new LoadFromFlickrStrategy.Server(loadConfig.flickr);
+  } else if (loadConfig.gstatic) {
+    return new LoadFromGstaticStrategy.Server(loadConfig.gstatic);
   }
-
   throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
 };
 
@@ -65,6 +67,8 @@ let parseClientLoadStrategy = (loadConfig) => {
     return new LoadVideoStrategy.Client(loadConfig.video);
   } else if (loadConfig.flickr) {
     return new LoadFromFlickrStrategy.Client(loadConfig.flickr);
+  } else if (loadConfig.gstatic) {
+    return new LoadFromGstaticStrategy.Client(loadConfig.gstatic);
   }
   throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
 };
