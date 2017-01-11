@@ -67,7 +67,7 @@ define(function(require) {
       this.globals = {};
       
       // The dom container for the module's content.
-      this.container = createNewContainer(name);
+      this.container = null;
 
       // Module class instance.
       this.instance = null;
@@ -106,6 +106,8 @@ define(function(require) {
       if (!this.path) {
         return Promise.resolve();
       }
+      
+      this.container = createNewContainer(this.name);
       this.network = network.forModule(
         `${this.geo.extents.serialize()}-${this.deadline}`);
       let openNetwork = this.network.open();
@@ -236,8 +238,9 @@ define(function(require) {
       } catch(e) {
         error(e);
       }
+      
       this.container.remove();
-      this.container = null;
+      this.container = null;      
       return true;
     }
   }
