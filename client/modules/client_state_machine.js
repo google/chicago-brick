@@ -41,6 +41,12 @@ define(function(require) {
       // Next one to get ready.
       this.module_ = module;
       
+      // Set to true when the module is fully instantiated.
+      this.moduleIsReady_ = false;
+      
+      // Set to true if a request to transition away has occurred.
+      this.willTransitionAway_ = false;
+      
       // Timer
       this.timer_ = null;
     }
@@ -59,6 +65,11 @@ define(function(require) {
       
       // Tell the new module to instantiate, which may require loading deps.
       let moduleDone = this.module_.instantiate().then(() => {
+        if (this.willTransitionAway_) {
+          // We're leaving... don't init the module any further.
+          this.module_.dispose();
+          return;
+        }
         // Now that it's loaded, tell it that it will be shown soon.
         if (!this.module_.willBeShownSoon()) {
           // Error in new module code...We can't go back to just
@@ -68,6 +79,7 @@ define(function(require) {
           this.module_.dispose();
           throw new Error(`Failed to prepare from ${this.oldModule_.name} to ${this.module_.name}`);
         }
+        this.moduleIsReady_ = true;
       });
       
       // Tell the modules that we're going to switch soon.
@@ -86,6 +98,8 @@ define(function(require) {
       clearTimeout(this.timer_);
     }
     nextModule(module) {
+      this.willTransitionAway_ = true;
+      
       // Suddenly, we aren't going to be fading from old -> current, and should 
       // instead be showing new. But we've already told old and current to get
       // ready to be hidden & shown (and old is likely still ticking). We should
@@ -93,9 +107,14 @@ define(function(require) {
       // of it. Then, we should prepare to transition from old -> new, skipping
       // current. This ensures that everything gets disposed correctly and we
       // still meet the module interface contract.
-      if (this.module_.instance) {
+      if (this.moduleIsReady_) {
         this.module_.willBeHiddenSoon();
         this.module_.dispose();
+      } else if (this.module_.instance) {
+        // The module isn't yet ready, but it's currently loading.
+        // We'll rely on the loader to handle this error case.
+      } else {
+        // Happened before enter, even. No work to do.
       }
       
       this.transition_(new PrepareState(this.oldModule_, module));
