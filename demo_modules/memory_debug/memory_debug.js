@@ -33,6 +33,7 @@ class MemoryDebugClient extends ModuleInterface.Client {
 
   willBeShownSoon(container) {
     container.style.backgroundColor = 'black';
+    return Promise.resolve();
   }
 }
 

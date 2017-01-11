@@ -300,6 +300,7 @@ class ChicagoBrickLiveClient extends ModuleInterface.Client {
 
     // Ask for some code to run.
     network.emit('requestCode', { client: this.client });
+    return Promise.resolve();
   }
 
   extendCanvas(canvas) {

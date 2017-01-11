@@ -45,6 +45,7 @@ class ProceduralClient extends ModuleInterface.Client {
     this.ySpeed = 1 + (2+this.surface.virtualOffset.y*15) % this.surface.virtualOffset.h;
 
     this.canvas.fillStyle = 'red';
+    return Promise.resolve();
   }
 
   finishFadeOut() {

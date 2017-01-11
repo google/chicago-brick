@@ -37,6 +37,7 @@ class GenlockTestClient extends ModuleInterface.Client {
     var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
     this.canvas.font = fontHeight + 'px Helvetica';
     this.canvas.textBaseline = 'middle';
+    return Promise.resolve();
   }
 
   draw(time, delta) {

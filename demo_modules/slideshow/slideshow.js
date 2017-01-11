@@ -131,6 +131,7 @@ class ImageServer extends ModuleInterface.Server {
       loadingComplete.then(initHandler);
       socket.once('req_init', initHandler);
     });
+    return loadingComplete;
   }
   tick(time, delta) {
     this.displayStrategy.tick(time, delta);
@@ -152,6 +153,7 @@ class ImageClient extends ModuleInterface.Client {
         resolve();
       });
     });
+    return this.initedPromise;
   }
   draw(time, delta) {
     if (this.displayStrategy) {

@@ -43,6 +43,7 @@ class BallsServer extends ModuleInterface.Server {
         color: Math.floor(GOOGLE_COLORS.length * Math.random())
       });
     }
+    return Promise.resolve();
   }
 
   tick(time, delta) {
@@ -130,6 +131,7 @@ class BallsClient extends ModuleInterface.Client {
     const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
+    return Promise.resolve();
   }
 
   draw(time, delta) {

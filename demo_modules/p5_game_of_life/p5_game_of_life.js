@@ -256,6 +256,7 @@ class P5GameOfLifeClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     const P5Surface = require('client/surface/p5_surface');
     this.surface = new P5Surface(container, wallGeometry, P5GameOfLifeSketch, deadline);
+    return Promise.resolve();
   }
 
   draw(time, delta) {

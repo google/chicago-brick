@@ -168,6 +168,7 @@ class BigImageCarouselClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     const P5Surface = require('client/surface/p5_surface');
     this.surface = new P5Surface(container, wallGeometry, BigImageCarouselSketch, deadline, this.config);
+    return Promise.resolve();
   }
 
   draw(time, delta) {
