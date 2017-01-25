@@ -113,6 +113,10 @@ class FullscreenServerDisplayStrategy extends interfaces.ServerDisplayStrategy {
 }
 
 class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
+  constructor(config) {
+    super();
+    this.config_ = config;
+  }
   init(surface, loadStrategy) {
     this.content = null;
     network.emit('display:init');
@@ -121,11 +125,20 @@ class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
       loadStrategy.loadContent(c).then((content) => {
         // One piece of content per client.
         this.content = content;
-        content.style.position = 'absolute';
-        content.style.top = 0;
-        content.style.left = 0;
-        content.style.width = '100%';
-        content.style.height = '100%';
+        let s = this.config_.image && this.config_.image.scale || 'stretch';
+        switch(s) {
+          case 'stretch':
+            content.style.position = 'absolute';
+            content.style.top = 0;
+            content.style.left = 0;
+            content.style.width = '100%';
+            content.style.height = '100%';
+            break;
+          case 'full':
+            content.style.display = 'block';
+            content.style.margin = '0px auto';
+            content.style.height = '100%';            
+        }
         
         // Clear surface.
         while (this.surface.container.firstChild) {
