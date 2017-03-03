@@ -129,7 +129,9 @@ class ImageServer extends ModuleInterface.Server {
       // init messages, and we leave it up to the client to not process it
       // twice.
       loadingComplete.then(initHandler);
-      socket.once('req_init', initHandler);
+      // If we get a note from the client that requests init, we don't want to
+      // reply until we've inited.
+      socket.once('req_init', () => loadingComplete.then(initHandler));
     });
     return loadingComplete;
   }
@@ -142,10 +144,10 @@ class ImageClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
     const Surface = require('client/surface/surface');
     this.surface = new Surface(container, wallGeometry);
-    this.initedPromise = new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       debug('Waiting for network init...');
       network.emit('req_init');
-      network.once('init', (config) => {
+      network.once('init', config => {
         this.loadStrategy = parseClientLoadStrategy(config.load);
         this.displayStrategy = parseClientDisplayStrategy(config.display);
         this.loadStrategy.init(this.surface, deadline);
@@ -153,7 +155,6 @@ class ImageClient extends ModuleInterface.Client {
         resolve();
       });
     });
-    return this.initedPromise;
   }
   draw(time, delta) {
     if (this.displayStrategy) {
