@@ -94,12 +94,13 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
         if (res.ok) {
           return res;
         }
-        debug(`Failed to load! ${fileId}`);
+        debug(`Failed to load! ${fileId} ${res.status} ${res.statusText}`);
       });
     };
     
     return fetchImage()
-      .then(resp => resp.blob().then(blob => ({blob, type: resp.headers.get('content-type')})))
+      .then(resp => resp.blob()
+          .then(blob => ({blob, type: resp.headers.get('content-type')})))
       .then(({blob, type}) => ({url: URL.createObjectURL(blob), type}))
       .then(({url, type}) => {
         return new Promise((resolve, reject) => {
