@@ -86,7 +86,7 @@ class ChicagoBrickLiveServer extends ModuleInterface.Server {
     // of global code changes (e.g., codeserver comes online) and cache code.
     this.clients = {};
 
-    this.codeServer = require('socket.io-client')(this.config.codeServer);
+    this.codeServer = serverRequire('socket.io-client')(this.config.codeServer);
 
     // Setup connection to code server.
     this.codeServer.on('connect', () => {
