@@ -156,6 +156,11 @@ class ImageClient extends ModuleInterface.Client {
       });
     });
   }
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
+  }
   draw(time, delta) {
     if (this.displayStrategy) {
       this.displayStrategy.draw(time, delta);
