@@ -108,13 +108,19 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
             var img = document.createElement('img');
             img.src = url;
             // Don't report that we've loaded the image until onload fires.
-            img.addEventListener('load', () => resolve(img));
-            img.addEventListener('error', () => reject(new Error));
+            img.addEventListener('load', () => {
+              URL.revokeObjectURL(url);
+              resolve(img);
+            });
+            img.addEventListener('error', () => reject(new Error(`${type}, ${url}`)));
           } else if (type.indexOf('video') != -1) {
             var video = document.createElement('video');
             video.src = url;
             video.autoplay = true;
-            video.addEventListener('load', () => resolve(video));
+            video.addEventListener('load', () => {
+              URL.revokeObjectURL(url);
+              resolve(video);
+            });
             video.addEventListener('error', () => reject(new Error));
           } else {
             throw new Error('Unknown MIME type for drive file: ' + type);
