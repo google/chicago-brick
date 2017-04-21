@@ -118,11 +118,28 @@ class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
     this.config_ = config;
   }
   init(surface, loadStrategy) {
+    const logError = require('client/util/log').error(debug);
     this.content = null;
     network.emit('display:init');
     this.surface = surface;
-    network.on('display:content', (c) => {
-      loadStrategy.loadContent(c).then((content) => {
+    network.on('display:content', c => {
+      let container = this.surface.container;
+      let info = container.querySelector('#fullscreen-info');
+      if (!info) {
+        info = document.createElement('div');
+        info.id = 'fullscreen-info';
+        info.style.position = 'absolute';
+        info.style.left = '0';
+        info.style.right = '0';
+        info.style.top = '0';
+        info.style.bottom  = '0';
+        info.style.color = 'white';
+        info.style.font = 'bolder 18px monospace';
+        container.appendChild(info);
+      }
+      info.textContent = `Loading "${c}..."`;
+      
+      loadStrategy.loadContent(c).then(content => {
         // One piece of content per client.
         this.content = content;
         let s = this.config_.image && this.config_.image.scale || 'stretch';
@@ -146,6 +163,10 @@ class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
         }
         // Add content.
         this.surface.container.appendChild(content);
+      }).catch(err => {
+        info.innerHTML += '<br>';
+        info.innerHTML += `<span style="color:red">Error! ${err}</span>`;
+        logError(err);
       });
     });
   }
