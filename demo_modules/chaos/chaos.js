@@ -239,7 +239,7 @@ class ChaosClient extends ModuleInterface.Client {
                 client.clientshape[shape].palette[p*3+2] = Math.floor(myColor.b / (client.maxValue - 1) * p);
             }            
         }
-        var steps = (this.shapes[shape].size * this.shapes[shape].size) / 40.0;
+        var steps = (this.shapes[shape].size * this.shapes[shape].size) / 4.0;
         if (this.shapes[shape].points == 3) {
             steps = steps / 10;
         }
