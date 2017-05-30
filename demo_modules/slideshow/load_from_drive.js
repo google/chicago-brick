@@ -85,12 +85,28 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
   loadContent(fileId) {
     const API_BASE_URL = 'https://www.googleapis.com/drive/v2';
     
+    let numTriesLeft = 5;
+    let timeout = Math.floor(1000 + Math.random() * 1000);
     let fetchImage = () => {
       return fetch(`${API_BASE_URL}/files/${fileId}?alt=media`, {
         headers: new Headers({
           'Authorization': 'Bearer ' + this.config.credentials.access_token
         })
       }).then(res => {
+        if (res.status == 403) {
+          // Probably rate-limited. To fix this, we'll attempt to download 
+          // again after a random, expotentially increasing time.
+          if (!numTriesLeft) {
+            throw new Error(`Failed to download ${fileId}! ${res.status} ${res.statusTxt}`);
+          }
+          return new Promise(resolve => {
+            debug(`Retrying after ${timeout} ms and ${numTriesLeft} tries left...`);
+            setTimeout(() => resolve(), timeout);
+            timeout *= 2.0;
+            timeout += Math.floor(Math.random * 1000);
+            numTriesLeft--;
+          }).then(fetchImage);
+        }
         if (res.ok) {
           return res;
         }
