@@ -86,7 +86,9 @@ class Control {
       res.status(400).send('Expected module parameter');
       return;
     }
-    if (!this.layoutSM.playModule(moduleName)) {
+    try {
+      this.layoutSM.playModule(moduleName);
+    } catch (e) {
       // TODO: distinguish between "module not found" and "unable to enqueue".
       res.status(400).send('Unable to play module');
       return;

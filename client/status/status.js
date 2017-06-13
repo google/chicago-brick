@@ -174,6 +174,21 @@ requirejs(['/config.js'], function(require) {
 });
 
 fetchJson('config').then(config => {
+  // Reload the current JSON configuration.
   document.forms[0].config.value = JSON.stringify(
       config.current, null, '  ');
+
+  // Draw the list of available modules in the "play immediately" section.
+  let module_list = document.getElementById('module_list');
+  config.current.modules.forEach(function(element) {
+    let li = document.createElement("li");
+    li.id = 'module_' + element.name;
+    li.addEventListener('click', function() {
+      fetch('/api/play?module=' + element.name,
+            {method: 'POST', credentials: 'same-origin'});
+    });
+    li.innerText = element.name;
+    li.style = 'text-decoration: underline blue;';
+    module_list.appendChild(li);
+  });
 });
