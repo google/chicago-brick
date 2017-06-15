@@ -225,7 +225,7 @@ class DisplayState extends stateMachine.State {
     };
   }
   playModule(moduleName) {
-    return this.partition_.some(sm => sm.playModule(moduleName));
+    this.partition_.forEach(sm => sm.playModule(moduleName));
   }
 }
 
