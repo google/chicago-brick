@@ -182,13 +182,16 @@ fetchJson('config').then(config => {
   let module_list = document.getElementById('module_list');
   config.current.modules.forEach(function(element) {
     let li = document.createElement("li");
-    li.id = 'module_' + element.name;
-    li.addEventListener('click', function() {
+    let a = document.createElement("a");
+    a.id = 'module_' + element.name;
+    a.addEventListener('click', function() {
       fetch('/api/play?module=' + element.name,
             {method: 'POST', credentials: 'same-origin'});
     });
-    li.innerText = element.name;
-    li.style = 'text-decoration: underline blue;';
+    a.textContent = element.name;
+    a.style.textDecoration = 'underline blue';
+    a.style.cursor = 'pointer';
+    li.appendChild(a);
     module_list.appendChild(li);
   });
 });
