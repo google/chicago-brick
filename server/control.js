@@ -31,6 +31,8 @@ class Control {
 
   installHandlers(app) {
     app.get('/api/playlist', this.getPlaylist.bind(this));
+    app.post('/api/playlist', this.setPlaylist.bind(this));
+    app.post('/api/reset-playlist', this.resetPlaylist.bind(this));
     app.get('/api/config', this.getConfig.bind(this));
     app.get('/api/errors', this.getErrors.bind(this));
     app.post('/api/config', this.setConfig.bind(this));
@@ -66,6 +68,28 @@ class Control {
 
   getPlaylist(req, res) {
     res.json(this.layoutSM.getPlaylist());
+  }
+
+  resetPlaylist(req, res) {
+    this.layoutSM.setPlaylist(this.playlistLoader.parsePlaylist(this.initialConfig));
+    this.currentConfig = this.initialConfig;
+    res.redirect('/status');
+  }
+
+  setPlaylist(req, res) {
+    let infinitePlaylist = { modules: [req.body], playlist: [{collection: '__ALL__', duration: 86400}] };
+    let playlistConfig = {};
+    let json = '';
+    try {
+      json = this.playlistLoader.parseJson(JSON.stringify(infinitePlaylist));
+      playlistConfig = this.playlistLoader.parsePlaylist(json);
+    } catch (e) {
+      res.status(400).send('Bad request: ' + e);
+      return;
+    }
+    this.layoutSM.setPlaylist(playlistConfig);
+    this.currentConfig = json;
+    res.redirect('/status');
   }
 
   getClientState(req, res) {
