@@ -205,42 +205,33 @@ fetchJson('config').then(config => {
 
   // Draw the list of available modules in the "play immediately" section.
   let module_list = document.getElementById('module_list');
-  config.current.modules.forEach(function(element) {
+  config.current.modules.forEach(function(module) {
     let li = document.createElement("li");
     let a = document.createElement("a");
-    a.id = 'module_' + element.name;
-    if (element.name in modulesInPlaylist) {
+    a.id = 'module_' + module.name;
+    if (module.name in modulesInPlaylist) {
       a.addEventListener('click', function() {
-        fetch('/api/play?module=' + element.name, { method: 'POST' });
+        fetch('/api/play?module=' + module.name, { method: 'POST' });
       });
-      a.style.textDecoration = 'underline blue';
-      a.style.cursor = 'pointer';
     }
-    a.textContent = element.name;
+    a.textContent = module.name;
     li.appendChild(a);
 
-    let spacer = document.createElement("span");
-    spacer.style.marginLeft = "15px";
-    spacer.style.marginRight = "15px";
-    li.appendChild(spacer);
-
     let a2 = document.createElement("a");
-    a2.id = 'forever_module_' + element.name;
+    a2.id = 'forever_module_' + module.name;
     a2.addEventListener('click', function() {
       let myRequest = new Request('/api/playlist', {
           method: 'POST',
           headers: {'content-type': 'application/json'},
           credentials: 'same-origin',
-          body: JSON.stringify(element)});
+          body: JSON.stringify(module)});
       fetch(myRequest).then(function(res) {
         if (res.ok && res.redirected) {
           document.location = res.url;
         }
       });
     });
-    a2.textContent = '(play ' + element.name + ' indefinitely)';
-    a2.style.textDecoration = 'underline blue';
-    a2.style.cursor = 'pointer';
+    a2.textContent = '(play ' + module.name + ' indefinitely)';
     li.appendChild(a2);
 
     module_list.appendChild(li);
