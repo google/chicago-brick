@@ -110,6 +110,7 @@ function create(flags) {
   app.use(express.static(path.join(base, 'client')));
 
   // Needed by control.js for POST requests.
+  app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({extended: false}));
   return app;
 }

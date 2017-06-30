@@ -20,6 +20,29 @@ var bgColors = [
   'red', 'blue', 'green', 'yellow',
 ];
 
+function buildPlayableModuleMap(config) {
+  // which collections are in the playlist?
+  let playableCollections = {};
+  config.current.playlist.forEach(function(playlist) {
+    if (playlist.collection == '__ALL__') {
+      playableCollections['__ALL__'] = new Array();
+      config.current.modules.forEach(function(module) {
+        playableCollections['__ALL__'].push(module.name);
+      });
+    } else {
+      playableCollections[playlist.collection] = config.current.collections[playlist.collection];
+    }
+  });
+
+  let playableModules = {};
+  for (let collection in playableCollections) {
+    playableCollections[collection].forEach(function(module) {
+      playableModules[module] = 1;
+    });
+  }
+  return playableModules;
+}
+
 function fetchJson(endpoint) {
   return fetch('/api/' + endpoint, {credentials: 'same-origin'})
       .then(resp => resp.json());
@@ -178,20 +201,39 @@ fetchJson('config').then(config => {
   document.forms[0].config.value = JSON.stringify(
       config.current, null, '  ');
 
+  let modulesInPlaylist = buildPlayableModuleMap(config);
+
   // Draw the list of available modules in the "play immediately" section.
   let module_list = document.getElementById('module_list');
-  config.current.modules.forEach(function(element) {
+  config.current.modules.forEach(function(module) {
     let li = document.createElement("li");
     let a = document.createElement("a");
-    a.id = 'module_' + element.name;
-    a.addEventListener('click', function() {
-      fetch('/api/play?module=' + element.name,
-            {method: 'POST', credentials: 'same-origin'});
-    });
-    a.textContent = element.name;
-    a.style.textDecoration = 'underline blue';
-    a.style.cursor = 'pointer';
+    a.id = 'module_' + module.name;
+    if (module.name in modulesInPlaylist) {
+      a.addEventListener('click', function() {
+        fetch('/api/play?module=' + module.name, { method: 'POST' });
+      });
+    }
+    a.textContent = module.name;
     li.appendChild(a);
+
+    let a2 = document.createElement("a");
+    a2.id = 'forever_module_' + module.name;
+    a2.addEventListener('click', function() {
+      let myRequest = new Request('/api/playlist', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          credentials: 'same-origin',
+          body: JSON.stringify(module)});
+      fetch(myRequest).then(function(res) {
+        if (res.ok && res.redirected) {
+          document.location = res.url;
+        }
+      });
+    });
+    a2.textContent = '(play ' + module.name + ' indefinitely)';
+    li.appendChild(a2);
+
     module_list.appendChild(li);
   });
 });
