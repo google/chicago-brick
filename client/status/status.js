@@ -27,30 +27,30 @@ var bgColors = [
 // for immediate playback, only for indefinite takeover.
 function buildPlayableModuleMap(config) {
   let playableModules = {};
-  config.current.modules.forEach(function(module) {
-    playableModules[module.name] = 1;
-  });
+  config.current.modules.forEach(
+    module => playableModules[module.name] = 1
+  );
 
   let playableCollections = {};
   config.current.playlist.forEach(function(playlist) {
     if (playlist.collection === undefined) {
-      playlist.modules.forEach(function(module) {
-        playableModules[module.name] += 1;
-      });
+      playlist.modules.forEach(
+        module => playableModules[module.name] += 1
+      );
     } else if (playlist.collection == '__ALL__') {
       playableCollections['__ALL__'] = new Array();
-      config.current.modules.forEach(function(module) {
-        playableCollections['__ALL__'].push(module.name);
-      });
+      config.current.modules.forEach(
+        module => playableCollections['__ALL__'].push(module.name)
+      );
     } else {
       playableCollections[playlist.collection] = config.current.collections[playlist.collection];
     }
   });
 
   for (let collection in playableCollections) {
-    playableCollections[collection].forEach(function(module) {
-      playableModules[module] += 1;
-    });
+    playableCollections[collection].forEach(
+      module => playableModules[module] += 1
+    );
   }
   return playableModules;
 }
@@ -218,9 +218,9 @@ fetchJson('config').then(config => {
   // Draw the list of available modules in the "play immediately" section.
   let module_list = document.getElementById('module_list');
   config.current.modules.forEach(function(module) {
-    let li = document.createElement("li");
+    let li = document.createElement('li');
     if (modulesInPlaylist[module.name] > 1) {
-      let a = document.createElement("a");
+      const a = document.createElement('a');
       a.id = 'module_' + module.name;
       a.addEventListener('click', function() {
         fetch('/api/play?module=' + module.name, { method: 'POST' });
@@ -228,8 +228,8 @@ fetchJson('config').then(config => {
       a.textContent = module.name;
       li.appendChild(a);
     } else {
-      let m = document.createElement("span");
-      m.textContent = module.name + ' (not in a playlist)';
+      const m = document.createElement('span');
+      m.textContent = `${module.name} (not in a playlist)`;
       li.appendChild(m);
     }
 
