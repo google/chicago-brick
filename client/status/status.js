@@ -20,11 +20,24 @@ var bgColors = [
   'red', 'blue', 'green', 'yellow',
 ];
 
+// Returns a map of module name to number.
+// 1 means the module exists in the config.
+// > 1 means the module exists and is in a loaded playlist.
+// Modules that are in the modules list, but not in a playlist aren't eligible
+// for immediate playback, only for indefinite takeover.
 function buildPlayableModuleMap(config) {
-  // which collections are in the playlist?
+  let playableModules = {};
+  config.current.modules.forEach(function(module) {
+    playableModules[module.name] = 1;
+  });
+
   let playableCollections = {};
   config.current.playlist.forEach(function(playlist) {
-    if (playlist.collection == '__ALL__') {
+    if (playlist.collection === undefined) {
+      playlist.modules.forEach(function(module) {
+        playableModules[module.name] += 1;
+      });
+    } else if (playlist.collection == '__ALL__') {
       playableCollections['__ALL__'] = new Array();
       config.current.modules.forEach(function(module) {
         playableCollections['__ALL__'].push(module.name);
@@ -34,10 +47,9 @@ function buildPlayableModuleMap(config) {
     }
   });
 
-  let playableModules = {};
   for (let collection in playableCollections) {
     playableCollections[collection].forEach(function(module) {
-      playableModules[module] = 1;
+      playableModules[module] += 1;
     });
   }
   return playableModules;
@@ -207,15 +219,19 @@ fetchJson('config').then(config => {
   let module_list = document.getElementById('module_list');
   config.current.modules.forEach(function(module) {
     let li = document.createElement("li");
-    let a = document.createElement("a");
-    a.id = 'module_' + module.name;
-    if (module.name in modulesInPlaylist) {
+    if (modulesInPlaylist[module.name] > 1) {
+      let a = document.createElement("a");
+      a.id = 'module_' + module.name;
       a.addEventListener('click', function() {
         fetch('/api/play?module=' + module.name, { method: 'POST' });
       });
+      a.textContent = module.name;
+      li.appendChild(a);
+    } else {
+      let m = document.createElement("span");
+      m.textContent = module.name + ' (not in a playlist)';
+      li.appendChild(m);
     }
-    a.textContent = module.name;
-    li.appendChild(a);
 
     let a2 = document.createElement("a");
     a2.id = 'forever_module_' + module.name;
