@@ -24,9 +24,9 @@ const wallGeometry = require('wallGeometry');
 function hexToRgb(hex) {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   return result ? {
-      r: parseInt(result[1], 16),
-      g: parseInt(result[2], 16),
-      b: parseInt(result[3], 16)
+    r: parseInt(result[1], 16),
+    g: parseInt(result[2], 16),
+    b: parseInt(result[3], 16)
   } : null;
 }
 
@@ -37,6 +37,14 @@ const VERBOSE = false;
 
 // Number of shapes to create each time we try to create shapes.
 const NUM_SHAPES = 40;
+
+// Returns true if circles defined by a and b overlap.
+function checkOverlap(ax, ay, ar, bx, by, br) {
+  const x = ax - bx;
+  const y = ay - by;
+  const dist = Math.sqrt(x*x + y*y);
+  return dist < ar + br;
+}
 
 class ChaosServer extends ModuleInterface.Server {
   willBeShownSoon(container, deadline) {
@@ -56,6 +64,7 @@ class ChaosServer extends ModuleInterface.Server {
       // Reset shape data (effectively blanking the screen).
       this.shapes = [];
       // Initial size of shape to make. If we can't find a fit, we decrease this and try again.
+      // TODO(applmak): I suspect that this is redundant with 'size', and we just use 'size' everywhere.
       let makeRadius = 0.30;
       
       // Make NUM_SHAPES shapes! Don't increment shapeCount unless we find a place to put a shape.
@@ -71,17 +80,9 @@ class ChaosServer extends ModuleInterface.Server {
         // an attempt to find any overlap.
         let fit = true;
         for (let otherShape = 0; otherShape < shapeCount; ++otherShape) {
-          const myx = posx - this.shapes[otherShape].posx;
-          const myy = posy - this.shapes[otherShape].posy;
-        
-          const distSq = myx * myx + myy * myy;
-          const dist = Math.sqrt(distSq);
-          const newDist = dist - this.shapes[otherShape].size;
-          const rad = size + this.shapes[otherShape].size;
-          const radSq = rad * rad;
-        
+          let shape = this.shapes[otherShape];
           // Check to ensure that our new shape isn't too close to any shape we made so far.
-          if (distSq < radSq) {
+          if (checkOverlap(posx, posy, size, shape.posx, shape.posy, shape.size)) {
             // If it is, we decrease our size, abort the overlap check, and try again.
             fit = false;
             makeRadius *= 0.99;
@@ -100,19 +101,11 @@ class ChaosServer extends ModuleInterface.Server {
             // TODO(applmak): This check against existing shapes is similar to the other one.
             // Extract it as a function.
             for (let otherShape = 0; otherShape < shapeCount; ++otherShape) {
-              const myx = posx - this.shapes[otherShape].posx;
-              const myy = posy - this.shapes[otherShape].posy;
-            
-              const distSq = myx * myx + myy * myy;
-            
-              const rad = size + this.shapes[otherShape].size;
-              const radSq = rad * rad;
-            
-              if (distSq < radSq) {
+              let shape = this.shapes[otherShape];
+              if (checkOverlap(posx, posy, size, shape.posx, shape.posy, shape.size)) {
                 fit = false;
                 makeRadius /= 1.05;
-                // TODO(applmak): This undo-ing of the radius isn't applied to the size, so
-                // we should fix that here.
+                size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) * makeRadius;
               }
             }
           }
@@ -161,8 +154,6 @@ class ChaosClient extends ModuleInterface.Client {
   constructor(config) {
     super();
     // Boolean that prevents drawing until we have data from the client.
-    // TODO(applmak): This is redundant with clientshape.length. Remove it.
-    this.drawing = false;
     // The server layout
     this.shapes = [];
 
@@ -178,7 +169,6 @@ class ChaosClient extends ModuleInterface.Client {
       if (this.time != data.time) {
         this.time = data.time;
         this.shapes = data.shapes;
-        this.drawing = true;
         this.clientshape = [];
       }
     });
@@ -218,9 +208,8 @@ class ChaosClient extends ModuleInterface.Client {
     x -= this.surface.virtualRect.x;
     y -= this.surface.virtualRect.y;
     if ((x < 0) || (y < 0) || (x >= this.surface.virtualRect.w) || (y >= this.surface.virtualRect.h)) return;
-    // TODO(applmak): I think that this trying to round x and y, so replace this with Math.floor.
-    x = parseInt(x, 10);
-    y = parseInt(y, 10);
+    x = Math.floor(x);
+    y = Math.floor(y);
     // Calculate this pixel's index in the array (accounting for the 4 color channels).
     let i = (y * this.surface.virtualRect.w + x) * 4;
 
@@ -248,7 +237,7 @@ class ChaosClient extends ModuleInterface.Client {
   }
 
   draw(time, delta) {
-    if (!this.drawing) return;
+    if (!this.shapes.length) return;
     if (this.time != this.oldtime) {
       this.initialize();
       this.oldtime = this.time;
@@ -290,21 +279,13 @@ class ChaosClient extends ModuleInterface.Client {
         const count = Math.floor((Math.random() * this.shapes[shape].points));
         const p = this.clientshape[shape].positions[count];
 
-        // TODO(applmak): Is this try-catch necessary?
-        try {
-          const x = (this.clientshape[shape].oldx + p[0]) / 2.0;
-          const y = (this.clientshape[shape].oldy + p[1]) / 2.0;
-          
-          this.clientshape[shape].oldx = x;
-          this.clientshape[shape].oldy = y;
-          
-          this.setPixel(x, y, shape);
-        }
-        catch (e)
-        {
-          console.log(e);
-          return;
-        }
+        const x = (this.clientshape[shape].oldx + p[0]) / 2.0;
+        const y = (this.clientshape[shape].oldy + p[1]) / 2.0;
+        
+        this.clientshape[shape].oldx = x;
+        this.clientshape[shape].oldy = y;
+        
+        this.setPixel(x, y, shape);
       }
     }
     this.canvas.putImageData(this.imageData, 0, 0);
