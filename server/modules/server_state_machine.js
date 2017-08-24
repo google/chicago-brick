@@ -16,6 +16,7 @@ limitations under the License.
 'use strict';
 require('lib/promise');
 
+const ModuleDef = require('server/modules/module_def');
 const RunningModule = require('server/modules/module');
 const moduleTicker = require('server/modules/module_ticker');
 const stateMachine = require('lib/state_machine');
@@ -42,17 +43,6 @@ class ServerStateMachine extends stateMachine.Machine {
     }
     this.state.nextModule(moduleDef, deadline);
   }
-  stop(deadline) {
-    if (monitor.isEnabled()) {
-      monitor.update({server: {
-        time: time.now(),
-        event: `stop`,
-        deadline: deadline
-      }});
-    }
-    
-    this.state.stop(deadline);
-  }
   handleError(error) {
     if (monitor.isEnabled()) {
       monitor.update({server: {
@@ -62,9 +52,6 @@ class ServerStateMachine extends stateMachine.Machine {
     }
     
     logError(error);
-    // Tell machine to stop (the behavior of which changes depending on the
-    // current state).
-    this.stop();
     
     // Now, the machine is stopped (no transitions will have any effect, ever).
     // Also, we're either in the IdleState, or are trying to transition there.
@@ -88,9 +75,8 @@ class IdleState extends stateMachine.State {
     }
   }
   nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(RunningModule.newEmptyModule(), moduleDef, deadline));
+    this.transition_(new PrepareState(new RunningModule(ModuleDef.emptyModule()), moduleDef, deadline));
   }
-  stop(deadline) {}
 }
 
 // Sink state. Machine can only change states via external transition.
@@ -104,7 +90,6 @@ class ErrorState extends stateMachine.State {
     }
   }
   nextModule(moduleDef, deadline) {}
-  stop(deadline) {}
 }
 
 class PrepareState extends stateMachine.State {
@@ -164,6 +149,10 @@ class PrepareState extends stateMachine.State {
       // to go somewhere else, we need to meet the module interface contract by
       // telling the module that we are going to hide it at the old deadline.
       this.module_.willBeHiddenSoon(this.deadline_);
+      
+      // And because we're going to forget about this module after this point, we
+      // really need to dispose of it.
+      this.module_.dispose();
     }
     
     // Now, we're already told the old module that we are hiding it, 
@@ -171,14 +160,6 @@ class PrepareState extends stateMachine.State {
     // TODO(applmak): We should tighten up the API here to avoid the double
     // willBeHiddenSoon.
     this.transition_(new PrepareState(this.oldModule_, moduleDef, deadline));
-  }
-  stop(deadline) {
-    if (this.module_) {
-      this.module_.willBeHiddenSoon(deadline);
-      // Clean up any network things left over.
-      this.module_.dispose();
-    }
-    this.transition_(new IdleState);
   }
 }
 
@@ -196,9 +177,6 @@ class TransitionState extends stateMachine.State {
     this.deadline_ = deadline;
 
     this.timer_ = null;
-
-    this.savedModuleDef_ = null;
-    this.savedDeadline_ = 0;
   }
   enter(transition) {
     if (monitor.isEnabled()) {
@@ -218,12 +196,7 @@ class TransitionState extends stateMachine.State {
       this.timer_ = setTimeout(() => {
         moduleTicker.remove(this.oldModule_);
         
-        if (this.savedModuleDef_) {
-          this.transition_(new PrepareState(
-              this.module_, this.savedModuleDef_, this.savedDeadline_));
-        } else {
-          this.transition_(new DisplayState(this.module_));
-        }
+        this.transition_(new DisplayState(this.module_));
       }, time.until(endTransition));
     }, time.until(this.deadline_));
   }
@@ -231,16 +204,14 @@ class TransitionState extends stateMachine.State {
     clearTimeout(this.timer_);
   }
   nextModule(moduleDef, deadline) {
-    this.savedModuleDef_ = moduleDef;
-    this.savedDeadline_ = deadline;
-  }
-  stop(deadline) {
-    // When we're in the middle of a transition, we have to stop both modules.
-    this.oldModule_.willBeHiddenSoon(deadline);
+    // Hmm... so, we are in the middle of transition from O -> N, and we just got asked to show M.
+    // We need to prepare M for display, and then transition from O -> M, which is surely fine, guess.
+    // But that means that we need to manually clean up N.
     this.module_.willBeHiddenSoon(deadline);
-    moduleTicker.remove(this.oldModule_);
     moduleTicker.remove(this.module_);
-    this.transition_(new IdleState);
+    
+    // Safely prepare the new module.
+    this.transition_(new PrepareState(this.oldModule_, moduleDef, deadline));
   }
 }
 
@@ -263,11 +234,6 @@ class DisplayState extends stateMachine.State {
   }
   nextModule(moduleDef, deadline) {
     this.transition_(new PrepareState(this.module_, moduleDef, deadline));
-  }
-  stop(deadline) {
-    this.module_.willBeHiddenSoon(deadline);
-    moduleTicker.remove(this.module_);
-    this.transition_(new IdleState);
   }
 }
 

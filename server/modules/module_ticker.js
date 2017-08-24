@@ -46,6 +46,9 @@ module.exports = {
     debug(
         'Add: We are now ticking ' + modulesToTick.length + ' modules:',
         modulesToTick.map((m) => m.moduleDef.name).join(', '));
+    if (modulesToTick.length > 2) {
+      debug('FAILED!');
+    }
   },
   remove: function(module) {
     modulesToTick = modulesToTick.filter(m => {

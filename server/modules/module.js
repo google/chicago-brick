@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 const StateManager = require('server/state/state_manager');
+const assert = require('lib/assert');
 const game = require('server/game/game');
 const network = require('server/network/network');
 
@@ -21,25 +22,31 @@ const debug = require('debug')('wall:server_state_machine');
 const logError = require('server/util/log').error(debug);
 
 class RunningModule {
-  static newEmptyModule() {
-    return new RunningModule;
-  }
+  /**
+   * Constructs a running module.
+   * NOTE that's it's fine to create one of these with no def, which will simply blank the screen.
+   */
   constructor(moduleDef, geo, deadline) {
+    assert(moduleDef, 'Empty def passed to running module!');
     this.moduleDef = moduleDef;
     this.geo = geo;
     this.deadline = deadline;
     
-    if (this.moduleDef) {
+    if (this.moduleDef.valid) {
+      // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID = `${geo.extents.serialize()}-${deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
       this.gameManager = game.forModule(INSTANTIATION_ID);
+    } else {
+      this.network = null;
+      this.gameManager = null;
     }
   }
   
   // This is a separate method in order to guard against exceptions in 
   // instantiate.
   instantiate() {
-    if (this.moduleDef) {
+    if (this.network) {
       let openNetwork = this.network.open();
       this.stateManager = new StateManager(openNetwork);
       this.instance = this.moduleDef.instantiate(this.geo, openNetwork, this.gameManager, this.stateManager, this.deadline);
@@ -57,7 +64,7 @@ class RunningModule {
     if (this.instance) {
       this.instance.dispose();
     }
-    if (this.moduleDef) {
+    if (this.network) {
       // Clean up game sockets.
       this.gameManager.dispose();
     

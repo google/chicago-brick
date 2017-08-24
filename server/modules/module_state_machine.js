@@ -16,6 +16,7 @@ limitations under the License.
 'use strict';
 require('lib/promise');
 
+const ModuleDef = require('server/modules/module_def');
 const _ = require('underscore');
 const debug = require('debug')('wall:module_state_machine');
 const random = require('random-js')();
@@ -84,10 +85,10 @@ class ModuleStateMachine extends stateMachine.Machine {
     library.removeListener('reloaded', this.reloadHandler);
 
     // Tell the clients to stop.
-    this.context_.clients.forEach(c => c.stop(deadline));
+    this.context_.clients.forEach(c => c.nextModule(ModuleDef.emptyModule(), deadline, this.context_.geo));
     
     // Tell the server to stop.
-    this.context_.server.stop(deadline);
+    this.context_.server.nextModule(ModuleDef.emptyModule(), deadline);
 
     // Set us back to idle, awaiting further instructions.
     this.transitionTo(new IdleState);
