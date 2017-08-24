@@ -16,82 +16,14 @@ limitations under the License.
 'use strict';
 require('lib/promise');
 
-const StateManager = require('server/state/state_manager');
-const assert = require('lib/assert');
-const game = require('server/game/game');
+const RunningModule = require('server/modules/module');
 const moduleTicker = require('server/modules/module_ticker');
-const network = require('server/network/network');
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
 
 const debug = require('debug')('wall:server_state_machine');
 const logError = require('server/util/log').error(debug);
 const monitor = require('server/monitoring/monitor');
-
-class RunningModule {
-  static newEmptyModule() {
-    return new RunningModule;
-  }
-  constructor(moduleDef, geo, deadline) {
-    this.moduleDef = moduleDef;
-    this.geo = geo;
-    this.deadline = deadline;
-    
-    if (this.moduleDef) {
-      const INSTANTIATION_ID = `${geo.extents.serialize()}-${deadline}`;
-      this.network = network.forModule(INSTANTIATION_ID);
-      this.gameManager = game.forModule(INSTANTIATION_ID);
-    }
-  }
-  
-  // This is a separate method in order to guard against exceptions in 
-  // instantiate.
-  instantiate() {
-    if (this.moduleDef) {
-      let openNetwork = this.network.open();
-      this.stateManager = new StateManager(openNetwork);
-      this.instance = this.moduleDef.instantiate(this.geo, openNetwork, this.gameManager, this.stateManager, this.deadline);
-    }
-  }
-
-  tick(now, delta) {
-    if (this.instance) {
-      this.instance.tick(now, delta);
-      this.stateManager.send();
-    }
-  }
-
-  dispose() {
-    if (this.instance) {
-      this.instance.dispose();
-    }
-    if (this.moduleDef) {
-      // Clean up game sockets.
-      this.gameManager.dispose();
-    
-      // This also cleans up stateManager.
-      this.network.close();
-    }
-  }
-  
-  willBeHiddenSoon(deadline) {
-    if (this.instance) {
-      this.instance.willBeHiddenSoon(deadline);
-    }
-  }
-  
-  willBeShownSoon(deadline) {
-    if (this.instance) {
-      let ret = this.instance.willBeShownSoon(deadline);
-      if (!ret) {
-        logError(new Error(`Module ${this.moduleDef.name} should return a promise from willBeShownSoon`));
-        return Promise.resolve();
-      }
-      return ret;
-    }
-    return Promise.resolve();
-  }
-}
 
 class ServerStateMachine extends stateMachine.Machine {
   constructor(wallGeometry) {

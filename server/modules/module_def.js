@@ -18,15 +18,10 @@ limitations under the License.
 const EventEmitter = require('events');
 const fs = require('fs');
 
-const random = require('random-js')();
-const _ = require('underscore');
-
 const debug = require('debug')('wall:module_def');
 const debugFactory = require('debug');
 const fakeRequire = require('server/fake_require');
-const googleapis = require('server/util/googleapis');
 const module_interface = require('lib/module_interface');
-const network = require('server/network/network');
 const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
