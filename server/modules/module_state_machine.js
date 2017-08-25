@@ -53,7 +53,16 @@ class ModuleStateMachine extends stateMachine.Machine {
       clients: Object.keys(allClients)
           .map(k => allClients[k])
           .filter(c => isDisplayInPoly(c.getClientInfo().rect, geo)),
-    })
+    });
+    
+    // Forward errors from my child state machines to my listener.
+    this.context_.server.setErrorListener(error => this.errorListener_(error));
+    this.context_.clients.forEach(c => c.setErrorListener(error => this.errorListener_(error)));
+    this.setErrorListener(error => {
+      debug('Error in sub-sm, continuing playlist...');
+      // If an error occurs in any client or server, skip this module.
+      this.nextModule();
+    });
 
     this.reloadHandler = moduleDef => {
       this.playModule(moduleDef.name);
@@ -63,19 +72,8 @@ class ModuleStateMachine extends stateMachine.Machine {
     /** True when the reload handler is installed. */
     this.reloadHandlerInstalled_ = true;
   }
-  handleError(error) {
-    if (monitor.isEnabled()) {
-      monitor.update({module: {
-        time: time.now(),
-        event: error.toString()
-      }});
-    }
-    
-    logError(error);
-    this.transitionTo(new IdleState);
-    this.driveMachine();
-  }
-  // Turn off the state machine.
+  
+  // Turn off the state machine at the specified, coordinated time.
   fadeToBlack(deadline) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
@@ -99,6 +97,7 @@ class ModuleStateMachine extends stateMachine.Machine {
     // Set us back to idle, awaiting further instructions.
     this.transitionTo(new IdleState);
   }
+  
   newClient(clientInfo) {
     if (!isDisplayInPoly(clientInfo.rect, this.context_.geo)) {
       return false;
@@ -166,6 +165,9 @@ class ModuleStateMachine extends stateMachine.Machine {
     // TODO(applmak): Handle this better.
     this.state.playModule(moduleName);
   }
+  nextModule() {
+    this.state.nextModule();
+  }
   getGeo() {
     return this.context_.geo;
   }
@@ -188,6 +190,10 @@ class IdleState extends stateMachine.State {
   newClient(client) {}
   playModule(moduleName) {
     throw new Error(`No module named ${moduleName}`);
+  }
+  nextModule() {
+    // ... no next module!
+    throw new Error('No next module!');
   }
   getDeadline() {
     return Infinity;
@@ -263,16 +269,8 @@ class DisplayState extends stateMachine.State {
     // duration pass.
     let durationBeforePrepare = Math.max(this.displayDuration_ - 5000, 0);
     let prepareDeadline = this.deadline_ + durationBeforePrepare;
-    let fadeStartDeadline = this.deadline_ + this.displayDuration_;
     debug('Waiting until', this.deadline_, prepareDeadline);
-    this.timer_ = setTimeout(() => {
-      if (this.playlist_.length == 0) {
-        throw new Error('No modules left in playlist!');
-      }
-      let nextModuleIndex = (this.index_ + 1) % this.playlist_.length;
-      debug(`Begin preparing to transition to ${this.playlist_[nextModuleIndex].name} (item ${nextModuleIndex} of ${this.playlist_.length})`);
-      this.transition_(new DisplayState(this.playlist_, this.layout_, fadeStartDeadline, nextModuleIndex));
-    }, time.until(prepareDeadline));
+    this.timer_ = setTimeout(() => this.nextModule(), time.until(prepareDeadline));
   }
   exit() {
     clearTimeout(this.timer_);
@@ -290,6 +288,14 @@ class DisplayState extends stateMachine.State {
       throw new Error(`Unable to find module ${moduleName} in the playlist!`);
     }
     this.transition_(new DisplayState(this.playlist_, this.layout_, time.inFuture(0), index));
+  }
+  nextModule() {
+    if (this.playlist_.length == 0) {
+      throw new Error('No modules left in playlist!');
+    }
+    let nextModuleIndex = (this.index_ + 1) % this.playlist_.length;
+    debug(`Begin preparing to transition to ${this.playlist_[nextModuleIndex].name} (item ${nextModuleIndex} of ${this.playlist_.length})`);
+    this.transition_(new DisplayState(this.playlist_, this.layout_, time.now(), nextModuleIndex));
   }
   getDeadline() {
     return this.deadline_ + this.displayDuration_;

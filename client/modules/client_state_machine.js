@@ -208,6 +208,18 @@ define(function(require) {
     constructor() {
       // Initially, we tell the clients to show a blank screen.
       super(new DisplayState(ClientModule.newEmptyModule()), debug);
+      
+      this.setErrorListener(error => {
+        if (monitor.isEnabled()) {
+          monitor.update({client: {
+            event: error.toString(),
+            time: timeManager.now(),
+            color: [255, 0, 0]
+          }});
+        }
+        
+        logError(error);
+      });
     }
     nextModule(module) {
       if (monitor.isEnabled()) {
@@ -221,22 +233,6 @@ define(function(require) {
       debug('Requested transition to module', module.name);
       // Transition according to current state rules.
       this.state.nextModule(module);
-    }
-    handleError(error) {
-      if (monitor.isEnabled()) {
-        monitor.update({client: {
-          event: error.toString(),
-          time: timeManager.now(),
-          color: [255, 0, 0]
-        }});
-      }
-      
-      logError(error);
-      // If we bubble up an error this far, we transition instantly back to a 
-      // blank screen.
-      this.transitionTo(new DisplayState(ClientModule.newEmptyModule()));
-      // Re-enable the state machine.
-      this.driveMachine();
     }
   }
 
