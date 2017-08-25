@@ -238,9 +238,6 @@ define(function(require) {
       // Re-enable the state machine.
       this.driveMachine();
     }
-    stop(deadline) {
-      this.nextModule(ClientModule.newEmptyModule(deadline));
-    }
   }
 
   return ClientStateMachine;

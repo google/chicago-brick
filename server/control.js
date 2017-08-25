@@ -15,7 +15,8 @@ limitations under the License.
 
 'use strict';
 
-var log = require('server/util/log');
+const debug = require('debug')('wall:control');
+const log = require('server/util/log');
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
@@ -113,6 +114,8 @@ class Control {
     try {
       this.layoutSM.playModule(moduleName);
     } catch (e) {
+      debug(e.message);
+      debug(e.stack);
       // TODO: distinguish between "module not found" and "unable to enqueue".
       res.status(400).send('Unable to play module');
       return;

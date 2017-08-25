@@ -18,15 +18,11 @@ limitations under the License.
 const EventEmitter = require('events');
 const fs = require('fs');
 
-const random = require('random-js')();
-const _ = require('underscore');
-
+const assert = require('lib/assert');
 const debug = require('debug')('wall:module_def');
 const debugFactory = require('debug');
 const fakeRequire = require('server/fake_require');
-const googleapis = require('server/util/googleapis');
 const module_interface = require('lib/module_interface');
-const network = require('server/network/network');
 const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
@@ -113,6 +109,9 @@ const verify = (name, contents) => {
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef extends EventEmitter {
+  static emptyModule() {
+    return new EmptyModuleDef;
+  }
   constructor(name, pathOrBaseModule, title, author, config) {
     super();
     this.name = name;
@@ -148,7 +147,8 @@ class ModuleDef extends EventEmitter {
       
       // Also, register for any reloads, and reset validity.
       base.on('reloaded', updateValidity);
-    } else {
+    } else if (name != '_empty') {
+      // TODO(applmak): ^ this hacky.
       this.path = pathOrBaseModule;
       this.checkValidity_();
     }
@@ -180,7 +180,7 @@ class ModuleDef extends EventEmitter {
       let rewatch = () => {
         // Watch for future changes.
         debug('Watching', this.path);
-        let watch = fs.watch(this.path, {persistent: true}, (event) => {
+        let watch = fs.watch(this.path, {persistent: true}, event => {
           debug('Module changed! Reloading', this.path);
           watch.close();
           loadModule();
@@ -189,7 +189,7 @@ class ModuleDef extends EventEmitter {
         });
       };
     
-      this.whenLoadedPromise = read(this.path).then((contents) => {
+      this.whenLoadedPromise = read(this.path).then(contents => {
         debug('Read ' + this.path);
         // Prepend a directive to make sure the module runs in strict mode.
         // Append a directive that tells Chrome and Node that the client script
@@ -205,15 +205,15 @@ class ModuleDef extends EventEmitter {
           this.def = contents;
         } else {
           debug('Failed verification at ' + this.path);
-          Promise.reject(new Error('Script at "' + this.path + '" is not verifiable!'));
+          throw new Error('Script at "' + this.path + '" is not verifiable!');
         }
-      }, (e) => {
+      }, e => {
         debug(this.path + ' not found!');
       
         // Intentionally do not restart watcher.
         // Allow users to note that this module failed to load correctly.
-        return Promise.reject(e);
-      }).catch((e) => {
+        throw e;
+      }).catch(e => {
         this.valid = false;
         debug(e);
         throw e;
@@ -231,6 +231,8 @@ class ModuleDef extends EventEmitter {
   // dynamically. Basically, make this module's 'require' somehow delegate to
   // this particular instantiation.
   instantiate(layoutGeometry, network, game, state, deadline) {
+    // Only instantiate valid modules.
+    assert(this.valid, 'Attempt to instantiate invalid module!');
     let classes = evalModule(this.def, this.name, layoutGeometry, network, game, state);
     return new classes.server(this.config, deadline);
   }
@@ -244,6 +246,14 @@ class ModuleDef extends EventEmitter {
       title: this.title,
       author: this.author,
     };
+  }
+}
+
+class EmptyModuleDef extends ModuleDef {
+  constructor() {
+    super('_empty');
+    // TODO(applmak): ^ this hacky.
+    // However, b/c of the hack, this module will never become valid.
   }
 }
 

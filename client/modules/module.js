@@ -81,6 +81,9 @@ define(function(require) {
 
     // Deserializes from the json serialized form of ModuleDef in the server.
     static deserialize(bits) {
+      if (bits.module.name == '_empty') {
+        return ClientModule.newEmptyModule(bits.time);
+      }
       return new ClientModule(
         bits.module.name,
         bits.module.path,
