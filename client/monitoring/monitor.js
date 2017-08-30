@@ -108,21 +108,25 @@ define(function(require) {
     
     let layoutSM = document.createElement('div');
     layoutSM.className = 'layout-sm timeline';
+    layoutSM.textContent = 'Layout';
     let layoutSMCanvas = document.createElement('canvas');
     layoutSM.appendChild(layoutSMCanvas);
     
     let moduleSM = document.createElement('div');
     moduleSM.className = 'module-sm timeline';
+    moduleSM.textContent = 'Module';
     let moduleSMCanvas = document.createElement('canvas');
     moduleSM.appendChild(moduleSMCanvas);
     
     let serverSM = document.createElement('div');
     serverSM.className = 'server-sm timeline';
+    serverSM.textContent = 'Server';
     let serverSMCanvas = document.createElement('canvas');
     serverSM.appendChild(serverSMCanvas);
     
     let clientSM = document.createElement('div');
     clientSM.className = 'client-sm timeline';
+    clientSM.textContent = 'Client';
     let clientSMCanvas = document.createElement('canvas');
     clientSM.appendChild(clientSMCanvas);
     
@@ -133,11 +137,13 @@ define(function(require) {
       
     let instantFps = document.createElement('div');
     instantFps.className = 'instant timeline';
+    instantFps.textContent = 'FPS';
     let instantFpsCanvas = document.createElement('canvas');
     instantFps.appendChild(instantFpsCanvas);
-
+    
     let timeDrift = document.createElement('div');
     timeDrift.className = 'time-drift timeline';
+    timeDrift.textContent = 'Sync';
     let timeDriftCanvas = document.createElement('canvas');
     timeDrift.appendChild(timeDriftCanvas);
     
@@ -352,8 +358,7 @@ define(function(require) {
         this.canvas.text(this.oldestEvent.event, earlyTime + 2, 0.166, 'middle');
       }
 
-
-      let labelSlotsEnds = [0, 0, 0];
+      let labelSlotsEnds = [0, 0];
     
       let pickASlot = () => {
         let slots = labelSlotsEnds.map((v, i) => ({v, i}));
@@ -363,39 +368,35 @@ define(function(require) {
     
       return events.filter(e => {
         // There are two kinds of events: Ones with 'state' and ones without.
-        // Let's tackle the state ones first.
-        let x = this.canvas.convertX(e.time) + 2;
-
         if (e.state) {
           this.canvas.strokeStyle(160, 160, 160);
           this.canvas.fillStyle(160, 160, 160);
+
+          let x = e.time;
           if ('deadline' in e) {
-            this.canvas.strokeGeneratedPath([[e.time, .9], [e.deadline, 0.9]]);
+            this.canvas.strokeArrow(e.time, .1, e.deadline, 0.1, 5);
+            x = (e.time + e.deadline) * 0.5;
           }
           this.canvas.strokeGeneratedPath([[e.time, 0.0], [e.time, 1.0]]);
-        
-          // Text describing the state.
-          let bestSlot = pickASlot();
-          let y = 1.0/6 * (bestSlot.i * 2 + 1);
-          let measurement = this.canvas.text(e.state, e.time, y, 'middle');
-          labelSlotsEnds[bestSlot.i] = x + measurement.width;
-        } else {
-          // Just a normal event.
           
+          // Text describing the state.
+          let state = e.state.replace(/State$/, '');
+          this.canvas.text(state, x, 1/6.0, 'middle');
+        } else {
           if ('deadline' in e) {
             this.canvas.strokeStyle(100, 100, 100);
             this.canvas.strokeArrow(e.time, 0.5, e.deadline, 0.5, 5);
           }
           
           let bestSlot = pickASlot();
-          let y = 1.0/6 * (bestSlot.i * 2 + 1);
+          let y = 1.0/6 * ((bestSlot.i+1) * 2 + 1);
         
           let color = e.color || [255, 255, 160];
           this.canvas.strokeStyle(...color);
           this.canvas.fillStyle(...color);
           this.canvas.strokeGeneratedPath([[e.time, 0.0], [e.time, 1.0]]);
           let measurement = this.canvas.text(e.event, e.time, y, 'middle');
-          labelSlotsEnds[bestSlot.i] = x + measurement.width;
+          labelSlotsEnds[bestSlot.i] = this.canvas.convertX(e.time) + measurement.width + 2;
         }
       
         if ('deadline' in e) {
