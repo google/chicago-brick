@@ -113,6 +113,16 @@ div[debug] {
     background-color: rgba(127, 127, 127, 0.5);
     height: 40px;
     margin: 2px 0px;
+    text-align: right;
+    position: relative;
+}
+
+.timeline canvas {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
 }
 
 .label.early {
