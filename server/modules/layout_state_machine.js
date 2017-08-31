@@ -182,8 +182,8 @@ class DisplayState extends stateMachine.State {
     this.transition_ = transition;
     this.partition_ = wallGeometry.partitionGeo(this.layout_.maxPartitions)
         .map(geo => new ModuleStateMachine(context.clients, geo));
-    debug(`Fading ${this.partition_.length} layouts in at ${this.beginFadeInDeadline_}`);
-    this.partition_.forEach(sm => sm.loadPlaylist(this.layout_, this.beginFadeInDeadline_));
+    debug(`Fading ${this.partition_.length} layouts with ${this.layout_.modules.join(', ')} in at ${this.beginFadeInDeadline_}`);
+    this.partition_.forEach(msm => msm.loadPlaylist(this.layout_, this.beginFadeInDeadline_));
 
     if (this.layouts_.length > 1) {
       this.timer_ = setTimeout(() => {

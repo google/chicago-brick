@@ -20,6 +20,7 @@ const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 
 const debug = require('debug')('wall:client_control_state_machine');
+const library = require('server/modules/module_library');
 const logError = require('server/util/log').error(debug);
 const monitor = require('server/monitoring/monitor');
 
@@ -31,8 +32,8 @@ class ClientControlStateMachine extends stateMachine.Machine {
     // client.
     this.setContext({client});
   }
-  nextModule(moduleDef, deadline, geo) {
-    this.state.nextModule(moduleDef, deadline, geo);
+  nextModule(module, deadline, geo) {
+    this.state.nextModule(module, deadline, geo);
   }
   handleError(error) {
     logError(error);
@@ -53,8 +54,8 @@ class IdleState extends stateMachine.State {
   enter(transition) {
     this.transition_ = transition;
   }
-  nextModule(moduleDef, deadline, geo) {
-    this.transition_(new PrepareState(moduleDef, deadline, geo));
+  nextModule(module, deadline, geo) {
+    this.transition_(new PrepareState(module, deadline, geo));
   }
   getModuleName() {
     return '<None>';
@@ -62,11 +63,11 @@ class IdleState extends stateMachine.State {
 }
 
 class PrepareState extends stateMachine.State {
-  constructor(moduleDef, deadline, geo) {
+  constructor(module, deadline, geo) {
     super();
 
     // Server-side module info.
-    this.moduleDef_ = moduleDef;
+    this.moduleDef_ = library.modules[module];
 
     // The deadline at which we should transition to the new module.
     this.deadline_ = deadline;
@@ -88,16 +89,16 @@ class PrepareState extends stateMachine.State {
     });
 
     this.timer_ = setTimeout(() => {
-      transition(new DisplayState(this.moduleDef_));
+      transition(new DisplayState(module));
     }, time.until(this.deadline_));
   }
   exit() {
     clearTimeout(this.timer_);
   }
-  nextModule(moduleDef, deadline, geo) {
+  nextModule(module, deadline, geo) {
     // Even if waiting for the client to do something, prepare a new module
     // immediately.
-    this.transition_(new PrepareState(moduleDef, deadline, geo));
+    this.transition_(new PrepareState(module, deadline, geo));
   }
   getModuleName() {
     return this.moduleDef_.name;
@@ -105,18 +106,18 @@ class PrepareState extends stateMachine.State {
 }
 
 class DisplayState extends stateMachine.State {
-  constructor(moduleDef) {
+  constructor(module) {
     super();
-    this.moduleDef_ = moduleDef;
+    this.module_ = module;
   }
   enter(transition) {
     this.transition_ = transition;
   }
-  nextModule(moduleDef, deadline, geo) {
-    this.transition_(new PrepareState(moduleDef, deadline, geo));
+  nextModule(module, deadline, geo) {
+    this.transition_(new PrepareState(module, deadline, geo));
   }
   getModuleName() {
-    return this.moduleDef_.name;
+    return this.module_;
   }
 }
 

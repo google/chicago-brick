@@ -23,6 +23,7 @@ const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
 
 const debug = require('debug')('wall:server_state_machine');
+const library = require('server/modules/module_library');
 const logError = require('server/util/log').error(debug);
 const monitor = require('server/monitoring/monitor');
 
@@ -33,15 +34,15 @@ class ServerStateMachine extends stateMachine.Machine {
     // The geometry of our region of the wall. A single Polygon.
     this.setContext({geo: wallGeometry});
   }
-  nextModule(moduleDef, deadline) {
+  nextModule(module, deadline) {
     if (monitor.isEnabled()) {
       monitor.update({server: {
         time: time.now(),
-        event: `nextModule: ${moduleDef.name}`,
+        event: `nextModule: ${module}`,
         deadline: deadline
       }});
     }
-    this.state.nextModule(moduleDef, deadline);
+    this.state.nextModule(module, deadline);
   }
   handleError(error) {
     if (monitor.isEnabled()) {
@@ -74,8 +75,8 @@ class IdleState extends stateMachine.State {
       }});
     }
   }
-  nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(new RunningModule(ModuleDef.emptyModule()), moduleDef, deadline));
+  nextModule(module, deadline) {
+    this.transition_(new PrepareState(new RunningModule(ModuleDef.emptyModule()), module, deadline));
   }
 }
 
@@ -89,18 +90,18 @@ class ErrorState extends stateMachine.State {
       }});
     }
   }
-  nextModule(moduleDef, deadline) {}
+  nextModule(module, deadline) {}
 }
 
 class PrepareState extends stateMachine.State {
-  constructor(oldModule, moduleDef, deadline) {
+  constructor(oldModule, moduleName, deadline) {
     super('PrepareState');
 
     // The current module on the screen.
     this.oldModule_ = oldModule;
 
-    // The module to load.
-    this.moduleDef_ = moduleDef;
+    // The moduleDef to load.
+    this.moduleDef_ = library.modules[moduleName];
 
     // The new module.
     this.module_ = null;
@@ -143,7 +144,7 @@ class PrepareState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  nextModule(moduleDef, deadline) {
+  nextModule(module, deadline) {
     if (this.module_) {
       // If we are preparing to show some things, but then suddenly we're told
       // to go somewhere else, we need to meet the module interface contract by
@@ -159,7 +160,7 @@ class PrepareState extends stateMachine.State {
     // and we'll tell it we're going to hide it again with a different deadline.
     // TODO(applmak): We should tighten up the API here to avoid the double
     // willBeHiddenSoon.
-    this.transition_(new PrepareState(this.oldModule_, moduleDef, deadline));
+    this.transition_(new PrepareState(this.oldModule_, module, deadline));
   }
 }
 
@@ -203,7 +204,7 @@ class TransitionState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  nextModule(moduleDef, deadline) {
+  nextModule(module, deadline) {
     // Hmm... so, we are in the middle of transition from O -> N, and we just got asked to show M.
     // We need to prepare M for display, and then transition from O -> M, which is surely fine, guess.
     // But that means that we need to manually clean up N.
@@ -211,7 +212,7 @@ class TransitionState extends stateMachine.State {
     moduleTicker.remove(this.module_);
     
     // Safely prepare the new module.
-    this.transition_(new PrepareState(this.oldModule_, moduleDef, deadline));
+    this.transition_(new PrepareState(this.oldModule_, module, deadline));
   }
 }
 
@@ -232,8 +233,8 @@ class DisplayState extends stateMachine.State {
     
     this.transition_ = transition;
   }
-  nextModule(moduleDef, deadline) {
-    this.transition_(new PrepareState(this.module_, moduleDef, deadline));
+  nextModule(module, deadline) {
+    this.transition_(new PrepareState(this.module_, module, deadline));
   }
 }
 
