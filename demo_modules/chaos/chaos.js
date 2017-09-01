@@ -56,6 +56,8 @@ class ChaosServer extends ModuleInterface.Server {
     this.shapes = [];
     // A counter indicating how many times we've added shapes.
     this.build = 0;
+    
+    return Promise.resolve();
   }
     
   tick(time, delta) {
@@ -186,6 +188,7 @@ class ChaosClient extends ModuleInterface.Client {
     this.canvas = this.surface.context;
     this.imageData = this.canvas.getImageData(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
     this.raw = new Array(this.surface.virtualRect.w * this.surface.virtualRect.h).fill(0);
+    return Promise.resolve();
   }
   
   initialize() {
