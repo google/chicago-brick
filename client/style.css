@@ -28,6 +28,7 @@ html, body, #containers {
     bottom: 0;
     position: absolute;
     overflow: hidden;
+    background-color: black;
 }
 canvas {
     width: 100%;

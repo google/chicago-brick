@@ -76,7 +76,7 @@ class IdleState extends stateMachine.State {
     }
   }
   nextModule(module, deadline) {
-    this.transition_(new PrepareState(new RunningModule(ModuleDef.emptyModule()), module, deadline));
+    this.transition_(new PrepareState(new RunningModule(library.modules['_empty']), module, deadline));
   }
 }
 

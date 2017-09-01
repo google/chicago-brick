@@ -109,9 +109,6 @@ const verify = (name, contents) => {
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef extends EventEmitter {
-  static emptyModule() {
-    return new EmptyModuleDef;
-  }
   constructor(name, pathOrBaseModule, title, author, config) {
     super();
     this.name = name;
@@ -246,14 +243,6 @@ class ModuleDef extends EventEmitter {
       title: this.title,
       author: this.author,
     };
-  }
-}
-
-class EmptyModuleDef extends ModuleDef {
-  constructor() {
-    super('_empty');
-    // TODO(applmak): ^ this hacky.
-    // However, b/c of the hack, this module will never become valid.
   }
 }
 

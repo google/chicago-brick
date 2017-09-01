@@ -93,10 +93,10 @@ class ModuleStateMachine extends stateMachine.Machine {
     }
 
     // Tell the clients to stop.
-    this.context_.clients.forEach(c => c.nextModule(ModuleDef.emptyModule(), deadline, this.context_.geo));
+    this.context_.clients.forEach(c => c.nextModule('_empty', deadline, this.context_.geo));
     
     // Tell the server to stop.
-    this.context_.server.nextModule(ModuleDef.emptyModule(), deadline);
+    this.context_.server.nextModule('_empty', deadline);
 
     // Set us back to idle, awaiting further instructions.
     this.transitionTo(new IdleState);

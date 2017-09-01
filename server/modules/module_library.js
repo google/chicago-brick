@@ -15,15 +15,24 @@ limitations under the License.
 
 'use strict';
 
-var EventEmitter = require('events');
-var assert = require('assert');
+const EventEmitter = require('events');
+const ModuleDef = require('server/modules/module_def');
+const assert = require('assert');
+
+class EmptyModuleDef extends ModuleDef {
+  constructor() {
+    super('_empty');
+    // TODO(applmak): ^ this hacky.
+    // However, b/c of the hack, this module will never become valid.
+    this.whenLoadedPromise = Promise.resolve(this);
+  }
+}
 
 class ModuleLibrary extends EventEmitter {
   constructor() {
     super();
     
-    // Map of name -> ModuleDef
-    this.modules = {};
+    this.reset();
   }
   register(def) {
     assert(!(def.name in this.modules), 'Def ' + def.name + ' already exists!');
@@ -33,15 +42,9 @@ class ModuleLibrary extends EventEmitter {
     def.on('reloaded', () => {
       this.emit('reloaded', def);
     });
-	
-    if (def.name == 'solid') {
-      this.register(def.extend('_faded_out', '', '', {
-        color: 'black'
-      }));
-    }
   }
   reset() {
-    this.modules = {};
+    this.modules = {'_empty': new EmptyModuleDef};
   }
 }
 
