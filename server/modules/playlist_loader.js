@@ -25,61 +25,54 @@ var Layout = require('server/modules/layout');
 var ModuleDef = require('server/modules/module_def');
 var library = require('server/modules/module_library');
 
+function parseJson(jsonString) {
+  return RJSON.parse(jsonString);
+}
+
 class PlaylistLoader {
 
   constructor(flags) {
     this.flags = flags;
   }
 
-  /** Returns the list of ModuleDefs for a layout specification. */
+  /** Returns the list of module names for a layout specification. */
   getModulesForLayout_(layout, collections) {
+    let names = [];
     if (this.flags.module) {
       // Copy the module name list.
-      let names = this.flags.module.slice(0);
+      names = this.flags.module.slice(0);
       if (names.length == 1) {
         // If we have one module, repeat it so transitions happen.
-        names = [names[0], names[0]];
+        // TODO(applmak): Once we support transition-on-reload, we don't need to do this.
+        names = names.concat(names);
       }
-      return names.map((n) => {
-        assert(n in library.modules, 'Loaded playlist referenced module ' +
-            n + ' which can\'t be found!');
-        return library.modules[n];
-      });
-    }
-    if (layout.collection) {
+      
+      names.forEach(m => assert(m in library.modules, `--module "${m}" can't be found!'`));
+    } else if (layout.collection) {
       // Special collection name to run all available modules.
       if (layout.collection == '__ALL__') {
-        return _.values(library.modules);
-      }
-      assert(
-          layout.collection in collections,
-          'Unknown collection name: ' + layout.collection);
-      
-      return collections[layout.collection].map((n) => {
-        assert(n in library.modules, 'Loaded playlist\'s collection ' +
-          layout.collection + ' references module ' + n +
-          ' which can\'t be found!');
-        return library.modules[n];
-      });
+        names = Object.keys(library.modules);
+      } else {
+        assert(
+            layout.collection in collections,
+            'Unknown collection name: ' + layout.collection);
+        names = collections[layout.collection];
+      }  
+      names.forEach(m => assert(m in library.modules, `Module "${m}" referenced by collection "${layout.collection}" can't be found!'`));
+    } else {
+      assert('modules' in layout, 'Missing modules list in layout def!');
+      names = layout.modules;
+      names.forEach(m => assert(m in library.modules, `Module "${m}" can't be found!'`));
     }
-    assert('modules' in layout, 'Missing modules list in layout def!');
-    return layout.modules.map((n) => {
-      assert(n in library.modules, 'Loaded playlist\'s layout mentions ' + 
-        'module ' + n + ' which can\'t be found!');
-      return library.modules[n];
-    });
+    return names;
   }
 
   /** Creates a playlist JSON object from command-line flags. */
   getInitialPlaylistConfig() {
+    // TODO(applmak): Verify this encoding.
+    // TODO(applmak): Does this API need to exist?
     var playlistConfig = fs.readFileSync(this.flags.playlist, 'utf8');
-    return this.parseJson(playlistConfig);
-  }
-
-  // TODO(applmak): This is weird API, because it doesn't have any side effects
-  // on 'this'.
-  parseJson(jsonString) {
-    return RJSON.parse(jsonString);
+    return parseJson(playlistConfig);
   }
 
   /** Parses a playlist JSON object into a list of Layouts. */
@@ -100,6 +93,7 @@ class PlaylistLoader {
       }
     }
 
+    // TODO(applmak): If module is specified on the command-line, ignore whatever is set in the playlist.
     return config.playlist.map((layout) => {
       return new Layout({
         modules: this.getModulesForLayout_(layout, config.collections),

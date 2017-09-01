@@ -135,7 +135,10 @@ class ModuleStateMachine extends stateMachine.Machine {
     random.shuffle(playlist);
     
     // Load the modules referenced in this playlist.
-    Promise.allSettled(playlist.map(m => m.whenLoadedPromise)).done(results => {
+    Promise.allSettled(playlist.map(m => library.modules[m].whenLoadedPromise)).done(results => {
+      // TODO(applmak): Omitting bad modules at THIS point is a weird choice.
+      // We should do it earlier, perhaps at load time.
+      
       // Check to see if any modules were rejected. If so, remove them from the 
       // playlist before requesting the state machine to execute anything.
       let filteredPlaylist = playlist.filter(
@@ -214,15 +217,15 @@ class DisplayState extends stateMachine.State {
     this.displayDuration_ = this.layout_.moduleDuration * 1000;
     this.deadline_ = deadline;
     
-    // The current moduleDef we are attempting to show or showing.
-    this.moduleDef_ = playlist[index];
+    // The current module we are attempting to show or showing.
+    this.module_ = playlist[index];
     
     this.timer_ = null;
   }
   enter(transition, context) {
     this.transition_ = transition;
     
-    debug(`Displaying ${this.moduleDef_.name} starting at ${this.deadline_}`);
+    debug(`Displaying ${this.module_} starting at ${this.deadline_}`);
     
     if (monitor.isEnabled()) {
       monitor.update({module: {
@@ -233,7 +236,8 @@ class DisplayState extends stateMachine.State {
     }
     
     // Tell the server to transition to this new module.
-    context.server.nextModule(this.moduleDef_, this.deadline_, context.geo);
+    context.server.nextModule(this.module_, this.deadline_, context.geo);
+    
     // Be prepared for the server to go to error state.
     let errorHandler = () => {
       if (!this.timer_) {
@@ -242,7 +246,7 @@ class DisplayState extends stateMachine.State {
       }
       if (context.server.state.getName() == 'ErrorState') {
         // We transitioned to the error state!
-        debug(`Error encountered in server module ${this.moduleDef_.name}`);
+        debug(`Error encountered in server module ${this.module_}`);
         // Allow the server to transition internally (back to idle).
         context.server.restartMachineAfterError();
         
@@ -263,7 +267,7 @@ class DisplayState extends stateMachine.State {
     context.server.getTransitionPromise().then(errorHandler);
 
     // Tell each client to transition to the module.
-    context.clients.forEach(client => client.nextModule(this.moduleDef_, this.deadline_, context.geo));
+    context.clients.forEach(client => client.nextModule(this.module_, this.deadline_, context.geo));
 
     // Transition to the next thing in the playlist when the deadline + the 
     // duration pass.
@@ -279,7 +283,7 @@ class DisplayState extends stateMachine.State {
   }
   newClient(client, geo) {
     // Tell the new guy to load the next module NOW.
-    client.nextModule(this.moduleDef_, this.deadline_, geo);
+    client.nextModule(this.module_, this.deadline_, geo);
   }
   playModule(moduleName) {
     // Find what index that is.
@@ -294,7 +298,7 @@ class DisplayState extends stateMachine.State {
       throw new Error('No modules left in playlist!');
     }
     let nextModuleIndex = (this.index_ + 1) % this.playlist_.length;
-    debug(`Begin preparing to transition to ${this.playlist_[nextModuleIndex].name} (item ${nextModuleIndex} of ${this.playlist_.length})`);
+    debug(`Begin preparing to transition to ${this.playlist_[nextModuleIndex]} (item ${nextModuleIndex} of ${this.playlist_.length})`);
     this.transition_(new DisplayState(this.playlist_, this.layout_, time.now(), nextModuleIndex));
   }
   getDeadline() {
