@@ -32,8 +32,8 @@ class ClientControlStateMachine extends stateMachine.Machine {
     // client.
     this.setContext({client});
   }
-  nextModule(module, deadline, geo) {
-    this.state.nextModule(module, deadline, geo);
+  playModule(module, deadline, geo) {
+    this.state.playModule(module, deadline, geo);
   }
   handleError(error) {
     logError(error);
@@ -54,7 +54,7 @@ class IdleState extends stateMachine.State {
   enter(transition) {
     this.transition_ = transition;
   }
-  nextModule(module, deadline, geo) {
+  playModule(module, deadline, geo) {
     this.transition_(new PrepareState(module, deadline, geo));
   }
   getModuleName() {
@@ -95,7 +95,7 @@ class PrepareState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  nextModule(module, deadline, geo) {
+  playModule(module, deadline, geo) {
     // Even if waiting for the client to do something, prepare a new module
     // immediately.
     this.transition_(new PrepareState(module, deadline, geo));
@@ -113,7 +113,7 @@ class DisplayState extends stateMachine.State {
   enter(transition) {
     this.transition_ = transition;
   }
-  nextModule(module, deadline, geo) {
+  playModule(module, deadline, geo) {
     this.transition_(new PrepareState(module, deadline, geo));
   }
   getModuleName() {

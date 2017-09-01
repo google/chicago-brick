@@ -97,7 +97,7 @@ define(function(require) {
       // Clear any pending transition.
       clearTimeout(this.timer_);
     }
-    nextModule(module) {
+    playModule(module) {
       this.willTransitionAway_ = true;
       
       // Suddenly, we aren't going to be fading from old -> current, and should 
@@ -179,7 +179,7 @@ define(function(require) {
       // Clear any timeout set.
       clearTimeout(this.timer_);
     }
-    nextModule(module) {
+    playModule(module) {
       this.savedModule_ = module;
     }
   }
@@ -199,7 +199,7 @@ define(function(require) {
         }});
       }
     }
-    nextModule(module) {
+    playModule(module) {
       this.transition_(new PrepareState(this.module_, module));
     }
   }
@@ -221,10 +221,10 @@ define(function(require) {
         logError(error);
       });
     }
-    nextModule(module) {
+    playModule(module) {
       if (monitor.isEnabled()) {
         monitor.update({client: {
-          event: `nextModule: ${module.name}`,
+          event: `playModule: ${module.name}`,
           time: timeManager.now(),
           deadline: module.deadline
         }});
@@ -232,7 +232,7 @@ define(function(require) {
       
       debug('Requested transition to module', module.name);
       // Transition according to current state rules.
-      this.state.nextModule(module);
+      this.state.playModule(module);
     }
   }
 

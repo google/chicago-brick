@@ -34,15 +34,15 @@ class ServerStateMachine extends stateMachine.Machine {
     // The geometry of our region of the wall. A single Polygon.
     this.setContext({geo: wallGeometry});
   }
-  nextModule(module, deadline) {
+  playModule(module, deadline) {
     if (monitor.isEnabled()) {
       monitor.update({server: {
         time: time.now(),
-        event: `nextModule: ${module}`,
+        event: `playModule: ${module}`,
         deadline: deadline
       }});
     }
-    this.state.nextModule(module, deadline);
+    this.state.playModule(module, deadline);
   }
   handleError(error) {
     if (monitor.isEnabled()) {
@@ -75,7 +75,7 @@ class IdleState extends stateMachine.State {
       }});
     }
   }
-  nextModule(module, deadline) {
+  playModule(module, deadline) {
     this.transition_(new PrepareState(new RunningModule(library.modules['_empty']), module, deadline));
   }
 }
@@ -90,7 +90,7 @@ class ErrorState extends stateMachine.State {
       }});
     }
   }
-  nextModule(module, deadline) {}
+  playModule(module, deadline) {}
 }
 
 class PrepareState extends stateMachine.State {
@@ -144,7 +144,7 @@ class PrepareState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  nextModule(module, deadline) {
+  playModule(module, deadline) {
     if (this.module_) {
       // If we are preparing to show some things, but then suddenly we're told
       // to go somewhere else, we need to meet the module interface contract by
@@ -204,7 +204,7 @@ class TransitionState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  nextModule(module, deadline) {
+  playModule(module, deadline) {
     // Hmm... so, we are in the middle of transition from O -> N, and we just got asked to show M.
     // We need to prepare M for display, and then transition from O -> M, which is surely fine, guess.
     // But that means that we need to manually clean up N.
@@ -233,7 +233,7 @@ class DisplayState extends stateMachine.State {
     
     this.transition_ = transition;
   }
-  nextModule(module, deadline) {
+  playModule(module, deadline) {
     this.transition_(new PrepareState(this.module_, module, deadline));
   }
 }
