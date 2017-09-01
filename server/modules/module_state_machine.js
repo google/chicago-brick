@@ -59,6 +59,9 @@ class ModuleStateMachine extends stateMachine.Machine {
       this.playModule(moduleDef.name);
     };
     library.on('reloaded', this.reloadHandler);
+    
+    /** True when the reload handler is installed. */
+    this.reloadHandlerInstalled_ = true;
   }
   handleError(error) {
     if (monitor.isEnabled()) {
@@ -82,7 +85,10 @@ class ModuleStateMachine extends stateMachine.Machine {
       }});
     }
     
-    library.removeListener('reloaded', this.reloadHandler);
+    if (this.reloadHandlerInstalled_) {
+      library.removeListener('reloaded', this.reloadHandler);
+      this.reloadHandlerInstalled_ = false;
+    }
 
     // Tell the clients to stop.
     this.context_.clients.forEach(c => c.nextModule(ModuleDef.emptyModule(), deadline, this.context_.geo));
@@ -149,6 +155,12 @@ class ModuleStateMachine extends stateMachine.Machine {
         event: moduleName
       }});
     }
+    
+    if (!this.reloadHandlerInstalled_) {
+      library.on('reloaded', this.reloadHandler);
+      this.reloadHandlerInstalled_ = true;
+    }
+    
     // Note: this will throw if the module is not in the current playlist, as
     // we have no def for it.
     // TODO(applmak): Handle this better.
