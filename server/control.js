@@ -17,6 +17,7 @@ limitations under the License.
 
 const debug = require('debug')('wall:control');
 const log = require('server/util/log');
+const wallGeometry = require('server/util/wall_geometry');
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
@@ -98,7 +99,18 @@ class Control {
   }
 
   getLayout(req, res) {
-    res.json(this.layoutSM.getLayout());
+    const ret = {};
+    let info = this.layoutSM.getCurrentModuleInfo();
+    ret.partitions = this.layoutSM.getPartition().map((p, i) => {
+      return {
+        geo: p, 
+        state: info[i].state,
+        deadline: info[i].deadline
+      };
+    });
+    ret.wall = wallGeometry.getGeo();
+    
+    res.json(ret);
   }
 
   skip(req, res) {

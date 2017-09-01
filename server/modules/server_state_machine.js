@@ -16,12 +16,12 @@ limitations under the License.
 'use strict';
 require('lib/promise');
 
-const ModuleDef = require('server/modules/module_def');
 const RunningModule = require('server/modules/module');
 const moduleTicker = require('server/modules/module_ticker');
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
 
+const assert = require('lib/assert');
 const debug = require('debug')('wall:server_state_machine');
 const library = require('server/modules/module_library');
 const logError = require('server/util/log').error(debug);
@@ -34,34 +34,15 @@ class ServerStateMachine extends stateMachine.Machine {
     // The geometry of our region of the wall. A single Polygon.
     this.setContext({geo: wallGeometry});
   }
-  playModule(module, deadline) {
+  playModule(moduleName, deadline) {
     if (monitor.isEnabled()) {
       monitor.update({server: {
         time: time.now(),
-        event: `playModule: ${module}`,
+        event: `playModule: ${moduleName}`,
         deadline: deadline
       }});
     }
-    this.state.playModule(module, deadline);
-  }
-  handleError(error) {
-    if (monitor.isEnabled()) {
-      monitor.update({server: {
-        time: time.now(),
-        event: error.toString(),
-      }});
-    }
-    
-    logError(error);
-    
-    // Now, the machine is stopped (no transitions will have any effect, ever).
-    // Also, we're either in the IdleState, or are trying to transition there.
-    // Before we restart the machine, schedule a transition to ErrorState.
-    this.transitionTo(new ErrorState);
-    this.driveMachine();
-  }
-  restartMachineAfterError() {
-    this.transitionTo(new IdleState);
+    this.state.playModule(moduleName, deadline);
   }
 }
 
@@ -75,22 +56,9 @@ class IdleState extends stateMachine.State {
       }});
     }
   }
-  playModule(module, deadline) {
-    this.transition_(new PrepareState(new RunningModule(library.modules['_empty']), module, deadline));
+  playModule(moduleName, deadline) {
+    this.transition_(new PrepareState(new RunningModule(library.modules['_empty']), moduleName, deadline));
   }
-}
-
-// Sink state. Machine can only change states via external transition.
-class ErrorState extends stateMachine.State {
-  enter() {
-    if (monitor.isEnabled()) {
-      monitor.update({server: {
-        time: time.now(),
-        state: this.getName(),
-      }});
-    }
-  }
-  playModule(module, deadline) {}
 }
 
 class PrepareState extends stateMachine.State {
@@ -99,9 +67,11 @@ class PrepareState extends stateMachine.State {
 
     // The current module on the screen.
     this.oldModule_ = oldModule;
+    assert(this.oldModule_, 'oldModule must be defined!');
 
     // The moduleDef to load.
     this.moduleDef_ = library.modules[moduleName];
+    assert(this.moduleDef_, `Somehow asked to show "${moduleName}" which is not registered!`);
 
     // The new module.
     this.module_ = null;
@@ -122,29 +92,32 @@ class PrepareState extends stateMachine.State {
     
     this.transition_ = transition;
     
-    // The module we're trying to load.
-    this.module_ = new RunningModule(this.moduleDef_, context.geo, this.deadline_);
-    this.module_.instantiate();
+    // Don't begin preparing the module until we've loaded it.
+    this.moduleDef_.whenLoadedPromise.then(() => {
+      // The module we're trying to load.
+      this.module_ = new RunningModule(this.moduleDef_, context.geo, this.deadline_);
+      this.module_.instantiate();
 
-    // Tell the old server module that it will be hidden soon.
-    this.oldModule_.willBeHiddenSoon(this.deadline_);
+      // Tell the old server module that it will be hidden soon.
+      this.oldModule_.willBeHiddenSoon(this.deadline_);
 
-    // Tell the server module that it will be shown soon.
-    this.module_.willBeShownSoon(this.deadline_).then(() => {
-      transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
-    });
+      // Tell the server module that it will be shown soon.
+      this.module_.willBeShownSoon(this.deadline_).then(() => {
+        transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
+      });
     
-    // Schedule a timer to trip if we take too long. We'll transition anyway,
-    // though.
-    this.timer_ = setTimeout(() => {
-      logError(new Error(`Preparation timeout for module ${this.moduleDef_.name}`));
-      transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
-    }, time.until(this.deadline_));
+      // Schedule a timer to trip if we take too long. We'll transition anyway,
+      // though.
+      this.timer_ = setTimeout(() => {
+        logError(new Error(`Preparation timeout for module ${this.moduleDef_.name}`));
+        transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
+      }, time.until(this.deadline_));
+    });
   }
   exit() {
     clearTimeout(this.timer_);
   }
-  playModule(module, deadline) {
+  playModule(moduleName, deadline) {
     if (this.module_) {
       // If we are preparing to show some things, but then suddenly we're told
       // to go somewhere else, we need to meet the module interface contract by
@@ -160,7 +133,7 @@ class PrepareState extends stateMachine.State {
     // and we'll tell it we're going to hide it again with a different deadline.
     // TODO(applmak): We should tighten up the API here to avoid the double
     // willBeHiddenSoon.
-    this.transition_(new PrepareState(this.oldModule_, module, deadline));
+    this.transition_(new PrepareState(this.oldModule_, moduleName, deadline));
   }
 }
 
@@ -204,7 +177,7 @@ class TransitionState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  playModule(module, deadline) {
+  playModule(moduleName, deadline) {
     // Hmm... so, we are in the middle of transition from O -> N, and we just got asked to show M.
     // We need to prepare M for display, and then transition from O -> M, which is surely fine, guess.
     // But that means that we need to manually clean up N.
@@ -212,7 +185,7 @@ class TransitionState extends stateMachine.State {
     moduleTicker.remove(this.module_);
     
     // Safely prepare the new module.
-    this.transition_(new PrepareState(this.oldModule_, module, deadline));
+    this.transition_(new PrepareState(this.oldModule_, moduleName, deadline));
   }
 }
 
@@ -233,8 +206,8 @@ class DisplayState extends stateMachine.State {
     
     this.transition_ = transition;
   }
-  playModule(module, deadline) {
-    this.transition_(new PrepareState(this.module_, module, deadline));
+  playModule(moduleName, deadline) {
+    this.transition_(new PrepareState(this.module_, moduleName, deadline));
   }
 }
 

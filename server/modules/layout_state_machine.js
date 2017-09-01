@@ -15,40 +15,36 @@ limitations under the License.
 
 'use strict';
 
-require('lib/promise');
-const _ = require('underscore');
 const debug = require('debug')('wall:layout_state_machine');
-const assert = require('lib/assert');
+const geometry = require('lib/geometry');
 
-const logError = require('server/util/log').error(debug);
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
-const wallGeometry = require('server/util/wall_geometry');
 const ClientControlStateMachine = require('server/modules/client_control_state_machine');
 const ModuleStateMachine = require('server/modules/module_state_machine');
 const monitor = require('server/monitoring/monitor');
 
-function describeLayout(partitions) {
-  return partitions.map(moduleSM => ({
-    geo: moduleSM.getGeo(),
-    deadline: moduleSM.getDeadlineOfNextTransition(),
-    state: moduleSM.state.getName(),
-  }));
+function isDisplayInPoly(rect, poly) {
+  // find the center point of this display:
+  var cx = rect.w / 2 + rect.x;
+  var cy = rect.h / 2 + rect.y;
+
+  return geometry.isInside(poly, cx, cy);
 }
 
 class LayoutStateMachine extends stateMachine.Machine {
   constructor() {
     super(new IdleState, debug);
 
+    // The partition we're trying to show next.
+    this.partition_ = null;
+
     this.setContext({
       // All known clients. Maps client ID to ClientControlStateMachine.
-      clients: {}
+      clients: {},
+      // Array of playlist index -> module name
+      modules: [],
     });
-  }
-  handleError(error) {
-    logError(error);
-    this.transitionTo(new IdleState);
-    this.driveMachine();
   }
   newClient(clientInfo) {
     if (monitor.isEnabled()) {
@@ -70,6 +66,7 @@ class LayoutStateMachine extends stateMachine.Machine {
           event: `dropClient: ${rect.serialize()}`,
         }});
       }
+      this.state.dropClient(rect, id);
     } else {
       if (monitor.isEnabled()) {
         monitor.update({layout: {
@@ -78,32 +75,30 @@ class LayoutStateMachine extends stateMachine.Machine {
         }});
       }
     }
-    this.state.dropClient(id);
     delete this.context_.clients[id];
   }
-  setPlaylist(layouts) {
-    this.state.setLayouts(layouts);
+  setPartition(partition) {
+    // The partition specifies polygons that divide the wall into independent spheres of control.
+    this.partition_ = partition;
+    
+    // Wipe the requested modules, as the number of partitions could easily change between set calls.
+    this.context_.modules.length = 0;
+    
     if (monitor.isEnabled()) {
       monitor.update({layout: {
         time: time.now(),
-        event: `setPlaylist`,
+        event: `setPartition: ${partition.length}`,
       }});
     }
+    
+    // Tell the wall to fade out and switch to this new partitioning scheme.
+    return this.state.fadeOut(partition);
   }
-  skipAhead() {
-    this.state.skipAhead();
-    if (monitor.isEnabled()) {
-      monitor.update({layout: {
-        time: time.now(),
-        event: `skipAhead`,
-      }});
-    }
+  getPartition() {
+    return this.partition_;
   }
-  getPlaylist() {
-    return this.state.getPlaylist();
-  }
-  getLayout() {
-    return this.state.getLayout();
+  getCurrentModuleInfo() {
+    return this.state.getCurrentModuleInfo();
   }
   getClientState() {
     return Object.keys(this.context_.clients)
@@ -116,14 +111,19 @@ class LayoutStateMachine extends stateMachine.Machine {
           };
         });
   }
-  playModule(moduleName) {
+  // Tell a partition to play a module.
+  playModule(partitionIndex, moduleName) {
     if (monitor.isEnabled()) {
       monitor.update({layout: {
         time: time.now(),
-        event: `playModule: ${moduleName}`,
+        event: `playModule: ${partitionIndex} ${moduleName}`,
       }});
     }
-    return this.state.playModule(moduleName);
+    
+    this.context_.modules[partitionIndex] = moduleName;
+    
+    // Tell the current state that a new partition has arrived.
+    return this.state.playModule(partitionIndex, moduleName);
   }
 }
 
@@ -138,108 +138,97 @@ class IdleState extends stateMachine.State {
     this.transition_ = transition;
   }
   newClient(client) {}
-  dropClient(id) {}
-  setLayouts(layouts) {
-    this.transition_(new DisplayState(layouts, 0));
+  dropClient(rect, id) {}
+  getCurrentModuleInfo() {
+    return [];
   }
-  skipAhead() {}
-  getPlaylist() {
-    // TODO(applmak): Fix the playlist reporting to not depend on the layout.
-    return {};
+  fadeOut(partition) {
+    // We can skip the normal fade out here because we're already faded out.
+    this.transition_(new PartitionState(partition));
+    return Promise.resolve();
   }
-  getLayout() {
-    return {
-      partitions: [],
-      wall: wallGeometry.getGeo(),
-    }
-  }
-  playModule(moduleName) {}
+  playModule(partitionIndex, moduleName) {}
 }
 
-class DisplayState extends stateMachine.State {
-  constructor(layouts, beginFadeInDeadline, index = 0) {
+class PartitionState extends stateMachine.State {
+  constructor(partition) {
     super();
     
-    this.layouts_ = layouts;
-    this.index_ = index;
-    
-    assert(index < layouts.length);
-    this.layout_ = layouts[index];
-    
-    this.timer_ = null;
-    
-    this.beginFadeInDeadline_ = beginFadeInDeadline;
+    // Array of polygons that define the layout.
+    this.partition_ = partition;
   }
   enter(transition, context) {
+    let deadline = time.now();
     if (monitor.isEnabled()) {
       monitor.update({layout: {
         time: time.now(),
         state: this.getName(),
-        deadline: this.beginFadeInDeadline_
+        deadline: deadline,
       }});
     }
     
     this.transition_ = transition;
-    this.partition_ = wallGeometry.partitionGeo(this.layout_.maxPartitions)
-        .map(geo => new ModuleStateMachine(context.clients, geo));
-    debug(`Fading ${this.partition_.length} layouts with ${this.layout_.modules.join(', ')} in at ${this.beginFadeInDeadline_}`);
-    this.partition_.forEach(msm => msm.loadPlaylist(this.layout_, this.beginFadeInDeadline_));
+    
+    // Make a module state machine (that manages the lifecycle of the module interface for both
+    // client and server) for each partition.
+    this.moduleSMs_ = this.partition_.map(geo => new ModuleStateMachine(context.clients, geo));
 
-    if (this.layouts_.length > 1) {
-      this.timer_ = setTimeout(() => {
-        transition(new FadeOutState(this.layouts_, this.index_, this.partition_));
-      }, this.layout_.duration * 1000);
-    }
-  }
-  exit() {
-    clearTimeout(this.timer_);
+    // TODO(applmak): Add information to this error such as which partition gave the error.
+    this.moduleSMs_.forEach(msm => msm.setErrorListener(error => {
+      throw error;
+    }));
+    
+    // Tell the new module state machines to play any requested modules for this state (if any arrived
+    // since we we were told to go here, say, during the fade).
+    this.moduleSMs_.forEach((msm, i) => {
+      if (context.modules[i]) {
+        msm.playModule(context.modules[i], deadline);
+      }
+    });
+    
+    // We're done until a new partition arrives.
   }
   newClient(clientInfo) {
     // Assign to a partition.
-    let moduleSM = this.partition_.find(sm => sm.newClient(clientInfo));
-    if (!moduleSM) {
+    let index = this.partition_.findIndex(geo => isDisplayInPoly(clientInfo.rect, geo));
+    if (index == -1) {
       // Client tried to connect outside the wall geometry.
-      throw new Error(`New client ${clientInfo.socket.id} has no module sm!`);
+      throw new Error(`New client ${clientInfo.socket.id} is not inside of the wall!`);
     }
+    this.moduleSMs_[index].newClient(clientInfo);
   }
-  dropClient(id) {
-    this.partition_.forEach(m => m.dropClient(id));
+  dropClient(rect, id) {
+    let index = this.partition_.findIndex(geo => isDisplayInPoly(rect, geo));
+    if (index == -1) {
+      // Client tried to drop outside the known wall geometry... weird.
+      throw new Error(`Client ${id} is not inside of the wall!`);
+    }
+    this.moduleSMs_[index].dropClient(id);
   }
-  skipAhead() {
-    this.transition_(new FadeOutState(this.layouts_, this.index_, this.partition_));
+  fadeOut(partition) {
+    return new Promise(resolve => this.transition_(new FadeOutState(partition, this.moduleSMs_, resolve)));
   }
-  setLayouts(layouts) {
-    this.transition_(new FadeOutState(layouts, -1, this.partition_));
+  playModule(partitionIndex, moduleName) {
+    this.moduleSMs_[partitionIndex].playModule(moduleName, time.now());
   }
-  getPlaylist() {
-    // TODO(applmak): Fix the playlist reporting to not depend on the layout.
-    return {
-      playlist: this.layouts_,
-      index: this.index_,
-    };
-  }
-  getLayout() {
-    return {
-      partitions: describeLayout(this.partition_),
-      wall: wallGeometry.getGeo(),
-    };
-  }
-  playModule(moduleName) {
-    this.partition_.forEach(sm => sm.playModule(moduleName));
+  getCurrentModuleInfo() {
+    return this.moduleSMs_.map(msm => ({
+      state: msm.state.getName(),
+      deadline: msm.getDeadline(),
+    }));
   }
 }
 
 class FadeOutState extends stateMachine.State {
-  constructor(layouts, index, partition) {
+  constructor(partition, moduleSMs, resolve) {
     super();
     
-    this.layouts_ = layouts;
-    this.index_ = index;
     this.partition_ = partition;
-    
-    assert(index < layouts.length);
+    this.moduleSMs_ = moduleSMs;
     
     this.timer_ = null;
+    
+    this.resolves_ = [resolve];
   }
   enter(transition) {
     let now = time.now();
@@ -255,10 +244,10 @@ class FadeOutState extends stateMachine.State {
     
     this.transition_ = transition;
     debug(`Fading out ${this.partition_.length} layouts at ${deadline} ms`);
-    this.partition_.forEach(sm => sm.fadeToBlack(now));
+    this.moduleSMs_.forEach(sm => sm.fadeToBlack(now));
     this.timer_ = setTimeout(() => {
-      let index = (this.index_ + 1) % this.layouts_.length;
-      transition(new DisplayState(this.layouts_, deadline, index));
+      transition(new PartitionState(this.partition_));
+      this.resolves_.forEach(r => r());
     }, time.until(deadline));
   }
   exit() {
@@ -266,25 +255,17 @@ class FadeOutState extends stateMachine.State {
   }
   newClient(clientInfo) {}
   dropClient(id) {}
-  skipAhead() {}
-  setLayouts(layouts) {
-    this.layouts_ = layouts;
-    this.index_ = -1;
+  fadeOut(partition) {
+    this.partition_ = partition;
+    return new Promise(resolve => this.resolves_.push(resolve));
   }
-  getPlaylist() {
-    // TODO(applmak): Fix the playlist reporting to not depend on the layout.
-    return {
-      playlist: this.layouts_,
-      index: this.index_,
-    };
+  playModule(partitionIndex, moduleName) {}
+  getCurrentModuleInfo() {
+    return this.moduleSMs_.map(msm => ({
+      state: msm.state.getName(),
+      deadline: Infinity,
+    }));
   }
-  getLayout() {
-    return {
-      partitions: describeLayout(this.partition_),
-      wall: wallGeometry.getGeo(),
-    };
-  }
-  playModule(moduleName) {}
 }
 
 module.exports = LayoutStateMachine;

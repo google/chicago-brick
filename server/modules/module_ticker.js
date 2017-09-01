@@ -42,12 +42,14 @@ tick();
 
 module.exports = {
   add: function(module, globals) {
-    modulesToTick.push(module);
-    debug(
-        'Add: We are now ticking ' + modulesToTick.length + ' modules:',
-        modulesToTick.map((m) => m.moduleDef.name).join(', '));
-    if (modulesToTick.length > 2) {
-      debug('FAILED!');
+    if (module.instance) {
+      modulesToTick.push(module);
+      debug(
+          'Add: We are now ticking ' + modulesToTick.length + ' modules:',
+          modulesToTick.map((m) => m.moduleDef.name).join(', '));
+      if (modulesToTick.length > 2) {
+        debug('FAILED!');
+      }
     }
   },
   remove: function(module) {
@@ -57,7 +59,7 @@ module.exports = {
         return false;
       }
       return true;
-    })
+    });
     debug('Remove: We are now ticking ' + modulesToTick.length + ' modules',
         modulesToTick.map((m) => m.moduleDef.name).join(', '));
   }

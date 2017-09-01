@@ -20,6 +20,7 @@ const commandLineArgs = require('command-line-args');
 const commandLineUsage = require('command-line-usage');
 const debug = require('debug')('wall:server');
 
+const playlistDriver = require('server/modules/playlist_driver');
 const game = require('./game/game');
 const network = require('server/network/network');
 const LayoutStateMachine = require('server/modules/layout_state_machine');
@@ -125,10 +126,6 @@ peerServer.on('disconnect', function(id) {
 
 network.openWebSocket(server);
 
-debug('Running playlist of ' + playlist.length + ' items');
-
-layoutSM.setPlaylist(playlist);
-
 network.on('new-client', function(client) {
   layoutSM.newClient(client);
 });
@@ -140,3 +137,6 @@ network.on('lost-client', function(id) {
 if (flags.enable_monitoring) {
   monitor.enable();
 }
+
+debug('Running playlist of ' + playlist.length + ' items');
+playlistDriver.driveStateMachine(playlist, layoutSM);
