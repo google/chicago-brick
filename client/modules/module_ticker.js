@@ -15,10 +15,11 @@ limitations under the License.
 
 define(function(require) {
   'use strict';
-  var time = require('client/util/time');
-  var debug = require('client/util/debug')('wall:module_ticker');
-  var error = require('client/util/log').error(debug);
-
+  const time = require('client/util/time');
+  const debug = require('client/util/debug')('wall:module_ticker');
+  const error = require('client/util/log').error(debug);
+  const monitor = require('client/monitoring/monitor');
+  
   // An array of {module:Module, globals:Object}.
   var modulesToDraw = [];
 
@@ -42,15 +43,15 @@ define(function(require) {
   window.requestAnimationFrame(draw);
 
   return {
-    add: function(module, globals) {
-      modulesToDraw.push({module: module, globals: globals});
+    add: function(name, module, globals) {
+      modulesToDraw.push({name, module, globals});
       debug('Add: We are now drawing ' + modulesToDraw.length + ' modules');
+      monitor.markDrawnModules(modulesToDraw.map(m => m.name));
     },
     remove: function(module) {
-      modulesToDraw = modulesToDraw.filter(function(pair) {
-        return pair.module !== module;
-      });
+      modulesToDraw = modulesToDraw.filter(pair => pair.module !== module);
       debug('Remove: We are now drawing ' + modulesToDraw.length + ' modules');
+      monitor.markDrawnModules(modulesToDraw.map(m => m.name));
     }
   };
 });

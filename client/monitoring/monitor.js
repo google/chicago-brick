@@ -37,6 +37,7 @@ define(function(require) {
   class ClientState {
     constructor() {
       this.smEvents = [];
+      this.modulesToDraw = [];
     }
   }
   
@@ -147,6 +148,9 @@ define(function(require) {
     let timeDriftCanvas = document.createElement('canvas');
     timeDrift.appendChild(timeDriftCanvas);
     
+    let modulesToDrawDiv = document.createElement('div');
+    modulesToDrawDiv.className = 'modules-to-draw';
+
     // Add top-to-bottom:
     l.appendChild(timeDrift);
     l.appendChild(instantFps);
@@ -157,6 +161,8 @@ define(function(require) {
     l.appendChild(timeLabels);
     
     l.appendChild(beam);
+
+    l.appendChild(modulesToDrawDiv);
 
     return l;
   };
@@ -548,34 +554,40 @@ define(function(require) {
     monitoringElement.querySelector('.label.now').textContent = (now / 1000).toFixed(1);
     monitoringElement.querySelector('.label.late').textContent = (lateTime / 1000).toFixed(1);
     
+    // Update drawn modules.
+    monitoringElement.querySelector('.modules-to-draw').textContent = clientState.modulesToDraw.join('\n');
+
     if (enabled) {
       window.requestAnimationFrame(updateUI);
     }
   };
   
   return {
-    isEnabled: function() {
+    isEnabled() {
       return enabled;
     },
-    enable: function() {
+    enable() {
       enabled = true;
       network.whenReady.then(watchForModelChanges);
       monitoringElement = createMonitoringLayer();
       document.body.appendChild(monitoringElement);
       updateUI();
     },
-    disable: function() {
+    disable() {
       enabled = false;
       network.whenReady.then(stopWatchingModelChanges);
       monitoringElement.remove();
       monitoringElement = undefined;
     },
-    update: function(change) {
+    update(change) {
       if (enabled) {
         if (change.client) {
           clientState.smEvents.push(change.client);
         }
       }
+    },
+    markDrawnModules(modulesToDraw) {
+      clientState.modulesToDraw = modulesToDraw;
     }
   };
 });

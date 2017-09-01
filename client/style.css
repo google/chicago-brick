@@ -91,6 +91,16 @@ div[debug] {
     left: 50%;
 }
 
+.modules-to-draw {
+  position: absolute;
+  background-color: rgba(0, 0, 0, 0.4);
+  width: 2in;
+  top: 0;
+  right: 0;
+  white-space: pre;
+  text-align: right;
+}
+
 .monitor {
     color: white;
     position: absolute;

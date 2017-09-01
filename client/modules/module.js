@@ -195,7 +195,7 @@ define(function(require) {
         error(e);
         return false;
       }
-      moduleTicker.add(this.instance, this.globals);
+      moduleTicker.add(this.name, this.instance, this.globals);
       this.container.style.transition =
           'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
       this.container.style.opacity = 1.0;
