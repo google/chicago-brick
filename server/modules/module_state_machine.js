@@ -17,11 +17,9 @@ limitations under the License.
 require('lib/promise');
 
 const ModuleDef = require('server/modules/module_def');
-const _ = require('underscore');
 const debug = require('debug')('wall:module_state_machine');
 const random = require('random-js')();
 const assert = require('lib/assert');
-const logError = require('server/util/log').error(debug);
 
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
@@ -64,8 +62,14 @@ class ModuleStateMachine extends stateMachine.Machine {
       this.nextModule();
     });
 
-    this.reloadHandler = moduleDef => {
-      this.playModule(moduleDef.name);
+    this.reloadHandler = reloadedModule => {
+      // If the module that was just reloaded is the same one that we are playing, we should reload it.
+      let currentModuleName = this.state.getCurrentModuleName();
+      if (reloadedModule.name == currentModuleName) {
+        this.playModule(reloadedModule.name);
+      } else {
+        // Otherwise, we ignore the reload event.
+      }
     };
     library.on('reloaded', this.reloadHandler);
     
@@ -198,6 +202,9 @@ class IdleState extends stateMachine.State {
     // ... no next module!
     throw new Error('No next module!');
   }
+  getCurrentModuleName() {
+    return '';
+  }
   getDeadline() {
     return Infinity;
   }
@@ -287,7 +294,7 @@ class DisplayState extends stateMachine.State {
   }
   playModule(moduleName) {
     // Find what index that is.
-    var index = this.playlist_.findIndex(m => m.name == moduleName);
+    var index = this.playlist_.findIndex(m => m == moduleName);
     if (index == -1) {
       throw new Error(`Unable to find module ${moduleName} in the playlist!`);
     }
@@ -300,6 +307,9 @@ class DisplayState extends stateMachine.State {
     let nextModuleIndex = (this.index_ + 1) % this.playlist_.length;
     debug(`Begin preparing to transition to ${this.playlist_[nextModuleIndex]} (item ${nextModuleIndex} of ${this.playlist_.length})`);
     this.transition_(new DisplayState(this.playlist_, this.layout_, time.now(), nextModuleIndex));
+  }
+  getCurrentModuleName() {
+    return this.module_;
   }
   getDeadline() {
     return this.deadline_ + this.displayDuration_;
