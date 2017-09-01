@@ -26,6 +26,7 @@ define(function(require) {
   
   class ServerState {
     constructor() {
+      this.playlistEvents = [];
       this.moduleSm = [];
       this.serverSm = [];
       this.layoutSm = [];
@@ -54,6 +55,9 @@ define(function(require) {
     if (change.server) {
       serverState.serverSm.push(change.server);
     }
+    if (change.playlist) {
+      serverState.playlistEvents.push(change.playlist);
+    }
     if (change.interrupts) {
       // An extern event has occurred that should be marked on the monitor.
       // For example, a reload request.
@@ -61,15 +65,17 @@ define(function(require) {
     }
   };
   
+  let handleManyModelChanges = changes => changes.length ? changes.forEach(handleModelChange) : handleModelChange(changes);
+  
   let watchForModelChanges = () => {
     // Open connection to the server, monitor for updates to the model.
     network.send('enable-monitoring');
-    network.on('monitor', handleModelChange);
+    network.on('monitor', handleManyModelChanges);
   }
   
   let stopWatchingModelChanges = () => {
     network.send('disable-monitoring');
-    network.removeListener('monitor', handleModelChange);
+    network.removeListener('monitor', handleManyModelChanges);
   }
   
   let enabled = false;
@@ -106,6 +112,12 @@ define(function(require) {
     timeLabels.appendChild(earliestTime);
     timeLabels.appendChild(nowTime);
     timeLabels.appendChild(latestTime);
+    
+    let playlist = document.createElement('div');
+    playlist.className = 'playlist timeline';
+    playlist.textContent = 'Playlist';
+    let playlistCanvas = document.createElement('canvas');
+    playlist.appendChild(playlistCanvas);
     
     let layoutSM = document.createElement('div');
     layoutSM.className = 'layout-sm timeline';
@@ -150,7 +162,7 @@ define(function(require) {
     
     let modulesToDrawDiv = document.createElement('div');
     modulesToDrawDiv.className = 'modules-to-draw';
-
+    
     // Add top-to-bottom:
     l.appendChild(timeDrift);
     l.appendChild(instantFps);
@@ -158,6 +170,7 @@ define(function(require) {
     l.appendChild(serverSM);
     l.appendChild(moduleSM);
     l.appendChild(layoutSM);
+    l.appendChild(playlist);
     l.appendChild(timeLabels);
     
     l.appendChild(beam);
@@ -226,6 +239,13 @@ define(function(require) {
       }
       
       this.canvas = canvas;
+      
+      // TODO(applmak): Enable this for high-dpi devices, and fix the display.
+      // let ratio = window.devicePixelRatio;
+      // let {left, top, bottom, right} = this.canvas.getBoundingClientRect();
+      // canvas.width = Math.floor(right * ratio) - Math.floor(left * ratio);
+      // canvas.height = Math.floor(bottom * ratio) - Math.floor(top * ratio);
+      
       this.width = canvas.width;
       this.height = canvas.height;
       this.c = canvas.getContext('2d');
@@ -343,7 +363,7 @@ define(function(require) {
       this.canvas.bounds.domain.max = lateTime;
       this.canvas.strokeStyle(255, 255, 255);
       this.canvas.fillStyle(255, 255, 255);
-      this.canvas.font('10px monospace', 'bolder');
+      this.canvas.font('12pt monospace', 'bolder');
 
       // Draw oldest state.
       let oldestState = events.filter(e => e.state).shift();      
@@ -437,7 +457,7 @@ define(function(require) {
   
   let localFrameTimes, syncedFrameTimes, localTimeDeltas, syncedTimeDeltas;
   let driftDeltaTimes;
-  let clientSmTimeline, serverSmTimeline, moduleSmTimeline, layoutSmTimeline;
+  let clientSmTimeline, serverSmTimeline, moduleSmTimeline, layoutSmTimeline, playlistTimeline;
   let updateUI = () => {
     let now = time.now();
     let width = monitoringElement.offsetWidth;
@@ -548,6 +568,12 @@ define(function(require) {
       layoutSmTimeline = new StateTimeline(monitoringElement.querySelector('.layout-sm.timeline canvas'));
     }
     serverState.layoutSm = layoutSmTimeline.draw(serverState.layoutSm, earlyTime, lateTime);    
+    
+    // Update server playlist
+    if (!playlistTimeline) {
+      playlistTimeline = new StateTimeline(monitoringElement.querySelector('.playlist.timeline canvas'));
+    }
+    serverState.playlistEvents = playlistTimeline.draw(serverState.playlistEvents, earlyTime, lateTime);    
     
     // Update the time labels.
     monitoringElement.querySelector('.label.early').textContent = (earlyTime / 1000).toFixed(1);
