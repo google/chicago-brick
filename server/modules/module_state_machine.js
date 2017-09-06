@@ -93,10 +93,10 @@ class ModuleStateMachine extends stateMachine.Machine {
     }
 
     // Tell the clients to stop.
-    this.context_.clients.forEach(c => c.nextModule('_empty', deadline, this.context_.geo));
+    this.context_.clients.forEach(c => c.playModule('_empty', deadline, this.context_.geo));
     
     // Tell the server to stop.
-    this.context_.server.nextModule('_empty', deadline);
+    this.context_.server.playModule('_empty', deadline);
 
     // Set us back to idle, awaiting further instructions.
     this.transitionTo(new IdleState);
@@ -243,7 +243,7 @@ class DisplayState extends stateMachine.State {
     }
     
     // Tell the server to transition to this new module.
-    context.server.nextModule(this.module_, this.deadline_, context.geo);
+    context.server.playModule(this.module_, this.deadline_, context.geo);
     
     // Be prepared for the server to go to error state.
     let errorHandler = () => {
@@ -274,7 +274,7 @@ class DisplayState extends stateMachine.State {
     context.server.getTransitionPromise().then(errorHandler);
 
     // Tell each client to transition to the module.
-    context.clients.forEach(client => client.nextModule(this.module_, this.deadline_, context.geo));
+    context.clients.forEach(client => client.playModule(this.module_, this.deadline_, context.geo));
 
     // Transition to the next thing in the playlist when the deadline + the 
     // duration pass.
@@ -290,7 +290,7 @@ class DisplayState extends stateMachine.State {
   }
   newClient(client, geo) {
     // Tell the new guy to load the next module NOW.
-    client.nextModule(this.module_, this.deadline_, geo);
+    client.playModule(this.module_, this.deadline_, geo);
   }
   playModule(moduleName) {
     // Find what index that is.

@@ -15,20 +15,20 @@ limitations under the License.
 
 'use strict';
 
-var PeerServer = require('peer').PeerServer;
+const PeerServer = require('peer').PeerServer;
 const commandLineArgs = require('command-line-args');
 const commandLineUsage = require('command-line-usage');
-var debug = require('debug')('wall:server');
+const debug = require('debug')('wall:server');
 
-var game = require('./game/game');
-var network = require('server/network/network');
-var LayoutStateMachine = require('server/modules/layout_state_machine');
-var PlaylistLoader = require('server/modules/playlist_loader');
-var wallGeometry = require('server/util/wall_geometry');
-var Control = require('server/control');
-var webapp = require('server/webapp');
-var credentials = require('server/util/credentials');
-var path = require('path');
+const game = require('./game/game');
+const network = require('server/network/network');
+const LayoutStateMachine = require('server/modules/layout_state_machine');
+const PlaylistLoader = require('server/modules/playlist_loader');
+const wallGeometry = require('server/util/wall_geometry');
+const Control = require('server/control');
+const webapp = require('server/webapp');
+const credentials = require('server/util/credentials');
+const path = require('path');
 const monitor = require('server/monitoring/monitor');
 
 const FLAG_DEFS = [
@@ -98,8 +98,8 @@ if (playlist.length === 0) {
 
 var app = webapp.create(flags);
 
-var manager = new LayoutStateMachine;
-var control = new Control(manager, playlistLoader);
+const layoutSM = new LayoutStateMachine;
+var control = new Control(layoutSM, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);
@@ -127,14 +127,14 @@ network.openWebSocket(server);
 
 debug('Running playlist of ' + playlist.length + ' items');
 
-manager.setPlaylist(playlist);
+layoutSM.setPlaylist(playlist);
 
 network.on('new-client', function(client) {
-  manager.newClient(client);
+  layoutSM.newClient(client);
 });
 
 network.on('lost-client', function(id) {
-  manager.dropClient(id);
+  layoutSM.dropClient(id);
 });
 
 if (flags.enable_monitoring) {
