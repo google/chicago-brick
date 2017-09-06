@@ -242,22 +242,24 @@ class FadeOutState extends stateMachine.State {
     this.timer_ = null;
   }
   enter(transition) {
-    let deadline = time.inFuture(5000);
+    let now = time.now();
+    const FADE_OUT_DURATION = 5000;
+    let deadline = now + FADE_OUT_DURATION;
     if (monitor.isEnabled()) {
       monitor.update({layout: {
-        time: time.now(),
+        time: now,
         state: this.getName(),
-        deadline: deadline
+        deadline: deadline,
       }});
     }
     
     this.transition_ = transition;
     debug(`Fading out ${this.partition_.length} layouts at ${deadline} ms`);
-    this.partition_.forEach(sm => sm.fadeToBlack(deadline));
+    this.partition_.forEach(sm => sm.fadeToBlack(now));
     this.timer_ = setTimeout(() => {
       let index = (this.index_ + 1) % this.layouts_.length;
-      transition(new DisplayState(this.layouts_, deadline + 5000, index));
-    }, 5000);
+      transition(new DisplayState(this.layouts_, deadline, index));
+    }, time.until(deadline));
   }
   exit() {
     clearTimeout(this.timer_);

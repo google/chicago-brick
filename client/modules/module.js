@@ -106,11 +106,12 @@ define(function(require) {
     }
 
     instantiate() {
+      this.container = createNewContainer(this.name);
+      
       if (!this.path) {
         return Promise.resolve();
       }
       
-      this.container = createNewContainer(this.name);
       this.network = network.forModule(
         `${this.geo.extents.serialize()}-${this.deadline}`);
       let openNetwork = this.network.open();
@@ -186,6 +187,10 @@ define(function(require) {
 
     // Returns true if module is still OK.
     fadeIn(deadline) {
+      this.container.style.transition =
+          'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
+      this.container.style.opacity = 1.0;
+      
       if (!this.path) {
         return true;
       }
@@ -196,9 +201,6 @@ define(function(require) {
         return false;
       }
       moduleTicker.add(this.name, this.instance, this.globals);
-      this.container.style.transition =
-          'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
-      this.container.style.opacity = 1.0;
       Promise.delay(timeManager.until(deadline)).done(() => {
         this.titleCard.enter();
         try {
@@ -211,6 +213,11 @@ define(function(require) {
     }
 
     fadeOut(deadline) {
+      if (this.container) {
+        this.container.style.transition =
+            'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
+        this.container.style.opacity = 0.0;
+      }
       if (!this.path) {
         return true;
       }
@@ -220,13 +227,14 @@ define(function(require) {
       } catch(e) {
         error(e);
       }
-      this.container.style.transition =
-          'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
-      this.container.style.opacity = 0.0;
       return true;
     }
 
     dispose() {
+      if (this.container) {
+        this.container.remove();
+        this.container = null;
+      }
       if (!this.path) {
         return true;
       }
@@ -242,8 +250,6 @@ define(function(require) {
         error(e);
       }
       
-      this.container.remove();
-      this.container = null;      
       return true;
     }
   }
