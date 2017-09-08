@@ -17,12 +17,10 @@ limitations under the License.
 
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
-const wallGeometry = require('server/util/wall_geometry');
 
 const debug = require('debug')('wall:client_control_state_machine');
 const library = require('server/modules/module_library');
 const logError = require('server/util/log').error(debug);
-const monitor = require('server/monitoring/monitor');
 
 class ClientControlStateMachine extends stateMachine.Machine {
   constructor(client) {
@@ -89,7 +87,7 @@ class PrepareState extends stateMachine.State {
     });
 
     this.timer_ = setTimeout(() => {
-      transition(new DisplayState(module));
+      transition(new DisplayState(this.moduleDef_.name));
     }, time.until(this.deadline_));
   }
   exit() {
@@ -106,9 +104,9 @@ class PrepareState extends stateMachine.State {
 }
 
 class DisplayState extends stateMachine.State {
-  constructor(module) {
+  constructor(moduleName) {
     super();
-    this.module_ = module;
+    this.moduleName_ = moduleName;
   }
   enter(transition) {
     this.transition_ = transition;
@@ -117,7 +115,7 @@ class DisplayState extends stateMachine.State {
     this.transition_(new PrepareState(module, deadline, geo));
   }
   getModuleName() {
-    return this.module_;
+    return this.moduleName_;
   }
 }
 

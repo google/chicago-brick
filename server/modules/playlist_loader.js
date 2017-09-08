@@ -17,7 +17,6 @@ limitations under the License.
 
 var RJSON = require('relaxed-json');
 var assert = require('assert');
-var _ = require('underscore');
 var debug = require('debug')('wall:playlist_loader');
 var fs = require('fs');
 
