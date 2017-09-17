@@ -42,7 +42,7 @@ function loadJson(file) {
 class WindServer extends ModuleInterface.Server {
   willBeShownSoon(container, deadline) {
     return Promise.resolve();
-	}
+  }
 }
 
 class WindClient extends ModuleInterface.Client {
@@ -66,18 +66,24 @@ class WindClient extends ModuleInterface.Client {
       this.mapData = mapData;
     });
 
-    this.forecastLoaded = loadJson('current-wind-surface-level-gfs-1.0.json').then((file) => {
-      this.grid = new ForecastGrid(file);
-      this.field = VectorField.create(this.projection, this.grid);
-    });
+    this.forecastLoaded = loadJson('current-wind-surface-level-gfs-1.0.json')
+      .then((file) => {
+        this.grid = new ForecastGrid(file);
+        this.field = VectorField.create(this.projection, this.grid);
+      });
     return Promise.all([this.mapLoaded, this.forecastLoaded]);
   }
 
   draw(time, delta) {
     if (!this.drawn) {
       this.drawn = true;
-      this.mapLoaded.then(() => this.drawMap(this.projection, this.mapSurface.context, this.mapData));
-      this.forecastLoaded.then(() => this.drawOverlay(this.overlaySurface.context, this.field));
+      this.mapLoaded.then(() => {
+        return this.drawMap(this.projection, this.mapSurface.context,
+            this.mapData);
+      });
+      this.forecastLoaded.then(() => {
+        return this.drawOverlay(this.overlaySurface.context, this.field);
+      });
     }
   }
 
@@ -132,7 +138,7 @@ class WindClient extends ModuleInterface.Client {
   }
 
   drawOverlay(context, field) {
-		context.putImageData(field.overlay, 0, 0);
+    context.putImageData(field.overlay, 0, 0);
   }
 }
 

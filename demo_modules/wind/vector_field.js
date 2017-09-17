@@ -41,13 +41,13 @@ function ensureNumber(num, fallback) {
  * @returns {Object} the projection bounds clamped to the specified view.
  */
 function clampedBounds(bounds, width, height) {
-	var upperLeft = bounds[0];
-	var lowerRight = bounds[1];
-	var x = Math.max(Math.floor(ensureNumber(upperLeft[0], 0)), 0);
-	var y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
-	var xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
-	var yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
-	return {x: x, y: y, xMax: xMax, yMax: yMax, width: xMax - x + 1, height: yMax - y + 1};
+  var upperLeft = bounds[0];
+  var lowerRight = bounds[1];
+  var x = Math.max(Math.floor(ensureNumber(upperLeft[0], 0)), 0);
+  var y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
+  var xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
+  var yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
+  return {x: x, y: y, xMax: xMax, yMax: yMax, width: xMax - x + 1, height: yMax - y + 1};
 }
 
 /**
@@ -74,21 +74,21 @@ function clampedBounds(bounds, width, height) {
  * @returns {Array} array of scaled derivatives [dx/dλ, dy/dλ, dx/dφ, dy/dφ]
  */
 function distortion(projection, λ, φ, x, y) {
-	var hλ = λ < 0 ? H : -H;
-	var hφ = φ < 0 ? H : -H;
-	var pλ = projection([λ + hλ, φ]);
-	var pφ = projection([λ, φ + hφ]);
+  var hλ = λ < 0 ? H : -H;
+  var hφ = φ < 0 ? H : -H;
+  var pλ = projection([λ + hλ, φ]);
+  var pφ = projection([λ, φ + hφ]);
 
-	// Meridian scale factor (see Snyder, equation 4-3), where R = 1. This handles issue where length of 1° λ
-	// changes depending on φ. Without this, there is a pinching effect at the poles.
-	var k = Math.cos(φ / 360 * τ);
+  // Meridian scale factor (see Snyder, equation 4-3), where R = 1. This handles issue where length of 1° λ
+  // changes depending on φ. Without this, there is a pinching effect at the poles.
+  var k = Math.cos(φ / 360 * τ);
 
-	return [
-		(pλ[0] - x) / hλ / k,
-		(pλ[1] - y) / hλ / k,
-		(pφ[0] - x) / hφ,
-		(pφ[1] - y) / hφ
-	];
+  return [
+    (pλ[0] - x) / hλ / k,
+    (pλ[1] - y) / hλ / k,
+    (pφ[0] - x) / hφ,
+    (pφ[1] - y) / hφ
+  ];
 }
 
 /**
@@ -96,51 +96,51 @@ function distortion(projection, λ, φ, x, y) {
  * vector is modified in place and returned by this function.
  */
 function distort(projection, λ, φ, x, y, scale, vector) {
-	var u = vector[0] * scale;
-	var v = vector[1] * scale;
-	var d = distortion(projection, λ, φ, x, y);
+  var u = vector[0] * scale;
+  var v = vector[1] * scale;
+  var d = distortion(projection, λ, φ, x, y);
 
-	// Scale distortion vectors by u and v, then add.
-	vector[0] = d[0] * u + d[2] * v;
-	vector[1] = d[1] * u + d[3] * v;
-	return vector;
+  // Scale distortion vectors by u and v, then add.
+  vector[0] = d[0] * u + d[2] * v;
+  vector[1] = d[1] * u + d[3] * v;
+  return vector;
 }
 
 class Mask {
   constructor(projection) {
-		// TODO(bmt): Get these from wall geometry.
-		this.width = 1920;
-		this.height = 1080;
+    // TODO(bmt): Get these from wall geometry.
+    this.width = 1920;
+    this.height = 1080;
 
-		// Create a detached canvas, draw an opaque sphere that represents visible
-		// points.
-		var canvas = d3.select(document.createElement("canvas"))
-			.attr("width", this.width).attr("height", this.height).node();
+    // Create a detached canvas, draw an opaque sphere that represents visible
+    // points.
+    var canvas = d3.select(document.createElement("canvas"))
+      .attr("width", this.width).attr("height", this.height).node();
     const context = canvas.getContext('2d');
 
     const projectedPath = d3.geo.path().projection(projection).context(context);
 
-		const mask = projectedPath({type: "Sphere"});
-		context.fillStyle = "rgba(255, 0, 0, 1)";
-		context.fill();
+    const mask = projectedPath({type: "Sphere"});
+    context.fillStyle = "rgba(255, 0, 0, 1)";
+    context.fill();
 
-		// layout: [r, g, b, a, r, g, b, a, ...]
-		this.imageData = context.getImageData(0, 0, this.width, this.height).data;
+    // layout: [r, g, b, a, r, g, b, a, ...]
+    this.imageData = context.getImageData(0, 0, this.width, this.height).data;
   }
 
-	isVisible(x, y) {
-		var i = (y * this.width + x) * 4;
-		return this.imageData[i + 3] > 0;  // non-zero alpha means pixel is visible
-	}
+  isVisible(x, y) {
+    var i = (y * this.width + x) * 4;
+    return this.imageData[i + 3] > 0;  // non-zero alpha means pixel is visible
+  }
 
-	set(x, y, rgba) {
-		var i = (y * this.width + x) * 4;
-		this.imageData[i] = rgba[0];
-		this.imageData[i + 1] = rgba[1];
-		this.imageData[i + 2] = rgba[2];
-		this.imageData[i + 3] = rgba[3];
-		return this;
-	}
+  set(x, y, rgba) {
+    var i = (y * this.width + x) * 4;
+    this.imageData[i] = rgba[0];
+    this.imageData[i + 1] = rgba[1];
+    this.imageData[i + 2] = rgba[2];
+    this.imageData[i + 3] = rgba[3];
+    return this;
+  }
 }
 
 class VectorField {
@@ -150,50 +150,50 @@ class VectorField {
     this.overlay = new ImageData(mask.imageData, 1920, 1080);
   }
 
-	/**
-	 * @returns {Array} wind vector [u, v, magnitude] at the point (x, y), or [NaN, NaN, null] if wind
-	 *          is undefined at that point.
-	 */
-	vector(x, y) {
-		var column = this.columns[Math.round(x)];
-		return column && column[Math.round(y)] || NULL_VECTOR;
-	}
+  /**
+   * @returns {Array} wind vector [u, v, magnitude] at the point (x, y), or [NaN, NaN, null] if wind
+   *          is undefined at that point.
+   */
+  vector(x, y) {
+    var column = this.columns[Math.round(x)];
+    return column && column[Math.round(y)] || NULL_VECTOR;
+  }
 
-	/**
-	 * @returns {boolean} true if the field is valid at the point (x, y)
-	 */
-	isDefined(x, y) {
-		return this.vector(x, y)[2] !== null;
-	}
+  /**
+   * @returns {boolean} true if the field is valid at the point (x, y)
+   */
+  isDefined(x, y) {
+    return this.vector(x, y)[2] !== null;
+  }
 
-	/**
-	 * @returns {boolean} true if the point (x, y) lies inside the outer boundary of the vector field, even if
-	 *          the vector field has a hole (is undefined) at that point, such as at an island in a field of
-	 *          ocean currents.
-	 */
-	isInsideBoundary(x, y) {
-		return this.vector(x, y) !== NULL_VECTOR;
-	}
+  /**
+   * @returns {boolean} true if the point (x, y) lies inside the outer boundary of the vector field, even if
+   *          the vector field has a hole (is undefined) at that point, such as at an island in a field of
+   *          ocean currents.
+   */
+  isInsideBoundary(x, y) {
+    return this.vector(x, y) !== NULL_VECTOR;
+  }
 
-	// Frees the massive "columns" array for GC. Without this, the array is leaked (in Chrome) each time a new
-	// field is interpolated because the field closure's context is leaked, for reasons that defy explanation.
+  // Frees the massive "columns" array for GC. Without this, the array is leaked (in Chrome) each time a new
+  // field is interpolated because the field closure's context is leaked, for reasons that defy explanation.
   // TODO(bmt): Make sure this is actually necessary (not my comment).
-	release() {
+  release() {
     this.columns = [];
-	}
+  }
 
-	// TODO(bmt): Figure out what's happening here (not my comment).
-	randomize(o) {  // UNDONE: this method is terrible
-		var x, y;
-		var safetyNet = 0;
-		do {
-			x = Math.round(_.random(this.bounds.x, this.bounds.xMax));
-			y = Math.round(_.random(this.bounds.y, this.bounds.yMax));
-		} while (!this.isDefined(x, y) && safetyNet++ < 30);
-		o.x = x;
-		o.y = y;
-		return o;
-	}
+  // TODO(bmt): Figure out what's happening here (not my comment).
+  randomize(o) {  // UNDONE: this method is terrible
+    var x, y;
+    var safetyNet = 0;
+    do {
+      x = Math.round(_.random(this.bounds.x, this.bounds.xMax));
+      y = Math.round(_.random(this.bounds.y, this.bounds.yMax));
+    } while (!this.isDefined(x, y) && safetyNet++ < 30);
+    o.x = x;
+    o.y = y;
+    return o;
+  }
 
   static create(projection, forecastGrid) {
     const mask = new Mask(projection);
