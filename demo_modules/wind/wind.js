@@ -26,31 +26,58 @@ const canvasHeight = 1080;
 const radius = 800;
 const diameter = 2*radius;
 
-const INTENSITY_SCALE_STEP = 10;            // step size of particle intensity color scale
-const MAX_PARTICLE_AGE = 100;               // max number of frames a particle is drawn before regeneration
-const PARTICLE_LINE_WIDTH = 1.0;            // line width of a drawn particle
-const PARTICLE_MULTIPLIER = 7;              // particle count scalar (completely arbitrary--this values looks nice)
-const FRAME_RATE = 40;                      // desired milliseconds per frame
-
-/**
- * @returns {Object} clears and returns the specified Canvas element's 2d
- * context.
- */
-function clearCanvas(canvas) {
-  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-  return canvas;
+function loadJson(file) {
+  return new Promise((resolve, reject) => {
+    d3.json('/asset/' + file)
+      .get((err, data) => {
+        if (err) {
+          return reject(err);
+        } else {
+          return resolve(data);
+        }
+      });
+  });
 }
 
-class Globe extends ModuleInterface.Server {
+class WindServer extends ModuleInterface.Server {
   willBeShownSoon(container, deadline) {
     return Promise.resolve();
 	}
 }
 
-class GlobeClient extends ModuleInterface.Client {
+class WindClient extends ModuleInterface.Client {
   finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+    this.mapSurface.destroy();
+    this.overlaySurface.destroy();
+  }
+
+  willBeShownSoon(container, deadline) {
+    const CanvasSurface = require('client/surface/canvas_surface');
+    this.mapSurface = new CanvasSurface(container, wallGeometry);
+    this.overlaySurface = new CanvasSurface(container, wallGeometry);
+
+    this.projection = d3.geo.orthographic()
+      .scale(diameter/2.1)
+      .rotate([100, -400])
+      .translate([canvasWidth/2, canvasHeight/2])
+      .clipAngle(90);
+
+    this.mapLoaded = loadJson('americas.json').then((mapData) => {
+      this.mapData = mapData;
+    });
+
+    this.forecastLoaded = loadJson('current-wind-surface-level-gfs-1.0.json').then((file) => {
+      this.grid = new ForecastGrid(file);
+      this.field = VectorField.create(this.projection, this.grid);
+    });
+    return Promise.all([this.mapLoaded, this.forecastLoaded]);
+  }
+
+  draw(time, delta) {
+    if (!this.drawn) {
+      this.drawn = true;
+      this.mapLoaded.then(() => this.drawMap(this.projection, this.mapSurface.context, this.mapData));
+      this.forecastLoaded.then(() => this.drawOverlay(this.overlaySurface.context, this.field));
     }
   }
 
@@ -107,51 +134,6 @@ class GlobeClient extends ModuleInterface.Client {
   drawOverlay(context, field) {
 		context.putImageData(field.overlay, 0, 0);
   }
-
-  loadJson(file) {
-    return new Promise((resolve, reject) => {
-      d3.json('/asset/' + file)
-        .get((err, data) => {
-          if (err) {
-            return reject(err);
-          } else {
-            return resolve(data);
-          }
-        });
-    });
-  }
-
-  willBeShownSoon(container, deadline) {
-    const CanvasSurface = require('client/surface/canvas_surface');
-    const mapSurface = new CanvasSurface(container, wallGeometry);
-    const overlaySurface = new CanvasSurface(container, wallGeometry);
-    const visSurface = new CanvasSurface(container, wallGeometry);
-
-    const projection = d3.geo.orthographic()
-      .scale(diameter/2.1)
-      .rotate([100, -400])
-      .translate([canvasWidth/2, canvasHeight/2])
-      .clipAngle(90);
-
-
-    const mapData = this.loadJson('americas.json').then((data) => {
-      return this.drawMap(projection, mapSurface.context, data);
-    });
-
-    const grid = this.loadJson('current-wind-surface-level-gfs-1.0.json').then((file) => {
-      this.grid = new ForecastGrid(file);
-      this.field = VectorField.create(projection, this.grid);
-    })
-
-    return Promise.all([mapData, grid]).then(() => {
-      clearCanvas(overlaySurface.canvas);
-      this.drawOverlay(overlaySurface.context, this.field);
-    });
-  }
-
-  draw(time, delta) {
-    //this.surface.render();
-  }
 }
 
-register(Globe, GlobeClient);
+register(WindServer, WindClient);
