@@ -63,6 +63,12 @@
       },
     },
     {
+      "name": "wind",
+      "path": "demo_modules/wind/wind.js",
+      "title": "Wind",
+      "author": "Brian Turnbull"
+    },
+    {
       "name": "stars",
       "path": "demo_modules/tutorials/04_stars/stars.js",
       "title": "Obligatory Zooming Stars",
