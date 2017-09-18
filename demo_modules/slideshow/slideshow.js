@@ -33,7 +33,7 @@ const network = require('network');
 
 const LoadFromDriveStrategy = require('demo_modules/slideshow/load_from_drive');
 const LoadFromYouTubePlaylistStrategy = require('demo_modules/slideshow/load_from_youtube');
-const LoadVideoStrategy = require('demo_modules/slideshow/load_video');
+const LoadLocalStrategy = require('demo_modules/slideshow/load_local');
 const LoadFromFlickrStrategy = require('demo_modules/slideshow/load_from_flickr');
 
 const FullscreenDisplayStrategy = require('demo_modules/slideshow/fullscreen_display');
@@ -47,8 +47,8 @@ let parseServerLoadStrategy = (loadConfig) => {
     return new LoadFromDriveStrategy.Server(loadConfig.drive);
   } else if (loadConfig.youtube) {
     return new LoadFromYouTubePlaylistStrategy.Server(loadConfig.youtube);
-  } else if (loadConfig.video) {
-    return new LoadVideoStrategy.Server(loadConfig.video);
+  } else if (loadConfig.local) {
+    return new LoadLocalStrategy.Server(loadConfig.local);
   } else if (loadConfig.flickr) {
     return new LoadFromFlickrStrategy.Server(loadConfig.flickr);
   }
@@ -61,8 +61,8 @@ let parseClientLoadStrategy = (loadConfig) => {
     return new LoadFromDriveStrategy.Client(loadConfig.drive);
   } else if (loadConfig.youtube) {
     return new LoadFromYouTubePlaylistStrategy.Client(loadConfig.youtube);
-  } else if (loadConfig.video) {
-    return new LoadVideoStrategy.Client(loadConfig.video);
+  } else if (loadConfig.local) {
+    return new LoadLocalStrategy.Client(loadConfig.local);
   } else if (loadConfig.flickr) {
     return new LoadFromFlickrStrategy.Client(loadConfig.flickr);
   }
