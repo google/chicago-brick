@@ -18,6 +18,7 @@ define(function(require) {
 
   const ClientModule = require('client/modules/module');
   const ClientStateMachine = require('client/modules/client_state_machine');
+  const libraries = require('client/util/libraries');
   const network = require('client/network/network');
   const timeManager = require('client/util/time');
 
@@ -30,8 +31,18 @@ define(function(require) {
       timeManager.start();
 
       // Server has asked us to load a new module.
-      network.on('loadModule',
-          bits => this.stateMachine.playModule(ClientModule.deserialize(bits)));
+      network.on('loadModule', (bits) => {
+        const module = ClientModule.deserialize(bits);
+
+        // Load any client libraries that are not already loaded.
+        if (module.libs) {
+          _.each(module.libs, (lib) => {
+            libraries.load(lib);
+          });
+        }
+
+        this.stateMachine.playModule(module);
+      });
     }
   }
 

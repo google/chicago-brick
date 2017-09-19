@@ -43,7 +43,7 @@ define(function(require) {
   }
 
   class ClientModule {
-    constructor(name, path, config, titleCard, deadline, geo) {
+    constructor(name, path, config, titleCard, deadline, geo, libs) {
       // The module name.
       this.name = name;
       
@@ -62,6 +62,9 @@ define(function(require) {
       
       // The wall geometry.
       this.geo = geo;
+
+      // Requires client libraries.
+      this.libs = libs;
       
       // Globals that are associated with this module.
       this.globals = {};
@@ -90,7 +93,8 @@ define(function(require) {
         bits.module.config,
         new TitleCard(bits.module),
         bits.time,
-        new geometry.Polygon(bits.geo)
+        new geometry.Polygon(bits.geo),
+        bits.module.libs,
       );
     }
 
