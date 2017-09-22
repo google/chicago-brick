@@ -20,6 +20,7 @@ limitations under the License.
 const color = require('demo_modules/wind/color');
 const d3 = require('d3');
 const util = require('demo_modules/wind/util');
+const wallGeometry = require('wallGeometry');
 
 const floorMod = util.floorMod;
 const isValue = util.isValue;
@@ -30,26 +31,7 @@ const NULL_VECTOR = [NaN, NaN, null];  // singleton for undefined location outsi
 const HOLE_VECTOR = [NaN, NaN, null];  // singleton that signifies a hole in the vector field
 const TRANSPARENT_BLACK = [0, 0, 0, 0];  // singleton 0 rgba
 const OVERLAY_ALPHA = Math.floor(0.4*255);  // overlay transparency (on scale [0, 255])
-
-function ensureNumber(num, fallback) {
-  return _.isFinite(num) || num === Infinity || num === -Infinity ? num : fallback;
-}
-
-/**
- * @param bounds the projection bounds: [[x0, y0], [x1, y1]]
- * @param width
- * @param height
- * @returns {Object} the projection bounds clamped to the specified view.
- */
-function clampedBounds(bounds, width, height) {
-  const upperLeft = bounds[0];
-  const lowerRight = bounds[1];
-  const x = Math.max(Math.floor(ensureNumber(upperLeft[0], 0)), 0);
-  const y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
-  const xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
-  const yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
-  return {x: x, y: y, xMax: xMax, yMax: yMax, width: xMax - x + 1, height: yMax - y + 1};
-}
+const VELOCITY_SCALE = 1/300000
 
 /**
  * Returns the distortion introduced by the specified projection at the given point.
@@ -108,25 +90,26 @@ function distort(projection, λ, φ, x, y, scale, vector) {
 }
 
 class Mask {
-  constructor(projection) {
-    // TODO(bmt): Get these from wall geometry.
-    this.width = 1920;
-    this.height = 1080;
+  constructor(projection, bounds) {
+    this.width = bounds.width;
+    this.height = bounds.height;
 
     // Create a detached canvas, draw an opaque sphere that represents visible
     // points.
     const canvas = d3.select(document.createElement("canvas"))
       .attr("width", this.width).attr("height", this.height).node();
-    const context = canvas.getContext('2d');
+    this.context = canvas.getContext('2d');
 
-    const projectedPath = d3.geoPath().projection(projection).context(context);
+    const projectedPath = d3.geoPath().projection(projection).context(
+        this.context);
 
     const mask = projectedPath({type: "Sphere"});
-    context.fillStyle = "rgba(255, 0, 0, 1)";
-    context.fill();
+    this.context.fillStyle = "rgba(255, 0, 0, 1)";
+    this.context.fill();
 
     // layout: [r, g, b, a, r, g, b, a, ...]
-    this.imageData = context.getImageData(0, 0, this.width, this.height).data;
+    this.imageData = this.context.getImageData(
+        0, 0, this.width, this.height).data;
   }
 
   isVisible(x, y) {
@@ -142,13 +125,22 @@ class Mask {
     this.imageData[i + 3] = rgba[3];
     return this;
   }
+
+  getOffsetImageData(x, y, w, h) {
+    this.context.putImageData(new ImageData(this.imageData, this.width,
+          this.height), 0, 0);
+    return this.context.getImageData(x, y, w, h);
+  }
 }
 
 class VectorField {
   constructor(columns, bounds, mask) {
     this.columns = columns;
     this.bounds = bounds;
-    this.overlay = new ImageData(mask.imageData, 1920, 1080);
+
+    const info = require('client/util/info');
+    this.overlay = mask.getOffsetImageData(info.virtualRect.x,
+        info.virtualRect.y, info.virtualRect.w, info.virtualRect.h);
   }
 
   /**
@@ -196,15 +188,12 @@ class VectorField {
     return o;
   }
 
-  static create(projection, forecastGrid) {
-    const mask = new Mask(projection);
-    const bounds = clampedBounds(
-        d3.geoPath().projection(projection).bounds({type: "Sphere"}),
-        1920, 1080);
+  static create(projection, bounds, forecastGrid) {
+    const mask = new Mask(projection, bounds);
 
     // TODO(bmt): This probably belongs at a different level.
     // How fast particles move on the screen (arbitrary value chosen for aesthetics).
-    const velocityScale = bounds.height / 60000
+    const velocityScale = bounds.height * VELOCITY_SCALE;
 
     const columns = [];
     const point = [];
