@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+const d3 = require('d3');
 const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const wallGeometry = require('wallGeometry');
@@ -56,7 +57,7 @@ class WindClient extends ModuleInterface.Client {
     this.mapSurface = new CanvasSurface(container, wallGeometry);
     this.overlaySurface = new CanvasSurface(container, wallGeometry);
 
-    this.projection = d3.geo.orthographic()
+    this.projection = d3.geoOrthographic()
       .scale(diameter/2.1)
       .rotate([100, -400])
       .translate([canvasWidth/2, canvasHeight/2])
@@ -88,7 +89,7 @@ class WindClient extends ModuleInterface.Client {
   }
 
   drawMap(projection, context, mapData) {
-    const projectedPath = d3.geo.path().projection(projection).context(context);
+    const projectedPath = d3.geoPath().projection(projection).context(context);
     function drawSphere(context) {
       context.save();
       const grad = context.createRadialGradient(
@@ -103,9 +104,9 @@ class WindClient extends ModuleInterface.Client {
     }
 
     function drawGraticules(context) {
-      const graticule = d3.geo.graticule();
-      const equator = d3.geo.graticule().minorExtent(
-          [[0, 0], [0, 0]]).majorStep([0, 90]);
+      const graticule = d3.geoGraticule();
+      const equator = d3.geoGraticule().extentMinor(
+          [[0, 0], [0, 0]]).stepMajor([0, 90]);
       context.save();
       context.beginPath();
       context.lineWidth = 1;
