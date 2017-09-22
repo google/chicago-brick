@@ -18,6 +18,7 @@ limitations under the License.
 // https://github.com/cambecc/earth.
 
 const color = require('demo_modules/wind/color');
+const d3 = require('d3');
 const util = require('demo_modules/wind/util');
 
 const floorMod = util.floorMod;
@@ -118,7 +119,7 @@ class Mask {
       .attr("width", this.width).attr("height", this.height).node();
     const context = canvas.getContext('2d');
 
-    const projectedPath = d3.geo.path().projection(projection).context(context);
+    const projectedPath = d3.geoPath().projection(projection).context(context);
 
     const mask = projectedPath({type: "Sphere"});
     context.fillStyle = "rgba(255, 0, 0, 1)";
@@ -198,7 +199,7 @@ class VectorField {
   static create(projection, forecastGrid) {
     const mask = new Mask(projection);
     const bounds = clampedBounds(
-        d3.geo.path().projection(projection).bounds({type: "Sphere"}),
+        d3.geoPath().projection(projection).bounds({type: "Sphere"}),
         1920, 1080);
 
     // TODO(bmt): This probably belongs at a different level.
