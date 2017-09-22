@@ -1,5 +1,6 @@
 node_modules/
 build/
+demo_modules/wind/bin/tmp
 
 .DS_STORE
 npm-debug.log

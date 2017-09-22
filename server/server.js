@@ -96,6 +96,7 @@ var playlist = playlistLoader.getInitialPlaylist();
 if (playlist.length === 0) {
   throw new Error('Nothing to play!');
 }
+var clientlibs = playlistLoader.getClientLibraryDefinitions();
 
 var app = webapp.create(flags);
 
@@ -127,6 +128,7 @@ peerServer.on('disconnect', function(id) {
 network.openWebSocket(server);
 
 network.on('new-client', function(client) {
+  client.socket.emit('libraries', clientlibs);
   layoutSM.newClient(client);
 });
 

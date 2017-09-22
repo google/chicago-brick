@@ -109,12 +109,15 @@ const verify = (name, contents) => {
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef extends EventEmitter {
-  constructor(name, pathOrBaseModule, title, author, config) {
+  constructor(name, pathOrBaseModule, title, author, libs, config) {
     super();
     this.name = name;
     this.config = config || {};
     this.title = title;
     this.author = author;
+
+    // The required client libraries.
+    this.libs = libs;
     
     // The path to the main file of the module.
     this.path = '';
@@ -158,16 +161,18 @@ class ModuleDef extends EventEmitter {
       path: this.path,
       config: util.inspect(this.config),
       title: this.title,
-      author: this.author
+      author: this.author,
+      libs: this.libs
     };
   }
   // Returns a new module def that extends this def with new configuration.
-  extend(name, title, author, config) {
+  extend(name, title, author, libs, config) {
     return new ModuleDef(
       name,
       this,
       title === undefined ? '' : (title || this.title),
       author === undefined ? '' : (author || this.author),
+      libs === undefined ? [] : (libs || this.libs),
       config);
   }
   
@@ -242,6 +247,7 @@ class ModuleDef extends EventEmitter {
       config: this.config,
       title: this.title,
       author: this.author,
+      libs: this.libs,
     };
   }
 }

@@ -85,10 +85,10 @@ class PlaylistLoader {
           ' attempting to extend ' + m.extends + ' which was not found!');
         debug('Adding module ' + m.name + ' extending ' + m.extends);
         library.register(library.modules[m.extends].extend(
-          m.name, m.title, m.author, m.config));
+          m.name, m.title, m.author, m.libs, m.config));
       } else {
         debug('Adding module ' + m.name + ' from ' + m.path);
-        library.register(new ModuleDef(m.name, m.path, m.title, m.author, m.config));
+        library.register(new ModuleDef(m.name, m.path, m.title, m.author, m.libs, m.config));
       }
     }
 
@@ -106,6 +106,10 @@ class PlaylistLoader {
   /** Returns a layout list from command-line flags. */
   getInitialPlaylist() {
     return this.parsePlaylist(this.getInitialPlaylistConfig());
+  }
+
+  getClientLibraryDefinitions() {
+    return this.getInitialPlaylistConfig().libs || [];
   }
 }
 
