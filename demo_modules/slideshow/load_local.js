@@ -46,9 +46,18 @@ class LoadLocalServerStrategy extends interfaces.ServerLoadStrategy {
     this.paths = [];
     this.config = config;
     if (this.config.image) {
-      this.paths.push(this.config.image.file);
-    } else if (this.config.video) {
-      this.paths.push(this.config.video.file);
+      if (this.config.image.file) {
+        this.paths.push({image: this.config.image.file});
+      } else {
+        this.paths.push(...this.config.image.files.map(f => ({image: f})));
+      }
+    }
+    if (this.config.video) {
+      if (this.config.video.file) {
+        this.paths.push({video: this.config.video.file});
+      } else {
+        this.paths.push(...this.config.video.files.map(f => ({video: f})));
+      }
     }
   }
   loadMoreContent(opt_paginationToken) {
@@ -72,6 +81,7 @@ class LoadLocalClientStrategy extends interfaces.ClientLoadStrategy {
   }
   loadContent(url) {
     return new Promise((resolve, reject) => {
+      let url = desc.image || desc.video;
       let sharedConfig = this.config.image || this.config.video;
       
       
@@ -97,7 +107,7 @@ class LoadLocalClientStrategy extends interfaces.ClientLoadStrategy {
       const asset = require('client/asset/asset');
       finalUrl = asset(`${finalUrl}`);
       
-      if (this.config.video) {
+      if (desc.video) {
         let video = document.createElement('video');
         video.setAttribute('loop', 'loop');
         video.setAttribute('width', this.surface.virtualRect.w);
