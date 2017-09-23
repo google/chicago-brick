@@ -32,7 +32,7 @@ const TRANSPARENT_BLACK = [0, 0, 0, 0];  // singleton 0 rgba
 const OVERLAY_ALPHA = Math.floor(0.4*255);  // overlay transparency (on scale [0, 255])
 
 function ensureNumber(num, fallback) {
-	return _.isFinite(num) || num === Infinity || num === -Infinity ? num : fallback;
+  return _.isFinite(num) || num === Infinity || num === -Infinity ? num : fallback;
 }
 
 /**
