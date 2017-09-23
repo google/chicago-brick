@@ -29,7 +29,8 @@ const diameter = 2*radius;
 
 function loadJson(file) {
   return new Promise((resolve, reject) => {
-    d3.json('/asset/' + file)
+    const asset = require('client/asset/asset');
+    d3.json(asset(file))
       .get((err, data) => {
         if (err) {
           return reject(err);
@@ -91,7 +92,6 @@ class WindClient extends ModuleInterface.Client {
   drawMap(projection, context, mapData) {
     const projectedPath = d3.geoPath().projection(projection).context(context);
     function drawSphere(context) {
-      context.save();
       const grad = context.createRadialGradient(
           canvasWidth/2, canvasHeight/2, 0,
           canvasWidth/2, canvasHeight/2, radius);
@@ -100,32 +100,26 @@ class WindClient extends ModuleInterface.Client {
       grad.addColorStop(.96, "#000005");
       context.fillStyle = grad;
       context.fillRect(0, 0, canvasWidth, canvasHeight);
-      context.restore();
     }
 
     function drawGraticules(context) {
       const graticule = d3.geoGraticule();
       const equator = d3.geoGraticule().extentMinor(
           [[0, 0], [0, 0]]).stepMajor([0, 90]);
-      context.save();
       context.beginPath();
       context.lineWidth = 1;
       context.strokeStyle = '#505050';
       projectedPath(graticule());
       context.stroke();
-      context.restore();
 
-      context.save();
       context.beginPath();
       context.lineWidth = 1;
       context.strokeStyle = '#808080';
       projectedPath(equator());
       context.stroke();
-      context.restore();
     }
 
     function drawOutlines(context) {
-      context.save();
       context.beginPath();
       context.lineWidth = 1;
       context.strokeStyle = '#FFF';
