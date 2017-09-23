@@ -64,9 +64,14 @@ class WindClient extends ModuleInterface.Client {
       .translate([canvasWidth/2, canvasHeight/2])
       .clipAngle(90);
 
-    this.mapLoaded = loadJson('americas.json').then((mapData) => {
-      this.mapData = mapData;
-    });
+    this.mapLoaded = Promise.all([
+        loadJson('americas.json').then((americas) => {
+          this.americas = americas;
+        }),
+        loadJson('lakes.json').then((lakes) => {
+          this.lakes = lakes;
+        })
+    ]);
 
     this.forecastLoaded = loadJson('current-wind-surface-level-gfs-1.0.json')
       .then((file) => {
@@ -80,8 +85,8 @@ class WindClient extends ModuleInterface.Client {
     if (!this.drawn) {
       this.drawn = true;
       this.mapLoaded.then(() => {
-        return this.drawMap(this.projection, this.mapSurface.context,
-            this.mapData);
+        return this.drawMap(this.projection, this.mapSurface.context, this.americas,
+            this.lakes);
       });
       this.forecastLoaded.then(() => {
         return this.drawOverlay(this.overlaySurface.context, this.field);
@@ -89,7 +94,7 @@ class WindClient extends ModuleInterface.Client {
     }
   }
 
-  drawMap(projection, context, mapData) {
+  drawMap(projection, context, americas, lakes) {
     const projectedPath = d3.geoPath().projection(projection).context(context);
     function drawSphere(context) {
       const grad = context.createRadialGradient(
@@ -123,7 +128,13 @@ class WindClient extends ModuleInterface.Client {
       context.beginPath();
       context.lineWidth = 1;
       context.strokeStyle = '#FFF';
-      projectedPath(mapData);
+      projectedPath(americas);
+      context.stroke();
+
+      context.beginPath();
+      context.lineWidth = 1;
+      context.strokeStyle = '#FFF';
+      projectedPath(lakes);
       context.stroke();
     }
 
