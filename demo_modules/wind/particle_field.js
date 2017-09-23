@@ -24,7 +24,7 @@ const MAX_INTENSITY = 20;
 const MAX_PARTICLE_AGE = 100;
 const PARTICLE_LINE_WIDTH = 1;
 const PARTICLE_MULTIPLIER = 5;
-const FADE_FILL_STYLE = "rgba(0, 0, 0, 0.97)";
+const FADE_FILL_STYLE = "rgba(0, 0, 0, 0.90)";
 
 class ParticleField {
   constructor(bounds, grid, vectorField, context) {
