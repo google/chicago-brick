@@ -42,12 +42,12 @@ function ensureNumber(num, fallback) {
  * @returns {Object} the projection bounds clamped to the specified view.
  */
 function clampedBounds(bounds, width, height) {
-  var upperLeft = bounds[0];
-  var lowerRight = bounds[1];
-  var x = Math.max(Math.floor(ensureNumber(upperLeft[0], 0)), 0);
-  var y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
-  var xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
-  var yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
+  const upperLeft = bounds[0];
+  const lowerRight = bounds[1];
+  const x = Math.max(Math.floor(ensureNumber(upperLeft[0], 0)), 0);
+  const y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
+  const xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
+  const yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
   return {x: x, y: y, xMax: xMax, yMax: yMax, width: xMax - x + 1, height: yMax - y + 1};
 }
 
@@ -75,14 +75,14 @@ function clampedBounds(bounds, width, height) {
  * @returns {Array} array of scaled derivatives [dx/dλ, dy/dλ, dx/dφ, dy/dφ]
  */
 function distortion(projection, λ, φ, x, y) {
-  var hλ = λ < 0 ? H : -H;
-  var hφ = φ < 0 ? H : -H;
-  var pλ = projection([λ + hλ, φ]);
-  var pφ = projection([λ, φ + hφ]);
+  const hλ = λ < 0 ? H : -H;
+  const hφ = φ < 0 ? H : -H;
+  const pλ = projection([λ + hλ, φ]);
+  const pφ = projection([λ, φ + hφ]);
 
   // Meridian scale factor (see Snyder, equation 4-3), where R = 1. This handles issue where length of 1° λ
   // changes depending on φ. Without this, there is a pinching effect at the poles.
-  var k = Math.cos(φ / 360 * τ);
+  const k = Math.cos(φ / 360 * τ);
 
   return [
     (pλ[0] - x) / hλ / k,
@@ -97,9 +97,9 @@ function distortion(projection, λ, φ, x, y) {
  * vector is modified in place and returned by this function.
  */
 function distort(projection, λ, φ, x, y, scale, vector) {
-  var u = vector[0] * scale;
-  var v = vector[1] * scale;
-  var d = distortion(projection, λ, φ, x, y);
+  const u = vector[0] * scale;
+  const v = vector[1] * scale;
+  const d = distortion(projection, λ, φ, x, y);
 
   // Scale distortion vectors by u and v, then add.
   vector[0] = d[0] * u + d[2] * v;
@@ -115,7 +115,7 @@ class Mask {
 
     // Create a detached canvas, draw an opaque sphere that represents visible
     // points.
-    var canvas = d3.select(document.createElement("canvas"))
+    const canvas = d3.select(document.createElement("canvas"))
       .attr("width", this.width).attr("height", this.height).node();
     const context = canvas.getContext('2d');
 
@@ -130,12 +130,12 @@ class Mask {
   }
 
   isVisible(x, y) {
-    var i = (y * this.width + x) * 4;
+    const i = (y * this.width + x) * 4;
     return this.imageData[i + 3] > 0;  // non-zero alpha means pixel is visible
   }
 
   set(x, y, rgba) {
-    var i = (y * this.width + x) * 4;
+    const i = (y * this.width + x) * 4;
     this.imageData[i] = rgba[0];
     this.imageData[i + 1] = rgba[1];
     this.imageData[i + 2] = rgba[2];
@@ -156,7 +156,7 @@ class VectorField {
    *          is undefined at that point.
    */
   vector(x, y) {
-    var column = this.columns[Math.round(x)];
+    const column = this.columns[Math.round(x)];
     return column && column[Math.round(y)] || NULL_VECTOR;
   }
 
@@ -183,8 +183,8 @@ class VectorField {
     this.columns = [];
   }
 
-  // TODO(bmt): Figure out what's happening here (not my comment).
-  randomize(o) {  // UNDONE: this method is terrible
+  // TODO: Eliminate the loop.
+  randomize(o) {
     var x, y;
     var safetyNet = 0;
     do {
@@ -214,11 +214,11 @@ class VectorField {
       for (var y = bounds.y; y <= bounds.yMax; y += 2) {
         if (mask.isVisible(x, y)) {
           point[0] = x; point[1] = y;
-          var coord = projection.invert(point);
+          const coord = projection.invert(point);
           var overlayColor = TRANSPARENT_BLACK;
           var vector = null;
           if (coord) {
-            var λ = coord[0], φ = coord[1];
+            const λ = coord[0], φ = coord[1];
             if (_.isFinite(λ)) {
               vector = forecastGrid.interpolate(λ, φ);
               var scalar = null;
