@@ -24,10 +24,6 @@ var Layout = require('server/modules/layout');
 var ModuleDef = require('server/modules/module_def');
 var library = require('server/modules/module_library');
 
-function parseJson(jsonString) {
-  return RJSON.parse(jsonString);
-}
-
 class PlaylistLoader {
 
   constructor(flags) {
@@ -71,7 +67,7 @@ class PlaylistLoader {
     // TODO(applmak): Verify this encoding.
     // TODO(applmak): Does this API need to exist?
     var playlistConfig = fs.readFileSync(this.flags.playlist, 'utf8');
-    return parseJson(playlistConfig);
+    return RJSON.parse(playlistConfig);
   }
 
   /** Parses a playlist JSON object into a list of Layouts. */
