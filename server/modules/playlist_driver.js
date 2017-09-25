@@ -20,7 +20,15 @@ const random = require('random-js')();
 const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 
-const driveStateMachine = (playlist, layoutSM) => {
+let timer;
+
+const driveStateMachine = (playlist, layoutSM, clearTimer) => {
+  // TODO(jgessner): Make this a proper class with an owner and a cleaner reset API
+  // instead of a hacky globals thing.
+  if (clearTimer) {
+    clearTimeout(timer);
+  }
+
   const nextLayout = layoutIndex => {
     // Show this layout next:
     let layout = playlist[layoutIndex];
@@ -46,7 +54,6 @@ const driveStateMachine = (playlist, layoutSM) => {
       });
 
       const nextModule = moduleIndex => {
-        let timer;
         layoutSM.setErrorListener(error => {
           // Stop normal advancement.
           clearTimeout(timer);

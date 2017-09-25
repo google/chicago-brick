@@ -15,8 +15,10 @@ limitations under the License.
 
 'use strict';
 
+const RJSON = require('relaxed-json');
 const debug = require('debug')('wall:control');
 const log = require('server/util/log');
+const playlistDriver = require('server/modules/playlist_driver');
 const wallGeometry = require('server/util/wall_geometry');
 
 // Basic server management hooks.
@@ -57,13 +59,13 @@ class Control {
 
   setConfig(req, res) {
     try {
-      var json = this.playlistLoader.parseJson(req.body.config);
+      var json = RJSON.parse(req.body.config);
       var playlistConfig = this.playlistLoader.parsePlaylist(json);
     } catch (e) {
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    this.layoutSM.setPlaylist(playlistConfig);
+    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
     this.currentConfig = json;
     res.redirect('/status');
   }
@@ -73,24 +75,25 @@ class Control {
   }
 
   resetPlaylist(req, res) {
-    this.layoutSM.setPlaylist(this.playlistLoader.parsePlaylist(this.initialConfig));
+    playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig), this.layoutSM, true);
     this.currentConfig = this.initialConfig;
     res.redirect('/status');
   }
 
   setPlaylist(req, res) {
-    let infinitePlaylist = { modules: [req.body], playlist: [{collection: '__ALL__', duration: 86400}] };
+    let infinitePlaylist = JSON.stringify({ modules: [req.body], playlist: [{collection: '__ALL__', duration: 86400}] });
     let playlistConfig = {};
     let json = '';
     try {
-      json = this.playlistLoader.parseJson(JSON.stringify(infinitePlaylist));
+      json = RJSON.parse(infinitePlaylist);
       playlistConfig = this.playlistLoader.parsePlaylist(json);
     } catch (e) {
+      console.log(`Error in setPlaylist: ${e}`);
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    this.layoutSM.setPlaylist(playlistConfig);
     this.currentConfig = json;
+    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
     res.redirect('/status');
   }
 
@@ -124,7 +127,7 @@ class Control {
       return;
     }
     try {
-      this.layoutSM.playModule(moduleName);
+      this.layoutSM.playModule(0, moduleName);
     } catch (e) {
       debug(e.message);
       debug(e.stack);
