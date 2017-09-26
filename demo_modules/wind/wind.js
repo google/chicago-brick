@@ -97,15 +97,15 @@ class WindClient extends ModuleInterface.Client {
         globalWallGeometry.extents.w, globalWallGeometry.extents.h);
 
     this.mapLoaded = Promise.all([
-        loadJson('americas.json').then((americas) => {
-          this.americas = americas;
+        loadJson('wind-coastline.json').then((coastline) => {
+          this.coastline = coastline;
         }),
-        loadJson('lakes.json').then((lakes) => {
+        loadJson('wind-lakes.json').then((lakes) => {
           this.lakes = lakes;
         })
     ]);
 
-    this.dataProcessed = loadJson('current-wind-surface-level-gfs-1.0.json')
+    this.dataProcessed = loadJson('wind-current-surface-level-gfs-1.0.json')
       .then((file) => {
         this.grid = new ForecastGrid(file);
         this.vectorField = VectorField.create(this.projection, this.bounds,
@@ -120,7 +120,7 @@ class WindClient extends ModuleInterface.Client {
   draw(time, delta) {
     if (this.particleField) {
       if (!this.mapDrawn) {
-        this.drawMap(this.projection, this.mapSurface.context, this.americas,
+        this.drawMap(this.projection, this.mapSurface.context, this.coastline,
             this.lakes);
         this.drawOverlay(this.overlaySurface.context, this.vectorField);
         this.particleField.draw();
@@ -132,7 +132,7 @@ class WindClient extends ModuleInterface.Client {
     }
   }
 
-  drawMap(projection, context, americas, lakes) {
+  drawMap(projection, context, coastline, lakes) {
     const projectedPath = d3.geoPath().projection(projection).context(context);
     const r = this.radius;
 
@@ -168,7 +168,7 @@ class WindClient extends ModuleInterface.Client {
       context.beginPath();
       context.lineWidth = 1;
       context.strokeStyle = '#FFF';
-      projectedPath(americas);
+      projectedPath(coastline);
       context.stroke();
 
       context.beginPath();

@@ -44,11 +44,11 @@ PREFIX=`npm config get prefix`
 
 # Convert to json.
 java -Xmx512M -jar $PREFIX/lib/node_modules/weacast-grib2json/bin/grib2json.jar -d -n \
-  -o "$TMPDIR/current-wind-surface-level-gfs-1.0.json" \
+  -o "$TMPDIR/wind-current-surface-level-gfs-1.0.json" \
   $TMPDIR/gfs.t${HOUR}z.pgrb2.1p00.f000
 
 # Make it available.
-cp $TMPDIR/current-wind-surface-level-gfs-1.0.json $OUT
+cp $TMPDIR/wind-current-surface-level-gfs-1.0.json $OUT
 
 # Remove tmp dir.
 rm -rf $TMPDIR

@@ -17,32 +17,31 @@ fi
 echo "Downloading map data to: $OUT"
 
 # Get the map data
-curl -o "$TMPDIR/ne_50m_admin_0_countries.zip" \
-  'http://naciscdn.org/naturalearth/50m/cultural/ne_50m_admin_0_countries.zip'
+curl -o "$TMPDIR/ne_50m_coastline.zip" \
+  'http://naciscdn.org/naturalearth/50m/physical/ne_50m_coastline.zip'
 
 curl -o "$TMPDIR/ne_50m_lakes.zip" \
   'http://naciscdn.org/naturalearth/50m/physical/ne_50m_lakes.zip'
 
 pushd $TMPDIR
-unzip ne_50m_admin_0_countries.zip
+unzip ne_50m_coastline.zip
 unzip ne_50m_lakes.zip
 popd
 
 # Extract relavent features.
 ogr2ogr \
   -f GeoJSON \
-  -where "continent = 'North America' OR continent = 'South America'" \
-  $TMPDIR/americas.json \
-  $TMPDIR/ne_50m_admin_0_countries.shp
+  $TMPDIR/wind-coastline.json \
+  $TMPDIR/ne_50m_coastline.shp
 
 ogr2ogr \
   -f GeoJSON \
-  $TMPDIR/lakes.json \
+  $TMPDIR/wind-lakes.json \
   $TMPDIR/ne_50m_lakes.shp
 
 # Copy to assets.
-cp $TMPDIR/americas.json $OUT
-cp $TMPDIR/lakes.json $OUT
+cp $TMPDIR/wind-coastline.json $OUT
+cp $TMPDIR/wind-lakes.json $OUT
 
 # Remove tmp dir.
 rm -rf $TMPDIR
