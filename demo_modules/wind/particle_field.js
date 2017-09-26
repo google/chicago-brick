@@ -19,9 +19,11 @@ limitations under the License.
 
 const color = require('demo_modules/wind/color');
 
+const MIN_WIND_RGB = 160;
 const INTENSITY_SCALE_STEP = 5;
 const MAX_INTENSITY = 20;
 const MAX_PARTICLE_AGE = 100;
+const MIN_PARTICLE_AGE = MAX_PARTICLE_AGE / 2;
 const PARTICLE_LINE_WIDTH = 1;
 const PARTICLE_MULTIPLIER = 5;
 const FADE_FILL_STYLE = "rgba(0, 0, 0, 0.90)";
@@ -40,7 +42,7 @@ class ParticleField {
   initializeColorBuckets() {
     // maxIntensity is the velocity at which particle color intensity is maximum
     this.colorStyles = color.windIntensityColorScale(
-        INTENSITY_SCALE_STEP, MAX_INTENSITY);
+        INTENSITY_SCALE_STEP, MAX_INTENSITY, MIN_WIND_RGB);
 
     this.buckets = this.colorStyles.map(function() { return []; });
   }
@@ -49,7 +51,8 @@ class ParticleField {
     const particleCount = Math.round(this.bounds.width * PARTICLE_MULTIPLIER);
     this.particles = [];
     for (var i = 0; i < particleCount; i++) {
-      this.particles.push(this.vectorField.randomize({age: _.random(0, MAX_PARTICLE_AGE)}));
+      this.particles.push(this.vectorField.randomize(
+          {age: _.random(MIN_PARTICLE_AGE, MAX_PARTICLE_AGE)}));
     }
   }
 

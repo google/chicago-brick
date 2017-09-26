@@ -72,9 +72,9 @@ function asColorStyle(r, g, b, a) {
 /**
  * @returns {Array} of wind colors and a method, indexFor, that maps wind magnitude to an index on the color scale.
  */
-function windIntensityColorScale(step, maxWind) {
+function windIntensityColorScale(step, maxWind, minRgb) {
   var result = [];
-  for (var j = 85; j <= 255; j += step) {
+  for (var j = minRgb; j <= 255; j += step) {
     result.push(asColorStyle(j, j, j, 1.0));
   }
   result.indexFor = function(m) {  // map wind speed to a style
