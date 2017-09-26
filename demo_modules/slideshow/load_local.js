@@ -79,7 +79,7 @@ class LoadLocalClientStrategy extends interfaces.ClientLoadStrategy {
     this.surface = surface;
     this.startTime = startTime;
   }
-  loadContent(url) {
+  loadContent(desc) {
     return new Promise((resolve, reject) => {
       let url = desc.image || desc.video;
       let sharedConfig = this.config.image || this.config.video;
