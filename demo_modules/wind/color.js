@@ -65,4 +65,23 @@ function extendedSinebowColor(i, a) {
     fadeToWhite((i - BOUNDARY) / (1 - BOUNDARY), a);
 }
 
+function asColorStyle(r, g, b, a) {
+  return "rgba(" + r + ", " + g + ", " + b + ", " + a + ")";
+}
+
+/**
+ * @returns {Array} of wind colors and a method, indexFor, that maps wind magnitude to an index on the color scale.
+ */
+function windIntensityColorScale(step, maxWind, minRgb) {
+  var result = [];
+  for (var j = minRgb; j <= 255; j += step) {
+    result.push(asColorStyle(j, j, j, 1.0));
+  }
+  result.indexFor = function(m) {  // map wind speed to a style
+    return Math.floor(Math.min(m, maxWind) / maxWind * (result.length - 1));
+  };
+  return result;
+}
+
+exports.windIntensityColorScale = windIntensityColorScale;
 exports.extendedSinebowColor = extendedSinebowColor;
