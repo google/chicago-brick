@@ -15,9 +15,11 @@ limitations under the License.
 
 'use strict';
 
+const _ = require('underscore');
 const RJSON = require('relaxed-json');
 const debug = require('debug')('wall:control');
 const log = require('server/util/log');
+const library = require('server/modules/module_library');
 const playlistDriver = require('server/modules/playlist_driver');
 const wallGeometry = require('server/util/wall_geometry');
 
@@ -25,15 +27,17 @@ const wallGeometry = require('server/util/wall_geometry');
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(layoutSM, playlistLoader) {
+  constructor(layoutSM, moduleLoader, playlistLoader) {
     this.layoutSM = layoutSM;
     this.playlistLoader = playlistLoader;
+    this.moduleLoader = moduleLoader;
 
     this.initialConfig = playlistLoader.getInitialPlaylistConfig();
     this.currentConfig = this.initialConfig;
   }
 
   installHandlers(app) {
+    app.get('/api/modules', this.getModules.bind(this));
     app.get('/api/playlist', this.getPlaylist.bind(this));
     app.post('/api/playlist', this.setPlaylist.bind(this));
     app.post('/api/reset-playlist', this.resetPlaylist.bind(this));
@@ -60,14 +64,19 @@ class Control {
   setConfig(req, res) {
     try {
       var json = RJSON.parse(req.body.config);
-      var playlistConfig = this.playlistLoader.parsePlaylist(json);
+      this.moduleLoader.loadModules(json);
+      var playlist = this.playlistLoader.parsePlaylist(json);
     } catch (e) {
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
+    playlistDriver.driveStateMachine(playlist, this.layoutSM, true);
     this.currentConfig = json;
     res.redirect('/status');
+  }
+
+  getModules(req, res) {
+    res.json(_.values(library.modules));
   }
 
   getPlaylist(req, res) {
@@ -75,7 +84,9 @@ class Control {
   }
 
   resetPlaylist(req, res) {
-    playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig), this.layoutSM, true);
+    this.moduleLoader.loadModules(this.initialConfig);
+    const playlist = this.playlistLoader.parsePlaylist(this.initialConfig);
+    playlistDriver.driveStateMachine(playlist, this.layoutSM, true);
     this.currentConfig = this.initialConfig;
     res.redirect('/status');
   }
@@ -86,6 +97,7 @@ class Control {
     let json = '';
     try {
       json = RJSON.parse(infinitePlaylist);
+      this.moduleLoader.loadModules(json);
       playlistConfig = this.playlistLoader.parsePlaylist(json);
     } catch (e) {
       console.log(`Error in setPlaylist: ${e}`);

@@ -20,7 +20,8 @@ var path = require('path');
 var bodyParser = require('body-parser');
 var debug = require('debug')('wall:webapp');
 var express = require('express');
-const _ = require('underscore');
+const glob = require('glob');
+const library = require('server/modules/module_library');
 
 /**
  * Creates the main ExpressJS web app.
@@ -90,22 +91,41 @@ function create(flags) {
         end.call(res);
         res.end = end;
       };
-    
+
       next();
     };
   })();
-  for (let dir of flags.module_dir) {
-    // If the module_dir contains a subdirectory, the modules therein will
-    // reference things relative to that (for example, module_dir=node_modules/
-    // chicago_brick/demo_modules). As a temporary hack, we should publish
-    // demo_modules as well, so those local require('demo_modules/...') will
-    // work.
-    let pathToExpose = _.last(dir.split('/'));
-    if (pathToExpose != dir) {
-      app.use(`/${pathToExpose}`, moduleHandler, express.static(dir));
+
+  /**
+   * A map from path to static file handlers for module-relative imports.
+   */
+  const moduleStaticFileHandlers = {};
+  for (let pattern of flags.module_dir) {
+    // Make sure the pattern ends with a "/" so we match only directories.
+    const dirpattern = pattern.substring(-1) === '/' ? pattern : pattern + '/';
+    for (let dir of glob.sync(dirpattern)) {
+      // Remove the ending slash that was added just to force glob to only
+      // return directories.
+      const path = dir.substring(0, dir.length - 1);
+      if (!moduleStaticFileHandlers[path]) {
+        moduleStaticFileHandlers[path] = express.static(path);
+      }
     }
-    app.use(`/${dir}`, moduleHandler, express.static(dir));
   }
+
+  app.use('/module/:name', moduleHandler, function(req, res, next){
+    const module = library.modules[req.params.name];
+    if (!module) {
+      debug(`No module found by name: ${req.params.name}`);
+      return res.sendStatus(404);
+    }
+    const handler = moduleStaticFileHandlers[module.root];
+    if (!handler) {
+      debug(`No static file handler for module root: ${module.root}`);
+      return res.sendStatus(404);
+    }
+    return handler(req, res, next);
+  });
 
   app.use(express.static(path.join(base, 'client')));
 

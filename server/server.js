@@ -24,6 +24,7 @@ const playlistDriver = require('server/modules/playlist_driver');
 const game = require('./game/game');
 const network = require('server/network/network');
 const LayoutStateMachine = require('server/modules/layout_state_machine');
+const ModuleLoader = require('server/modules/module_loader');
 const PlaylistLoader = require('server/modules/playlist_loader');
 const wallGeometry = require('server/util/wall_geometry');
 const Control = require('server/control');
@@ -49,8 +50,9 @@ const FLAG_DEFS = [
           'under these dirs will be available under ' +
           '/asset/{whatever is under your directories}.'},
   {name: 'module_dir', type: String,
-      defaultValue: ['demo_modules'], multiple: true,
-      description: 'A directory that will be served to clients that contains module code. May be specified multiple times.'},
+      defaultValue: ['demo_modules/*, node_modules/*'], multiple: true,
+      description: 'A glob pattern matching directories that contain module ' +
+          'code may be specified multiple times.'},
   {name: 'module', type: String, alias: 'm', multiple: true,
       description: 'Runs only the selected module or modules.'},
   {name: 'help', type: Boolean},
@@ -91,8 +93,13 @@ process.on('unhandledRejection', (reason, p) => {
   debug(reason);
 });
 
-var playlistLoader = new PlaylistLoader(flags);
-var playlist = playlistLoader.getInitialPlaylist();
+const moduleLoader = new ModuleLoader(flags);
+const playlistLoader = new PlaylistLoader(flags);
+const playlistConfig = playlistLoader.getInitialPlaylistConfig();
+
+moduleLoader.loadModules(playlistConfig);
+const playlist = playlistLoader.parsePlaylist(playlistConfig);
+
 if (playlist.length === 0) {
   throw new Error('Nothing to play!');
 }
@@ -100,7 +107,7 @@ if (playlist.length === 0) {
 var app = webapp.create(flags);
 
 const layoutSM = new LayoutStateMachine;
-var control = new Control(layoutSM, playlistLoader);
+var control = new Control(layoutSM, moduleLoader, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);

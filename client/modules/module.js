@@ -31,7 +31,7 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-  
+
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
     newContainer.className = 'container';
@@ -46,26 +46,26 @@ define(function(require) {
     constructor(name, path, config, titleCard, deadline, geo) {
       // The module name.
       this.name = name;
-      
+
       // The path to the main file of this module.
       this.path = path;
 
       // The module config.
       this.config = config;
-      
+
       // The title card instance for this module.
       this.titleCard = titleCard;
-      
+
       // Absolute time when this module is supposed to be visible. Module will
       // actually be faded in by deadline + 5000ms.
       this.deadline = deadline;
-      
+
       // The wall geometry.
       this.geo = geo;
-      
+
       // Globals that are associated with this module.
       this.globals = {};
-      
+
       // The dom container for the module's content.
       this.container = null;
 
@@ -107,19 +107,19 @@ define(function(require) {
 
     instantiate() {
       this.container = createNewContainer(this.name);
-      
+
       if (!this.path) {
         return Promise.resolve();
       }
-      
+
       this.network = network.forModule(
         `${this.geo.extents.serialize()}-${this.deadline}`);
       let openNetwork = this.network.open();
-    
+
       this.contextName = 'module-' + this.deadline;
       let classes = {};
-      
-      return fakeRequire.createEnvironment(this.contextName, {
+
+      return fakeRequire.createEnvironment(this.contextName, this.name, {
         debug: debugFactory('wall:module:' + this.name),
         game: undefined,
         network: openNetwork,
@@ -143,7 +143,7 @@ define(function(require) {
             // this context. Furthermore, as our server will serve this up with
             // a no-cache header, we'll always get fresh code.
             fakeRequire.deleteEnvironment(this.contextName);
-    
+
             // Sanity checks on requested code.
             if (!classes.client) {
               throw new Error('Failed to parse module ' + this.name);
@@ -190,7 +190,7 @@ define(function(require) {
       this.container.style.transition =
           'opacity ' + timeManager.until(deadline).toFixed(0) + 'ms';
       this.container.style.opacity = 1.0;
-      
+
       if (!this.path) {
         return true;
       }
@@ -249,7 +249,7 @@ define(function(require) {
       } catch(e) {
         error(e);
       }
-      
+
       return true;
     }
   }
