@@ -1,0 +1,9 @@
+{
+  "name": "solid",
+  "path": "./solid.js",
+  "title": "Solid Color",
+  "author": "Matt Handley",
+  "config": {
+    "color": "yellow"
+  }
+}
