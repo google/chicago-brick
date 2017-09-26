@@ -43,7 +43,6 @@ class ParticleField {
     // maxIntensity is the velocity at which particle color intensity is maximum
     this.colorStyles = color.windIntensityColorScale(
         INTENSITY_SCALE_STEP, MAX_INTENSITY, MIN_WIND_RGB);
-    this.buckets = this.colorStyles.map(function() { return []; });
   }
 
   initializeParticles() {
@@ -88,17 +87,14 @@ class ParticleField {
   }
 
   draw() {
-    this.buckets.forEach((bucket) => {
-      bucket.length = 0;
-    });
-
-    // Add particles that are not aged out and are defined in the field to the
-    // draw buckets.
-    _.filter(this.particles, (p) => {
-      return p.age < MAX_PARTICLE_AGE && this.vectorField.isDefined(p.xt, p.yt);
-    }).forEach((p) => {
-      this.buckets[this.colorStyles.indexFor(p.m)].push(p);
-    });
+    const buckets = _.reduce(this.particles, (buckets, p) => {
+      // Add particles that are not aged out and are defined in the field to the
+      // draw buckets.
+      if (p.age < MAX_PARTICLE_AGE && this.vectorField.isDefined(p.xt, p.yt)) {
+        buckets[this.colorStyles.indexFor(p.m)].push(p);
+      }
+      return buckets;
+    }, this.colorStyles.map(() => []));
 
     const context = this.context;
     context.lineWidth = PARTICLE_LINE_WIDTH;
@@ -112,7 +108,7 @@ class ParticleField {
     context.globalCompositeOperation = prev;
 
     // Draw new particle trails.
-    this.buckets.forEach((bucket, i) => {
+    buckets.forEach((bucket, i) => {
       if (bucket.length > 0) {
         context.beginPath();
         context.strokeStyle = this.colorStyles[i];
