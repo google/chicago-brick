@@ -1,9 +1,6 @@
 node_modules/
 build/
-demo_modules/wind/bin/tmp
-demo_assets/americas.json
-demo_assets/lakes.json
-demo_assets/current-wind*
+demo_assets/wind-*.json
 
 .DS_STORE
 npm-debug.log
