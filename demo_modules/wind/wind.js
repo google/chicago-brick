@@ -58,7 +58,7 @@ function clampedBounds(bounds, width, height) {
   const y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
   const xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
   const yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
-  return {x: x, y: y, xMax: xMax, yMax: yMax, width: xMax - x + 1, height: yMax - y + 1};
+  return {x, y, xMax, yMax, width: xMax - x + 1, height: yMax - y + 1};
 }
 
 class WindServer extends ModuleInterface.Server {
