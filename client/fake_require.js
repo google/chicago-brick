@@ -33,7 +33,7 @@ limitations under the License.
 //  - Furthermore, the symbols don't _really_ enter into the context until the
 //    next require call after they are defined.
 //  - Since such a require call is theoretically async (even though we know
-//    all of the deps we are asking for are fake and already loaded), we are 
+//    all of the deps we are asking for are fake and already loaded), we are
 //    forced to deal with a Promise.
 //  - Inside of our require, we can resolve the Promise with our requirejs
 //    context.
@@ -42,14 +42,13 @@ limitations under the License.
 define(function(require) {
   'use strict';
   const _ = require('underscore');
-  
+
   /* globals requirejs */
-  
   return {
-    createEnvironment: function(name, env) {
+    createEnvironment: function(name, moduleName, env) {
       return new Promise((resolve) => {
         // First, create a custom requirejs context. Note that we use the
-        // global requirejs, and not the 'local' require, as they are, in 
+        // global requirejs, and not the 'local' require, as they are, in
         // fact, different functions with different kinds of functionality.
         let config = {
           // Name the context.
@@ -58,22 +57,35 @@ define(function(require) {
           // like 'three' or 'p5' work correctly.
           paths: _.clone(requirejs.s.contexts._.config.paths)
         };
-        let contextRequire = requirejs.config(config);
-        
-        // Next, extend our new context with all of the symbols from the 
-        // original context, so modules can find files like 
+
+        let baseRequire = requirejs.config(config);
+        let contextRequire = function(deps, callback, errback) {
+          // Rewrite module-relative deps to the /module/<name>/<relative path>
+          // format. This is handled specially in webapp.js.
+          let rewrittenDeps = deps.map((d) => {
+            if (d.substring(0, 2) == './') {
+              return 'module/' + moduleName + d.substring(1);
+            } else {
+              return d;
+            }
+          });
+          baseRequire(rewrittenDeps, callback, errback);
+        };
+
+        // Next, extend our new context with all of the symbols from the
+        // original context, so modules can find files like
         // lib/module_interface.
         // NOTE: This is brittle, and uses non-public APIs of requirejs.
         _.extend(requirejs.s.contexts[name].defined, requirejs.s.contexts._.defined);
-      
+
         // Next, inject our globals into the requirejs context via define.
         _.each(env, (dep, name) => {
           define(name, [], () => {
             return dep;
           });
         });
-      
-        // Next, force requirejs to gather the new defines into the local 
+
+        // Next, force requirejs to gather the new defines into the local
         // context.
         contextRequire(Object.keys(env), () => {
           // Return the new context, with all of the deps loaded.
