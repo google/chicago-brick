@@ -43,7 +43,6 @@ class ParticleField {
     // maxIntensity is the velocity at which particle color intensity is maximum
     this.colorStyles = color.windIntensityColorScale(
         INTENSITY_SCALE_STEP, MAX_INTENSITY, MIN_WIND_RGB);
-
     this.buckets = this.colorStyles.map(function() { return []; });
   }
 
@@ -57,40 +56,50 @@ class ParticleField {
   }
 
   evolve() {
-    this.buckets.forEach((bucket) => {
-      bucket.length = 0;
-    });
     this.particles.forEach((particle) => {
-      if (particle.age > MAX_PARTICLE_AGE) {
+      // Update current position.
+      if (particle.xt !== undefined) {
+        particle.x = particle.xt;
+      }
+      if (particle.yt !== undefined) {
+        particle.y = particle.yt;
+      }
+
+      particle.age += 1;
+
+      // Randomize aged-out particles.
+      if (particle.age >= MAX_PARTICLE_AGE) {
         this.vectorField.randomize(particle).age = 0;
       }
+
       const x = particle.x;
       const y = particle.y;
-      const v = this.vectorField.vector(x, y);
+      const [vx, vy, m] = this.vectorField.vector(x, y);
 
-      const m = v[2];
       if (m === null) {
         // particle has escaped the grid, never to return...
         particle.age = MAX_PARTICLE_AGE;
       } else {
-        const xt = x + v[0];
-        const yt = y + v[1];
-        if (this.vectorField.isDefined(xt, yt)) {
-          // Path from (x,y) to (xt,yt) is visible, so add this particle to the appropriate draw bucket.
-          particle.xt = xt;
-          particle.yt = yt;
-          this.buckets[this.colorStyles.indexFor(m)].push(particle);
-        } else {
-          // Particle isn't visible, but it still moves through the field.
-          particle.x = xt;
-          particle.y = yt;
-        }
+        particle.xt = x + vx;
+        particle.yt = y + vy;
+        particle.m = m;
       }
-      particle.age += 1;
     });
   }
 
   draw() {
+    this.buckets.forEach((bucket) => {
+      bucket.length = 0;
+    });
+
+    // Add particles that are not aged out and are defined in the field to the
+    // draw buckets.
+    _.filter(this.particles, (p) => {
+      return p.age < MAX_PARTICLE_AGE && this.vectorField.isDefined(p.xt, p.yt);
+    }).forEach((p) => {
+      this.buckets[this.colorStyles.indexFor(p.m)].push(p);
+    });
+
     const context = this.context;
     context.lineWidth = PARTICLE_LINE_WIDTH;
     context.fillStyle = FADE_FILL_STYLE;
@@ -110,8 +119,6 @@ class ParticleField {
         bucket.forEach((particle) => {
           context.moveTo(particle.x, particle.y);
           context.lineTo(particle.xt, particle.yt);
-          particle.x = particle.xt;
-          particle.y = particle.yt;
         });
         context.stroke();
       }
