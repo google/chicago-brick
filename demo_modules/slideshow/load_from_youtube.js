@@ -15,8 +15,9 @@ limitations under the License.
 
 'use strict';
 const debug = require('debug');
-const interfaces = require('demo_modules/slideshow/interfaces');
 const serverRequire = require('lib/server_require');
+
+const interfaces = require('./interfaces');
 
 // LOAD YOUTUBE PLAYLIST STRATEGY
 // Config:

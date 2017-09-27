@@ -15,8 +15,9 @@ limitations under the License.
 
 'use strict';
 const debug = require('debug');
-const interfaces = require('demo_modules/slideshow/interfaces');
 const serverRequire = require('lib/server_require');
+
+const interfaces = require('./interfaces');
 
 // LOAD FROM DRIVE STRATEGY
 // Here, we specify the server & client strategies that can load images from a

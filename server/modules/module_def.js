@@ -40,7 +40,7 @@ const read = (path) => {
   });
 };
 
-const evalModule = (contents, name, layoutGeometry, network, game, state) => {
+const evalModule = (contents, name, path, layoutGeometry, network, game, state) => {
   let classes = {};
   
   // Inject our deps into node's require environment.
@@ -62,7 +62,7 @@ const evalModule = (contents, name, layoutGeometry, network, game, state) => {
       classes.server = server;
       classes.client = client;
     },
-  });
+  }, path);
   
   let sandbox = {
     require: fakeRequireInstance,
@@ -80,9 +80,9 @@ const evalModule = (contents, name, layoutGeometry, network, game, state) => {
   return classes;
 };
 
-const verify = (name, contents) => {
+const verify = (name, contents, path) => {
   // Eval using fake globals.
-  const classes = evalModule(contents, name, wallGeometry.getGeo(), {}, {}, {});
+  const classes = evalModule(contents, name, path, wallGeometry.getGeo(), {}, {}, {});
   
   if (!classes.server) {
     debug('Module did not register a server-side module!');
@@ -196,7 +196,7 @@ class ModuleDef extends EventEmitter {
         // Start rewatcher, regardless of status.
         rewatch();
         
-        if (verify(this.name, contents)) {
+        if (verify(this.name, contents, this.path)) {
           debug('Verified ' + this.path);
           this.valid = true;
           this.def = contents;
@@ -230,7 +230,7 @@ class ModuleDef extends EventEmitter {
   instantiate(layoutGeometry, network, game, state, deadline) {
     // Only instantiate valid modules.
     assert(this.valid, 'Attempt to instantiate invalid module!');
-    let classes = evalModule(this.def, this.name, layoutGeometry, network, game, state);
+    let classes = evalModule(this.def, this.name, this.path, layoutGeometry, network, game, state);
     return new classes.server(this.config, deadline);
   }
   

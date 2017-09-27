@@ -20,9 +20,9 @@ const globalWallGeometry = require('globalWallGeometry');
 const wallGeometry = require('wallGeometry');
 const network = require('network');
 
-const ForecastGrid = require('demo_modules/wind/forecast_grid');
-const VectorField = require('demo_modules/wind/vector_field');
-const ParticleField = require('demo_modules/wind/particle_field');
+const ForecastGrid = require('./forecast_grid');
+const ParticleField = require('./particle_field');
+const VectorField = require('./vector_field');
 
 const ROTATEX = 100;
 const ROTATEY = -400;

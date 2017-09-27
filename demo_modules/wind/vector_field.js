@@ -17,10 +17,11 @@ limitations under the License.
 // at https://earth.nullschool.net and its open source code:
 // https://github.com/cambecc/earth.
 
-const color = require('demo_modules/wind/color');
 const d3 = require('d3');
-const util = require('demo_modules/wind/util');
 const wallGeometry = require('wallGeometry');
+
+const color = require('./color');
+const util = require('./util');
 
 const floorMod = util.floorMod;
 const isValue = util.isValue;

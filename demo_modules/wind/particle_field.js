@@ -17,7 +17,7 @@ limitations under the License.
 // at https://earth.nullschool.net and its open source code:
 // https://github.com/cambecc/earth.
 
-const color = require('demo_modules/wind/color');
+const color = require('./color');
 
 const MIN_WIND_RGB = 160;
 const INTENSITY_SCALE_STEP = 5;

@@ -15,11 +15,12 @@ limitations under the License.
 
 'use strict';
 const debug = require('debug');
-const interfaces = require('demo_modules/slideshow/interfaces');
 const _ = require('underscore');
 const assert = require('lib/assert');
 const wallGeometry = require('wallGeometry');
 const network = require('network');
+
+const interfaces = require('./interfaces');
 
 // FULLSCREEN DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
