@@ -5,7 +5,8 @@
   "main": "server/server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "jshint": "node_modules/.bin/jshint **/*.js"
+    "jshint": "node_modules/.bin/jshint **/*.js",
+    "release": "node_modules/.bin/release-it -n"
   },
   "author": "",
   "license": "MIT",
@@ -43,6 +44,7 @@
     "jshint": "^2.8.0",
     "mocha": "^3.1.2",
     "pre-commit": "^1.0.10",
+    "release-it": "^3.0.1",
     "sinon": "^1.17.6",
     "sinon-chai": "^2.8.0"
   }
