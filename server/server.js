@@ -50,7 +50,7 @@ const FLAG_DEFS = [
           'under these dirs will be available under ' +
           '/asset/{whatever is under your directories}.'},
   {name: 'module_dir', type: String,
-      defaultValue: ['demo_modules/*, node_modules/*'], multiple: true,
+      defaultValue: ['demo_modules/*', 'node_modules/*'], multiple: true,
       description: 'A glob pattern matching directories that contain module ' +
           'code may be specified multiple times.'},
   {name: 'module', type: String, alias: 'm', multiple: true,
