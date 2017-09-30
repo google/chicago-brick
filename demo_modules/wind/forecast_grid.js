@@ -17,9 +17,9 @@ limitations under the License.
 // at https://earth.nullschool.net and its open source code:
 // https://github.com/cambecc/earth.
 
-const util = require('demo_modules/wind/util');
 const interpolateLib = require('lib/interpolate');
 
+const util = require('./util');
 const floorMod = util.floorMod;
 const isValue = util.isValue;
 

@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 const _ = require('underscore');
+const path = require('path');
 
 // Server-side takes just an env. This is sorta complicated, but simpler than
 // the client-side case because we are synchronous.
@@ -31,14 +32,14 @@ const _ = require('underscore');
 //  - Finally, we have to clean up this when we're done, so they don't stick
 //    around forever.
 module.exports = {
-  createEnvironment: function(env) {
+  createEnvironment: function(env, modulePath) {
     'use strict';
     // First, create a list of the the current valid deps, so we can remove
     // any new ones that appear when it's time to clean up.
     let loadedDeps = Object.keys(require.cache);
     // We also need to track this module's deps, too.
     let originalChildren = Array.from(module.children);
-    
+
     // Next, tell the Module._resolveFilename method to ignore our special
     // deps.
     let Module = require('module');
@@ -48,9 +49,21 @@ module.exports = {
       if (args[0] in env) {
         return args[0];
       }
+
+      // For relative imports we rewrite them to be relative to the
+      // chicago-brick root directory.
+      if (args[0][0] == '.') {
+        // The main entry point is evaled in the context of this script, so we
+        // have to rewrite it based on the provided module path. Otherwise, we
+        // rewrite it based on the parent module (for later relative imports).
+        const parentModule = args[1].id == module.id ?  modulePath : args[1].id;
+        const parentDir = path.dirname(parentModule);
+        const relative = path.relative(process.cwd(), parentDir);
+        args[0] = path.join(relative, args[0]);
+      }
       return origResolve.apply(null, args);
     };
-    
+
     // Add our fake deps to the cache.
     for (let name in env) {
       let fakeModule = new Module(name, null);

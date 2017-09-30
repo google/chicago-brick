@@ -15,7 +15,8 @@ limitations under the License.
 
 'use strict';
 const debug = require('debug');
-const interfaces = require('demo_modules/slideshow/interfaces');
+
+const interfaces = require('./interfaces');
 
 // LOAD LOCAL FILES STRATEGY
 // This loading strategy knows how to load both images and videos from the local file

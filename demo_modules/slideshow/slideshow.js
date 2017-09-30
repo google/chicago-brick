@@ -31,13 +31,13 @@ const wallGeometry = require('wallGeometry');
 const debug = require('debug');
 const network = require('network');
 
-const LoadFromDriveStrategy = require('demo_modules/slideshow/load_from_drive');
-const LoadFromYouTubePlaylistStrategy = require('demo_modules/slideshow/load_from_youtube');
-const LoadLocalStrategy = require('demo_modules/slideshow/load_local');
-const LoadFromFlickrStrategy = require('demo_modules/slideshow/load_from_flickr');
+const LoadFromDriveStrategy = require('./load_from_drive');
+const LoadFromYouTubePlaylistStrategy = require('./load_from_youtube');
+const LoadLocalStrategy = require('./load_local');
+const LoadFromFlickrStrategy = require('./load_from_flickr');
 
-const FullscreenDisplayStrategy = require('demo_modules/slideshow/fullscreen_display');
-const FallingDisplayStrategy = require('demo_modules/slideshow/falling_display');
+const FullscreenDisplayStrategy = require('./fullscreen_display');
+const FallingDisplayStrategy = require('./falling_display');
 
 // DISPATCH TABLES
 // These methods convert a load or display config to specific server or client

@@ -16,9 +16,10 @@ limitations under the License.
 'use strict';
 const debug = require('debug');
 const querystring = require('querystring');
-const interfaces = require('demo_modules/slideshow/interfaces');
 const serverRequire = require('lib/server_require');
 const assert = require('lib/assert');
+
+const interfaces = require('./interfaces');
 
 // LOAD FROM FLICKR STRATEGY
 // Here, we specify the server & client strategies that can load images from a
