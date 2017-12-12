@@ -35,7 +35,8 @@ function buildPlayableModuleMap(config) {
   config.current.playlist.forEach(function(playlist) {
     if (playlist.collection === undefined) {
       playlist.modules.forEach(
-        module => playableModules[module.name] += 1
+        // Module is just a string here, not the full module struct.
+        module => playableModules[module] += 1
       );
     } else if (playlist.collection == '__ALL__') {
       playableCollections['__ALL__'] = new Array();
