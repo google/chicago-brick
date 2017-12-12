@@ -99,6 +99,15 @@
       "author": "Ian Atkinson"
     },
     {
+      "name": "slither",
+      "path": "demo_modules/slither/slither.js",
+      "title": "Slither",
+      "author": "Matt Handley",
+      "config": {
+        "numSnakes": 100
+      }
+    },
+    {
       "name": "cta",
       "extends": "slideshow",
       "config": {
