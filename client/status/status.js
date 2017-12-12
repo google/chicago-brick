@@ -224,7 +224,7 @@ fetchJson('config').then(config => {
       const a = document.createElement('a');
       a.id = 'module_' + module.name;
       a.addEventListener('click', function() {
-        fetch('/api/playzzzz?module=' + module.name, { method: 'POST' });
+        fetch('/api/play?module=' + module.name, { method: 'POST' });
       });
       a.textContent = module.name;
       li.appendChild(a);
