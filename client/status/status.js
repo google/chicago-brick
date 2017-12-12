@@ -56,8 +56,17 @@ function buildPlayableModuleMap(config) {
   return playableModules;
 }
 
+function makeRequest(url, requestMethod, providedBody) {
+  return new Request(url, {
+      method: requestMethod,
+      headers: {'content-type': 'application/json'},
+      credentials: 'same-origin',
+      body: providedBody
+  });
+}
+
 function fetchJson(endpoint) {
-  return fetch('/api/' + endpoint, {credentials: 'same-origin'})
+  return fetch(makeRequest('/api/' + endpoint, 'GET'))
       .then(resp => resp.json());
 }
 
@@ -224,7 +233,7 @@ fetchJson('config').then(config => {
       const a = document.createElement('a');
       a.id = 'module_' + module.name;
       a.addEventListener('click', function() {
-        fetch('/api/play?module=' + module.name, { method: 'POST' });
+        fetch(makeRequest('/api/play?module=' + module.name, 'POST', ''));
       });
       a.textContent = module.name;
       li.appendChild(a);
@@ -237,12 +246,7 @@ fetchJson('config').then(config => {
     let a2 = document.createElement("a");
     a2.id = 'forever_module_' + module.name;
     a2.addEventListener('click', function() {
-      let myRequest = new Request('/api/playlist', {
-          method: 'POST',
-          headers: {'content-type': 'application/json'},
-          credentials: 'same-origin',
-          body: JSON.stringify(module)});
-      fetch(myRequest).then(function(res) {
+      fetch(makeRequest('/api/playlist', 'POST', JSON.stringify(module))).then(function(res) {
         if (res.ok && res.redirected) {
           document.location = res.url;
         }
