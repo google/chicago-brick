@@ -2,13 +2,13 @@
 
 ## Quick Start
 To use this software, first download and install [node](http://www.nodejs.org).
-Then, check you have a recent node by:
+Then, check you have a recent node:
 ```
 $ node --version
 ```
-It should be at least 4.1.
+The wall uses all the new JS shiny, so node should be at least 8.
 
-Next, install the external deps that aren't in the repo:
+Next, install the external npm deps that aren't in the repo:
 ```
 path/to/your/chicago-brick$ npm install
 ```
