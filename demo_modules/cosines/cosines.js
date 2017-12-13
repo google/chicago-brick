@@ -31,8 +31,8 @@ class CosinesSketch {
     this.p5 = p5;
     this.surface = surface;
     
-    this.width = 67;
-    this.height = 45;
+    this.width = 67*4;
+    this.height = 45*2;
   }
 
   setup() {
@@ -56,9 +56,17 @@ class CosinesSketch {
     
     for (var y = 0; y < this.height; ++y) {
       const yp = 360 * y / this.height;
+      const yloc = yspace * 0.5 + yspace * y + yspace * 0.44 * this.scaledCos(p5.radians(t * 0.0391 + (4.65 * yp)));
+
+      if (yloc + space * 1 < this.surface.virtualRect.y) continue;
+      if (yloc - space * 1 > this.surface.virtualRect.y + this.surface.virtualRect.h) continue;
       
       for (var x = 0; x < this.width; ++x) {
         const xp = 360 * x / this.width;
+        const xloc = xspace * 0.5 + xspace * x + xspace * 0.44 * this.scaledCos(p5.radians(t * 0.0381 + (4.55 * xp)))
+
+        if (xloc + space * 1 < this.surface.virtualRect.x) continue;
+        if (xloc - space * 1 > this.surface.virtualRect.x + this.surface.virtualRect.w) continue;
 
         var size =
           0.5 + 0.5 *
@@ -84,10 +92,8 @@ class CosinesSketch {
             ));
             
         p5.ellipse(
-          xspace * 0.5 + xspace * x +
-            xspace * 0.44 * this.scaledCos(p5.radians(t * 0.0381 + (4.55 * xp))),
-          yspace * 0.5 + yspace * y +
-            yspace * 0.44 * this.scaledCos(p5.radians(t * 0.0391 + (4.65 * yp))),
+          xloc,
+          yloc,
           space * size,
           space * size);
       }
