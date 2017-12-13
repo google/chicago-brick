@@ -82,7 +82,7 @@ class BigBoard {
     var layoutReq = fetchJson('layout')
         .then(layout => this.layout = layout, err => {
           if (this.layout) {
-            this.layout.partitions = [];
+            this.layout.state = null;
           }
         });
     var clientsReq = fetchJson('clients')
@@ -168,36 +168,27 @@ class BigBoard {
     wallGeo
         .attr('d', lineFromPoints(wall.points));
 
-    var partitions = chart.select('#outline').selectAll('.partition')
-        .data(this.layout.partitions);
-    var partitionGroups = partitions.enter().append('g')
-        .attr('class', 'partition');
-    partitionGroups.append('path')
-        .attr('fill-opacity', 0.1);
-    partitionGroups.append('text')
+    var layout = chart.select('#outline').data([this.layout]);
+    layout.append('text')
         .attr('stroke', 'gray')
         .attr('text-anchor', 'middle')
         .attr('dominant-baseline', 'middle');
-    partitions.select('path')
-        .attr('d', (d) => lineFromPoints(d.geo.points))
-        .attr('fill', (d, i) => bgColors[i % bgColors.length]);
-    partitions.select('text')
-        .text((d) => {
-          var r = d.state;
-          if (d.deadline !== null && d.deadline !== Infinity) {
-            r += ': ' + (d.deadline - this.now).toFixed(2);
+    layout.select('text')
+        .text(l => {
+          var r = l.state;
+          if (l.deadline !== null && l.deadline !== Infinity) {
+            r += ': ' + (l.deadline - this.now).toFixed(2);
           }
           return r;
         })
-        .attr('x', (d, index) => {
-          var bbox = partitions.select('path')[0][index].getBBox();
+        .attr('x', d => {
+          var bbox = chart[0][0].getBBox();
           return bbox.x + bbox.width / 2;
         })
-        .attr('y', (d, index) => {
-          var bbox = partitions.select('path')[0][index].getBBox();
+        .attr('y', d => {
+          var bbox = chart[0][0].getBBox();
           return bbox.y + bbox.height / 2;
         });
-    partitions.exit().remove();
   }
 }
 

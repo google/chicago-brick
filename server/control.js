@@ -104,13 +104,8 @@ class Control {
   getLayout(req, res) {
     const ret = {};
     let info = this.layoutSM.getCurrentModuleInfo();
-    ret.partitions = this.layoutSM.getPartition().map((p, i) => {
-      return {
-        geo: p, 
-        state: info[i].state,
-        deadline: info[i].deadline
-      };
-    });
+    ret.state = info.state;
+    ret.deadline = info.deadline;
     ret.wall = wallGeometry.getGeo();
     
     res.json(ret);
@@ -127,7 +122,7 @@ class Control {
       return;
     }
     try {
-      this.layoutSM.playModule(0, moduleName);
+      this.layoutSM.playModule(moduleName);
     } catch (e) {
       debug(e.message);
       debug(e.stack);

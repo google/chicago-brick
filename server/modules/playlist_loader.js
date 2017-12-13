@@ -94,7 +94,6 @@ class PlaylistLoader {
         modules: this.getModulesForLayout_(layout, config.collections),
         moduleDuration: this.flags.module_duration || layout.moduleDuration,
         duration: this.flags.layout_duration || layout.duration,
-        maxPartitions: this.flags.max_partitions || layout.maxPartitions,
       });
     });
   }

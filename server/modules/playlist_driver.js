@@ -19,6 +19,7 @@ const monitor = require('server/monitoring/monitor');
 const random = require('random-js')();
 const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
+const debug = require('debug')('wall::playlist_driver');
 
 let timer;
 
@@ -32,7 +33,6 @@ const driveStateMachine = (playlist, layoutSM, clearTimer) => {
   const nextLayout = layoutIndex => {
     // Show this layout next:
     let layout = playlist[layoutIndex];
-    let partition = wallGeometry.partitionGeo(layout.maxPartitions);
 
     // The time that we'll switch to a new layout.
     let newLayoutTime = time.inFuture(layout.duration * 1000);
@@ -45,28 +45,25 @@ const driveStateMachine = (playlist, layoutSM, clearTimer) => {
       }});
     }
 
-    layoutSM.setPartition(partition).then(() => {
-      // Shuffle the module list for each partition:
-      let modulesPerPartition = partition.map(() => {
-        let modules = Array.from(layout.modules);
-        random.shuffle(modules);
-        return modules;
-      });
+    debug(`Next Layout: ${layoutIndex}`);
 
+    layoutSM.fadeOut().then(() => {
+      // Shuffle the module list:
+      let modules = Array.from(layout.modules);
+      random.shuffle(modules);
+      
       const nextModule = moduleIndex => {
         layoutSM.setErrorListener(error => {
           // Stop normal advancement.
           clearTimeout(timer);
-          nextModule((moduleIndex + 1) % modulesPerPartition[0].length);
+          nextModule((moduleIndex + 1) % modules.length);
         });
 
         // The time that we'll switch to the next module.
         let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
 
-        // Tell each partition to play the next module in the list.
-        modulesPerPartition.forEach((modules, index) => {
-          layoutSM.playModule(index, modules[moduleIndex]);
-        });
+        // Tell the layout to play the next module in the list.
+        layoutSM.playModule(modules[moduleIndex]);
 
         if (monitor.isEnabled()) {
           monitor.update({playlist: {
@@ -80,7 +77,7 @@ const driveStateMachine = (playlist, layoutSM, clearTimer) => {
         // have?
         timer = (newLayoutTime < newModuleTime) ?
           setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime)) :
-          setTimeout(() => nextModule((moduleIndex + 1) % modulesPerPartition[0].length), time.until(newModuleTime));
+          setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
       };
 
       Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => nextModule(0));

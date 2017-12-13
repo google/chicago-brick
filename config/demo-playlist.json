@@ -156,7 +156,6 @@
       "collection": "__ALL__",
       "duration": 600,
       "moduleDuration": 60,
-      "maxPartitions": 4,
     }
   ],
 }
