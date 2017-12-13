@@ -16,6 +16,12 @@
       "author": "Matt Cruikshank"
     },
     {
+      "name": "cosines",
+      "path": "demo_modules/cosines/cosines.js",
+      "title": "Cosines",
+      "author": "Matt Cruikshank"
+    },
+    {
       "name": "merge-balls",
       "path": "demo_modules/merge_balls/merge_balls.js",
       "title": "Hungry Hungry Circles",
