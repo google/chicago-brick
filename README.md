@@ -8,6 +8,11 @@ $ node --version
 ```
 The wall uses all the new JS shiny, so node should be at least 8.
 
+Clone the repo to your machine:
+```
+git clone https://github.com/google/chicago-brick.git
+```
+
 Next, install the external npm deps that aren't in the repo:
 ```
 path/to/your/chicago-brick$ npm install
