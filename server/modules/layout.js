@@ -28,9 +28,6 @@ class Layout {
 
     // How long to run individual modules, if there is more than one module.
     this.moduleDuration = config.moduleDuration || config.duration;
-
-    // The max number of partitions into which to split the wall.
-    this.maxPartitions = config.maxPartitions;
   }
 }
 

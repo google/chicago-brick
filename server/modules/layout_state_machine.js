@@ -36,14 +36,10 @@ class LayoutStateMachine extends stateMachine.Machine {
   constructor() {
     super(new IdleState, debug);
 
-    // The partition we're trying to show next.
-    this.partition_ = null;
-
     this.setContext({
       // All known clients. Maps client ID to ClientControlStateMachine.
       clients: {},
-      // Array of playlist index -> module name
-      modules: [],
+      module: null,
     });
   }
   newClient(clientInfo) {
@@ -77,25 +73,18 @@ class LayoutStateMachine extends stateMachine.Machine {
     }
     delete this.context_.clients[id];
   }
-  setPartition(partition) {
-    // The partition specifies polygons that divide the wall into independent spheres of control.
-    this.partition_ = partition;
-    
-    // Wipe the requested modules, as the number of partitions could easily change between set calls.
-    this.context_.modules.length = 0;
+  fadeOut() {
+    // Wipe the requested module.
+    this.context_.module = null;
     
     if (monitor.isEnabled()) {
       monitor.update({layout: {
         time: time.now(),
-        event: `setPartition: ${partition.length}`,
+        event: `fadeOut`,
       }});
     }
     
-    // Tell the wall to fade out and switch to this new partitioning scheme.
-    return this.state.fadeOut(partition);
-  }
-  getPartition() {
-    return this.partition_;
+    return this.state.fadeOut();
   }
   getCurrentModuleInfo() {
     return this.state.getCurrentModuleInfo();
@@ -111,19 +100,20 @@ class LayoutStateMachine extends stateMachine.Machine {
           };
         });
   }
-  // Tell a partition to play a module.
-  playModule(partitionIndex, moduleName) {
+  // Tell the state machines to play a module.
+  playModule(moduleName) {
+    debug(`playModule: ${moduleName}`);
     if (monitor.isEnabled()) {
       monitor.update({layout: {
         time: time.now(),
-        event: `playModule: ${partitionIndex} ${moduleName}`,
+        event: `playModule: ${moduleName}`,
       }});
     }
     
-    this.context_.modules[partitionIndex] = moduleName;
+    this.context_.module = moduleName;
     
-    // Tell the current state that a new partition has arrived.
-    return this.state.playModule(partitionIndex, moduleName);
+    // Tell the current state that a request to play a module has arrived.
+    return this.state.playModule(moduleName);
   }
 }
 
@@ -140,23 +130,19 @@ class IdleState extends stateMachine.State {
   newClient(client) {}
   dropClient(rect, id) {}
   getCurrentModuleInfo() {
-    return [];
+    return {};
   }
-  fadeOut(partition) {
+  fadeOut() {
     // We can skip the normal fade out here because we're already faded out.
-    this.transition_(new PartitionState(partition));
     return Promise.resolve();
   }
-  playModule(partitionIndex, moduleName) {}
+  playModule(moduleName) {
+    // Start showing a thing!
+    this.transition_(new DisplayState);
+  }
 }
 
-class PartitionState extends stateMachine.State {
-  constructor(partition) {
-    super();
-    
-    // Array of polygons that define the layout.
-    this.partition_ = partition;
-  }
+class DisplayState extends stateMachine.State {
   enter(transition, context) {
     let deadline = time.now();
     if (monitor.isEnabled()) {
@@ -170,61 +156,42 @@ class PartitionState extends stateMachine.State {
     this.transition_ = transition;
     
     // Make a module state machine (that manages the lifecycle of the module interface for both
-    // client and server) for each partition.
-    this.moduleSMs_ = this.partition_.map(geo => new ModuleStateMachine(context.clients, geo));
+    // client and server).
+    this.moduleSM_ = new ModuleStateMachine(context.clients);
 
-    // TODO(applmak): Add information to this error such as which partition gave the error.
-    this.moduleSMs_.forEach(msm => msm.setErrorListener(error => {
+    this.moduleSM_.setErrorListener(error => {
       throw error;
-    }));
+    });
     
     // Tell the new module state machines to play any requested modules for this state (if any arrived
     // since we we were told to go here, say, during the fade).
-    this.moduleSMs_.forEach((msm, i) => {
-      if (context.modules[i]) {
-        msm.playModule(context.modules[i], deadline);
-      }
-    });
-    
-    // We're done until a new partition arrives.
+    this.moduleSM_.playModule(context.module, deadline);
   }
   newClient(clientInfo) {
-    // Assign to a partition.
-    let index = this.partition_.findIndex(geo => isDisplayInPoly(clientInfo.rect, geo));
-    if (index == -1) {
-      // Client tried to connect outside the wall geometry.
-      throw new Error(`New client ${clientInfo.socket.id} is not inside of the wall!`);
-    }
-    this.moduleSMs_[index].newClient(clientInfo);
+    this.moduleSM_.newClient(clientInfo);
   }
   dropClient(rect, id) {
-    let index = this.partition_.findIndex(geo => isDisplayInPoly(rect, geo));
-    if (index == -1) {
-      // Client tried to drop outside the known wall geometry... weird.
-      throw new Error(`Client ${id} is not inside of the wall!`);
-    }
-    this.moduleSMs_[index].dropClient(id);
+    this.moduleSM_.dropClient(id);
   }
-  fadeOut(partition) {
-    return new Promise(resolve => this.transition_(new FadeOutState(partition, this.moduleSMs_, resolve)));
+  fadeOut() {
+    return new Promise(resolve => this.transition_(new FadeOutState(this.moduleSM_, resolve)));
   }
-  playModule(partitionIndex, moduleName) {
-    this.moduleSMs_[partitionIndex].playModule(moduleName, time.now());
+  playModule(moduleName) {
+    this.moduleSM_.playModule(moduleName, time.now());
   }
   getCurrentModuleInfo() {
-    return this.moduleSMs_.map(msm => ({
-      state: msm.state.getName(),
-      deadline: msm.getDeadline(),
-    }));
+    return {
+      state: this.moduleSM_.state.getName(),
+      deadline: this.moduleSM_.getDeadline(),
+    };
   }
 }
 
 class FadeOutState extends stateMachine.State {
-  constructor(partition, moduleSMs, resolve) {
+  constructor(moduleSM, resolve) {
     super();
     
-    this.partition_ = partition;
-    this.moduleSMs_ = moduleSMs;
+    this.moduleSM_ = moduleSM;
     
     this.timer_ = null;
     
@@ -243,10 +210,10 @@ class FadeOutState extends stateMachine.State {
     }
     
     this.transition_ = transition;
-    debug(`Fading out ${this.partition_.length} layouts at ${deadline} ms`);
-    this.moduleSMs_.forEach(sm => sm.fadeToBlack(now));
+    debug(`Fading out at ${deadline} ms`);
+    this.moduleSM_.fadeToBlack(now);
     this.timer_ = setTimeout(() => {
-      transition(new PartitionState(this.partition_));
+      transition(new DisplayState);
       this.resolves_.forEach(r => r());
     }, time.until(deadline));
   }
@@ -255,16 +222,15 @@ class FadeOutState extends stateMachine.State {
   }
   newClient(clientInfo) {}
   dropClient(id) {}
-  fadeOut(partition) {
-    this.partition_ = partition;
+  fadeOut() {
     return new Promise(resolve => this.resolves_.push(resolve));
   }
-  playModule(partitionIndex, moduleName) {}
+  playModule(moduleName) {}
   getCurrentModuleInfo() {
-    return this.moduleSMs_.map(msm => ({
-      state: msm.state.getName(),
+    return {
+      state: this.moduleSM_.state.getName(),
       deadline: Infinity,
-    }));
+    };
   }
 }
 

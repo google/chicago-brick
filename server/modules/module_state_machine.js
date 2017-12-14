@@ -25,6 +25,7 @@ const library = require('server/modules/module_library');
 const ServerStateMachine = require('server/modules/server_state_machine');
 const geometry = require('lib/geometry');
 const monitor = require('server/monitoring/monitor');
+const wallGeometry = require('server/util/wall_geometry');
 
 function isDisplayInPoly(rect, poly) {
   // find the center point of this display:
@@ -37,8 +38,10 @@ function isDisplayInPoly(rect, poly) {
 // Takes a map of client ids -> client state machines. Not owned or changed
 // by this class, only read.
 class ModuleStateMachine extends stateMachine.Machine {
-  constructor(allClients, geo) {
+  constructor(allClients) {
     super(new IdleState, debug);
+    
+    const geo = wallGeometry.getGeo();
 
     // Map of ID to ClientControlStateMachine for all clients.
     this.allClients_ = allClients;
@@ -121,7 +124,6 @@ class ModuleStateMachine extends stateMachine.Machine {
       library.on('reloaded', this.reloadHandler);
       this.reloadHandlerInstalled_ = true;
     }
-    
     
     this.state.playModule(moduleName, timeToStartDisplay);
   }
