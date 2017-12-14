@@ -197,7 +197,7 @@ class FadeOutState extends stateMachine.State {
     
     this.resolves_ = [resolve];
   }
-  enter(transition) {
+  enter(transition, context) {
     let now = time.now();
     const FADE_OUT_DURATION = 5000;
     let deadline = now + FADE_OUT_DURATION;
@@ -213,7 +213,14 @@ class FadeOutState extends stateMachine.State {
     debug(`Fading out at ${deadline} ms`);
     this.moduleSM_.fadeToBlack(now);
     this.timer_ = setTimeout(() => {
-      transition(new DisplayState);
+      if (context.module) {
+        // Someone told us to switch modules while we were fading!
+        // No problem, let's show it!
+        transition(new DisplayState);
+      } else {
+        // We've no one to switch to next, so let's just stay faded out.
+        transition(new IdleState);
+      }
       this.resolves_.forEach(r => r());
     }, time.until(deadline));
   }
