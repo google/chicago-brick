@@ -59,7 +59,7 @@ module.exports = {
         const parentModule = args[1].id == module.id ?  modulePath : args[1].id;
         const parentDir = path.dirname(parentModule);
         const relative = path.relative(process.cwd(), parentDir);
-        args[0] = path.join(relative, args[0]);
+        args[0] = path.join(relative.replace(/^node_modules\//, ''), args[0]);
       }
       return origResolve.apply(null, args);
     };
