@@ -31,6 +31,8 @@ const webapp = require('server/webapp');
 const credentials = require('server/util/credentials');
 const path = require('path');
 const monitor = require('server/monitoring/monitor');
+const https = require('https');
+const fs = require('fs');
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
@@ -63,7 +65,11 @@ const FLAG_DEFS = [
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
-  {name: 'enable_monitoring', type: Boolean}
+  {name: 'enable_monitoring', type: Boolean},
+  {name: 'use_https', type: Boolean, defaultValue: false,
+    description: 'Enables HTTPS. Certificates must exist in certs/.'},
+  {name: 'require_client_cert', type: Boolean, defaultValue: false,
+    description: 'Whether to require HTTPS certs from clients.'}
 ];
 let flags = commandLineArgs(FLAG_DEFS);
 if (flags.help) {
@@ -109,12 +115,26 @@ if (flags.credential_dir) {
   credentials.loadFromDir(flags.credential_dir);
 }
 
-var server = app.listen(flags.port, function() {
+var server;
+var listener = function() {
   var host = server.address().address;
   var port = server.address().port;
 
   debug('Server listening at http://%s:%s', host, port);
-});
+};
+
+if (flags.use_https) {
+  const opts = {
+    key: fs.readFileSync('certs/server_key.pem'),
+    cert: fs.readFileSync('certs/server_cert.pem'),
+    requestCert: flags.require_client_cert,
+    ca: [fs.readFileSync('certs/server_cert.pem')]
+  };
+
+  server = https.createServer(opts, app).listen(flags.port, listener);
+} else {
+  server = app.listen(flags.port, listener);
+}
 
 var peerServer = new PeerServer({port: flags.port + 6000, path: '/peerjs'});
 peerServer.on('connection', function(id) {
