@@ -4,6 +4,30 @@
 {
   "modules": [
     {
+      "name": "caramel",
+      "path": "demo_modules/glslsandbox/caramel.js",
+      "title": "Caramel",
+      "author": "Matt Cruikshank"
+    },
+    {
+      "name": "galaxy",
+      "path": "demo_modules/glslsandbox/galaxy.js",
+      "title": "Puls",
+      "author": "Matt Cruikshank"
+    },
+    {
+      "name": "puls",
+      "path": "demo_modules/glslsandbox/puls.js",
+      "title": "Puls",
+      "author": "Matt Cruikshank"
+    },
+    {
+      "name": "redswirls",
+      "path": "demo_modules/glslsandbox/redswirls.js",
+      "title": "Red Swirls",
+      "author": "Matt Cruikshank"
+    },
+    {
       "name": "balls",
       "path": "demo_modules/balls/balls.js",
       "title": "Bouncing Balls",
