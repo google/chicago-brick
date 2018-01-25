@@ -24,14 +24,6 @@ const ClientControlStateMachine = require('server/modules/client_control_state_m
 const ModuleStateMachine = require('server/modules/module_state_machine');
 const monitor = require('server/monitoring/monitor');
 
-function isDisplayInPoly(rect, poly) {
-  // find the center point of this display:
-  var cx = rect.w / 2 + rect.x;
-  var cy = rect.h / 2 + rect.y;
-
-  return geometry.isInside(poly, cx, cy);
-}
-
 class LayoutStateMachine extends stateMachine.Machine {
   constructor() {
     super(new IdleState, debug);
