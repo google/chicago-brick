@@ -15,24 +15,28 @@ limitations under the License.
 
 'use strict';
 
+const fs = require('fs');
+const https = require('https');
+const path = require('path');
+
+const Control = require('server/control');
+const ClientControlStateMachine = require('server/modules/client_control_state_machine');
+const LayoutStateMachine = require('server/modules/layout_state_machine');
 const PeerServer = require('peer').PeerServer;
+const PlaylistLoader = require('server/modules/playlist_loader');
+
 const commandLineArgs = require('command-line-args');
 const commandLineUsage = require('command-line-usage');
-const debug = require('debug')('wall:server');
-
-const playlistDriver = require('server/modules/playlist_driver');
-const game = require('./game/game');
-const network = require('server/network/network');
-const LayoutStateMachine = require('server/modules/layout_state_machine');
-const PlaylistLoader = require('server/modules/playlist_loader');
-const wallGeometry = require('server/util/wall_geometry');
-const Control = require('server/control');
-const webapp = require('server/webapp');
 const credentials = require('server/util/credentials');
-const path = require('path');
+const debug = require('debug')('wall:server');
+const game = require('./game/game');
 const monitor = require('server/monitoring/monitor');
-const https = require('https');
-const fs = require('fs');
+const network = require('server/network/network');
+const playlistDriver = require('server/modules/playlist_driver');
+const time = require('server/util/time');
+const wallGeometry = require('server/util/wall_geometry');
+const webapp = require('server/webapp');
+
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
@@ -105,7 +109,8 @@ if (playlist.length === 0) {
 
 var app = webapp.create(flags);
 
-const layoutSM = new LayoutStateMachine;
+const clients = {};
+const layoutSM = new LayoutStateMachine(clients);
 var control = new Control(layoutSM, playlistLoader);
 control.installHandlers(app);
 
@@ -147,11 +152,36 @@ peerServer.on('disconnect', function(id) {
 network.openWebSocket(server);
 
 network.on('new-client', function(client) {
+  if (monitor.isEnabled()) {
+    monitor.update({layout: {
+      time: time.now(),
+      event: `newClient: ${client.rect.serialize()}`,
+    }});
+  }
+  clients[client.socket.id] = new ClientControlStateMachine(client);
   layoutSM.newClient(client);
 });
 
 network.on('lost-client', function(id) {
-  layoutSM.dropClient(id);
+  if (id in clients) {
+    if (monitor.isEnabled()) {
+      const rect = clients[id].getClientInfo().rect;
+      monitor.update({layout: {
+        time: time.now(),
+        event: `dropClient: ${rect.serialize()}`,
+      }});
+    }
+    layoutSM.dropClient(id);
+  } else {
+    if (monitor.isEnabled()) {
+      monitor.update({layout: {
+        time: time.now(),
+        event: `dropClient: id ${id}`,
+      }});
+    }
+    // Don't bother the layoutSM if we don't know anything about this client.
+  }
+  delete clients[id];
 });
 
 if (flags.enable_monitoring) {
