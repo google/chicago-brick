@@ -42,21 +42,21 @@ class ModuleStateMachine extends stateMachine.Machine {
     super(new IdleState, debug);
     
     const geo = wallGeometry.getGeo();
-
+    
     // Map of ID to ClientControlStateMachine for all clients.
     this.allClients_ = allClients;
 
     this.setContext({
       geo,
       server: new ServerStateMachine(geo),
-      clients: Object.keys(allClients)
-          .map(k => allClients[k])
-          .filter(c => isDisplayInPoly(c.getClientInfo().rect, geo)),
+      allClients,
     });
     
     // Forward errors from my child state machines to my listener.
     this.context_.server.setErrorListener(error => this.errorListener_(error));
-    this.context_.clients.forEach(c => c.setErrorListener(error => this.errorListener_(error)));
+    for (const id in this.allClients_) {
+      this.allClients_[id].setErrorListener(error => this.errorListener_(error));
+    }
 
     this.reloadHandler = reloadedModule => {
       // If the module that was just reloaded is the same one that we are playing, we should reload it.
@@ -89,7 +89,9 @@ class ModuleStateMachine extends stateMachine.Machine {
     }
 
     // Tell the clients to stop.
-    this.context_.clients.forEach(c => c.playModule('_empty', deadline, this.context_.geo));
+    for (const id in this.allClients_) {
+      this.allClients_[id].playModule('_empty', deadline, this.context_.geo);
+    }
     
     // Tell the server to stop.
     this.context_.server.playModule('_empty', deadline);
@@ -100,17 +102,10 @@ class ModuleStateMachine extends stateMachine.Machine {
   
   newClient(clientInfo) {
     let client = this.allClients_[clientInfo.socket.id];
-    this.context_.clients.push(client);
     this.state.newClient(client, this.context_.geo);
   }
+  
   dropClient(id) {
-    let client = this.allClients_[id];
-    
-    let i = this.context_.clients.findIndex(c => c === client);
-
-    assert(i != -1, `Told to drop client ${id} but couldn't find it in my client list!`);
-
-    this.context_.clients.splice(i, 1);
   }
   
   playModule(moduleName, timeToStartDisplay) {
@@ -185,7 +180,9 @@ class DisplayState extends stateMachine.State {
     context.server.playModule(this.moduleName_, this.timeToStartDisplay_, context.geo);
 
     // Tell each client to transition to the module.
-    context.clients.forEach(client => client.playModule(this.moduleName_, this.timeToStartDisplay_, context.geo));
+    for (const id in context.allClients) {
+      context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_, context.geo)
+    }
     
     // Wait here until we're told to do something else.
   }

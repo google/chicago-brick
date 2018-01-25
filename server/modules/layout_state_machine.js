@@ -20,58 +20,24 @@ const geometry = require('lib/geometry');
 
 const stateMachine = require('lib/state_machine');
 const time = require('server/util/time');
-const ClientControlStateMachine = require('server/modules/client_control_state_machine');
 const ModuleStateMachine = require('server/modules/module_state_machine');
 const monitor = require('server/monitoring/monitor');
 
-function isDisplayInPoly(rect, poly) {
-  // find the center point of this display:
-  var cx = rect.w / 2 + rect.x;
-  var cy = rect.h / 2 + rect.y;
-
-  return geometry.isInside(poly, cx, cy);
-}
-
 class LayoutStateMachine extends stateMachine.Machine {
-  constructor() {
+  constructor(clients) {
     super(new IdleState, debug);
 
     this.setContext({
       // All known clients. Maps client ID to ClientControlStateMachine.
-      clients: {},
+      clients: clients,
       module: null,
     });
   }
   newClient(clientInfo) {
-    if (monitor.isEnabled()) {
-      monitor.update({layout: {
-        time: time.now(),
-        event: `newClient: ${clientInfo.rect.serialize()}`,
-      }});
-    }
-    this.context_.clients[clientInfo.socket.id] =
-        new ClientControlStateMachine(clientInfo);
     this.state.newClient(clientInfo);
   }
   dropClient(id) {
-    if (id in this.context_.clients) {
-      let rect = this.context_.clients[id].getClientInfo().rect;
-      if (monitor.isEnabled()) {
-        monitor.update({layout: {
-          time: time.now(),
-          event: `dropClient: ${rect.serialize()}`,
-        }});
-      }
-      this.state.dropClient(rect, id);
-    } else {
-      if (monitor.isEnabled()) {
-        monitor.update({layout: {
-          time: time.now(),
-          event: `dropClient: id ${id}`,
-        }});
-      }
-    }
-    delete this.context_.clients[id];
+    this.state.dropClient(id);
   }
   fadeOut() {
     // Wipe the requested module.
