@@ -105,9 +105,6 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.state.newClient(client, this.context_.geo);
   }
   
-  dropClient(id) {
-  }
-  
   playModule(moduleName, timeToStartDisplay) {
     if (monitor.isEnabled()) {
       monitor.update({module: {

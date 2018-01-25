@@ -171,7 +171,6 @@ network.on('lost-client', function(id) {
         event: `dropClient: ${rect.serialize()}`,
       }});
     }
-    layoutSM.dropClient(id);
   } else {
     if (monitor.isEnabled()) {
       monitor.update({layout: {

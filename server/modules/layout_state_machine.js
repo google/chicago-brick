@@ -36,9 +36,6 @@ class LayoutStateMachine extends stateMachine.Machine {
   newClient(clientInfo) {
     this.state.newClient(clientInfo);
   }
-  dropClient(id) {
-    this.state.dropClient(id);
-  }
   fadeOut() {
     // Wipe the requested module.
     this.context_.module = null;
@@ -94,7 +91,6 @@ class IdleState extends stateMachine.State {
     this.transition_ = transition;
   }
   newClient(client) {}
-  dropClient(rect, id) {}
   getCurrentModuleInfo() {
     return {};
   }
@@ -136,9 +132,6 @@ class DisplayState extends stateMachine.State {
   newClient(clientInfo) {
     this.moduleSM_.newClient(clientInfo);
   }
-  dropClient(rect, id) {
-    this.moduleSM_.dropClient(id);
-  }
   fadeOut() {
     return new Promise(resolve => this.transition_(new FadeOutState(this.moduleSM_, resolve)));
   }
@@ -175,7 +168,6 @@ class FadeOutState extends stateMachine.State {
       }});
     }
     
-    this.transition_ = transition;
     debug(`Fading out at ${deadline} ms`);
     this.moduleSM_.fadeToBlack(now);
     this.timer_ = setTimeout(() => {
@@ -194,7 +186,6 @@ class FadeOutState extends stateMachine.State {
     clearTimeout(this.timer_);
   }
   newClient(clientInfo) {}
-  dropClient(id) {}
   fadeOut() {
     return new Promise(resolve => this.resolves_.push(resolve));
   }
