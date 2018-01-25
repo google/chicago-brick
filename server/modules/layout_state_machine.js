@@ -52,17 +52,6 @@ class LayoutStateMachine extends stateMachine.Machine {
   getCurrentModuleInfo() {
     return this.state.getCurrentModuleInfo();
   }
-  getClientState() {
-    return Object.keys(this.context_.clients)
-        .map(k => this.context_.clients[k])
-        .map(c => {
-          return {
-            module: c.getModuleName(),
-            rect: c.getClientInfo().rect,
-            state: c.state.getName()
-          };
-        });
-  }
   // Tell the state machines to play a module.
   playModule(moduleName) {
     debug(`playModule: ${moduleName}`);

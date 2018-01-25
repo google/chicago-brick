@@ -111,7 +111,7 @@ var app = webapp.create(flags);
 
 const clients = {};
 const layoutSM = new LayoutStateMachine(clients);
-var control = new Control(layoutSM, playlistLoader);
+var control = new Control(layoutSM, clients, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);

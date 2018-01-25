@@ -25,8 +25,9 @@ const wallGeometry = require('server/util/wall_geometry');
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(layoutSM, playlistLoader) {
+  constructor(layoutSM, clients, playlistLoader) {
     this.layoutSM = layoutSM;
+    this.clients = clients;
     this.playlistLoader = playlistLoader;
 
     this.initialConfig = playlistLoader.getInitialPlaylistConfig();
@@ -98,7 +99,16 @@ class Control {
   }
 
   getClientState(req, res) {
-    res.json(this.layoutSM.getClientState());
+    const clientState = Object.keys(this.clients)
+        .map(k => this.clients[k])
+        .map(c => {
+          return {
+            module: c.getModuleName(),
+            rect: c.getClientInfo().rect,
+            state: c.state.getName()
+          };
+        });
+    res.json(clientState);
   }
 
   getLayout(req, res) {
