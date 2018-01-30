@@ -115,7 +115,7 @@ class Control {
     const ret = {};
     let info = this.layoutSM.getCurrentModuleInfo();
     ret.state = info.state;
-    ret.deadline = info.deadline;
+    ret.deadline = this.playlistDriver.getNextDeadline();
     ret.wall = wallGeometry.getGeo();
     
     res.json(ret);

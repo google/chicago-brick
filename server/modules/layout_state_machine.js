@@ -130,7 +130,6 @@ class DisplayState extends stateMachine.State {
   getCurrentModuleInfo() {
     return {
       state: this.moduleSM_.state.getName(),
-      deadline: this.moduleSM_.getDeadline(),
     };
   }
 }
@@ -182,7 +181,6 @@ class FadeOutState extends stateMachine.State {
   getCurrentModuleInfo() {
     return {
       state: this.moduleSM_.state.getName(),
-      deadline: Infinity,
     };
   }
 }

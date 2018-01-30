@@ -24,7 +24,12 @@ const debug = require('debug')('wall::playlist_driver');
 const makeDriver = layoutSM => {
   let timer = 0;
   let savedPlaylist = null;
+  // Timestamp of next transition.
+  let nextTransition = Infinity;
   return {
+    getNextDeadline() {
+      return nextTransition;
+    },
     getPlaylist() {
       return savedPlaylist;
     },
@@ -78,11 +83,15 @@ const makeDriver = layoutSM => {
               }});
             }
 
-            // Now, in so many seconds, we'll need to switch to another module or another layout. How much time do we
-            // have?
-            timer = (newLayoutTime < newModuleTime) ?
-              setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime)) :
-              setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
+            // Now, in so many seconds, we'll need to switch to another module 
+            // or another layout. How much time do we have?
+            if (newLayoutTime < newModuleTime) {
+              timer = setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime));
+              nextTransition = newLayoutTime;
+            } else {
+              timer = setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
+              nextTransition = newModuleTime;
+            }
           };
 
           Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => nextModule(0));
