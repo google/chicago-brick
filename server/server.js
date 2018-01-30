@@ -112,7 +112,7 @@ var app = webapp.create(flags);
 const clients = {};
 const layoutSM = new LayoutStateMachine(clients);
 const driver = playlistDriver.makeDriver(layoutSM);
-var control = new Control(driver, layoutSM, clients, playlistLoader);
+var control = new Control(driver, clients, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);

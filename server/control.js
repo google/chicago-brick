@@ -24,9 +24,8 @@ const wallGeometry = require('server/util/wall_geometry');
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(playlistDriver, layoutSM, clients, playlistLoader) {
+  constructor(playlistDriver, clients, playlistLoader) {
     this.playlistDriver = playlistDriver;
-    this.layoutSM = layoutSM;
     this.clients = clients;
     this.playlistLoader = playlistLoader;
 
@@ -113,8 +112,7 @@ class Control {
 
   getLayout(req, res) {
     const ret = {};
-    let info = this.layoutSM.getCurrentModuleInfo();
-    ret.state = info.state;
+    ret.state = this.playlistDriver.getNextTransitionType();
     ret.deadline = this.playlistDriver.getNextDeadline();
     ret.wall = wallGeometry.getGeo();
     

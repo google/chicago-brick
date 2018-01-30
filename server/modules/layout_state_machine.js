@@ -49,9 +49,6 @@ class LayoutStateMachine extends stateMachine.Machine {
     
     return this.state.fadeOut();
   }
-  getCurrentModuleInfo() {
-    return this.state.getCurrentModuleInfo();
-  }
   // Tell the state machines to play a module.
   playModule(moduleName) {
     debug(`playModule: ${moduleName}`);
@@ -80,9 +77,6 @@ class IdleState extends stateMachine.State {
     this.transition_ = transition;
   }
   newClient(client) {}
-  getCurrentModuleInfo() {
-    return {};
-  }
   fadeOut() {
     // We can skip the normal fade out here because we're already faded out.
     return Promise.resolve();
@@ -126,11 +120,6 @@ class DisplayState extends stateMachine.State {
   }
   playModule(moduleName) {
     this.moduleSM_.playModule(moduleName, time.now());
-  }
-  getCurrentModuleInfo() {
-    return {
-      state: this.moduleSM_.state.getName(),
-    };
   }
 }
 
@@ -178,11 +167,6 @@ class FadeOutState extends stateMachine.State {
     return new Promise(resolve => this.resolves_.push(resolve));
   }
   playModule(moduleName) {}
-  getCurrentModuleInfo() {
-    return {
-      state: this.moduleSM_.state.getName(),
-    };
-  }
 }
 
 module.exports = LayoutStateMachine;

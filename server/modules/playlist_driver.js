@@ -42,6 +42,13 @@ const makeDriver = layoutSM => {
     getPlaylist() {
       return playlist;
     },
+    getNextTransitionType() {
+      if (newLayoutTime < newModuleTime) {
+        return 'PlayingUntilNextLayout';
+      } else {
+        return 'PlayingUntilNextModule';
+      }
+    },
     driveStateMachine(newPlaylist) {
       playlist = newPlaylist;
       if (timer) {
