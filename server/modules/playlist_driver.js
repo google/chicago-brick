@@ -23,83 +23,106 @@ const debug = require('debug')('wall::playlist_driver');
 
 const makeDriver = layoutSM => {
   let timer = 0;
-  let savedPlaylist = null;
+  let playlist = null;
+  // Order that we play the modules in.
+  let modules = [];
   // Timestamp of next transition.
   let nextTransition = Infinity;
-  return {
+  // Index of next layout in the playlist.
+  let layoutIndex = 0;
+  // Index of next module in the playlist.
+  let moduleIndex = 0;
+  // Timestamp of next layout change.
+  let newLayoutTime = 0;
+  
+  let ret = {
     getNextDeadline() {
       return nextTransition;
     },
     getPlaylist() {
-      return savedPlaylist;
+      return playlist;
     },
-    driveStateMachine(playlist) {
-      savedPlaylist = playlist;
+    driveStateMachine(newPlaylist) {
+      playlist = newPlaylist;
       if (timer) {
         clearTimeout(timer);
         timer = 0;
       }
 
-      const nextLayout = layoutIndex => {
-        // Show this layout next:
-        let layout = playlist[layoutIndex];
+      // Reset layout index.
+      layoutIndex = -1;
 
-        // The time that we'll switch to a new layout.
-        let newLayoutTime = time.inFuture(layout.duration * 1000);
-
-        if (monitor.isEnabled()) {
-          monitor.update({playlist: {
-            time: time.now(),
-            event: `change layout`,
-            deadline: newLayoutTime
-          }});
-        }
-
-        debug(`Next Layout: ${layoutIndex}`);
-
-        layoutSM.fadeOut().then(() => {
-          // Shuffle the module list:
-          let modules = Array.from(layout.modules);
-          random.shuffle(modules);
+      ret.nextLayout();
+    },
+    nextLayout() {
+      // Update layoutIndex.
+      layoutIndex = (layoutIndex + 1) % playlist.length;
       
-          const nextModule = moduleIndex => {
-            layoutSM.setErrorListener(error => {
-              // Stop normal advancement.
-              clearTimeout(timer);
-              nextModule((moduleIndex + 1) % modules.length);
-            });
+      // Show this layout next:
+      let layout = playlist[layoutIndex];
+      
+      // Reset moduleIndex
+      moduleIndex = -1;
 
-            // The time that we'll switch to the next module.
-            let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+      // The time that we'll switch to a new layout.
+      newLayoutTime = time.inFuture(layout.duration * 1000);
 
-            // Tell the layout to play the next module in the list.
-            layoutSM.playModule(modules[moduleIndex]);
+      if (monitor.isEnabled()) {
+        monitor.update({playlist: {
+          time: time.now(),
+          event: `change layout`,
+          deadline: newLayoutTime
+        }});
+      }
 
-            if (monitor.isEnabled()) {
-              monitor.update({playlist: {
-                time: time.now(),
-                event: `change module`,
-                deadline: Math.min(newModuleTime, newLayoutTime)
-              }});
-            }
+      debug(`Next Layout: ${layoutIndex}`);
 
-            // Now, in so many seconds, we'll need to switch to another module 
-            // or another layout. How much time do we have?
-            if (newLayoutTime < newModuleTime) {
-              timer = setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime));
-              nextTransition = newLayoutTime;
-            } else {
-              timer = setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
-              nextTransition = newModuleTime;
-            }
-          };
+      layoutSM.fadeOut().then(() => {
+        // Shuffle the module list:
+        modules = Array.from(layout.modules);
+        random.shuffle(modules);
 
-          Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => nextModule(0));
-        });
-      };
-      nextLayout(0);
-    }
+        Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => ret.nextModule());
+      });
+    },
+    nextModule() {
+      moduleIndex = (moduleIndex + 1) % modules.length;
+
+      layoutSM.setErrorListener(error => {
+        // Stop normal advancement.
+        clearTimeout(timer);
+        nextModule();
+      });
+
+      // The current layout.
+      let layout = playlist[layoutIndex];
+      
+      // The time that we'll switch to the next module.
+      let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+
+      // Tell the layout to play the next module in the list.
+      layoutSM.playModule(modules[moduleIndex]);
+
+      if (monitor.isEnabled()) {
+        monitor.update({playlist: {
+          time: time.now(),
+          event: `change module`,
+          deadline: Math.min(newModuleTime, newLayoutTime)
+        }});
+      }
+
+      // Now, in so many seconds, we'll need to switch to another module 
+      // or another layout. How much time do we have?
+      if (newLayoutTime < newModuleTime) {
+        timer = setTimeout(() => ret.nextLayout(), time.until(newLayoutTime));
+        nextTransition = newLayoutTime;
+      } else {
+        timer = setTimeout(() => ret.nextModule(), time.until(newModuleTime));
+        nextTransition = newModuleTime;
+      }
+    },
   };
+  return ret;
 }
 
 module.exports = {
