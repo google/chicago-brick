@@ -23,8 +23,13 @@ const debug = require('debug')('wall::playlist_driver');
 
 const makeDriver = layoutSM => {
   let timer = 0;
+  let savedPlaylist = null;
   return {
+    getPlaylist() {
+      return savedPlaylist;
+    },
     driveStateMachine(playlist) {
+      savedPlaylist = playlist;
       if (timer) {
         clearTimeout(timer);
         timer = 0;

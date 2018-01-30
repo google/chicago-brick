@@ -72,7 +72,7 @@ class Control {
   }
 
   getPlaylist(req, res) {
-    res.json(this.layoutSM.getPlaylist());
+    res.json(this.playlistDriver.getPlaylist());
   }
 
   resetPlaylist(req, res) {
