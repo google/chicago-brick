@@ -58,9 +58,27 @@ const makeDriver = layoutSM => {
       // This skips to the next module in the current layout.
       // We need to cancel any existing timer, because we are disrupting the
       // normal timing.
-      clearTimer(timer);
+      clearTimeout(timer);
       // Now, force the next module to play.
       ret.nextModule();
+    },
+    playModule(moduleName) {
+      // Force a specific module to play. Now, this particular module doesn't
+      // necessarily exist in any kind of playlist, which presents us with a
+      // choice as to how long to play this module. We'll choose to play it for
+      // as long as the current layout says to play modules.
+      let layout = playlist[layoutIndex];
+
+      // Stop any existing timer so we don't transition early.
+      // TODO(applmak): Consider making the timer management more foolproof by
+      // having the next* or play* methods stop the timer.
+      clearTimeout(timer);
+      // Reset duration for this module.
+      newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+      // Ensure that we won't change layouts until this module is done.
+      newLayoutTime = Math.max(newModuleTime, newLayoutTime);
+      // Now play this module.
+      ret.playModule_(moduleName);
     },
     nextLayout() {
       // Update layoutIndex.
@@ -108,13 +126,16 @@ const makeDriver = layoutSM => {
       // The time that we'll switch to the next module.
       newModuleTime = time.inFuture(layout.moduleDuration * 1000);
 
-      // Tell the layout to play the next module in the list.
-      layoutSM.playModule(modules[moduleIndex]);
+      ret.playModule_(modules[moduleIndex]);
+    },
+    playModule_(module) {
+      // Play a module until the next transition time.
+      layoutSM.playModule(module);
 
       if (monitor.isEnabled()) {
         monitor.update({playlist: {
           time: time.now(),
-          event: `change module`,
+          event: `change module ${module}`,
           deadline: Math.min(newModuleTime, newLayoutTime)
         }});
       }
@@ -126,7 +147,7 @@ const makeDriver = layoutSM => {
       } else {
         timer = setTimeout(() => ret.nextModule(), time.until(newModuleTime));
       }
-    },
+    }
   };
   return ret;
 }

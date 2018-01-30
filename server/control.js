@@ -132,7 +132,7 @@ class Control {
       return;
     }
     try {
-      this.layoutSM.playModule(moduleName);
+      this.playlistDriver.playModule(moduleName);
     } catch (e) {
       debug(e.message);
       debug(e.stack);
