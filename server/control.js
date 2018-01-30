@@ -122,7 +122,7 @@ class Control {
   }
 
   skip(req, res) {
-    this.layoutSM.skipAhead();
+    this.playlistDriver.skipAhead();
   }
 
   playModule(req, res) {

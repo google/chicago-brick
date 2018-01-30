@@ -26,18 +26,18 @@ const makeDriver = layoutSM => {
   let playlist = null;
   // Order that we play the modules in.
   let modules = [];
-  // Timestamp of next transition.
-  let nextTransition = Infinity;
   // Index of next layout in the playlist.
   let layoutIndex = 0;
   // Index of next module in the playlist.
   let moduleIndex = 0;
   // Timestamp of next layout change.
   let newLayoutTime = 0;
+  // Timestamp of next module change.
+  let newModuleTime = Infinity;
   
   let ret = {
     getNextDeadline() {
-      return nextTransition;
+      return Math.min(newLayoutTime, newModuleTime);
     },
     getPlaylist() {
       return playlist;
@@ -53,6 +53,14 @@ const makeDriver = layoutSM => {
       layoutIndex = -1;
 
       ret.nextLayout();
+    },
+    skipAhead() {
+      // This skips to the next module in the current layout.
+      // We need to cancel any existing timer, because we are disrupting the
+      // normal timing.
+      clearTimer(timer);
+      // Now, force the next module to play.
+      ret.nextModule();
     },
     nextLayout() {
       // Update layoutIndex.
@@ -98,7 +106,7 @@ const makeDriver = layoutSM => {
       let layout = playlist[layoutIndex];
       
       // The time that we'll switch to the next module.
-      let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+      newModuleTime = time.inFuture(layout.moduleDuration * 1000);
 
       // Tell the layout to play the next module in the list.
       layoutSM.playModule(modules[moduleIndex]);
@@ -115,10 +123,8 @@ const makeDriver = layoutSM => {
       // or another layout. How much time do we have?
       if (newLayoutTime < newModuleTime) {
         timer = setTimeout(() => ret.nextLayout(), time.until(newLayoutTime));
-        nextTransition = newLayoutTime;
       } else {
         timer = setTimeout(() => ret.nextModule(), time.until(newModuleTime));
-        nextTransition = newModuleTime;
       }
     },
   };
