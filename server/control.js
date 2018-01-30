@@ -18,14 +18,14 @@ limitations under the License.
 const RJSON = require('relaxed-json');
 const debug = require('debug')('wall:control');
 const log = require('server/util/log');
-const playlistDriver = require('server/modules/playlist_driver');
 const wallGeometry = require('server/util/wall_geometry');
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(layoutSM, clients, playlistLoader) {
+  constructor(playlistDriver, layoutSM, clients, playlistLoader) {
+    this.playlistDriver = playlistDriver;
     this.layoutSM = layoutSM;
     this.clients = clients;
     this.playlistLoader = playlistLoader;
@@ -66,7 +66,7 @@ class Control {
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
+    this.playlistDriver.driveStateMachine(playlistConfig);
     this.currentConfig = json;
     res.redirect('/status');
   }
@@ -76,7 +76,7 @@ class Control {
   }
 
   resetPlaylist(req, res) {
-    playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig), this.layoutSM, true);
+    this.playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig));
     this.currentConfig = this.initialConfig;
     res.redirect('/status');
   }
@@ -94,7 +94,7 @@ class Control {
       return;
     }
     this.currentConfig = json;
-    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
+    this.playlistDriver.driveStateMachine(playlistConfig);
     res.redirect('/status');
   }
 

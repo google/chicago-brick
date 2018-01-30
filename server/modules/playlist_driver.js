@@ -21,71 +21,73 @@ const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 const debug = require('debug')('wall::playlist_driver');
 
-let timer;
+const makeDriver = layoutSM => {
+  let timer = 0;
+  return {
+    driveStateMachine(playlist) {
+      if (timer) {
+        clearTimeout(timer);
+        timer = 0;
+      }
 
-const driveStateMachine = (playlist, layoutSM, clearTimer) => {
-  // TODO(jgessner): Make this a proper class with an owner and a cleaner reset API
-  // instead of a hacky globals thing.
-  if (clearTimer) {
-    clearTimeout(timer);
-  }
+      const nextLayout = layoutIndex => {
+        // Show this layout next:
+        let layout = playlist[layoutIndex];
 
-  const nextLayout = layoutIndex => {
-    // Show this layout next:
-    let layout = playlist[layoutIndex];
-
-    // The time that we'll switch to a new layout.
-    let newLayoutTime = time.inFuture(layout.duration * 1000);
-
-    if (monitor.isEnabled()) {
-      monitor.update({playlist: {
-        time: time.now(),
-        event: `change layout`,
-        deadline: newLayoutTime
-      }});
-    }
-
-    debug(`Next Layout: ${layoutIndex}`);
-
-    layoutSM.fadeOut().then(() => {
-      // Shuffle the module list:
-      let modules = Array.from(layout.modules);
-      random.shuffle(modules);
-      
-      const nextModule = moduleIndex => {
-        layoutSM.setErrorListener(error => {
-          // Stop normal advancement.
-          clearTimeout(timer);
-          nextModule((moduleIndex + 1) % modules.length);
-        });
-
-        // The time that we'll switch to the next module.
-        let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
-
-        // Tell the layout to play the next module in the list.
-        layoutSM.playModule(modules[moduleIndex]);
+        // The time that we'll switch to a new layout.
+        let newLayoutTime = time.inFuture(layout.duration * 1000);
 
         if (monitor.isEnabled()) {
           monitor.update({playlist: {
             time: time.now(),
-            event: `change module`,
-            deadline: Math.min(newModuleTime, newLayoutTime)
+            event: `change layout`,
+            deadline: newLayoutTime
           }});
         }
 
-        // Now, in so many seconds, we'll need to switch to another module or another layout. How much time do we
-        // have?
-        timer = (newLayoutTime < newModuleTime) ?
-          setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime)) :
-          setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
-      };
+        debug(`Next Layout: ${layoutIndex}`);
 
-      Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => nextModule(0));
-    });
+        layoutSM.fadeOut().then(() => {
+          // Shuffle the module list:
+          let modules = Array.from(layout.modules);
+          random.shuffle(modules);
+      
+          const nextModule = moduleIndex => {
+            layoutSM.setErrorListener(error => {
+              // Stop normal advancement.
+              clearTimeout(timer);
+              nextModule((moduleIndex + 1) % modules.length);
+            });
+
+            // The time that we'll switch to the next module.
+            let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+
+            // Tell the layout to play the next module in the list.
+            layoutSM.playModule(modules[moduleIndex]);
+
+            if (monitor.isEnabled()) {
+              monitor.update({playlist: {
+                time: time.now(),
+                event: `change module`,
+                deadline: Math.min(newModuleTime, newLayoutTime)
+              }});
+            }
+
+            // Now, in so many seconds, we'll need to switch to another module or another layout. How much time do we
+            // have?
+            timer = (newLayoutTime < newModuleTime) ?
+              setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime)) :
+              setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
+          };
+
+          Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => nextModule(0));
+        });
+      };
+      nextLayout(0);
+    }
   };
-  nextLayout(0);
-};
+}
 
 module.exports = {
-  driveStateMachine
+  makeDriver
 };

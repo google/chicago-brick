@@ -111,7 +111,8 @@ var app = webapp.create(flags);
 
 const clients = {};
 const layoutSM = new LayoutStateMachine(clients);
-var control = new Control(layoutSM, clients, playlistLoader);
+const driver = playlistDriver.makeDriver(layoutSM);
+var control = new Control(driver, layoutSM, clients, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);
@@ -188,4 +189,4 @@ if (flags.enable_monitoring) {
 }
 
 debug('Running playlist of ' + playlist.length + ' items');
-playlistDriver.driveStateMachine(playlist, layoutSM);
+driver.driveStateMachine(playlist);
