@@ -29,8 +29,7 @@ const ROTATEY = -400;
 
 function loadJson(file) {
   return new Promise((resolve, reject) => {
-    const asset = require('client/asset/asset');
-    d3.json(asset(file))
+    d3.json('/asset/' + file)
       .get((err, data) => {
         if (err) {
           return reject(err);
