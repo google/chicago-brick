@@ -41,7 +41,7 @@ const read = (path) => {
   });
 };
 
-const evalModule = (contents, name, path, layoutGeometry, network, game, state) => {
+const evalModule = (contents, name, moduleRoot, path, layoutGeometry, network, game, state) => {
   let classes = {};
 
   // Inject our deps into node's require environment.
@@ -63,27 +63,30 @@ const evalModule = (contents, name, path, layoutGeometry, network, game, state) 
       classes.server = server;
       classes.client = client;
     },
-  }, path);
+  }, moduleRoot);
 
   let sandbox = {
     require: fakeRequireInstance,
     serverRequire: fakeRequireInstance
   };
 
-  // Use safeEval to actually run the script so that Node doesn't leak
-  // anything: https://github.com/nodejs/node/issues/3113
-  // TODO(applmak): Convert this to just a require of this file.
-  safeEval(contents, sandbox);
+  try {
+    // Use safeEval to actually run the script so that Node doesn't leak
+    // anything: https://github.com/nodejs/node/issues/3113
+    // TODO(applmak): Convert this to just a require of this file.
+    safeEval(contents, sandbox);
 
-  // Clean up our mess.
-  fakeRequireInstance.destroy();
+  } finally {
+    // Clean up our mess.
+    fakeRequireInstance.destroy();
+  }
 
   return classes;
 };
 
-const verify = (name, contents, path) => {
+const verify = (name, contents, moduleRoot, path) => {
   // Eval using fake globals.
-  const classes = evalModule(contents, name, path, wallGeometry.getGeo(), {}, {}, {});
+  const classes = evalModule(contents, name, moduleRoot, path, wallGeometry.getGeo(), {}, {}, {});
 
   if (!classes.server) {
     debug('Module did not register a server-side module!');
@@ -110,10 +113,10 @@ const verify = (name, contents, path) => {
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef extends EventEmitter {
-  constructor(name, root, pathOrBaseModule, title, author, config) {
+  constructor(name, moduleRoot, pathOrBaseModule, title, author, config) {
     super();
     this.name = name;
-    this.root = root;
+    this.root = moduleRoot;
     this.config = config || {};
     this.title = title;
     this.author = author;
@@ -201,7 +204,7 @@ class ModuleDef extends EventEmitter {
         // Start rewatcher, regardless of status.
         rewatch();
 
-        if (verify(this.name, contents, fullPath)) {
+        if (verify(this.name, contents, this.root, this.path)) {
           debug('Verified ' + fullPath);
           this.valid = true;
           this.def = contents;
@@ -235,7 +238,7 @@ class ModuleDef extends EventEmitter {
   instantiate(layoutGeometry, network, game, state, deadline) {
     // Only instantiate valid modules.
     assert(this.valid, 'Attempt to instantiate invalid module!');
-    let classes = evalModule(this.def, this.name, path.join(this.root, this.path), layoutGeometry, network, game, state);
+    let classes = evalModule(this.def, this.name, this.root, this.path, layoutGeometry, network, game, state);
     return new classes.server(this.config, deadline);
   }
 
