@@ -53,10 +53,15 @@ class ModuleLoader {
       return true;
     })));
 
-    const overrides = playlistConfig.modules || [];
+    // We support overriding config values of existing modules or extending
+    // existing modules from the playlist.
+    const playlistModules = playlistConfig.modules || [];
+    const extensions = _.filter(playlistModules, m => m.extends);
+    const overrides = _.difference(playlistModules, extensions);
 
     // Add modules to library.
-    configs.forEach((defaultConfig) => {
+    configs.concat(extensions).forEach((defaultConfig) => {
+      // Apply any overrides from the playlist modules.
       const cfg = _.defaults(
         _.where(overrides, {name: defaultConfig.name}) || {},
         defaultConfig);
@@ -73,6 +78,18 @@ class ModuleLoader {
               cfg.author, cfg.config));
       }
     });
+
+    // Show errors for any new module definitions that were in the playlist.
+    const badPlaylistConfigs = overrides.filter(cfg => {
+      return !library.modules[cfg.name];
+    });
+    badPlaylistConfigs.forEach(cfg => {
+      debug(`Skipping new module ${cfg.name} in playlist.`);
+    });
+    if (badPlaylistConfigs.length) {
+      debug('Only overrides and extensions are supported in the playlist. ' +
+            'For new modules add a brick.json file in the module directory.');
+    }
   }
 
   loadModule(moduleConfigFile) {
