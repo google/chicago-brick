@@ -18,6 +18,7 @@ limitations under the License.
 // https://github.com/cambecc/earth.
 
 const d3 = require('d3');
+const debug = require('debug');
 const wallGeometry = require('wallGeometry');
 
 const color = require('./color');
@@ -90,58 +91,11 @@ function distort(projection, λ, φ, x, y, scale, vector) {
   return vector;
 }
 
-class Mask {
-  constructor(projection, bounds) {
-    this.width = bounds.width;
-    this.height = bounds.height;
-
-    // Create a detached canvas, draw an opaque sphere that represents visible
-    // points.
-    const canvas = d3.select(document.createElement("canvas"))
-      .attr("width", this.width).attr("height", this.height).node();
-    this.context = canvas.getContext('2d');
-
-    const projectedPath = d3.geoPath().projection(projection).context(
-        this.context);
-
-    const mask = projectedPath({type: "Sphere"});
-    this.context.fillStyle = "rgba(255, 0, 0, 1)";
-    this.context.fill();
-
-    // layout: [r, g, b, a, r, g, b, a, ...]
-    this.imageData = this.context.getImageData(
-        0, 0, this.width, this.height).data;
-  }
-
-  isVisible(x, y) {
-    const i = (y * this.width + x) * 4;
-    return this.imageData[i + 3] > 0;  // non-zero alpha means pixel is visible
-  }
-
-  set(x, y, rgba) {
-    const i = (y * this.width + x) * 4;
-    this.imageData[i] = rgba[0];
-    this.imageData[i + 1] = rgba[1];
-    this.imageData[i + 2] = rgba[2];
-    this.imageData[i + 3] = rgba[3];
-    return this;
-  }
-
-  getOffsetImageData(x, y, w, h) {
-    this.context.putImageData(new ImageData(this.imageData, this.width,
-          this.height), 0, 0);
-    return this.context.getImageData(x, y, w, h);
-  }
-}
-
 class VectorField {
   constructor(columns, bounds, mask) {
     this.columns = columns;
     this.bounds = bounds;
-
-    const info = require('client/util/info');
-    this.overlay = mask.getOffsetImageData(info.virtualRect.x,
-        info.virtualRect.y, info.virtualRect.w, info.virtualRect.h);
+    this.overlay = mask.imageData;
   }
 
   /**
@@ -189,9 +143,7 @@ class VectorField {
     return o;
   }
 
-  static create(projection, bounds, forecastGrid) {
-    const mask = new Mask(projection, bounds);
-
+  static create(projection, mask, bounds, forecastGrid) {
     // TODO(bmt): This probably belongs at a different level.
     // How fast particles move on the screen (arbitrary value chosen for aesthetics).
     const velocityScale = bounds.height * VELOCITY_SCALE;
@@ -242,6 +194,8 @@ class VectorField {
       interpolateColumn(x);
       x += 2;
     }
+
+    debug(`Vector field cols:${columns.length} rows:${columns[0].length}`);
     return new VectorField(columns, bounds, mask);
   }
 }

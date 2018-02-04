@@ -23,6 +23,7 @@ const network = require('network');
 const ForecastGrid = require('./forecast_grid');
 const ParticleField = require('./particle_field');
 const VectorField = require('./vector_field');
+const Mask = require('./mask');
 
 const ROTATEX = 100;
 const ROTATEY = -400;
@@ -51,14 +52,14 @@ function ensureNumber(num, fallback) {
  * @param height
  * @returns {Object} the projection bounds clamped to the specified view.
  */
-function clampedBounds(bounds, width, height) {
+function clampedBounds(bounds, x, y, width, height) {
   const upperLeft = bounds[0];
   const lowerRight = bounds[1];
-  const x = Math.max(Math.floor(ensureNumber(upperLeft[0], 0)), 0);
-  const y = Math.max(Math.floor(ensureNumber(upperLeft[1], 0)), 0);
-  const xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], width)), width - 1);
-  const yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], height)), height - 1);
-  return {x, y, xMax, yMax, width: xMax - x + 1, height: yMax - y + 1};
+  const xMin = Math.max(Math.floor(ensureNumber(upperLeft[0], x)), x);
+  const yMin = Math.max(Math.floor(ensureNumber(upperLeft[1], y)), y);
+  const xMax = Math.min(Math.ceil(ensureNumber(lowerRight[0], x + width)), x + width - 1);
+  const yMax = Math.min(Math.ceil(ensureNumber(lowerRight[1], y + height)), y + height - 1);
+  return {x: xMin, y: yMin, xMax, yMax, width: xMax - xMin + 1, height: yMax - yMin + 1};
 }
 
 class WindServer extends ModuleInterface.Server {
@@ -76,25 +77,27 @@ class WindClient extends ModuleInterface.Client {
 
   willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
-    this.mapSurface = new CanvasSurface(container, wallGeometry);
-    this.mapSurface.pushOffset();
-    this.overlaySurface = new CanvasSurface(container, wallGeometry);
-    this.overlaySurface.pushOffset();
-    this.animationSurface = new CanvasSurface(container, wallGeometry);
-    this.animationSurface.pushOffset();
+    const clientInfo = require('client/util/info');
+    this.virtualRect = clientInfo.virtualRect;
+    this.globalRect = wallGeometry.extents;
 
-    this.radius = globalWallGeometry.extents.w / 3;
-    this.scale = 2.5*this.radius;
+    this.mapSurface = new CanvasSurface(container, wallGeometry);
+    this.overlaySurface = new CanvasSurface(container, wallGeometry);
+    this.animationSurface = new CanvasSurface(container, wallGeometry);
+
+    this.scale = 2.5 * (globalWallGeometry.extents.w / 3);
 
     this.projection = d3.geoOrthographic()
       .scale(this.scale)
       .rotate([ROTATEX, ROTATEY])
-      .translate([globalWallGeometry.extents.w/2, globalWallGeometry.extents.h/2])
+      .translate([globalWallGeometry.extents.w/2 - this.virtualRect.x,
+                  globalWallGeometry.extents.h/2 - this.virtualRect.y])
       .clipAngle(90);
 
+    // Bounds relative to the virtual rectangle.
     this.bounds = clampedBounds(
         d3.geoPath().projection(this.projection).bounds({type: "Sphere"}),
-        globalWallGeometry.extents.w, globalWallGeometry.extents.h);
+        0, 0, this.virtualRect.w, this.virtualRect.h);
 
     this.mapLoaded = Promise.all([
         loadJson('wind-coastline.json').then((coastline) => {
@@ -108,8 +111,9 @@ class WindClient extends ModuleInterface.Client {
     this.dataProcessed = loadJson('wind-current-surface-level-gfs-1.0.json')
       .then((file) => {
         this.grid = new ForecastGrid(file);
-        this.vectorField = VectorField.create(this.projection, this.bounds,
-            this.grid);
+        this.mask = new Mask(this.projection, this.virtualRect, this.globalRect);
+        this.vectorField = VectorField.create(this.projection, this.mask,
+          this.bounds, this.grid);
       }).then(() => {
         this.particleField = new ParticleField(this.bounds,
             this.grid, this.vectorField, this.animationSurface.context);
@@ -134,17 +138,19 @@ class WindClient extends ModuleInterface.Client {
 
   drawMap(projection, context, coastline, lakes) {
     const projectedPath = d3.geoPath().projection(projection).context(context);
-    const r = this.radius;
+    const bounds = d3.geoPath().projection(this.projection).bounds({type: "Sphere"});
+    const r = (bounds[1][0] - bounds[0][0]) / 2;
 
-    function drawSphere(context) {
+    function drawSphere(context, virtualRect) {
       const grad = context.createRadialGradient(
-          globalWallGeometry.extents.w/2, globalWallGeometry.extents.h/2, 0,
-          globalWallGeometry.extents.w/2, globalWallGeometry.extents.h/2, r);
+        globalWallGeometry.extents.w/2 - virtualRect.x, globalWallGeometry.extents.h/2 - virtualRect.y, 0,
+        globalWallGeometry.extents.w/2 - virtualRect.x, globalWallGeometry.extents.h/2 - virtualRect.y, r);
       grad.addColorStop(.69, "#303030");
       grad.addColorStop(.91, "#202020");
       grad.addColorStop(.96, "#000005");
       context.fillStyle = grad;
-      context.fillRect(0, 0, globalWallGeometry.extents.w, globalWallGeometry.extents.h);
+      context.fillRect(0, 0, globalWallGeometry.extents.w,
+        globalWallGeometry.extents.h);
     }
 
     function drawGraticules(context) {
@@ -178,7 +184,7 @@ class WindClient extends ModuleInterface.Client {
       context.stroke();
     }
 
-    drawSphere(context);
+    drawSphere(context, this.virtualRect);
     drawGraticules(context);
     drawOutlines(context);
   }
