@@ -111,7 +111,8 @@ var app = webapp.create(flags);
 
 const clients = {};
 const layoutSM = new LayoutStateMachine(clients);
-var control = new Control(layoutSM, playlistLoader);
+const driver = playlistDriver.makeDriver(layoutSM);
+var control = new Control(driver, clients, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);
@@ -171,7 +172,6 @@ network.on('lost-client', function(id) {
         event: `dropClient: ${rect.serialize()}`,
       }});
     }
-    layoutSM.dropClient(id);
   } else {
     if (monitor.isEnabled()) {
       monitor.update({layout: {
@@ -189,4 +189,4 @@ if (flags.enable_monitoring) {
 }
 
 debug('Running playlist of ' + playlist.length + ' items');
-playlistDriver.driveStateMachine(playlist, layoutSM);
+driver.driveStateMachine(playlist);

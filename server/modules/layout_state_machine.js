@@ -36,9 +36,6 @@ class LayoutStateMachine extends stateMachine.Machine {
   newClient(clientInfo) {
     this.state.newClient(clientInfo);
   }
-  dropClient(id) {
-    this.state.dropClient(id);
-  }
   fadeOut() {
     // Wipe the requested module.
     this.context_.module = null;
@@ -51,20 +48,6 @@ class LayoutStateMachine extends stateMachine.Machine {
     }
     
     return this.state.fadeOut();
-  }
-  getCurrentModuleInfo() {
-    return this.state.getCurrentModuleInfo();
-  }
-  getClientState() {
-    return Object.keys(this.context_.clients)
-        .map(k => this.context_.clients[k])
-        .map(c => {
-          return {
-            module: c.getModuleName(),
-            rect: c.getClientInfo().rect,
-            state: c.state.getName()
-          };
-        });
   }
   // Tell the state machines to play a module.
   playModule(moduleName) {
@@ -94,10 +77,6 @@ class IdleState extends stateMachine.State {
     this.transition_ = transition;
   }
   newClient(client) {}
-  dropClient(rect, id) {}
-  getCurrentModuleInfo() {
-    return {};
-  }
   fadeOut() {
     // We can skip the normal fade out here because we're already faded out.
     return Promise.resolve();
@@ -136,20 +115,11 @@ class DisplayState extends stateMachine.State {
   newClient(clientInfo) {
     this.moduleSM_.newClient(clientInfo);
   }
-  dropClient(rect, id) {
-    this.moduleSM_.dropClient(id);
-  }
   fadeOut() {
     return new Promise(resolve => this.transition_(new FadeOutState(this.moduleSM_, resolve)));
   }
   playModule(moduleName) {
     this.moduleSM_.playModule(moduleName, time.now());
-  }
-  getCurrentModuleInfo() {
-    return {
-      state: this.moduleSM_.state.getName(),
-      deadline: this.moduleSM_.getDeadline(),
-    };
   }
 }
 
@@ -175,7 +145,6 @@ class FadeOutState extends stateMachine.State {
       }});
     }
     
-    this.transition_ = transition;
     debug(`Fading out at ${deadline} ms`);
     this.moduleSM_.fadeToBlack(now);
     this.timer_ = setTimeout(() => {
@@ -194,17 +163,10 @@ class FadeOutState extends stateMachine.State {
     clearTimeout(this.timer_);
   }
   newClient(clientInfo) {}
-  dropClient(id) {}
   fadeOut() {
     return new Promise(resolve => this.resolves_.push(resolve));
   }
   playModule(moduleName) {}
-  getCurrentModuleInfo() {
-    return {
-      state: this.moduleSM_.state.getName(),
-      deadline: Infinity,
-    };
-  }
 }
 
 module.exports = LayoutStateMachine;

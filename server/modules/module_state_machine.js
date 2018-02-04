@@ -105,9 +105,6 @@ class ModuleStateMachine extends stateMachine.Machine {
     this.state.newClient(client, this.context_.geo);
   }
   
-  dropClient(id) {
-  }
-  
   playModule(moduleName, timeToStartDisplay) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
@@ -124,9 +121,6 @@ class ModuleStateMachine extends stateMachine.Machine {
   }
   getGeo() {
     return this.context_.geo;
-  }
-  getDeadline() {
-    return this.state.getDeadline();
   }
 }
 
@@ -147,9 +141,6 @@ class IdleState extends stateMachine.State {
   }
   getCurrentModuleName() {
     return '';
-  }
-  getDeadline() {
-    return Infinity;
   }
 }
 
@@ -196,9 +187,6 @@ class DisplayState extends stateMachine.State {
   }
   getCurrentModuleName() {
     return this.moduleName_;
-  }
-  getDeadline() {
-    return this.timeToStartDisplay_;
   }
 }
 

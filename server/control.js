@@ -18,15 +18,15 @@ limitations under the License.
 const RJSON = require('relaxed-json');
 const debug = require('debug')('wall:control');
 const log = require('server/util/log');
-const playlistDriver = require('server/modules/playlist_driver');
 const wallGeometry = require('server/util/wall_geometry');
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(layoutSM, playlistLoader) {
-    this.layoutSM = layoutSM;
+  constructor(playlistDriver, clients, playlistLoader) {
+    this.playlistDriver = playlistDriver;
+    this.clients = clients;
     this.playlistLoader = playlistLoader;
 
     this.initialConfig = playlistLoader.getInitialPlaylistConfig();
@@ -65,17 +65,17 @@ class Control {
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
+    this.playlistDriver.driveStateMachine(playlistConfig);
     this.currentConfig = json;
     res.redirect('/status');
   }
 
   getPlaylist(req, res) {
-    res.json(this.layoutSM.getPlaylist());
+    res.json(this.playlistDriver.getPlaylist());
   }
 
   resetPlaylist(req, res) {
-    playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig), this.layoutSM, true);
+    this.playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig));
     this.currentConfig = this.initialConfig;
     res.redirect('/status');
   }
@@ -93,26 +93,34 @@ class Control {
       return;
     }
     this.currentConfig = json;
-    playlistDriver.driveStateMachine(playlistConfig, this.layoutSM, true);
+    this.playlistDriver.driveStateMachine(playlistConfig);
     res.redirect('/status');
   }
 
   getClientState(req, res) {
-    res.json(this.layoutSM.getClientState());
+    const clientState = Object.keys(this.clients)
+        .map(k => this.clients[k])
+        .map(c => {
+          return {
+            module: c.getModuleName(),
+            rect: c.getClientInfo().rect,
+            state: c.state.getName()
+          };
+        });
+    res.json(clientState);
   }
 
   getLayout(req, res) {
     const ret = {};
-    let info = this.layoutSM.getCurrentModuleInfo();
-    ret.state = info.state;
-    ret.deadline = info.deadline;
+    ret.state = this.playlistDriver.getNextTransitionType();
+    ret.deadline = this.playlistDriver.getNextDeadline();
     ret.wall = wallGeometry.getGeo();
     
     res.json(ret);
   }
 
   skip(req, res) {
-    this.layoutSM.skipAhead();
+    this.playlistDriver.skipAhead();
   }
 
   playModule(req, res) {
@@ -122,7 +130,7 @@ class Control {
       return;
     }
     try {
-      this.layoutSM.playModule(moduleName);
+      this.playlistDriver.playModule(moduleName);
     } catch (e) {
       debug(e.message);
       debug(e.stack);

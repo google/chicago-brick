@@ -21,71 +21,144 @@ const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 const debug = require('debug')('wall::playlist_driver');
 
-let timer;
+const makeDriver = layoutSM => {
+  let timer = 0;
+  let playlist = null;
+  // Order that we play the modules in.
+  let modules = [];
+  // Index of next layout in the playlist.
+  let layoutIndex = 0;
+  // Index of next module in the playlist.
+  let moduleIndex = 0;
+  // Timestamp of next layout change.
+  let newLayoutTime = 0;
+  // Timestamp of next module change.
+  let newModuleTime = Infinity;
+  
+  let ret = {
+    getNextDeadline() {
+      return Math.min(newLayoutTime, newModuleTime);
+    },
+    getPlaylist() {
+      return playlist;
+    },
+    getNextTransitionType() {
+      if (newLayoutTime < newModuleTime) {
+        return 'PlayingUntilNextLayout';
+      } else {
+        return 'PlayingUntilNextModule';
+      }
+    },
+    driveStateMachine(newPlaylist) {
+      playlist = newPlaylist;
+      if (timer) {
+        clearTimeout(timer);
+        timer = 0;
+      }
 
-const driveStateMachine = (playlist, layoutSM, clearTimer) => {
-  // TODO(jgessner): Make this a proper class with an owner and a cleaner reset API
-  // instead of a hacky globals thing.
-  if (clearTimer) {
-    clearTimeout(timer);
-  }
+      // Reset layout index.
+      layoutIndex = -1;
 
-  const nextLayout = layoutIndex => {
-    // Show this layout next:
-    let layout = playlist[layoutIndex];
+      ret.nextLayout();
+    },
+    skipAhead() {
+      // This skips to the next module in the current layout.
+      // We need to cancel any existing timer, because we are disrupting the
+      // normal timing.
+      clearTimeout(timer);
+      // Now, force the next module to play.
+      ret.nextModule();
+    },
+    playModule(moduleName) {
+      // Force a specific module to play. Now, this particular module doesn't
+      // necessarily exist in any kind of playlist, which presents us with a
+      // choice as to how long to play this module. We'll choose to play it for
+      // as long as the current layout says to play modules.
+      let layout = playlist[layoutIndex];
 
-    // The time that we'll switch to a new layout.
-    let newLayoutTime = time.inFuture(layout.duration * 1000);
-
-    if (monitor.isEnabled()) {
-      monitor.update({playlist: {
-        time: time.now(),
-        event: `change layout`,
-        deadline: newLayoutTime
-      }});
-    }
-
-    debug(`Next Layout: ${layoutIndex}`);
-
-    layoutSM.fadeOut().then(() => {
-      // Shuffle the module list:
-      let modules = Array.from(layout.modules);
-      random.shuffle(modules);
+      // Stop any existing timer so we don't transition early.
+      // TODO(applmak): Consider making the timer management more foolproof by
+      // having the next* or play* methods stop the timer.
+      clearTimeout(timer);
+      // Reset duration for this module.
+      newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+      // Ensure that we won't change layouts until this module is done.
+      newLayoutTime = Math.max(newModuleTime, newLayoutTime);
+      // Now play this module.
+      ret.playModule_(moduleName);
+    },
+    nextLayout() {
+      // Update layoutIndex.
+      layoutIndex = (layoutIndex + 1) % playlist.length;
       
-      const nextModule = moduleIndex => {
-        layoutSM.setErrorListener(error => {
-          // Stop normal advancement.
-          clearTimeout(timer);
-          nextModule((moduleIndex + 1) % modules.length);
-        });
+      // Show this layout next:
+      let layout = playlist[layoutIndex];
+      
+      // Reset moduleIndex
+      moduleIndex = -1;
 
-        // The time that we'll switch to the next module.
-        let newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+      // The time that we'll switch to a new layout.
+      newLayoutTime = time.inFuture(layout.duration * 1000);
 
-        // Tell the layout to play the next module in the list.
-        layoutSM.playModule(modules[moduleIndex]);
+      if (monitor.isEnabled()) {
+        monitor.update({playlist: {
+          time: time.now(),
+          event: `change layout`,
+          deadline: newLayoutTime
+        }});
+      }
 
-        if (monitor.isEnabled()) {
-          monitor.update({playlist: {
-            time: time.now(),
-            event: `change module`,
-            deadline: Math.min(newModuleTime, newLayoutTime)
-          }});
-        }
+      debug(`Next Layout: ${layoutIndex}`);
 
-        // Now, in so many seconds, we'll need to switch to another module or another layout. How much time do we
-        // have?
-        timer = (newLayoutTime < newModuleTime) ?
-          setTimeout(() => nextLayout((layoutIndex + 1) % playlist.length), time.until(newLayoutTime)) :
-          setTimeout(() => nextModule((moduleIndex + 1) % modules.length), time.until(newModuleTime));
-      };
+      layoutSM.fadeOut().then(() => {
+        // Shuffle the module list:
+        modules = Array.from(layout.modules);
+        random.shuffle(modules);
 
-      Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => nextModule(0));
-    });
+        Promise.all(layout.modules.map(m => m.whenLoadedPromise)).then(() => ret.nextModule());
+      });
+    },
+    nextModule() {
+      moduleIndex = (moduleIndex + 1) % modules.length;
+
+      layoutSM.setErrorListener(error => {
+        // Stop normal advancement.
+        clearTimeout(timer);
+        nextModule();
+      });
+
+      // The current layout.
+      let layout = playlist[layoutIndex];
+      
+      // The time that we'll switch to the next module.
+      newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+
+      ret.playModule_(modules[moduleIndex]);
+    },
+    playModule_(module) {
+      // Play a module until the next transition time.
+      layoutSM.playModule(module);
+
+      if (monitor.isEnabled()) {
+        monitor.update({playlist: {
+          time: time.now(),
+          event: `change module ${module}`,
+          deadline: Math.min(newModuleTime, newLayoutTime)
+        }});
+      }
+
+      // Now, in so many seconds, we'll need to switch to another module 
+      // or another layout. How much time do we have?
+      if (newLayoutTime < newModuleTime) {
+        timer = setTimeout(() => ret.nextLayout(), time.until(newLayoutTime));
+      } else {
+        timer = setTimeout(() => ret.nextModule(), time.until(newModuleTime));
+      }
+    }
   };
-  nextLayout(0);
-};
+  return ret;
+}
 
 module.exports = {
-  driveStateMachine
+  makeDriver
 };
