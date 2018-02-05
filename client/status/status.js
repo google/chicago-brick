@@ -25,22 +25,19 @@ var bgColors = [
 // > 1 means the module exists and is in a loaded playlist.
 // Modules that are in the modules list, but not in a playlist aren't eligible
 // for immediate playback, only for indefinite takeover.
-function buildPlayableModuleMap(config) {
+function buildPlayableModuleMap(modules, config) {
   let playableModules = {};
-  config.current.modules.forEach(
+  modules.forEach(
     module => playableModules[module.name] = 1
   );
 
   let playableCollections = {};
   config.current.playlist.forEach(function(playlist) {
     if (playlist.collection === undefined) {
-      playlist.modules.forEach(
-        // Module is just a string here, not the full module struct.
-        module => playableModules[module] += 1
-      );
+      modules.forEach(module => playableModules[module.name] += 1);
     } else if (playlist.collection == '__ALL__') {
       playableCollections['__ALL__'] = new Array();
-      config.current.modules.forEach(
+      modules.forEach(
         module => playableCollections['__ALL__'].push(module.name)
       );
     } else {
@@ -209,16 +206,18 @@ requirejs(['/config.js'], function(require) {
   });
 });
 
-fetchJson('config').then(config => {
+Promise.all([fetchJson('modules'), fetchJson('config')]).then(bits => {
+  const [modules, config] = bits;
+
   // Reload the current JSON configuration.
   document.forms[0].config.value = JSON.stringify(
       config.current, null, '  ');
 
-  let modulesInPlaylist = buildPlayableModuleMap(config);
+  let modulesInPlaylist = buildPlayableModuleMap(modules, config);
 
   // Draw the list of available modules in the "play immediately" section.
   let module_list = document.getElementById('module_list');
-  config.current.modules.forEach(function(module) {
+  modules.forEach(function(module) {
     let li = document.createElement('li');
     if (modulesInPlaylist[module.name] > 1) {
       const a = document.createElement('a');

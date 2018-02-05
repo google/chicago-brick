@@ -21,7 +21,6 @@ var debug = require('debug')('wall:playlist_loader');
 var fs = require('fs');
 
 var Layout = require('server/modules/layout');
-var ModuleDef = require('server/modules/module_def');
 var library = require('server/modules/module_library');
 
 class PlaylistLoader {
@@ -72,22 +71,6 @@ class PlaylistLoader {
 
   /** Parses a playlist JSON object into a list of Layouts. */
   parsePlaylist(config) {
-    library.reset();
-    var extraModules = config.modules || [];
-    for (var m of extraModules) {
-      assert(m.name && (m.extends || m.path), 'Invalid configuration: ' + m);
-      if (m.extends) {
-        assert(m.extends in library.modules, 'Module ' + m.name + 
-          ' attempting to extend ' + m.extends + ' which was not found!');
-        debug('Adding module ' + m.name + ' extending ' + m.extends);
-        library.register(library.modules[m.extends].extend(
-          m.name, m.title, m.author, m.config));
-      } else {
-        debug('Adding module ' + m.name + ' from ' + m.path);
-        library.register(new ModuleDef(m.name, m.path, m.title, m.author, m.config));
-      }
-    }
-
     // TODO(applmak): If module is specified on the command-line, ignore whatever is set in the playlist.
     return config.playlist.map((layout) => {
       return new Layout({
@@ -96,11 +79,6 @@ class PlaylistLoader {
         duration: this.flags.layout_duration || layout.duration,
       });
     });
-  }
-
-  /** Returns a layout list from command-line flags. */
-  getInitialPlaylist() {
-    return this.parsePlaylist(this.getInitialPlaylistConfig());
   }
 }
 
