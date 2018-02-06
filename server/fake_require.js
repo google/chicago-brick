@@ -19,7 +19,7 @@ const path = require('path');
 // Server-side takes just an env. This is sorta complicated, but simpler than
 // the client-side case because we are synchronous.
 //  - Our goal is to be able to require a file that lives on the server from
-//    the server.
+//    the server and support module-relative paths in modules.
 //  - A simple sandbox won't work, because the sandbox is not inherited by
 //    files that the eval'd file itself requires.
 //  - Instead, we must muck with node's require so that our fake deps will
@@ -32,7 +32,7 @@ const path = require('path');
 //  - Finally, we have to clean up this when we're done, so they don't stick
 //    around forever.
 module.exports = {
-  createEnvironment: function(env, modulePath) {
+  createEnvironment: function(env, moduleRoot) {
     'use strict';
     // First, create a list of the the current valid deps, so we can remove
     // any new ones that appear when it's time to clean up.
@@ -46,21 +46,18 @@ module.exports = {
     let origResolve = Module._resolveFilename;
     Module._resolveFilename = function() {
       let args = Array.prototype.slice.call(arguments);
+      // For cached impots, let it go without doing anything.
       if (args[0] in env) {
         return args[0];
       }
 
       // For relative imports we rewrite them to be relative to the
-      // chicago-brick root directory.
+      // module root directory.
       if (args[0][0] == '.') {
-        // The main entry point is evaled in the context of this script, so we
-        // have to rewrite it based on the provided module path. Otherwise, we
-        // rewrite it based on the parent module (for later relative imports).
-        const parentModule = args[1].id == module.id ?  modulePath : args[1].id;
-        const parentDir = path.dirname(parentModule);
-        const relative = path.relative(process.cwd(), parentDir);
-        args[0] = path.join(relative.replace(/^node_modules\//, ''), args[0]);
+        args[0] = path.join(moduleRoot, args[0]);
       }
+
+      // Otherwise delegate to the normal resolve function.
       return origResolve.apply(null, args);
     };
 
@@ -71,14 +68,14 @@ module.exports = {
       fakeModule.loaded = true;
       require.cache[name] = fakeModule;
     }
-    
+
     // Create a function that delegates to require. It contains a single
     // 'destroy' method that cleans up all of our mucking.
     let ret = path => require(path);
     ret.destroy = () => {
       // Restore _resolveFilename.
       Module._resolveFilename = origResolve;
-      
+
       // Remove new cache entries.
       let newDeps = _.difference(Object.keys(require.cache), loadedDeps);
       newDeps.forEach(k => delete require.cache[k]);
@@ -86,7 +83,7 @@ module.exports = {
       // Also, remove these entries from MY module's children list.
       module.children = originalChildren;
     };
-    
+
     return ret;
   },
 };

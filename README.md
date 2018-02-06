@@ -41,6 +41,18 @@ You should be able to see the same thing with four browser windows instead.
 You can play with different modules by substituting the `stars` argument
 with other names in `chicago-brick/config/demo-playlist.json`.
 
+## Modules
+
+A chicago brick module is a directory with a brick.json file.  This file
+provides the module's configuration.  See examples in demo_modules. Any
+directory (or glob) that should be included should be passed in using the
+--module_dir flag.
+
+### Modules as deps
+
+A module can be included by installing its package as a dependency. By default
+brick will load any modules found in node_modules subdirectories.
+
 ## API Doc
 
 You can view some API Docs at http://google.github.io/chicago-brick/api.html.
