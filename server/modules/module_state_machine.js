@@ -89,11 +89,11 @@ class ModuleStateMachine extends stateMachine.Machine {
       this.allClients_[id].playModule('_empty', deadline);
     }
     
-    // Tell the server to stop.
-    this.context_.server.playModule('_empty', deadline);
-
     // Set us back to idle, awaiting further instructions.
     this.transitionTo(new IdleState);
+
+    // Tell the server to stop.
+    return this.context_.server.playModule('_empty', deadline);
   }
   
   newClient(clientInfo) {

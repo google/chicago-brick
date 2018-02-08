@@ -40,7 +40,10 @@ class ServerStateMachine extends stateMachine.Machine {
         deadline: deadline
       }});
     }
-    this.state.playModule(moduleName, deadline);
+    // Return a promise which will be resolved when we get to the display state.
+    return new Promise(resolve => {
+      this.state.playModule(moduleName, deadline, resolve);
+    });
   }
 }
 
@@ -54,14 +57,15 @@ class IdleState extends stateMachine.State {
       }});
     }
   }
-  playModule(moduleName, deadline) {
-    this.transition_(new PrepareState(new RunningModule(library.modules['_empty']), moduleName, deadline));
+  playModule(moduleName, deadline, resolve) {
+    const emptyModule = new RunningModule(library.modules['_empty']);
+    this.transition_(new PrepareState(emptyModule, moduleName, deadline, resolve));
   }
 }
 
 class PrepareState extends stateMachine.State {
-  constructor(oldModule, moduleName, deadline) {
-    super('PrepareState');
+  constructor(oldModule, moduleName, deadline, resolve) {
+    super();
 
     // The current module on the screen.
     this.oldModule_ = oldModule;
@@ -78,6 +82,10 @@ class PrepareState extends stateMachine.State {
     this.deadline_ = deadline;
     
     this.timer_ = null;
+    
+    // The resolver that will be resolved as soon as we make it to the display
+    // state.
+    this.resolve_ = resolve;
   }
   enter(transition, context) {
     if (monitor.isEnabled()) {
@@ -101,21 +109,21 @@ class PrepareState extends stateMachine.State {
 
       // Tell the server module that it will be shown soon.
       this.module_.willBeShownSoon(this.deadline_).then(() => {
-        transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
+        transition(new TransitionState(this.oldModule_, this.module_, this.deadline_, this.resolve_));
       });
     
       // Schedule a timer to trip if we take too long. We'll transition anyway,
       // though.
       this.timer_ = setTimeout(() => {
         logError(new Error(`Preparation timeout for module ${this.moduleDef_.name}`));
-        transition(new TransitionState(this.oldModule_, this.module_, this.deadline_));
+        transition(new TransitionState(this.oldModule_, this.module_, this.deadline_, this.resolve_));
       }, time.until(this.deadline_));
     });
   }
   exit() {
     clearTimeout(this.timer_);
   }
-  playModule(moduleName, deadline) {
+  playModule(moduleName, deadline, resolve) {
     if (this.module_) {
       // If we are preparing to show some things, but then suddenly we're told
       // to go somewhere else, we need to meet the module interface contract by
@@ -131,12 +139,13 @@ class PrepareState extends stateMachine.State {
     // and we'll tell it we're going to hide it again with a different deadline.
     // TODO(applmak): We should tighten up the API here to avoid the double
     // willBeHiddenSoon.
-    this.transition_(new PrepareState(this.oldModule_, moduleName, deadline));
+    // Note, too, that we drop any old resolver for this.
+    this.transition_(new PrepareState(this.oldModule_, moduleName, deadline, resolve));
   }
 }
 
 class TransitionState extends stateMachine.State {
-  constructor(oldModule, module, deadline) {
+  constructor(oldModule, module, deadline, resolve) {
     super();
 
     // The module that we're trying to unload.
@@ -149,6 +158,10 @@ class TransitionState extends stateMachine.State {
     this.deadline_ = deadline;
 
     this.timer_ = null;
+
+    // The resolver that will be resolved as soon as we make it to the display
+    // state.
+    this.resolve_ = resolve;
   }
   enter(transition) {
     if (monitor.isEnabled()) {
@@ -168,14 +181,14 @@ class TransitionState extends stateMachine.State {
       this.timer_ = setTimeout(() => {
         moduleTicker.remove(this.oldModule_);
         
-        this.transition_(new DisplayState(this.module_));
+        this.transition_(new DisplayState(this.module_, this.resolve_));
       }, time.until(endTransition));
     }, time.until(this.deadline_));
   }
   exit() {
     clearTimeout(this.timer_);
   }
-  playModule(moduleName, deadline) {
+  playModule(moduleName, deadline, resolve) {
     // Hmm... so, we are in the middle of transition from O -> N, and we just got asked to show M.
     // We need to prepare M for display, and then transition from O -> M, which is surely fine, guess.
     // But that means that we need to manually clean up N.
@@ -183,16 +196,21 @@ class TransitionState extends stateMachine.State {
     moduleTicker.remove(this.module_);
     
     // Safely prepare the new module.
-    this.transition_(new PrepareState(this.oldModule_, moduleName, deadline));
+    // Note that we remove the old resolver.
+    this.transition_(new PrepareState(this.oldModule_, moduleName, deadline, resolve));
   }
 }
 
 class DisplayState extends stateMachine.State {
-  constructor(module) {
+  constructor(module, resolve) {
     super();
 
     // The module currently on display.
     this.module_ = module;
+    
+    // The resolver that will be resolved as soon as we make it to the display
+    // state.
+    this.resolve_ = resolve;    
   }
   enter(transition) {
     if (monitor.isEnabled()) {
@@ -202,10 +220,11 @@ class DisplayState extends stateMachine.State {
       }});
     }
     
+    this.resolve_();
     this.transition_ = transition;
   }
-  playModule(moduleName, deadline) {
-    this.transition_(new PrepareState(this.module_, moduleName, deadline));
+  playModule(moduleName, deadline, resolve) {
+    this.transition_(new PrepareState(this.module_, moduleName, deadline, resolve));
   }
 }
 
