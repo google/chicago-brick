@@ -26,13 +26,11 @@ const debug = require('debug')('wall:server_state_machine');
 const library = require('server/modules/module_library');
 const logError = require('server/util/log').error(debug);
 const monitor = require('server/monitoring/monitor');
+const wallGeometry = require('server/util/wall_geometry');
 
 class ServerStateMachine extends stateMachine.Machine {
-  constructor(wallGeometry) {
+  constructor() {
     super(new IdleState, debug);
-
-    // The geometry of our region of the wall. A single Polygon.
-    this.setContext({geo: wallGeometry});
   }
   playModule(moduleName, deadline) {
     if (monitor.isEnabled()) {
@@ -95,7 +93,7 @@ class PrepareState extends stateMachine.State {
     // Don't begin preparing the module until we've loaded it.
     this.moduleDef_.whenLoadedPromise.then(() => {
       // The module we're trying to load.
-      this.module_ = new RunningModule(this.moduleDef_, context.geo, this.deadline_);
+      this.module_ = new RunningModule(this.moduleDef_, wallGeometry.getGeo(), this.deadline_);
       this.module_.instantiate();
 
       // Tell the old server module that it will be hidden soon.

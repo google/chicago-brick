@@ -25,7 +25,6 @@ const library = require('server/modules/module_library');
 const ServerStateMachine = require('server/modules/server_state_machine');
 const geometry = require('lib/geometry');
 const monitor = require('server/monitoring/monitor');
-const wallGeometry = require('server/util/wall_geometry');
 
 function isDisplayInPoly(rect, poly) {
   // find the center point of this display:
@@ -41,14 +40,11 @@ class ModuleStateMachine extends stateMachine.Machine {
   constructor(allClients) {
     super(new IdleState, debug);
     
-    const geo = wallGeometry.getGeo();
-    
     // Map of ID to ClientControlStateMachine for all clients.
     this.allClients_ = allClients;
 
     this.setContext({
-      geo,
-      server: new ServerStateMachine(geo),
+      server: new ServerStateMachine,
       allClients,
     });
     
@@ -90,7 +86,7 @@ class ModuleStateMachine extends stateMachine.Machine {
 
     // Tell the clients to stop.
     for (const id in this.allClients_) {
-      this.allClients_[id].playModule('_empty', deadline, this.context_.geo);
+      this.allClients_[id].playModule('_empty', deadline);
     }
     
     // Tell the server to stop.
@@ -102,7 +98,7 @@ class ModuleStateMachine extends stateMachine.Machine {
   
   newClient(clientInfo) {
     let client = this.allClients_[clientInfo.socket.id];
-    this.state.newClient(client, this.context_.geo);
+    this.state.newClient(client);
   }
   
   playModule(moduleName, timeToStartDisplay) {
@@ -165,19 +161,19 @@ class DisplayState extends stateMachine.State {
     }
     
     // Tell the server to transition to this new module.
-    context.server.playModule(this.moduleName_, this.timeToStartDisplay_, context.geo);
+    context.server.playModule(this.moduleName_, this.timeToStartDisplay_);
 
     // Tell each client to transition to the module.
     for (const id in context.allClients) {
-      context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_, context.geo)
+      context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_)
     }
     
     // Wait here until we're told to do something else.
   }
-  newClient(client, geo) {
+  newClient(client) {
     // Tell the new guy to load the next module NOW.
     // We'll presume that this guy arrived way after our coordinating time, so we'll tell him to switch now.
-    client.playModule(this.moduleName_, this.timeToStartDisplay_, geo);
+    client.playModule(this.moduleName_, this.timeToStartDisplay_);
   }
   playModule(moduleName, timeToStartDisplay) {
     this.transition_(new DisplayState(moduleName, timeToStartDisplay));
