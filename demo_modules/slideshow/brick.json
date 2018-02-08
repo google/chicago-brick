@@ -1,0 +1,59 @@
+[
+  {
+    "name": "slideshow",
+    "path": "./slideshow.js",
+    "title": "Slideshow"
+  },
+  {
+    "name": "cta",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "youtube": {
+          "playlistId": "PLCJZjGFB_wA72YhaYl5XtuRVqC9q4EwG-",
+          "seekTo": 47,
+          "playThroughPlaylist": true
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "period": 0,
+          "gravity": 100
+        }
+      }
+    }
+  },
+  {
+    "name": "roller-coasters",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "youtube": {
+          "playlistId": "PLF4DCD1EE19D50969",
+          "playThroughPlaylist": true
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "period": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "flickr-chicago",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "flickr": {
+          "query": "chicago"
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "period": 3000
+        }
+      }
+    }
+  }
+]

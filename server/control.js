@@ -15,8 +15,10 @@ limitations under the License.
 
 'use strict';
 
+const _ = require('underscore');
 const RJSON = require('relaxed-json');
 const debug = require('debug')('wall:control');
+const library = require('server/modules/module_library');
 const log = require('server/util/log');
 const wallGeometry = require('server/util/wall_geometry');
 
@@ -24,16 +26,18 @@ const wallGeometry = require('server/util/wall_geometry');
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 class Control {
-  constructor(playlistDriver, clients, playlistLoader) {
+  constructor(playlistDriver, clients, moduleLoader, playlistLoader) {
     this.playlistDriver = playlistDriver;
     this.clients = clients;
     this.playlistLoader = playlistLoader;
+    this.moduleLoader = moduleLoader;
 
     this.initialConfig = playlistLoader.getInitialPlaylistConfig();
     this.currentConfig = this.initialConfig;
   }
 
   installHandlers(app) {
+    app.get('/api/modules', this.getModules.bind(this));
     app.get('/api/playlist', this.getPlaylist.bind(this));
     app.post('/api/playlist', this.setPlaylist.bind(this));
     app.post('/api/reset-playlist', this.resetPlaylist.bind(this));
@@ -60,14 +64,19 @@ class Control {
   setConfig(req, res) {
     try {
       var json = RJSON.parse(req.body.config);
-      var playlistConfig = this.playlistLoader.parsePlaylist(json);
+      this.moduleLoader.loadModules(json);
+      var playlist = this.playlistLoader.parsePlaylist(json);
     } catch (e) {
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    this.playlistDriver.driveStateMachine(playlistConfig);
+    this.playlistDriver.driveStateMachine(playlist);
     this.currentConfig = json;
     res.redirect('/status');
+  }
+
+  getModules(req, res) {
+    res.json(_.values(library.modules));
   }
 
   getPlaylist(req, res) {
@@ -75,6 +84,7 @@ class Control {
   }
 
   resetPlaylist(req, res) {
+    this.moduleLoader.loadModules(this.initialConfig);
     this.playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig));
     this.currentConfig = this.initialConfig;
     res.redirect('/status');
@@ -82,18 +92,19 @@ class Control {
 
   setPlaylist(req, res) {
     let infinitePlaylist = JSON.stringify({ modules: [req.body], playlist: [{collection: '__ALL__', duration: 86400}] });
-    let playlistConfig = {};
+    let playlist = {};
     let json = '';
     try {
       json = RJSON.parse(infinitePlaylist);
-      playlistConfig = this.playlistLoader.parsePlaylist(json);
+      this.moduleLoader.loadModules(json);
+      playlist = this.playlistLoader.parsePlaylist(json);
     } catch (e) {
       console.log(`Error in setPlaylist: ${e}`);
       res.status(400).send('Bad request: ' + e);
       return;
     }
     this.currentConfig = json;
-    this.playlistDriver.driveStateMachine(playlistConfig);
+    this.playlistDriver.driveStateMachine(playlist);
     res.redirect('/status');
   }
 
