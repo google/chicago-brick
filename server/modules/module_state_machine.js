@@ -119,9 +119,6 @@ class ModuleStateMachine extends stateMachine.Machine {
     
     this.state.playModule(moduleName, timeToStartDisplay);
   }
-  getGeo() {
-    return this.context_.geo;
-  }
 }
 
 class IdleState extends stateMachine.State {
