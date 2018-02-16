@@ -1,6 +1,6 @@
 {
   "name": "slither",
-  "path": "slither.js",
+  "path": "./slither.js",
   "title": "Slither",
   "author": "Matt Handley",
   "config": {
