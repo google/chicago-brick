@@ -21,7 +21,7 @@ const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 const debug = require('debug')('wall::playlist_driver');
 
-const makeDriver = layoutSM => {
+const makeDriver = moduleSM => {
   let timer = 0;
   let playlist = null;
   // Order that we play the modules in.
@@ -110,7 +110,7 @@ const makeDriver = layoutSM => {
 
       debug(`Next Layout: ${layoutIndex}`);
 
-      layoutSM.fadeOut().then(() => {
+      moduleSM.fadeToBlack(time.now() + 5000).then(() => {
         // Shuffle the module list:
         modules = Array.from(layout.modules);
         random.shuffle(modules);
@@ -121,7 +121,7 @@ const makeDriver = layoutSM => {
     nextModule() {
       moduleIndex = (moduleIndex + 1) % modules.length;
 
-      layoutSM.setErrorListener(error => {
+      moduleSM.setErrorListener(error => {
         // Stop normal advancement.
         clearTimeout(timer);
         nextModule();
@@ -137,7 +137,7 @@ const makeDriver = layoutSM => {
     },
     playModule_(module) {
       // Play a module until the next transition time.
-      layoutSM.playModule(module);
+      moduleSM.playModule(module, time.now());
 
       if (monitor.isEnabled()) {
         monitor.update({playlist: {
