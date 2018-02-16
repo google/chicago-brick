@@ -21,6 +21,7 @@ const time = require('server/util/time');
 const debug = require('debug')('wall:client_control_state_machine');
 const library = require('server/modules/module_library');
 const logError = require('server/util/log').error(debug);
+const wallGeometry = require('server/util/wall_geometry');
 
 class ClientControlStateMachine extends stateMachine.Machine {
   constructor(client) {
@@ -30,8 +31,8 @@ class ClientControlStateMachine extends stateMachine.Machine {
     // client.
     this.setContext({client});
   }
-  playModule(module, deadline, geo) {
-    this.state.playModule(module, deadline, geo);
+  playModule(module, deadline) {
+    this.state.playModule(module, deadline);
   }
   handleError(error) {
     logError(error);
@@ -52,8 +53,8 @@ class IdleState extends stateMachine.State {
   enter(transition) {
     this.transition_ = transition;
   }
-  playModule(module, deadline, geo) {
-    this.transition_(new PrepareState(module, deadline, geo));
+  playModule(module, deadline) {
+    this.transition_(new PrepareState(module, deadline));
   }
   getModuleName() {
     return '<None>';
@@ -61,7 +62,7 @@ class IdleState extends stateMachine.State {
 }
 
 class PrepareState extends stateMachine.State {
-  constructor(module, deadline, geo) {
+  constructor(module, deadline) {
     super();
 
     // Server-side module info.
@@ -69,9 +70,6 @@ class PrepareState extends stateMachine.State {
 
     // The deadline at which we should transition to the new module.
     this.deadline_ = deadline;
-    
-    // The geometry of the wall.
-    this.geo_ = geo;
     
     this.timer_ = null;
   }
@@ -83,7 +81,7 @@ class PrepareState extends stateMachine.State {
     client.socket.emit('loadModule', {
       module: this.moduleDef_.serializeForClient(),
       time: this.deadline_,
-      geo: this.geo_.points
+      geo: wallGeometry.getGeo().points
     });
 
     this.timer_ = setTimeout(() => {
@@ -93,10 +91,10 @@ class PrepareState extends stateMachine.State {
   exit() {
     clearTimeout(this.timer_);
   }
-  playModule(module, deadline, geo) {
+  playModule(module, deadline) {
     // Even if waiting for the client to do something, prepare a new module
     // immediately.
-    this.transition_(new PrepareState(module, deadline, geo));
+    this.transition_(new PrepareState(module, deadline));
   }
   getModuleName() {
     return this.moduleDef_.name;
@@ -111,8 +109,8 @@ class DisplayState extends stateMachine.State {
   enter(transition) {
     this.transition_ = transition;
   }
-  playModule(module, deadline, geo) {
-    this.transition_(new PrepareState(module, deadline, geo));
+  playModule(module, deadline) {
+    this.transition_(new PrepareState(module, deadline));
   }
   getModuleName() {
     return this.moduleName_;

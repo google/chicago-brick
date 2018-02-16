@@ -21,7 +21,7 @@ const path = require('path');
 
 const Control = require('server/control');
 const ClientControlStateMachine = require('server/modules/client_control_state_machine');
-const LayoutStateMachine = require('server/modules/layout_state_machine');
+const ModuleStateMachine = require('server/modules/module_state_machine');
 const ModuleLoader = require('server/modules/module_loader');
 const PeerServer = require('peer').PeerServer;
 const PlaylistLoader = require('server/modules/playlist_loader');
@@ -117,8 +117,8 @@ if (playlist.length === 0) {
 var app = webapp.create(flags);
 
 const clients = {};
-const layoutSM = new LayoutStateMachine(clients);
-const driver = playlistDriver.makeDriver(layoutSM);
+const moduleSM = new ModuleStateMachine(clients);
+const driver = playlistDriver.makeDriver(moduleSM);
 var control = new Control(driver, clients, moduleLoader, playlistLoader);
 control.installHandlers(app);
 
@@ -167,7 +167,7 @@ network.on('new-client', function(client) {
     }});
   }
   clients[client.socket.id] = new ClientControlStateMachine(client);
-  layoutSM.newClient(client);
+  moduleSM.newClient(client);
 });
 
 network.on('lost-client', function(id) {
@@ -186,7 +186,7 @@ network.on('lost-client', function(id) {
         event: `dropClient: id ${id}`,
       }});
     }
-    // Don't bother the layoutSM if we don't know anything about this client.
+    // Don't bother the moduleSM if we don't know anything about this client.
   }
   delete clients[id];
 });
