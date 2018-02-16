@@ -121,12 +121,6 @@ const makeDriver = moduleSM => {
     nextModule() {
       moduleIndex = (moduleIndex + 1) % modules.length;
 
-      moduleSM.setErrorListener(error => {
-        // Stop normal advancement.
-        clearTimeout(timer);
-        nextModule();
-      });
-
       // The current layout.
       let layout = playlist[layoutIndex];
       
@@ -156,6 +150,13 @@ const makeDriver = moduleSM => {
       }
     }
   };
+  
+  moduleSM.setErrorListener(error => {
+    // Stop normal advancement.
+    clearTimeout(timer);
+    ret.nextModule();
+  });
+  
   return ret;
 }
 
