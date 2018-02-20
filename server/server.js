@@ -24,6 +24,7 @@ const ClientControlStateMachine = require('server/modules/client_control_state_m
 const ModuleStateMachine = require('server/modules/module_state_machine');
 const ModuleLoader = require('server/modules/module_loader');
 const PeerServer = require('peer').PeerServer;
+const PlaylistDriver = require('server/modules/playlist_driver');
 const PlaylistLoader = require('server/modules/playlist_loader');
 
 const commandLineArgs = require('command-line-args');
@@ -33,7 +34,6 @@ const debug = require('debug')('wall:server');
 const game = require('./game/game');
 const monitor = require('server/monitoring/monitor');
 const network = require('server/network/network');
-const playlistDriver = require('server/modules/playlist_driver');
 const time = require('server/util/time');
 const wallGeometry = require('server/util/wall_geometry');
 const webapp = require('server/webapp');
@@ -118,7 +118,7 @@ var app = webapp.create(flags);
 
 const clients = {};
 const moduleSM = new ModuleStateMachine(clients);
-const driver = playlistDriver.makeDriver(moduleSM);
+const driver = new PlaylistDriver(moduleSM);
 var control = new Control(driver, clients, moduleLoader, playlistLoader);
 control.installHandlers(app);
 
@@ -196,4 +196,4 @@ if (flags.enable_monitoring) {
 }
 
 debug('Running playlist of ' + playlist.length + ' items');
-driver.driveStateMachine(playlist);
+driver.start(playlist);
