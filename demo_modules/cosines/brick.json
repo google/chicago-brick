@@ -1,6 +1,6 @@
 {
   "name": "cosines",
-  "path": "cosines.js",
+  "path": "./cosines.js",
   "title": "Cosines",
   "author": "Matt Cruikshank"
 }
