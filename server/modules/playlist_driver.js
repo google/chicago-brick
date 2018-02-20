@@ -24,60 +24,77 @@ const debug = require('debug')('wall::playlist_driver');
 
 class PlaylistDriver {
   constructor(moduleSM) {
+    // The module state machine that we control.
     this.moduleSM = moduleSM;
+    // If non-zero, a handle to the current timer, which when fired, will tell
+    // the wall to play a new module.
     this.timer = 0;
+    // The current playlist (array of layouts).
     this.playlist = null;
-    // Order that we play the modules in.
+    // The current order that we play the modules in.
     this.modules = [];
-    // Index of next layout in the playlist.
+    // Index of the current layout in the playlist.
     this.layoutIndex = 0;
-    // Index of next module in the playlist.
+    // Index of current module in the modules array.
     this.moduleIndex = 0;
     // Timestamp of next layout change.
-    this.newLayoutTime = 0;
+    this.newLayoutTime = Infinity;
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
     
     this.moduleSM.setErrorListener(error => {
       // Stop normal advancement.
-      clearTimeout(this.timer);
+      this.resetTimer_();
       this.nextModule();
     });
   }
+  // Returns the timestamp of the next module change.
   getNextDeadline() {
     return Math.min(this.newLayoutTime, this.newModuleTime);
   }
+  // Returns the current playlist.
   getPlaylist() {
     return this.playlist;
   }
+  // Returns a string indicating the type of transition we will perform next.
   getNextTransitionType() {
     if (this.newLayoutTime < this.newModuleTime) {
-      return 'PlayingUntilNextLayout';
+      return 'NextLayout';
     } else {
-      return 'PlayingUntilNextModule';
+      return 'NextModule';
     }
   }
+  // Resets any active timer so that any pending transition is cancelled.
+  resetTimer_() {
+    clearTimeout(this.timer);
+    this.timer = 0;
+  }
+  // Starts a new playlist. This performs a layout transition, fading to black
+  // if required.
   start(newPlaylist) {
     this.playlist = newPlaylist;
-    if (this.timer) {
-      clearTimeout(this.timer);
-      this.timer = 0;
-    }
+    this.resetTimer_();
 
     // Reset layout index.
     this.layoutIndex = -1;
 
     this.nextLayout();
   }
+  // Immediately advanced to the next module in the current layout.
+  // If there is only one module in a layout, restarts that module.
   skipAhead() {
     assert(this.playlist, 'Cannot advance without a playlist.');
     // This skips to the next module in the current layout.
     // We need to cancel any existing timer, because we are disrupting the
     // normal timing.
-    clearTimeout(this.timer);
+    this.resetTimer_();
+    
     // Now, force the next module to play.
     this.nextModule();
   }
+  // Plays a module by name, regardless of whether or not the module is
+  // actually in the current playlist.
+  // NOTE: This module will play for the moduleDuration of the current layout.
   playModule(moduleName) {
     // Force a specific module to play. Now, this particular module doesn't
     // necessarily exist in any kind of playlist, which presents us with a
@@ -88,7 +105,8 @@ class PlaylistDriver {
     // Stop any existing timer so we don't transition early.
     // TODO(applmak): Consider making the timer management more foolproof by
     // having the next* or play* methods stop the timer.
-    clearTimeout(this.timer);
+    this.resetTimer_();
+
     // Reset duration for this module.
     this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
     // Ensure that we won't change layouts until this module is done.
@@ -96,6 +114,7 @@ class PlaylistDriver {
     // Now play this module.
     this.playModule_(moduleName);
   }
+  // Advances to the next layout in the playlist, fading out between them.
   nextLayout() {
     // Update layoutIndex.
     this.layoutIndex = (this.layoutIndex + 1) % this.playlist.length;
@@ -128,6 +147,9 @@ class PlaylistDriver {
       return Promise.all(layout.modules.map(m => m.whenLoadedPromise));
     }).then(() => this.nextModule());
   }
+  // Advances to the next module in the current layout. If there is only 1
+  // module in the current playlist, transitions to another copy of that
+  // module.
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
 
@@ -139,6 +161,8 @@ class PlaylistDriver {
 
     this.playModule_(this.modules[this.moduleIndex]);
   }
+  // Private helper function that does the work of going to a module by name
+  // and scheduling the next module to play after a certain duration.
   playModule_(module) {
     // Play a module until the next transition time.
     this.moduleSM.playModule(module, time.now());
@@ -147,7 +171,7 @@ class PlaylistDriver {
       monitor.update({playlist: {
         time: time.now(),
         event: `change module ${module}`,
-        deadline: Math.min(this.newModuleTime, this.newLayoutTime)
+        deadline: this.getNextDeadline(),
       }});
     }
 
@@ -155,7 +179,11 @@ class PlaylistDriver {
     // or another layout. How much time do we have?
     if (this.newLayoutTime < this.newModuleTime) {
       this.timer = setTimeout(() => this.nextLayout(), time.until(this.newLayoutTime));
-    } else {
+    } else if (this.modules.length > 1 || this.modules.indexOf(module) == -1) {
+      // Only schedule the next module to play if:
+      // a) There are multiple modules in the current layout, or
+      // b) The module we are now playing is not in the current layout, and so
+      //    we wish to return to that layout.
       this.timer = setTimeout(() => this.nextModule(), time.until(this.newModuleTime));
     }
   }
