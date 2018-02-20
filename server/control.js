@@ -70,7 +70,7 @@ class Control {
       res.status(400).send('Bad request: ' + e);
       return;
     }
-    this.playlistDriver.driveStateMachine(playlist);
+    this.playlistDriver.start(playlist);
     this.currentConfig = json;
     res.redirect('/status');
   }
@@ -85,7 +85,7 @@ class Control {
 
   resetPlaylist(req, res) {
     this.moduleLoader.loadModules(this.initialConfig);
-    this.playlistDriver.driveStateMachine(this.playlistLoader.parsePlaylist(this.initialConfig));
+    this.playlistDriver.start(this.playlistLoader.parsePlaylist(this.initialConfig));
     this.currentConfig = this.initialConfig;
     res.redirect('/status');
   }
@@ -104,7 +104,7 @@ class Control {
       return;
     }
     this.currentConfig = json;
-    this.playlistDriver.driveStateMachine(playlist);
+    this.playlistDriver.start(playlist);
     res.redirect('/status');
   }
 
