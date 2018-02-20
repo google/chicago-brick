@@ -8,8 +8,9 @@
     "jshint": "node_modules/.bin/jshint **/*.js",
     "release": "node_modules/.bin/release-it -n"
   },
+  "repository": "github:google/chicago-brick",
   "author": "",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "dependencies": {
     "amdefine": "^1.0.0",
     "body-parser": "^1.18.2",
