@@ -22,6 +22,7 @@ const path = require('path');
 const assert = require('lib/assert');
 const debug = require('debug')('wall:module_def');
 const debugFactory = require('debug');
+const express = require('express');
 const fakeRequire = require('server/fake_require');
 const module_interface = require('lib/module_interface');
 const safeEval = require('lib/eval');
@@ -108,12 +109,29 @@ const verify = (name, contents, moduleRoot, path) => {
   return true;
 };
 
+// If non-empty, an asset path can be absolute or relative to the module root.
+function getAbsoluteAssetPath(moduleRoot, assetPath) {
+  if (!assetPath) {
+    debug('empty');
+    return '';
+  }
+
+  if (path.isAbsolute(assetPath)) {
+    debug(assetPath);
+    return assetPath;
+  }
+
+  debug(path.join(moduleRoot, assetPath));
+  return path.join(moduleRoot, assetPath);
+}
+
 /**
  * The ModuleDef class contains all the information necessary to load &
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef extends EventEmitter {
-  constructor(name, moduleRoot, pathOrBaseModule, title, author, config) {
+  constructor(name, moduleRoot, pathOrBaseModule, title, author, assetPath,
+              config) {
     super();
     this.name = name;
     this.root = moduleRoot;
@@ -129,6 +147,16 @@ class ModuleDef extends EventEmitter {
 
     // The most recently validated source to the module.
     this.def = '';
+
+    // An express handler that serves module-relative files will be undefined
+    // for the "_empty" module.
+    this.moduleHandler = this.root ? express.static(this.root) : undefined;
+
+    // An express handler that serves assetPath-relative files. It will be
+    // the same as moduleHandler if no assetPath is provided.
+    this.assetHandler = assetPath ?
+      express.static(getAbsoluteAssetPath(moduleRoot, assetPath)) :
+      this.moduleHandler;
 
     if (pathOrBaseModule instanceof ModuleDef) {
       let base = pathOrBaseModule;
@@ -249,7 +277,7 @@ class ModuleDef extends EventEmitter {
       path: this.path,
       config: this.config,
       title: this.title,
-      author: this.author,
+      author: this.author
     };
   }
 }

@@ -67,15 +67,15 @@ class ModuleLoader {
         defaultConfig);
 
       if (cfg.extends) {
-        assert(cfg.extends in library.modules, 'Module ' + cfg.name + 
+        assert(cfg.extends in library.modules, 'Module ' + cfg.name +
           ' attempting to extend ' + cfg.extends + ' which was not found!');
         debug('Adding module ' + cfg.name + ' extending ' + cfg.extends);
         library.register(library.modules[cfg.extends].extend(
-          cfg.name, cfg.title, cfg.author, cfg.config));
+          cfg.name, cfg.title, cfg.author, cfg.assetPath, cfg.config));
       } else {
         debug('Adding module ' + cfg.name + ' from ' + path.join(cfg.root, cfg.path));
         library.register(new ModuleDef(cfg.name, cfg.root, cfg.path, cfg.title,
-              cfg.author, cfg.config));
+              cfg.author, cfg.assetPath, cfg.config));
       }
     });
 

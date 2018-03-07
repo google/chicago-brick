@@ -20,7 +20,6 @@ var path = require('path');
 var bodyParser = require('body-parser');
 var debug = require('debug')('wall:webapp');
 var express = require('express');
-const glob = require('glob');
 const library = require('server/modules/module_library');
 
 /**
@@ -28,7 +27,7 @@ const library = require('server/modules/module_library');
  */
 function create(flags) {
   // Force absolute paths.
-  // This allows us to execute chicago-brick as a dep from another repo while 
+  // This allows us to execute chicago-brick as a dep from another repo while
   // still finding the necessary dirs. However, this trick forces webapp.js to
   // always exist at /server/webapp.js. This will likely be true for a long
   // time, though. If the file moves, we just need to provide the relative path
@@ -40,7 +39,7 @@ function create(flags) {
 
   debug('webapp base dir is ' + base);
   debug('node_modules_dir is ' + flags.node_modules_dir);
-  
+
   // Sub-app showing the status page.
   var status = express();
   status.use('/', express.static('client/status'));
@@ -54,13 +53,13 @@ function create(flags) {
   for (let assets_dir of flags.assets_dir) {
     app.use('/asset', express.static(assets_dir));
   }
-  // Also, serve the modules on /modules
+  // Also, serve the modules on /module/:name/*
   let moduleHandler = (function() {
     // As we want to wrap the static-serve middleware response, and it's
     // designed to not let you do that, really, we create a fake res object
     // that can capture what the middleware would have written.
     let write = null, end = null;
-    
+
     return (req, res, next) => {
       write = res.write;
       end = res.end;
@@ -69,11 +68,11 @@ function create(flags) {
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-    
+
       res.write = function() {
         // Remove the length header.
         res.removeHeader('Content-Length');
-    
+
         // After headers, but before the real content, add the wrapping marker.
         write.call(res, 'define(function(require, exports, module) {\n');
         write.apply(res, Array.from(arguments));
@@ -96,35 +95,28 @@ function create(flags) {
     };
   })();
 
-  /**
-   * A map from path to static file handlers for module-relative imports.
-   */
-  const moduleStaticFileHandlers = {};
-  for (let pattern of flags.module_dir) {
-    // Make sure the pattern ends with a "/" so we match only directories.
-    const dirpattern = pattern.substring(-1) === '/' ? pattern : pattern + '/';
-    for (let dir of glob.sync(dirpattern)) {
-      // Remove the ending slash that was added just to force glob to only
-      // return directories.
-      const path = dir.substring(0, dir.length - 1);
-      if (!moduleStaticFileHandlers[path]) {
-        moduleStaticFileHandlers[path] = express.static(path);
-      }
-    }
-  }
-
-  app.use('/module/:name', moduleHandler, function(req, res, next){
+  app.use('/module/:name', moduleHandler, function(req, res, next) {
     const module = library.modules[req.params.name];
     if (!module) {
       debug(`No module found by name: ${req.params.name}`);
       return res.sendStatus(404);
-    }
-    const handler = moduleStaticFileHandlers[module.root];
-    if (!handler) {
-      debug(`No static file handler for module root: ${module.root}`);
+    } else if (!module.moduleHandler) {
+      debug(`No static module handler found by name: ${req.params.name}`);
       return res.sendStatus(404);
     }
-    return handler(req, res, next);
+    return module.moduleHandler(req, res, next);
+  });
+
+  app.use('/asset/:name', function(req, res, next) {
+    const module = library.modules[req.params.name];
+    if (!module) {
+      debug(`No module found by name: ${req.params.name}`);
+      return res.sendStatus(404);
+    } else if (!module.assetHandler) {
+      debug(`No static asset handler found by name: ${req.params.name}`);
+      return res.sendStatus(404);
+    }
+    return module.assetHandler(req, res, next);
   });
 
   app.use(express.static(path.join(base, 'client')));
