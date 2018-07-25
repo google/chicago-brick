@@ -55,5 +55,29 @@
         }
       }
     }
+  },
+  {
+    "name": "test-stretch",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "local": {
+          "image": {
+            "files": [
+              "fractal-tall.gif",
+              "fractal-wide.gif"
+            ]
+          }
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "period": 3000,
+          "image": {
+            "scale": "full",
+          }
+        }
+      }
+    }
   }
 ]
