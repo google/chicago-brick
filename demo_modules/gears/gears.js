@@ -121,7 +121,7 @@ class GearsServer extends ModuleInterface.Server {
         newZ = 1-newZ;
         // 2.5) Pick a random new radius (which might generate a random new 
         // pitch), but that's okay.
-        newRadius = _.random(35, 300);
+        newRadius = _.random(35, 1000);
         // The new gear is in exactly the same x,y position.
         newX = chosenGear.x;
         newY = chosenGear.y;
