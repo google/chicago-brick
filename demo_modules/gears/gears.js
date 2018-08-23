@@ -15,7 +15,7 @@ function overlaps(x1, y1, r1, x2, y2, r2) {
   return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) < (r1+r2)*(r1+r2);
 }
 
-function calculateAngle(x1, y1, t1, a1, x2, y2, t2, type) {
+function calculateAngle(x1, y1, t1, a1, x2, y2, t2) {
   // When second gear is exactly horizontal right from the first, and the 
   // angle of the first is 0, we need only consider if the second geer has
   // even (adjust by half-circular-pitch) or odd teeth (no adjustment).
@@ -28,18 +28,10 @@ function calculateAngle(x1, y1, t1, a1, x2, y2, t2, type) {
   const frame = Math.atan2(y2-y1, x2-x1);
   // Figure out where other gear should be.
   let newAngle = (a1 - frame)*t1/t2;
-  if (type == 'external') {
-    newAngle *= -1;
-  }
+  newAngle *= -1;
   // Adjust for even/odd
-  if (type == 'internal') {
-    if (t1 % 2 != t2 % 2) {
-      newAngle += Math.PI/t2;
-    }
-  } else {
-    if (t2 % 2 == 0) {
-      newAngle += Math.PI/t2;
-    }
+  if (t2 % 2 == 0) {
+    newAngle += Math.PI/t2;
   }
   // Move back to reference frame.
   newAngle += frame;
@@ -59,7 +51,6 @@ class GearsServer extends ModuleInterface.Server {
       speed: _.random(1, 10)/40,
       angle: 0,
       color: 'white',
-      type: 'external',
       holes: 'none'
     }];
   
@@ -81,7 +72,6 @@ class GearsServer extends ModuleInterface.Server {
       speed: 'ValueNearestInterpolator',
       angle: 'ValueNearestInterpolator',
       color: 'ValueNearestInterpolator',
-      type: 'ValueNearestInterpolator',
       holes: 'ValueNearestInterpolator',
     });
     state.get('gears').set(this.gears_, 0);
@@ -106,22 +96,9 @@ class GearsServer extends ModuleInterface.Server {
       const ratio = chosenGear.teeth / newTeeth;
       const newRadius = chosenGear.radius / ratio;
 
-      // 2.5) Pick a type of gear.
-      // TODO(applmak): Remove internal type; it's not useful.
-      const type = 'external';
-      
-      // 2.75) Depending on the type of gear, use the radius to generate the
-      // distance between the new gear and the chosen gear.
-      let dist;
-      if (type == 'internal') {
-        if (newTeeth < chosenGear.teeth + 12) {
-          // Too small to actually rotate.
-          continue;
-        }
-        dist = newRadius - chosenGear.radius;
-      } else {
-        dist = newRadius + chosenGear.radius;
-      }
+      // 2.5) Use the radius to generate the distance between the new gear and
+      // the chosen gear.
+      const dist = newRadius + chosenGear.radius;
       
       // 3) Try a bunch of times to place a gear.
       for (let b = 0; b < 10; ++b) {
@@ -148,14 +125,11 @@ class GearsServer extends ModuleInterface.Server {
         // 3.5) Calculate the rotation of this gear to mesh with the chosenGear.
         const rotation = calculateAngle(
             chosenGear.x, chosenGear.y, chosenGear.teeth, chosenGear.angle,
-            newX, newY, newTeeth, type);
+            newX, newY, newTeeth);
 
-        // 3.6) Calculate the speed, depending on the type of the gear.
-        let newSpeed = chosenGear.speed * ratio;
-        if (type == 'external') {
-          // External gears move in the opposite direction from their driver.
-          newSpeed *= -1;
-        }
+        // 3.6) Calculate the speed.
+        // External gears move in the opposite direction from their driver.
+        let newSpeed = -chosenGear.speed * ratio;
         
         // 3.7) Check to see if this meshes well with everything else we've
         // already placed (for example, this might intersect another gear!).
@@ -179,7 +153,6 @@ class GearsServer extends ModuleInterface.Server {
           speed: newSpeed,
           angle: rotation,
           color: _.sample(_(GOOGLE_COLORS).without(chosenGear.color)),
-          type: type,
           holes: holes
         });
         return true;
@@ -228,9 +201,9 @@ class GearsClient extends ModuleInterface.Client {
       this.surface.destroy();
     }
   }
-  getGearPath_(type, holes, pitchRadius, numberOfTeeth) {
+  getGearPath_(holes, pitchRadius, numberOfTeeth) {
     // Rather than always making a new gear path, consult our cache.
-    const key = [type, holes, numberOfTeeth].join(',');
+    const key = [holes, numberOfTeeth].join(',');
     if (!this.gearPaths_[key]) {
       const pitchDiameter = pitchRadius * 2;
       const diametralPitch = numberOfTeeth / pitchDiameter;
@@ -245,59 +218,50 @@ class GearsClient extends ModuleInterface.Client {
       const baseDiameter = pitchDiameter * Math.cos(20 * Math.PI / 180);
       const baseRadius = baseDiameter / 2;
       const outsideRadius = pitchRadius + addendum;
-      let rootRadius;
-      if (type == 'external') {
-        rootRadius = outsideRadius - wholeDepth;
-      } else if (type == 'internal') {
-        rootRadius = (numberOfTeeth - 1.2) / diametralPitch / 2;
-      }
+      const rootRadius = outsideRadius - wholeDepth;
       
       const path = new Path2D();
     
       let firstCommand = false;
     
-      if (type == 'external') {
-        // Center hole.
-        path.arc(0, 0, 10, 0, 2*Math.PI, false);
-        if (holes[0] == 'circles') {
-          const circleR = rootRadius / 4;
-          const numCircles = holes[1];
-          for (let i = 0; i < numCircles; ++i) {
-            const angle = i * 2 * Math.PI / numCircles;
-            const cx = Math.cos(angle) * circleR * 2;
-            const cy = Math.sin(angle) * circleR * 2;
-            path.moveTo(cx + circleR, cy);
-            path.arc(cx, cy, circleR/1.5, 0, 2*Math.PI, false);
-          }
-        } else if (holes[0] == 'rounded') {
-          const edgeThickness = 20;
-          const barThickness = 30;
-          let count, innerArcRadius, ed, deltaAngle;
-          do {
-            count = holes[1];
-            deltaAngle = 2 * Math.PI / count;
-            innerArcRadius = barThickness / Math.sin(deltaAngle/2);
-            ed = rootRadius - edgeThickness;
-          } while (count > 0 && innerArcRadius > ed && (holes[1] = Math.floor(holes[1]/2)));
-          // It's possible our teeth are so small that we would extend beyond
-          // the edge of the gear. If this would happen, halve the number of
-          // holes we request, and try again.
-          for (let i = 0; i < count; ++i) {
-            const angle = i * deltaAngle;
-            const cx = Math.cos(angle + deltaAngle/2) * innerArcRadius;
-            const cy = Math.sin(angle + deltaAngle/2) * innerArcRadius;
-            const csa = angle + deltaAngle + Math.PI/2;
-            const cr = barThickness/2;
-            const bx = cx + Math.cos(csa) * cr;
-            const by = cy + Math.sin(csa) * cr;
-            path.moveTo(bx, by);
-            path.arc(cx, cy, barThickness/2, csa, angle + 3*Math.PI/2, false);
-            const ea = Math.asin(barThickness/2/ed);
-            path.arc(0, 0, ed, angle + ea, angle + deltaAngle - ea, false);
-          }
+      // Center hole.
+      path.arc(0, 0, 10, 0, 2*Math.PI, false);
+      if (holes[0] == 'circles') {
+        const circleR = rootRadius / 4;
+        const numCircles = holes[1];
+        for (let i = 0; i < numCircles; ++i) {
+          const angle = i * 2 * Math.PI / numCircles;
+          const cx = Math.cos(angle) * circleR * 2;
+          const cy = Math.sin(angle) * circleR * 2;
+          path.moveTo(cx + circleR, cy);
+          path.arc(cx, cy, circleR/1.5, 0, 2*Math.PI, false);
         }
-      } else if (type == 'internal') {
-        path.arc(0, 0, outsideRadius + addendum, 0, 2*Math.PI, false);
+      } else if (holes[0] == 'rounded') {
+        const edgeThickness = 20;
+        const barThickness = 30;
+        let count, innerArcRadius, ed, deltaAngle;
+        do {
+          count = holes[1];
+          deltaAngle = 2 * Math.PI / count;
+          innerArcRadius = barThickness / Math.sin(deltaAngle/2);
+          ed = rootRadius - edgeThickness;
+        } while (count > 0 && innerArcRadius > ed && (holes[1] = Math.floor(holes[1]/2)));
+        // It's possible our teeth are so small that we would extend beyond
+        // the edge of the gear. If this would happen, halve the number of
+        // holes we request, and try again.
+        for (let i = 0; i < count; ++i) {
+          const angle = i * deltaAngle;
+          const cx = Math.cos(angle + deltaAngle/2) * innerArcRadius;
+          const cy = Math.sin(angle + deltaAngle/2) * innerArcRadius;
+          const csa = angle + deltaAngle + Math.PI/2;
+          const cr = barThickness/2;
+          const bx = cx + Math.cos(csa) * cr;
+          const by = cy + Math.sin(csa) * cr;
+          path.moveTo(bx, by);
+          path.arc(cx, cy, barThickness/2, csa, angle + 3*Math.PI/2, false);
+          const ea = Math.asin(barThickness/2/ed);
+          path.arc(0, 0, ed, angle + ea, angle + deltaAngle - ea, false);
+        }
       }
       for (let i = 0; i < numberOfTeeth; ++i) {
         // Draw the teeth radii.
@@ -308,7 +272,7 @@ class GearsClient extends ModuleInterface.Client {
         let a = angle - radiusAngle / 4;
         let rootCircleX = Math.cos(a) * rootRadius;
         let rootCircleY = Math.sin(a) * rootRadius;
-        if (baseRadius > rootRadius && type == 'external') {
+        if (baseRadius > rootRadius) {
           if (!firstCommand) {
             path.moveTo(rootCircleX, rootCircleY);
             firstCommand = true;
@@ -364,7 +328,7 @@ class GearsClient extends ModuleInterface.Client {
             }
           }
         }
-        if (baseRadius > rootRadius && type == 'external') {
+        if (baseRadius > rootRadius) {
           rootCircleX = Math.cos(a) * rootRadius;
           rootCircleY = Math.sin(a) * rootRadius;
           path.lineTo(rootCircleX, rootCircleY);
@@ -374,8 +338,8 @@ class GearsClient extends ModuleInterface.Client {
     }
     return this.gearPaths_[key];
   }
-  drawGear_(centerX, centerY, pitchRadius, numberOfTeeth, baseAngle, color, type, holes) {
-    const path = this.getGearPath_(type, holes, pitchRadius, numberOfTeeth);
+  drawGear_(centerX, centerY, pitchRadius, numberOfTeeth, baseAngle, color, holes) {
+    const path = this.getGearPath_(holes, pitchRadius, numberOfTeeth);
     this.c.setTransform(1, 0 , 0, 1, 0, 0);
     this.surface.applyOffset();
     this.c.translate(centerX, centerY);
@@ -408,7 +372,7 @@ class GearsClient extends ModuleInterface.Client {
     
     visibleGears.forEach(gear => {
       const angle = 2*Math.PI * gear.speed * time / 1000 + gear.angle;
-      this.drawGear_(gear.x, gear.y, gear.radius, gear.teeth, angle, gear.color, gear.type, gear.holes);
+      this.drawGear_(gear.x, gear.y, gear.radius, gear.teeth, angle, gear.color, gear.holes);
     });
   }
 }
