@@ -9,6 +9,7 @@ const wallGeometry = require('wallGeometry');
 const _ = require('underscore');
 
 const GOOGLE_COLORS = ['#3369E8', '#D50F25', '#EEB211', '#009925'];
+const DARK_COLORS = ['#294c9e', '#a80f20', '#c4930f', '#03701d'];
 const HOLE_VARIETIES = ['none', 'rounded', 'circles'];
 
 function overlaps(x1, y1, r1, x2, y2, r2) {
@@ -38,6 +39,15 @@ function calculateAngle(x1, y1, t1, a1, x2, y2, t2) {
   return newAngle;
 }
 
+function calculatePitch(radius, numberOfTeeth) {
+  // Two gears will mesh only if they have the same pitch.
+  const pitchDiameter = radius * 2;
+  return numberOfTeeth / pitchDiameter;
+}
+
+// Initially start with two layers.
+const layers = 2;
+
 class GearsServer extends ModuleInterface.Server {
   willBeShownSoon() {    
     // Generate a random gear train.
@@ -46,13 +56,18 @@ class GearsServer extends ModuleInterface.Server {
     this.gears_ = [{
       x: wallGeometry.extents.w/2,
       y: wallGeometry.extents.h/2,
+      z: 1,  // Which layer we're talking about.
       radius: _.random(35, 300),
       teeth: _.random(6, 50),
       speed: _.random(1, 10)/40,
       angle: 0,
-      color: 'white',
-      holes: 'none'
+      colorIndex: -1,
+      holes: 'none',
+      pitch: -1,
     }];
+    this.gears_[0].pitch = calculatePitch(
+        this.gears_[0].radius, this.gears_[0].teeth);
+    
   
     // Now, add 1000 gears. We might fail to place some of them, but that's
     // okay, it will look great.
@@ -67,12 +82,14 @@ class GearsServer extends ModuleInterface.Server {
     state.create('gears', {
       x: 'ValueNearestInterpolator',
       y: 'ValueNearestInterpolator',
+      z: 'ValueNearestInterpolator',
       radius: 'ValueNearestInterpolator',
       teeth: 'ValueNearestInterpolator',
       speed: 'ValueNearestInterpolator',
       angle: 'ValueNearestInterpolator',
-      color: 'ValueNearestInterpolator',
+      colorIndex: 'ValueNearestInterpolator',
       holes: 'ValueNearestInterpolator',
+      pitch: 'ValueNearestInterpolator',
     });
     state.get('gears').set(this.gears_, 0);
     return Promise.resolve();
@@ -91,84 +108,134 @@ class GearsServer extends ModuleInterface.Server {
       // 1) Pick a gear to connect to.
       const chosenGear = _.sample(this.gears_);
       
-      // 2) Pick a number of teeth, and consequently, a distance away.
+      // 2) Pick a number of teeth:
       const newTeeth = Math.floor(Math.random() * (150 - 6) + 6);
-      const ratio = chosenGear.teeth / newTeeth;
-      const newRadius = chosenGear.radius / ratio;
-
-      // 2.5) Use the radius to generate the distance between the new gear and
-      // the chosen gear.
-      const dist = newRadius + chosenGear.radius;
       
-      // 3) Try a bunch of times to place a gear.
-      for (let b = 0; b < 10; ++b) {
-        // 3.1) Pick an angle that the new gear should be placed related to the
-        // old gear.
-        const placementAngle = Math.random() * 2 * Math.PI;
+      // 2.25) Perhaps create an axle, which allows a gear to connect to the
+      // chosen gear in the z-direction.
+      let newZ = chosenGear.z;
+      let newRadius, newX, newY, newSpeed, rotation;
+      // Bias against axles and towards long gear trains.
+      if (chosenGear.colorIndex >= 0 && Math.random() < 0.1) {
+        // Pick the other z-plane.
+        newZ = 1-newZ;
+        // 2.5) Pick a random new radius (which might generate a random new 
+        // pitch), but that's okay.
+        newRadius = _.random(35, 300);
+        // The new gear is in exactly the same x,y position.
+        newX = chosenGear.x;
+        newY = chosenGear.y;
         
-        // 3.2) Now that we have an angle (and a radius) calculate the position.
-        const newX = Math.cos(placementAngle) * dist + chosenGear.x;
-        const newY = Math.sin(placementAngle) * dist + chosenGear.y;
-        
-        // 3.3) Make sure that this gear is on the screen.
-        const rect = Rectangle.centeredAt(newX, newY, newRadius*2);
-        if (!rect.intersects(wallGeometry.extents)) {
+        // 3) Try to place this gear here. We know it's on screen already, so
+        // we only need to see if it overlaps with another gear.
+        if (this.wouldOverlap_(newX, newY, newZ, newRadius)) {
+          // Ah, just give up.
           continue;
         }
         
-        // 3.4) Check to make sure that this gear doesn't overlap with another
-        // gear, because that would look weird.
-        if (this.wouldOverlap_(newX, newY, newRadius)) {
-          continue;
-        }
+        newSpeed = chosenGear.speed;
+        rotation = 0;
+        // We've found a valid axle!
+      } else {
+        // Calculate the size of the new gear.
+        const ratio = chosenGear.teeth / newTeeth;
+        newRadius = chosenGear.radius / ratio;
 
+        // 2.5) Use the radius to generate the distance between the new gear and
+        // the chosen gear.
+        const dist = newRadius + chosenGear.radius;
+        
+        // 3) Try a bunch of times to place a gear.
+        let fail = true;
+        for (let b = 0; b < 10; ++b) {
+          // 3.1) Pick an angle that the new gear should be placed related to the
+          // old gear.
+          const placementAngle = Math.random() * 2 * Math.PI;
+        
+          // 3.2) Now that we have an angle (and a radius) calculate the position.
+          newX = Math.cos(placementAngle) * dist + chosenGear.x;
+          newY = Math.sin(placementAngle) * dist + chosenGear.y;
+        
+          // 3.3) Make sure that this gear is on the screen.
+          const rect = Rectangle.centeredAt(newX, newY, newRadius*2);
+          if (!rect.intersects(wallGeometry.extents)) {
+            continue;
+          }
+        
+          // 3.4) Check to make sure that this gear doesn't overlap with another
+          // gear, because that would look weird.
+          if (this.wouldOverlap_(newX, newY, newZ, newRadius)) {
+            continue;
+          }
+          
+          // This is a good XY.
+          fail = false;
+          break;
+        }
+        if (fail) {
+          continue;
+        }
+        
+        newSpeed = -chosenGear.speed * ratio;
         // 3.5) Calculate the rotation of this gear to mesh with the chosenGear.
-        const rotation = calculateAngle(
+        rotation = calculateAngle(
             chosenGear.x, chosenGear.y, chosenGear.teeth, chosenGear.angle,
             newX, newY, newTeeth);
-
-        // 3.6) Calculate the speed.
-        // External gears move in the opposite direction from their driver.
-        let newSpeed = -chosenGear.speed * ratio;
-        
-        // 3.7) Check to see if this meshes well with everything else we've
-        // already placed (for example, this might intersect another gear!).
-        if (!this.wouldMesh_(newX, newY, newRadius, newTeeth, newSpeed, rotation)) {
-          continue;
-        }
-        
-        // 3.8) Pick a look for the gear.
-        let holes = _.sample(HOLE_VARIETIES);
-        if (holes == 'rounded') {
-          holes = ['rounded', _.random(2, Math.floor(newTeeth / 4))];
-        } else if (holes == 'circles') {
-          holes = ['circles', _.random(2, 8)];
-        }
-        
-        this.gears_.push({
-          x: newX,
-          y: newY,
-          radius: newRadius,
-          teeth: newTeeth,
-          speed: newSpeed,
-          angle: rotation,
-          color: _.sample(_(GOOGLE_COLORS).without(chosenGear.color)),
-          holes: holes
-        });
-        return true;
       }
+
+      // If the chosen radius is too small, reject.
+      if (newRadius < 20) {
+        continue;
+      }
+
+
+      // 3.7) Check to see if this meshes well with everything else we've
+      // already placed (for example, this might intersect another gear!).
+      if (!this.wouldMesh_(newX, newY, newZ, newRadius, newTeeth, newSpeed, rotation)) {
+        continue;
+      }
+        
+      // 3.8) Pick a look for the gear.
+      let holes = _.sample(HOLE_VARIETIES);
+      if (holes == 'rounded') {
+        holes = ['rounded', _.random(2, Math.floor(newTeeth / 4))];
+      } else if (holes == 'circles') {
+        holes = ['circles', _.random(2, 8)];
+      }
+        
+      this.gears_.push({
+        x: newX,
+        y: newY,
+        z: newZ,
+        radius: newRadius,
+        teeth: newTeeth,
+        speed: newSpeed,
+        angle: rotation,
+        colorIndex: _.sample(_(Array.from(Array(GOOGLE_COLORS.length).keys())).without(chosenGear.colorIndex)),
+        holes: holes,
+        pitch: calculatePitch(newRadius, newTeeth),
+      });
+      
+      return true;
     }
     return false;
   }
-  wouldOverlap_(x, y, r) {
-    return !!this.gears_.find(gear => overlaps(x, y, r, gear.x, gear.y, gear.radius));
+  wouldOverlap_(x, y, z, r) {
+    return !!this.gears_.filter(g => g.z == z)
+        .find(gear => overlaps(x, y, r, gear.x, gear.y, gear.radius));
   }
-  wouldMesh_(x, y, r, t, s, a) {
+  wouldMesh_(x, y, z, r, t, s, a) {
     const calcOutsideRadius = (radius, teeth) => radius + radius * 2 / teeth;
-    const mustMeshGears = this.gears_.filter(
-      gear => overlaps(x, y, calcOutsideRadius(r, t), gear.x, gear.y, calcOutsideRadius(gear.radius, gear.teeth)));
+    const p = calculatePitch(r, t);
+    const mustMeshGears = this.gears_.filter(g => g.z == z)
+      .filter(gear => overlaps(x, y, calcOutsideRadius(r, t), gear.x, gear.y, calcOutsideRadius(gear.radius, gear.teeth)));
     return !mustMeshGears.find(gear => {
       // Find one that does not mesh, return true.
+      // The pitches must match.
+      if (gear.pitch != p) {
+        return true;
+      }
+      
       // To mesh, we must show that s_1*r_1 = -s_2*r_2, or close enough.
       if (Math.abs(s*r + gear.speed * gear.radius) > 0.001) {
         return true;
@@ -203,7 +270,7 @@ class GearsClient extends ModuleInterface.Client {
   }
   getGearPath_(holes, pitchRadius, numberOfTeeth) {
     // Rather than always making a new gear path, consult our cache.
-    const key = [holes, numberOfTeeth].join(',');
+    const key = [holes, pitchRadius, numberOfTeeth].join(',');
     if (!this.gearPaths_[key]) {
       const pitchDiameter = pitchRadius * 2;
       const diametralPitch = numberOfTeeth / pitchDiameter;
@@ -233,7 +300,7 @@ class GearsClient extends ModuleInterface.Client {
           const angle = i * 2 * Math.PI / numCircles;
           const cx = Math.cos(angle) * circleR * 2;
           const cy = Math.sin(angle) * circleR * 2;
-          path.moveTo(cx + circleR, cy);
+          path.moveTo(cx + circleR/1.5, cy);
           path.arc(cx, cy, circleR/1.5, 0, 2*Math.PI, false);
         }
       } else if (holes[0] == 'rounded') {
@@ -242,25 +309,33 @@ class GearsClient extends ModuleInterface.Client {
         let count, innerArcRadius, ed, deltaAngle;
         do {
           count = holes[1];
+          if (count < 2) {
+            break;
+          }
           deltaAngle = 2 * Math.PI / count;
           innerArcRadius = barThickness / Math.sin(deltaAngle/2);
           ed = rootRadius - edgeThickness;
         } while (count > 0 && innerArcRadius > ed && (holes[1] = Math.floor(holes[1]/2)));
-        // It's possible our teeth are so small that we would extend beyond
-        // the edge of the gear. If this would happen, halve the number of
-        // holes we request, and try again.
-        for (let i = 0; i < count; ++i) {
-          const angle = i * deltaAngle;
-          const cx = Math.cos(angle + deltaAngle/2) * innerArcRadius;
-          const cy = Math.sin(angle + deltaAngle/2) * innerArcRadius;
-          const csa = angle + deltaAngle + Math.PI/2;
-          const cr = barThickness/2;
-          const bx = cx + Math.cos(csa) * cr;
-          const by = cy + Math.sin(csa) * cr;
-          path.moveTo(bx, by);
-          path.arc(cx, cy, barThickness/2, csa, angle + 3*Math.PI/2, false);
-          const ea = Math.asin(barThickness/2/ed);
-          path.arc(0, 0, ed, angle + ea, angle + deltaAngle - ea, false);
+        if (count >= 2) {
+          // It's possible our teeth are so small that we would extend beyond
+          // the edge of the gear. If this would happen, halve the number of
+          // holes we request, and try again.
+          for (let i = 0; i < count; ++i) {
+            const angle = i * deltaAngle;
+            const cx = Math.cos(angle + deltaAngle/2) * innerArcRadius;
+            const cy = Math.sin(angle + deltaAngle/2) * innerArcRadius;
+            const csa = angle + deltaAngle + Math.PI/2;
+            const cr = barThickness/2;
+            const bx = cx + Math.cos(csa) * cr;
+            const by = cy + Math.sin(csa) * cr;
+            path.moveTo(bx, by);
+            path.arc(cx, cy, barThickness/2, csa, angle + 3*Math.PI/2, false);
+            const ea = Math.asin(barThickness/2/ed);
+            if (ed < 0) {
+              debugger;
+            }
+            path.arc(0, 0, ed, angle + ea, angle + deltaAngle - ea, false);
+          }
         }
       }
       for (let i = 0; i < numberOfTeeth; ++i) {
@@ -338,14 +413,15 @@ class GearsClient extends ModuleInterface.Client {
     }
     return this.gearPaths_[key];
   }
-  drawGear_(centerX, centerY, pitchRadius, numberOfTeeth, baseAngle, color, holes) {
+  drawGear_(centerX, centerY, z, pitchRadius, numberOfTeeth, baseAngle, colorIndex, holes) {
     const path = this.getGearPath_(holes, pitchRadius, numberOfTeeth);
     this.c.setTransform(1, 0 , 0, 1, 0, 0);
     this.surface.applyOffset();
     this.c.translate(centerX, centerY);
     this.c.rotate(baseAngle);
     
-    this.c.fillStyle = color;
+    const colors = z ? GOOGLE_COLORS : DARK_COLORS;
+    this.c.fillStyle = colorIndex >= 0 ? colors[colorIndex] : 'white';
     this.c.fill(path, 'evenodd');
   }
   draw(time, delta) {
@@ -365,15 +441,19 @@ class GearsClient extends ModuleInterface.Client {
       return;
     }
     
-    const visibleGears = this.gears_.filter(gear => {
-      const rect = Rectangle.centeredAt(gear.x, gear.y, gear.radius*2, gear.radius*2);
-      return rect.intersects(this.surface.virtualRect);
-    });
+    const visibleGears = this.gears_;
+    // .filter(gear => {
+//       const rect = Rectangle.centeredAt(gear.x, gear.y, gear.radius*2, gear.radius*2);
+//       return rect.intersects(this.surface.virtualRect);
+//});
     
-    visibleGears.forEach(gear => {
-      const angle = 2*Math.PI * gear.speed * time / 1000 + gear.angle;
-      this.drawGear_(gear.x, gear.y, gear.radius, gear.teeth, angle, gear.color, gear.holes);
-    });
+    for (let z = 0; z < layers; z++) {
+      visibleGears.filter(g => g.z == z)
+          .forEach(gear => {
+            const angle = 2*Math.PI * gear.speed * time / 1000 + gear.angle;
+            this.drawGear_(gear.x, gear.y, gear.z, gear.radius, gear.teeth, angle, gear.colorIndex, gear.holes);
+          });
+    }
   }
 }
 
