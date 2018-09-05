@@ -144,6 +144,9 @@ class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
         // One piece of content per client.
         this.content = content;
         let s = this.config_.image && this.config_.image.scale || 'stretch';
+        this.surface.container.style.display = 'flex';
+        this.surface.container.style.alignItems = 'center';
+        this.surface.container.style.justifyContent = 'center';
         switch(s) {
           case 'stretch':
             content.style.position = 'absolute';
@@ -154,8 +157,12 @@ class FullscreenClientDisplayStrategy extends interfaces.ClientDisplayStrategy {
             break;
           case 'full':
             content.style.display = 'block';
-            content.style.margin = '0px auto';
-            content.style.height = '100%';            
+            if (content.naturalWidth/this.surface.virtualRect.w >=
+                content.naturalHeight/this.surface.virtualRect.h) {
+              content.style.width = '100%';
+            } else {
+              content.style.height = '100%';
+            }
         }
         
         // Clear surface.
