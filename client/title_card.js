@@ -118,7 +118,9 @@ define(function(require) {
     // Called by the framework when the module has faded in.
     enter() {
       if (this.isTitleClient() && !this.inDocument_) {
-        document.body.insertBefore(this.elem_, document.body.firstChild);
+        if (this.config.author || this.config.title) {
+          document.body.insertBefore(this.elem_, document.body.firstChild);
+        }
         this.inDocument_ = true;
       }
     }
