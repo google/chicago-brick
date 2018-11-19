@@ -48,7 +48,7 @@
     "jshint": "^2.9.6",
     "mocha": "^5.2.0",
     "pre-commit": "^1.0.10",
-    "release-it": "^3.0.1",
+    "release-it": "^8.0.0",
     "sinon": "^4.5.0",
     "sinon-chai": "^2.14.0"
   }
