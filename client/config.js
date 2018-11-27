@@ -30,7 +30,7 @@ requirejs.config({
     'querystring': 'sys/simple-query-string/src/simplequerystring',
     'socket.io' : 'sys/socket.io-client/dist/socket.io',
     'strict-uri-encode': 'sys/strict-uri-encode/index',
-    'three-full' : 'sys/three-full/builds/Three.amd',
+    'three' : 'sys/three/three',
     'underscore' : 'sys/underscore/underscore',
     'vm-shim' : 'sys/vm-shim/vm-shim',
   },
@@ -39,6 +39,7 @@ requirejs.config({
   shim : {
     'noisejs': {exports: 'Noise'},
     'peer': {exports: 'Peer'},
+    'three': {exports: 'THREE'},
     'vm-shim': {exports: 'vm'}
   }
 });

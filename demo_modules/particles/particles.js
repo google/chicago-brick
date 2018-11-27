@@ -107,15 +107,15 @@ class ParticleEmitter {
     var misc = new Float32Array(MAX_PARTICLES_PER_CLIENT * 4);
 
     // While we are here, also allocate memory in the GPU for these.
-    var posVelBuffer = new Three.BufferAttribute(posVel, 4).setDynamic(true);
-    var miscBuffer = new Three.BufferAttribute(misc, 4).setDynamic(true);
+    var posVelBuffer = new THREE.BufferAttribute(posVel, 4).setDynamic(true);
+    var miscBuffer = new THREE.BufferAttribute(misc, 4).setDynamic(true);
 
-    this.geometry = new Three.BufferGeometry();
+    this.geometry = new THREE.BufferGeometry();
     this.geometry.setDrawRange(0, 0);
     this.geometry.addAttribute('posVel', posVelBuffer);
     this.geometry.addAttribute('misc', miscBuffer);
     
-    // Store the Three versions of those attribute buffers for later mutation.
+    // Store the THREE versions of those attribute buffers for later mutation.
     this.posVelBuffer_ = this.geometry.getAttribute('posVel');
     this.miscBuffer_ = this.geometry.getAttribute('misc');
     
@@ -126,7 +126,7 @@ class ParticleEmitter {
     // We don't always have a fixed number of active particles. We'll use an
     // index buffer to mention the particles we want to change.
     var indices = new Uint16Array(MAX_PARTICLES_PER_CLIENT);
-    this.geometry.setIndex(new Three.BufferAttribute(indices, 1).setDynamic(true));
+    this.geometry.setIndex(new THREE.BufferAttribute(indices, 1).setDynamic(true));
     this.indexBuffer_ = this.geometry.getIndex();
     // We'll fill out the index buffer with our reset index -1, indicating that
     // we have no particle here just as of yet.
@@ -283,7 +283,7 @@ class ParticleEmitter {
 
 class ParticlesClient extends ModuleInterface.Client {
   willBeShownSoon(container, deadline) {
-    const Three = require('three-full');
+    const THREE = require('three');
     this.noise = new Noise(deadline % 1);
     const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);
@@ -307,12 +307,12 @@ class ParticlesClient extends ModuleInterface.Client {
     this.debugCanvas.canvas.style.zIndex = '1000';
     this.peer_ = null;
     this.emitter = new ParticleEmitter();
-
-    var mat = new Three.ShaderMaterial({
+    
+    var mat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
       uniforms: {},
-      blending: Three.AdditiveBlending,
+      blending: THREE.AdditiveBlending,
       vertexShader: `
         precision highp float;
         #define FLOAT_MAX  1.70141184e38
@@ -374,11 +374,11 @@ class ParticlesClient extends ModuleInterface.Client {
       `
     });
     
-    this.points = new Three.Points(this.emitter.geometry, mat);
+    this.points = new THREE.Points(this.emitter.geometry, mat);
     this.points.frustumCulled = false;
     this.surface.scene.add(this.points);
 
-    this.surface.camera = new Three.OrthographicCamera(
+    this.surface.camera = new THREE.OrthographicCamera(
         this.surface.virtualRect.x, this.surface.virtualRect.x+this.surface.virtualRect.w,
         this.surface.virtualRect.y, this.surface.virtualRect.y+this.surface.virtualRect.h,
         -1, 1);

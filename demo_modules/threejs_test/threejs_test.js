@@ -27,14 +27,14 @@ class ThreeJsTestClient extends ModuleInterface.Client {
   }
 
   willBeShownSoon(container, deadline) {
-    const Three = require('three-full');
+    const THREE = require('three');
     this.startTime = deadline;
     const ThreeJsSurface = require('client/surface/threejs_surface');
     this.surface = new ThreeJsSurface(container, wallGeometry);
 
-    var geometry = new Three.BoxGeometry(3, 3, 3);
-    var material = new Three.MeshBasicMaterial({ color: 0x00ff00 });
-    this.cube = new Three.Mesh(geometry, material);
+    var geometry = new THREE.BoxGeometry(3, 3, 3);
+    var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+    this.cube = new THREE.Mesh(geometry, material);
     this.surface.scene.add(this.cube);
 
     this.surface.camera.position.set(0, 0, 5);
