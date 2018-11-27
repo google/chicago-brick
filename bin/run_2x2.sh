@@ -18,15 +18,15 @@
 set -x
 
 if [[ $NODEDEBUG ]]; then
-  INSPECT="--debug-brk --inspect"
+  INSPECT='--inspect-brk'
 else
-  INSPECT=""
+  INSPECT=''
 fi
 
-DEBUG=wall:* NODE_PATH=".:node_modules" node $INSPECT server/server.js \
-  --node_modules_dir "./node_modules" \
+DEBUG=wall:* NODE_PATH='.:node_modules' node $INSPECT server/server.js \
+  --node_modules_dir './node_modules' \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \
   --use_geometry '[{"right":2},{"down":2},{"left":2},{"up":2}]' \
   --assets_dir demo_assets \
-  $@
+  "$@"
