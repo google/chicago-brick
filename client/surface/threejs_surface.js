@@ -15,17 +15,17 @@ limitations under the License.
 
 define(function(require) {
   'use strict';
-  var Surface = require('client/surface/surface');
-  var THREE = require('three');
+  const Surface = require('client/surface/surface');
+  const Three = require('three-full');
 
   var ThreeJsSurface = function(container, wallGeometry, properties) {
     Surface.call(this, container, wallGeometry);
-    this.renderer = new THREE.WebGLRenderer(properties);
+    this.renderer = new Three.WebGLRenderer(properties);
     this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight);
     container.appendChild(this.renderer.domElement);
 
-    this.camera = new THREE.PerspectiveCamera(45, this.wallRect.w / this.wallRect.h, 0.1, 1000);
-    this.scene = new THREE.Scene;
+    this.camera = new Three.PerspectiveCamera(45, this.wallRect.w / this.wallRect.h, 0.1, 1000);
+    this.scene = new Three.Scene;
 
     this.camera.setViewOffset(
         this.wallRect.w, this.wallRect.h,
