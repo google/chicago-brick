@@ -260,6 +260,9 @@ class GearsClient extends ModuleInterface.Client {
     this.c = this.surface.context;
     this.gears_ = null;
     
+    // A map of gear metric details.
+    this.gearDetails_ = [];
+
     // A map of teeth -> Path2D.
     this.gearPaths_ = [];
   }
@@ -268,10 +271,9 @@ class GearsClient extends ModuleInterface.Client {
       this.surface.destroy();
     }
   }
-  getGearPath_(holes, pitchRadius, numberOfTeeth) {
-    // Rather than always making a new gear path, consult our cache.
-    const key = [holes, pitchRadius, numberOfTeeth].join(',');
-    if (!this.gearPaths_[key]) {
+  getGearDetails_(pitchRadius, numberOfTeeth) {
+    const key = [pitchRadius, numberOfTeeth].join(',');
+    if (!this.gearDetails_[key]) {
       const pitchDiameter = pitchRadius * 2;
       const diametralPitch = numberOfTeeth / pitchDiameter;
       const addendum = 1 / diametralPitch;
@@ -286,7 +288,27 @@ class GearsClient extends ModuleInterface.Client {
       const baseRadius = baseDiameter / 2;
       const outsideRadius = pitchRadius + addendum;
       const rootRadius = outsideRadius - wholeDepth;
-      
+
+      this.gearDetails_[key] = {
+        pitchDiameter: pitchDiameter,
+        diametralPitch: diametralPitch,
+        addendum: addendum,
+        wholeDepth: wholeDepth,
+        radiusAngle: radiusAngle,
+        baseDiameter: baseDiameter,
+        baseRadius: baseRadius,
+        outsideRadius: outsideRadius,
+        rootRadius: rootRadius
+      };
+    }
+    return this.gearDetails_[key];
+  }
+  getGearPath_(holes, pitchRadius, numberOfTeeth) {
+    // Rather than always making a new gear path, consult our cache.
+    const key = [holes, pitchRadius, numberOfTeeth].join(',');
+    if (!this.gearPaths_[key]) {
+      const details = this.getGearDetails_(pitchRadius, numberOfTeeth);
+
       const path = new Path2D();
     
       let firstCommand = false;
@@ -294,7 +316,7 @@ class GearsClient extends ModuleInterface.Client {
       // Center hole.
       path.arc(0, 0, 10, 0, 2*Math.PI, false);
       if (holes[0] == 'circles') {
-        const circleR = rootRadius / 4;
+        const circleR = details.rootRadius / 4;
         const numCircles = holes[1];
         for (let i = 0; i < numCircles; ++i) {
           const angle = i * 2 * Math.PI / numCircles;
@@ -314,7 +336,7 @@ class GearsClient extends ModuleInterface.Client {
           }
           deltaAngle = 2 * Math.PI / count;
           innerArcRadius = barThickness / Math.sin(deltaAngle/2);
-          ed = rootRadius - edgeThickness;
+          ed = details.rootRadius - edgeThickness;
         } while (count > 0 && innerArcRadius > ed && (holes[1] = Math.floor(holes[1]/2)));
         if (count >= 2) {
           // It's possible our teeth are so small that we would extend beyond
@@ -340,14 +362,14 @@ class GearsClient extends ModuleInterface.Client {
       }
       for (let i = 0; i < numberOfTeeth; ++i) {
         // Draw the teeth radii.
-        const angle = i * radiusAngle;
+        const angle = i * details.radiusAngle;
     
         // Draw the tooth.
         // Start at the root circle:
-        let a = angle - radiusAngle / 4;
-        let rootCircleX = Math.cos(a) * rootRadius;
-        let rootCircleY = Math.sin(a) * rootRadius;
-        if (baseRadius > rootRadius) {
+        let a = angle - details.radiusAngle / 4;
+        let rootCircleX = Math.cos(a) * details.rootRadius;
+        let rootCircleY = Math.sin(a) * details.rootRadius;
+        if (details.baseRadius > details.rootRadius) {
           if (!firstCommand) {
             path.moveTo(rootCircleX, rootCircleY);
             firstCommand = true;
@@ -358,7 +380,7 @@ class GearsClient extends ModuleInterface.Client {
     
         for (let j = 0; j <= 1; j++) {
           const dir = j ? -1 : 1;
-          a = angle - dir * radiusAngle / 4;
+          a = angle - dir * details.radiusAngle / 4;
           // Draw the involate, starting at the base circle, and passing through
           // the pitch point.
           // The equation of the involate in polar coords is:
@@ -375,23 +397,23 @@ class GearsClient extends ModuleInterface.Client {
           // a = dir*tan(arccos(r_base/r_pitch)) - arccos(r_base/r_pitch) + t_0
           // =>
           // t_0 = a - dir*tan(arccos(r_base/r_pitch)) + arccos(r_base/r_pitch)
-          const t_pitch = Math.acos(baseRadius/pitchRadius);
+          const t_pitch = Math.acos(details.baseRadius/pitchRadius);
           const t_0 = a - dir*(Math.tan(t_pitch) - t_pitch);
       
           // Now that we have our equation, figure out the t for when we hit the 
           // outer radius.
           let minT;
-          if (baseRadius > rootRadius) {
+          if (details.baseRadius > details.rootRadius) {
             minT = 0;
           } else {
-            minT = Math.acos(baseRadius/rootRadius);
+            minT = Math.acos(details.baseRadius/details.rootRadius);
           }
-          const maxT = Math.acos(baseRadius/outsideRadius);
+          const maxT = Math.acos(details.baseRadius/details.outsideRadius);
       
           const numSteps = 6;
           for (let step = 0; step <= numSteps; step++) {
             const t = (dir > 0 ? minT : maxT) + dir * step / numSteps * (maxT - minT);
-            const r = baseRadius / Math.cos(t);
+            const r = details.baseRadius / Math.cos(t);
             const theta = dir * (Math.tan(t) - t) + t_0;
             const x = Math.cos(theta)*r;
             const y = Math.sin(theta)*r;
@@ -403,9 +425,9 @@ class GearsClient extends ModuleInterface.Client {
             }
           }
         }
-        if (baseRadius > rootRadius) {
-          rootCircleX = Math.cos(a) * rootRadius;
-          rootCircleY = Math.sin(a) * rootRadius;
+        if (details.baseRadius > details.rootRadius) {
+          rootCircleX = Math.cos(a) * details.rootRadius;
+          rootCircleY = Math.sin(a) * details.rootRadius;
           path.lineTo(rootCircleX, rootCircleY);
         }
       }
@@ -435,20 +457,24 @@ class GearsClient extends ModuleInterface.Client {
         return;
       }
       this.gears_ = gearsState.get(0);
-    }
     
-    if (!this.gears_) {
-      return;
+      if (!this.gears_) {
+        return;
+      }
+
+      // First time we're seeing the gears, so cull the ones we can't see on
+      // this screen.
+      debug('gears before: ' + this.gears_.length);
+      this.gears_ = this.gears_.filter(g => {
+        const details = this.getGearDetails_(g.radius, g.teeth);
+        const rect = Rectangle.centeredAt(g.x, g.y, details.outsideRadius*2, details.outsideRadius*2);
+        return rect.intersects(this.surface.virtualRect);
+      });
+      debug('gears after: ' + this.gears_.length);
     }
-    
-    const visibleGears = this.gears_;
-    // .filter(gear => {
-//       const rect = Rectangle.centeredAt(gear.x, gear.y, gear.radius*2, gear.radius*2);
-//       return rect.intersects(this.surface.virtualRect);
-//});
     
     for (let z = 0; z < layers; z++) {
-      visibleGears.filter(g => g.z == z)
+      this.gears_.filter(g => g.z == z)
           .forEach(gear => {
             const angle = 2*Math.PI * gear.speed * time / 1000 + gear.angle;
             this.drawGear_(gear.x, gear.y, gear.z, gear.radius, gear.teeth, angle, gear.colorIndex, gear.holes);
