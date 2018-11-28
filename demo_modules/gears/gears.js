@@ -290,15 +290,15 @@ class GearsClient extends ModuleInterface.Client {
       const rootRadius = outsideRadius - wholeDepth;
 
       this.gearDetails_[key] = {
-        pitchDiameter: pitchDiameter,
-        diametralPitch: diametralPitch,
-        addendum: addendum,
-        wholeDepth: wholeDepth,
-        radiusAngle: radiusAngle,
-        baseDiameter: baseDiameter,
-        baseRadius: baseRadius,
-        outsideRadius: outsideRadius,
-        rootRadius: rootRadius
+        pitchDiameter,
+        diametralPitch,
+        addendum,
+        wholeDepth,
+        radiusAngle,
+        baseDiameter,
+        baseRadius,
+        outsideRadius,
+        rootRadius
       };
     }
     return this.gearDetails_[key];
@@ -307,7 +307,17 @@ class GearsClient extends ModuleInterface.Client {
     // Rather than always making a new gear path, consult our cache.
     const key = [holes, pitchRadius, numberOfTeeth].join(',');
     if (!this.gearPaths_[key]) {
-      const details = this.getGearDetails_(pitchRadius, numberOfTeeth);
+      const {
+        pitchDiameter,
+        diametralPitch,
+        addendum,
+        wholeDepth,
+        radiusAngle,
+        baseDiameter,
+        baseRadius,
+        outsideRadius,
+        rootRadius
+      } = this.getGearDetails_(pitchRadius, numberOfTeeth);
 
       const path = new Path2D();
     
@@ -316,7 +326,7 @@ class GearsClient extends ModuleInterface.Client {
       // Center hole.
       path.arc(0, 0, 10, 0, 2*Math.PI, false);
       if (holes[0] == 'circles') {
-        const circleR = details.rootRadius / 4;
+        const circleR = rootRadius / 4;
         const numCircles = holes[1];
         for (let i = 0; i < numCircles; ++i) {
           const angle = i * 2 * Math.PI / numCircles;
@@ -336,7 +346,7 @@ class GearsClient extends ModuleInterface.Client {
           }
           deltaAngle = 2 * Math.PI / count;
           innerArcRadius = barThickness / Math.sin(deltaAngle/2);
-          ed = details.rootRadius - edgeThickness;
+          ed = rootRadius - edgeThickness;
         } while (count > 0 && innerArcRadius > ed && (holes[1] = Math.floor(holes[1]/2)));
         if (count >= 2) {
           // It's possible our teeth are so small that we would extend beyond
@@ -362,14 +372,14 @@ class GearsClient extends ModuleInterface.Client {
       }
       for (let i = 0; i < numberOfTeeth; ++i) {
         // Draw the teeth radii.
-        const angle = i * details.radiusAngle;
+        const angle = i * radiusAngle;
     
         // Draw the tooth.
         // Start at the root circle:
-        let a = angle - details.radiusAngle / 4;
-        let rootCircleX = Math.cos(a) * details.rootRadius;
-        let rootCircleY = Math.sin(a) * details.rootRadius;
-        if (details.baseRadius > details.rootRadius) {
+        let a = angle - radiusAngle / 4;
+        let rootCircleX = Math.cos(a) * rootRadius;
+        let rootCircleY = Math.sin(a) * rootRadius;
+        if (baseRadius > rootRadius) {
           if (!firstCommand) {
             path.moveTo(rootCircleX, rootCircleY);
             firstCommand = true;
@@ -380,7 +390,7 @@ class GearsClient extends ModuleInterface.Client {
     
         for (let j = 0; j <= 1; j++) {
           const dir = j ? -1 : 1;
-          a = angle - dir * details.radiusAngle / 4;
+          a = angle - dir * radiusAngle / 4;
           // Draw the involate, starting at the base circle, and passing through
           // the pitch point.
           // The equation of the involate in polar coords is:
@@ -397,23 +407,23 @@ class GearsClient extends ModuleInterface.Client {
           // a = dir*tan(arccos(r_base/r_pitch)) - arccos(r_base/r_pitch) + t_0
           // =>
           // t_0 = a - dir*tan(arccos(r_base/r_pitch)) + arccos(r_base/r_pitch)
-          const t_pitch = Math.acos(details.baseRadius/pitchRadius);
+          const t_pitch = Math.acos(baseRadius/pitchRadius);
           const t_0 = a - dir*(Math.tan(t_pitch) - t_pitch);
       
           // Now that we have our equation, figure out the t for when we hit the 
           // outer radius.
           let minT;
-          if (details.baseRadius > details.rootRadius) {
+          if (baseRadius > rootRadius) {
             minT = 0;
           } else {
-            minT = Math.acos(details.baseRadius/details.rootRadius);
+            minT = Math.acos(baseRadius/rootRadius);
           }
-          const maxT = Math.acos(details.baseRadius/details.outsideRadius);
+          const maxT = Math.acos(baseRadius/outsideRadius);
       
           const numSteps = 6;
           for (let step = 0; step <= numSteps; step++) {
             const t = (dir > 0 ? minT : maxT) + dir * step / numSteps * (maxT - minT);
-            const r = details.baseRadius / Math.cos(t);
+            const r = baseRadius / Math.cos(t);
             const theta = dir * (Math.tan(t) - t) + t_0;
             const x = Math.cos(theta)*r;
             const y = Math.sin(theta)*r;
@@ -425,9 +435,9 @@ class GearsClient extends ModuleInterface.Client {
             }
           }
         }
-        if (details.baseRadius > details.rootRadius) {
-          rootCircleX = Math.cos(a) * details.rootRadius;
-          rootCircleY = Math.sin(a) * details.rootRadius;
+        if (baseRadius > rootRadius) {
+          rootCircleX = Math.cos(a) * rootRadius;
+          rootCircleY = Math.sin(a) * rootRadius;
           path.lineTo(rootCircleX, rootCircleY);
         }
       }
