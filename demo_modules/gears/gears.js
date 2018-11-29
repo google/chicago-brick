@@ -260,6 +260,9 @@ class GearsClient extends ModuleInterface.Client {
     this.c = this.surface.context;
     this.gears_ = null;
     
+    // A map of gear metric details.
+    this.gearDetails_ = [];
+
     // A map of teeth -> Path2D.
     this.gearPaths_ = [];
   }
@@ -268,10 +271,9 @@ class GearsClient extends ModuleInterface.Client {
       this.surface.destroy();
     }
   }
-  getGearPath_(holes, pitchRadius, numberOfTeeth) {
-    // Rather than always making a new gear path, consult our cache.
-    const key = [holes, pitchRadius, numberOfTeeth].join(',');
-    if (!this.gearPaths_[key]) {
+  getGearDetails_(pitchRadius, numberOfTeeth) {
+    const key = [pitchRadius, numberOfTeeth].join(',');
+    if (!this.gearDetails_[key]) {
       const pitchDiameter = pitchRadius * 2;
       const diametralPitch = numberOfTeeth / pitchDiameter;
       const addendum = 1 / diametralPitch;
@@ -286,7 +288,37 @@ class GearsClient extends ModuleInterface.Client {
       const baseRadius = baseDiameter / 2;
       const outsideRadius = pitchRadius + addendum;
       const rootRadius = outsideRadius - wholeDepth;
-      
+
+      this.gearDetails_[key] = {
+        pitchDiameter,
+        diametralPitch,
+        addendum,
+        wholeDepth,
+        radiusAngle,
+        baseDiameter,
+        baseRadius,
+        outsideRadius,
+        rootRadius
+      };
+    }
+    return this.gearDetails_[key];
+  }
+  getGearPath_(holes, pitchRadius, numberOfTeeth) {
+    // Rather than always making a new gear path, consult our cache.
+    const key = [holes, pitchRadius, numberOfTeeth].join(',');
+    if (!this.gearPaths_[key]) {
+      const {
+        pitchDiameter,
+        diametralPitch,
+        addendum,
+        wholeDepth,
+        radiusAngle,
+        baseDiameter,
+        baseRadius,
+        outsideRadius,
+        rootRadius
+      } = this.getGearDetails_(pitchRadius, numberOfTeeth);
+
       const path = new Path2D();
     
       let firstCommand = false;
@@ -435,20 +467,24 @@ class GearsClient extends ModuleInterface.Client {
         return;
       }
       this.gears_ = gearsState.get(0);
-    }
     
-    if (!this.gears_) {
-      return;
+      if (!this.gears_) {
+        return;
+      }
+
+      // First time we're seeing the gears, so cull the ones we can't see on
+      // this screen.
+      debug('gears before: ' + this.gears_.length);
+      this.gears_ = this.gears_.filter(g => {
+        const details = this.getGearDetails_(g.radius, g.teeth);
+        const rect = Rectangle.centeredAt(g.x, g.y, details.outsideRadius*2, details.outsideRadius*2);
+        return rect.intersects(this.surface.virtualRect);
+      });
+      debug('gears after: ' + this.gears_.length);
     }
-    
-    const visibleGears = this.gears_;
-    // .filter(gear => {
-//       const rect = Rectangle.centeredAt(gear.x, gear.y, gear.radius*2, gear.radius*2);
-//       return rect.intersects(this.surface.virtualRect);
-//});
     
     for (let z = 0; z < layers; z++) {
-      visibleGears.filter(g => g.z == z)
+      this.gears_.filter(g => g.z == z)
           .forEach(gear => {
             const angle = 2*Math.PI * gear.speed * time / 1000 + gear.angle;
             this.drawGear_(gear.x, gear.y, gear.z, gear.radius, gear.teeth, angle, gear.colorIndex, gear.holes);
