@@ -15,37 +15,21 @@ limitations under the License.
 
 define(function(require) {
   'use strict';
-  var Rectangle = require('lib/rectangle');
+  const Rectangle = require('lib/rectangle');
   
   function readClientRectFromLocation() {
-    var config = new URL(window.location.href).searchParams.get('config') || '';
-    var xscale = new URL(window.location.href).searchParams.get('xscale') || 1;
-    var yscale = new URL(window.location.href).searchParams.get('yscale') || 1;
-    var rect = Rectangle.deserialize(config);
-    if (rect) {
-      rect.x *= xscale;
-      rect.y *= yscale;
-      rect.w *= xscale;
-      rect.h *= yscale;
-    }
-    return rect;
+    const config = new URL(window.location.href).searchParams.get('config') || '0,0,1920,1080';
+    return Rectangle.deserialize(config);
   }
   
-  var ret = {};
-  ret.virtualRectNoBezel = readClientRectFromLocation() ||
-      new Rectangle(0, 0, 1920, 1080);
-  ret.virtualOffset = {
-    x: ret.virtualRectNoBezel.x / ret.virtualRectNoBezel.w,
-    y: ret.virtualRectNoBezel.y / ret.virtualRectNoBezel.h,
+  const rect = readClientRectFromLocation();
+  return {
+    // TODO: Figure out how to implement bezel properly.
+    virtualRect: rect,
+    virtualRectNoBezel: rect,
+    virtualOffset: {
+      x: rect.x / rect.w,
+      y: rect.y / rect.h,
+    },
   };
-
-  // Bezel!
-  ret.hbezel = parseInt(new URL(window.location.href).searchParams.get('hbezel') || '0');
-  ret.vbezel = parseInt(new URL(window.location.href).searchParams.get('vbezel') || '0');
-  ret.virtualRect = new Rectangle(
-      ret.virtualRectNoBezel.x + ret.hbezel,
-      ret.virtualRectNoBezel.y + ret.vbezel,
-      ret.virtualRectNoBezel.w - 2 * ret.hbezel,
-      ret.virtualRectNoBezel.h - 2 * ret.vbezel);
-  return ret;
 });
