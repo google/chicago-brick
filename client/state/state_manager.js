@@ -16,7 +16,7 @@ limitations under the License.
 define(function(require) {
   'use strict';
   var sharedState = require('lib/shared_state');
-  var debug = require('client/util/debug')('wall:state_manager');
+  var debug = require('debug')('wall:state_manager');
 
   class ClientSharedState extends sharedState.SharedState {
     constructor(name, interpolator, network) {

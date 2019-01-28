@@ -16,7 +16,7 @@ limitations under the License.
 define(function(require) {
   'use strict';
   const time = require('client/util/time');
-  const debug = require('client/util/debug')('wall:module_ticker');
+  const debug = require('debug')('wall:module_ticker');
   const error = require('client/util/log').error(debug);
   const monitor = require('client/monitoring/monitor');
   

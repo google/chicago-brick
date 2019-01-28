@@ -21,7 +21,7 @@ define(function(require) {
   var _ = require('underscore');
   var Peer = require('peer');
   var info = require('client/util/info');
-  var debug = require('client/util/debug')('wall:peer');
+  var debug = require('debug')('wall:peer');
   
   function sanitizeName(name) {
     return name.replace(/[^a-zA-Z0-9]/g, '-');

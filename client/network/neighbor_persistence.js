@@ -16,7 +16,7 @@ limitations under the License.
 define(function(require) {
   'use strict';
   var _ = require('underscore');
-  var debug = require('client/util/debug')('wall:neighbor-persistence');
+  var debug = require('debug')('wall:neighbor-persistence');
   var geometry = require('lib/geometry');
   var Rectangle = require('lib/rectangle');
   

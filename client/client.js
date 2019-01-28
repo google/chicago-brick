@@ -18,7 +18,7 @@ define(function(require) {
   
   var network = require('client/network/network');
   var ModuleManager = require('client/modules/module_manager');
-  var debug = require('client/util/debug');
+  var debug = require('debug');
   var info = require('client/util/info');
   const monitor = require('client/monitoring/monitor');
 
