@@ -22,20 +22,14 @@ define(function(require) {
     return Rectangle.deserialize(config);
   }
   
-  const ret = {};
-  ret.virtualRectNoBezel = readClientRectFromLocation();
-  ret.virtualOffset = {
-    x: ret.virtualRectNoBezel.x / ret.virtualRectNoBezel.w,
-    y: ret.virtualRectNoBezel.y / ret.virtualRectNoBezel.h,
+  const rect = readClientRectFromLocation();
+  return {
+    // TODO: Figure out how to implement bezel properly.
+    virtualRect: rect,
+    virtualRectNoBezel: rect,
+    virtualOffset: {
+      x: rect.x / rect.w,
+      y: rect.y / rect.h,
+    },
   };
-
-  // Bezel!
-  ret.hbezel = parseInt(new URL(window.location.href).searchParams.get('hbezel') || '0');
-  ret.vbezel = parseInt(new URL(window.location.href).searchParams.get('vbezel') || '0');
-  ret.virtualRect = new Rectangle(
-      ret.virtualRectNoBezel.x + ret.hbezel,
-      ret.virtualRectNoBezel.y + ret.vbezel,
-      ret.virtualRectNoBezel.w - 2 * ret.hbezel,
-      ret.virtualRectNoBezel.h - 2 * ret.vbezel);
-  return ret;
 });
