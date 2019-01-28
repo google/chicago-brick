@@ -16,12 +16,10 @@ limitations under the License.
 define(function(require) {
   "use strict";
 
-  var parsedLocation = require('client/util/location');
-  
   var LOCAL_ASSET_PATH = 'http://127.0.0.1:8080/';
   
   return function(name) {
-    if (parsedLocation.useLocalAssets) {
+    if (new URL(window.location.href).searchParams.get('useLocalAssets')) {
       return `${LOCAL_ASSET_PATH}${name}`;
     }
     // By default, we pass the pass-through.
