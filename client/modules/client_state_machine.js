@@ -21,7 +21,7 @@ define(function(require) {
   const stateMachine = require('lib/state_machine');
   const timeManager = require('client/util/time');
 
-  const debug = require('client/util/debug')('wall:client_state_machine');
+  const debug = require('debug')('wall:client_state_machine');
   const logError = require('client/util/log').error(debug);
   const monitor = require('client/monitoring/monitor');
 

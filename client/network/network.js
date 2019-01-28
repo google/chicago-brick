@@ -16,7 +16,7 @@ limitations under the License.
 define(function(require) {
   'use strict';
   var io = require('socket.io');
-  var debug = require('client/util/debug')('wall:network');
+  var debug = require('debug')('wall:network');
   var info = require('client/util/info');
   var socket;
   

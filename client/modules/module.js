@@ -18,8 +18,8 @@ define(function(require) {
 
   var _ = require('underscore');
 
-  var debug = require('client/util/debug')('wall:client_module');
-  var debugFactory = require('client/util/debug');
+  var debug = require('debug')('wall:client_module');
+  var debugFactory = require('debug');
   var error = require('client/util/log').error(debug);
   var fakeRequire = require('client/fake_require');
   var geometry = require('lib/geometry');

@@ -22,6 +22,7 @@ requirejs.config({
   paths : {
     'clock-skew' : 'sys/clock-skew/lib/clock_skew',
     'd3' : 'sys/d3/build/d3.min',
+    'debug': 'sys/debug/dist/debug',
     'gl-matrix': 'sys/gl-matrix/dist/gl-matrix-min',
     'noisejs': 'sys/noisejs/index',
     'p5' : 'sys/p5/lib/p5',
