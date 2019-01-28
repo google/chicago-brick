@@ -16,12 +16,11 @@ limitations under the License.
 define(function(require) {
   'use strict';
   var Rectangle = require('lib/rectangle');
-  var parsedLocation = require('client/util/location');
   
   function readClientRectFromLocation() {
-    var config = parsedLocation.config || '';
-    var xscale = parsedLocation.xscale || 1;
-    var yscale = parsedLocation.yscale || 1;
+    var config = new URL(window.location.href).searchParams.get('config') || '';
+    var xscale = new URL(window.location.href).searchParams.get('xscale') || 1;
+    var yscale = new URL(window.location.href).searchParams.get('yscale') || 1;
     var rect = Rectangle.deserialize(config);
     if (rect) {
       rect.x *= xscale;
@@ -41,8 +40,8 @@ define(function(require) {
   };
 
   // Bezel!
-  ret.hbezel = parseInt(parsedLocation.hbezel || '0');
-  ret.vbezel = parseInt(parsedLocation.vbezel || '0');
+  ret.hbezel = parseInt(new URL(window.location.href).searchParams.get('hbezel') || '0');
+  ret.vbezel = parseInt(new URL(window.location.href).searchParams.get('vbezel') || '0');
   ret.virtualRect = new Rectangle(
       ret.virtualRectNoBezel.x + ret.hbezel,
       ret.virtualRectNoBezel.y + ret.vbezel,

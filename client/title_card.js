@@ -64,7 +64,6 @@ limitations under the License.
 define(function(require) {
   'use strict';
   var asset = require('client/asset/asset');
-  var parsedLocation = require('client/util/location');
 
   function makeEmptyTitleCard() {
     var elem = document.createElement('div');
@@ -134,7 +133,7 @@ define(function(require) {
     }
 
     isTitleClient() {
-      return !!parsedLocation.title;
+      return !!new URL(window.location.href).searchParams.get('title');
     }
   }
   return TitleCard;

@@ -21,14 +21,13 @@ define(function(require) {
   var debug = require('client/util/debug');
   var info = require('client/util/info');
   const monitor = require('client/monitoring/monitor');
-  const location = require('client/util/location');
 
   debug.enable('wall:*');
 
   // Open our socket to the server.
   network.openConnection(info.virtualRectNoBezel);
 
-  if (location.monitor) {
+  if (new URL(window.location.href).searchParams.get('monitor')) {
     monitor.enable();
   }
 
