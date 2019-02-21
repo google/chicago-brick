@@ -48,16 +48,16 @@ then
 fi
 
 "$CHROME" $STANDARD_FLAGS --window-position=580,640 --window-size=480,270 \
-        --app="http://localhost:3000/?config=1,2,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/clientx10 &
+        --app="http://localhost:3000/?config=1920,2160,1920,1080" --user-data-dir=/tmp/clientx10 &
 "$CHROME" $STANDARD_FLAGS --window-position=100,640 --window-size=480,270 \
-        --app="http://localhost:3000/?config=0,2,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/clientx00 &
-sleep 3
+        --app="http://localhost:3000/?config=0,2160,1920,1080" --user-data-dir=/tmp/clientx00 &
+sleep 1080
 "$CHROME" $STANDARD_FLAGS --window-position=1060,370 --window-size=480,270 \
-        --app="http://localhost:3000/?config=2,1,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/clientx11 &
+        --app="http://localhost:3000/?config=3840,1080,1920,1080" --user-data-dir=/tmp/clientx11 &
 "$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=480,270 \
-        --app="http://localhost:3000/?config=1,1,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/clientx01 &
+        --app="http://localhost:3000/?config=1920,1080,1920,1080" --user-data-dir=/tmp/clientx01 &
 sleep 3
 "$CHROME" $STANDARD_FLAGS --window-position=580,100 --window-size=480,270 \
-        --app="http://localhost:3000/?config=1,0,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/clientx12 &
+        --app="http://localhost:3000/?config=1920,0,1920,1080" --user-data-dir=/tmp/clientx12 &
 "$CHROME" $STANDARD_FLAGS --window-position=100,100 --window-size=480,270 \
-        --app="http://localhost:3000/?config=0,0,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/clientx02 &
+        --app="http://localhost:3000/?config=0,0,1920,1080" --user-data-dir=/tmp/clientx02 &

@@ -51,11 +51,11 @@ then
 fi
 
 "$CHROME" $STANDARD_FLAGS --window-position=100,370 --window-size=${WINDOW_SIZE} \
-        --app="http://localhost:3000/?config=0,1,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client00 &
+        --app="http://localhost:3000/?config=0,1080,1920,1080" --user-data-dir=/tmp/client00 &
 "$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=${WINDOW_SIZE} \
-        --app="http://localhost:3000/?config=1,1,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client10 &
+        --app="http://localhost:3000/?config=1920,1080,1920,1080" --user-data-dir=/tmp/client10 &
 sleep 3
 "$CHROME" $STANDARD_FLAGS --window-position=580,100 --window-size=${WINDOW_SIZE} \
-        --app="http://localhost:3000/?config=1,0,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client11 &
+        --app="http://localhost:3000/?config=1920,0,1920,1080" --user-data-dir=/tmp/client11 &
 "$CHROME" $STANDARD_FLAGS --window-position=100,100 --window-size=${WINDOW_SIZE} \
-        --app="http://localhost:3000/?config=0,0,1,1&xscale=1920&yscale=1080" --user-data-dir=/tmp/client01 &
+        --app="http://localhost:3000/?config=0,0,1920,1080" --user-data-dir=/tmp/client01 &

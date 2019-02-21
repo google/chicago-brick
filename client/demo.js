@@ -45,7 +45,7 @@ function createFrameAt(x, y, screenWidth, screenHeight) {
   frame.width = screenWidth;
   frame.height = screenHeight;
   frame.frameBorder = 0;
-  frame.src = `/?config=${x},${y},1,1&xscale=1920&yscale=1080`;
+  frame.src = `/?config=${x*1920},${y*1080},1920,1080`;
   return frame;
 }
 
