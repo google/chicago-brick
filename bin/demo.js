@@ -13,20 +13,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/* jshint unused: false */
-'use strict';
+/* jshint browser: true */
+/* exported go */
 const SIMPLE_GRID = [
   '111',
   '111',
   '111',
 ];
-const FULL_GRID = [
-  '1111001111110',
-  '0011111111000',
-  '0111111111111',
-  '1001111110110',
-  '0000001100000',
-];
+// const FULL_GRID = [
+//   '1111001111110',
+//   '0011111111000',
+//   '0111111111111',
+//   '1001111110110',
+//   '0000001100000',
+// ];
 const DEFAULT_SCREEN_WIDTH = 1920;
 const DEFAULT_SCREEN_HEIGHT = DEFAULT_SCREEN_WIDTH * 1080/1920;
 
