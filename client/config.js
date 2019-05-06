@@ -27,7 +27,7 @@ requirejs.config({
     'noisejs': 'sys/noisejs/index',
     'p5' : 'sys/p5/lib/p5',
     'p5.dom' : 'sys/p5/lib/addons/p5.dom',
-    'peer': 'sys/peerjs/dist/peer',
+    'peer': 'sys/peerjs/dist/peerjs.min',
     'querystring': 'sys/simple-query-string/src/simplequerystring',
     'socket.io' : 'sys/socket.io-client/dist/socket.io',
     'strict-uri-encode': 'sys/strict-uri-encode/index',
