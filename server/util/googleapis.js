@@ -15,49 +15,41 @@ limitations under the License.
 
 'use strict';
 
-var googleapis = require('googleapis');
-var credentials = require('server/util/credentials');
+const {google} = require('googleapis');
+const credentials = require('server/util/credentials');
 
-var SCOPES = [
+const SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
   'https://www.googleapis.com/auth/youtube.readonly'
 ];
 
-var key = null;
+/**
+ * Our private key for Google APIs.
+ * Lazily initialized.
+ */
+let key = null;
+
 /**
  * Returns an API client that has authenticated with a service account.
  * To use this, create a service account in the Google Developers Console
  * and place the resulting key file in this directory as
  * googleserviceaccountkey.json.
  */
-function getAuthenticatedClient() {
+async function getAuthenticatedClient() {
   if (!key) {
     key = credentials.get('googleserviceaccountkey');
     if (!key) {
-      return Promise.reject('Missing required service account key file');
+      throw new Error('Missing required service account key file');
     }
   }
-  var jwtClient = new googleapis.auth.JWT(
+  const client = new google.auth.JWT(
       key.client_email, null, key.private_key, SCOPES);
-  return new Promise((resolve, reject) => {
-    jwtClient.authorize((err, tokens) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-      googleapis.options({
-        auth: jwtClient
-      });
-      resolve({
-        googleapis: googleapis,
-        credentials: jwtClient.credentials,
-      });
-    });
+  await client.authorize();
+
+  google.options({
+    auth: client
   });
+  return {googleapis: google, credentials: client.credentials};
 }
 
-module.exports = {
-  unauthenticated: googleapis,
-  getAuthenticatedClient: getAuthenticatedClient,
-  key: key
-};
+module.exports = {getAuthenticatedClient};
