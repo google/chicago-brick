@@ -34,7 +34,7 @@ class LoadFromDriveServerStrategy extends interfaces.ServerLoadStrategy {
   constructor(config) {
     super();
     this.config = config;
-    
+
     // Drive client API v2.
     this.driveClient = null;
   }
@@ -50,7 +50,7 @@ class LoadFromDriveServerStrategy extends interfaces.ServerLoadStrategy {
     });
   }
   loadMoreContent(opt_paginationToken) {
-    return new Promise((resolve, reject) => 
+    return new Promise((resolve, reject) =>
       this.driveClient.children.list({
         folderId: this.config.folderId,
         maxResults: 1000,
@@ -62,11 +62,11 @@ class LoadFromDriveServerStrategy extends interfaces.ServerLoadStrategy {
         resolve(response);
       })
     ).then((response) => {
-      debug('Downloaded ' + response.items.length + ' more content ids.');
+      debug('Downloaded ' + response.data.items.length + ' more content ids.');
       return {
-        content: response.items.map((i) => i.id),
-        hasMoreContent: !!response.nextPageToken,
-        paginationToken: response.nextPageToken
+        content: response.data.items.map((i) => i.id),
+        hasMoreContent: !!response.data.nextPageToken,
+        paginationToken: response.data.nextPageToken
       };
     }, (error) => {
       debug('Failed to download more drive content! Delay a bit...');
@@ -85,7 +85,7 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
   }
   loadContent(fileId) {
     const API_BASE_URL = 'https://www.googleapis.com/drive/v2';
-    
+
     let numTriesLeft = 5;
     let timeout = Math.floor(1000 + Math.random() * 1000);
     let fetchImage = () => {
@@ -95,7 +95,7 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
         })
       }).then(res => {
         if (res.status == 403) {
-          // Probably rate-limited. To fix this, we'll attempt to download 
+          // Probably rate-limited. To fix this, we'll attempt to download
           // again after a random, expotentially increasing time.
           if (!numTriesLeft) {
             throw new Error(`Failed to download ${fileId}! ${res.status} ${res.statusTxt}`);
@@ -114,7 +114,7 @@ class LoadFromDriveClientStrategy extends interfaces.ClientLoadStrategy {
         debug(`Failed to load! ${fileId} ${res.status} ${res.statusText}`);
       });
     };
-    
+
     return fetchImage()
       .then(resp => resp.blob()
           .then(blob => ({blob, type: resp.headers.get('content-type')})))
