@@ -15,7 +15,6 @@ limitations under the License.
 
 'use strict';
 const debug = require('debug');
-const querystring = require('querystring');
 const serverRequire = require('lib/server_require');
 const assert = require('lib/assert');
 
@@ -40,7 +39,7 @@ class LoadFromFlickrServerStrategy extends interfaces.ServerLoadStrategy {
     const credentials = serverRequire('server/util/credentials');
     const apiKey = credentials.get('flickr');
     assert(apiKey, 'Missing Flickr API key!');
-    let query = querystring.stringify({
+    let query = new URLSearchParams({
       method: 'flickr.photos.search',
       api_key: apiKey,
       format: 'json',
@@ -55,13 +54,13 @@ class LoadFromFlickrServerStrategy extends interfaces.ServerLoadStrategy {
       if (!response.ok) {
         throw new Error('Flickr query failed with status: ' + response.status + ': ' + response.statusText);
       }
-      
+
       return response.json().then(json => {
         if (!(json.photos && json.photos.photo && json.photos.photo.length > 0)) {
           debug('Invalid flickr query response!', json);
           throw new Error('Invalid flickr query response!');
         }
-      
+
         let content = json.photos.photo.map(p => p.url_l).filter(u => u);
         debug('Downloaded ' + content.length + ' more content ids.');
         return {content};
