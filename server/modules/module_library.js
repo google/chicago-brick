@@ -21,7 +21,7 @@ const assert = require('assert');
 
 class EmptyModuleDef extends ModuleDef {
   constructor() {
-    super('_empty');
+    super('_empty', '', {});
     // TODO(applmak): ^ this hacky.
     // However, b/c of the hack, this module will never become valid.
     this.whenLoadedPromise = Promise.resolve(this);
@@ -31,13 +31,13 @@ class EmptyModuleDef extends ModuleDef {
 class ModuleLibrary extends EventEmitter {
   constructor() {
     super();
-    
+
     this.reset();
   }
   register(def) {
     assert(!(def.name in this.modules), 'Def ' + def.name + ' already exists!');
     this.modules[def.name] = def;
-    // We can safely use 'on' rather than 'once' here, because neither the 
+    // We can safely use 'on' rather than 'once' here, because neither the
     // moduledefs nor this library are ever destroyed.
     def.on('reloaded', () => {
       this.emit('reloaded', def);
