@@ -41,7 +41,7 @@ const read = (path) => {
   });
 };
 
-const evalModule = (contents, name, moduleRoot, path, layoutGeometry, network, game, state) => {
+const evalModule = (contents, name, moduleRoot, layoutGeometry, network, game, state) => {
   let classes = {};
 
   // Inject our deps into node's require environment.
@@ -84,9 +84,9 @@ const evalModule = (contents, name, moduleRoot, path, layoutGeometry, network, g
   return classes;
 };
 
-const verify = (name, contents, moduleRoot, path) => {
+const verify = (name, contents, moduleRoot) => {
   // Eval using fake globals.
-  const classes = evalModule(contents, name, moduleRoot, path, wallGeometry.getGeo(), {}, {}, {});
+  const classes = evalModule(contents, name, moduleRoot, wallGeometry.getGeo(), {}, {}, {});
 
   if (!classes.server) {
     debug('Module did not register a server-side module!');
@@ -96,15 +96,7 @@ const verify = (name, contents, moduleRoot, path) => {
     debug('Module\'s server-side module did not implement module_interface.Server!');
     return false;
   }
-  if (!classes.client) {
-    debug('Module did not register a client-side module!');
-    return false;
-  }
-  if (!(classes.client.prototype instanceof module_interface.Client)) {
-    debug('Module\'s client-side module did not implement module_interface.Client!');
-    return false;
-  }
-
+  
   return true;
 };
 
@@ -113,7 +105,7 @@ const verify = (name, contents, moduleRoot, path) => {
  * instantiate a module, including code location and config parameters.
  */
 class ModuleDef extends EventEmitter {
-  constructor(name, moduleRoot, pathOrBaseModule, title, author, config) {
+  constructor(name, moduleRoot, pathsOrBaseModule, title, author, config) {
     super();
     this.name = name;
     this.root = moduleRoot;
@@ -121,8 +113,11 @@ class ModuleDef extends EventEmitter {
     this.title = title;
     this.author = author;
 
-    // The path to the main file of the module.
-    this.path = '';
+    // The path to the client main file of the module.
+    this.clientPath = '';
+
+    // The path to the server main file of the module.
+    this.serverPath = '';
 
     // If true, the module has no parse errors in its source.
     this.valid = false;
@@ -130,9 +125,10 @@ class ModuleDef extends EventEmitter {
     // The most recently validated source to the module.
     this.def = '';
 
-    if (pathOrBaseModule instanceof ModuleDef) {
-      let base = pathOrBaseModule;
-      this.path = base.path;
+    if (pathsOrBaseModule.base) {
+      let base = pathsOrBaseModule.base;
+      this.clientPath = base.clientPath;
+      this.serverPath = base.serverPath;
 
       let updateValidity = () => {
         this.valid = base.valid;
@@ -151,7 +147,8 @@ class ModuleDef extends EventEmitter {
       base.on('reloaded', updateValidity);
     } else if (name != '_empty') {
       // TODO(applmak): ^ this hacky.
-      this.path = pathOrBaseModule;
+      this.clientPath = pathsOrBaseModule.client;
+      this.serverPath = pathsOrBaseModule.server;
       this.checkValidity_();
     }
   }
@@ -161,7 +158,8 @@ class ModuleDef extends EventEmitter {
     return {
       name: this.name,
       root: this.root,
-      path: this.path,
+      clientPath: this.clientPath,
+      serverPath: this.serverPath,
       config: util.inspect(this.config),
       title: this.title,
       author: this.author
@@ -172,7 +170,7 @@ class ModuleDef extends EventEmitter {
     return new ModuleDef(
       name,
       this.root,
-      this,
+      {base: this},
       title === undefined ? '' : (title || this.title),
       author === undefined ? '' : (author || this.author),
       config);
@@ -180,7 +178,7 @@ class ModuleDef extends EventEmitter {
 
   // Loads a module from disk asynchronously, assigning def when complete.
   checkValidity_() {
-    const fullPath = path.join(this.root, this.path);
+    const fullPath = path.join(this.root, this.serverPath);
     let loadModule = () => {
       let rewatch = () => {
         // Watch for future changes.
@@ -199,12 +197,12 @@ class ModuleDef extends EventEmitter {
         // Prepend a directive to make sure the module runs in strict mode.
         // Append a directive that tells Chrome and Node that the client script
         // is, in fact, a file. This makes debugging these far simpler.
-        contents = `"use strict";${contents}\n//# sourceURL=${this.path}\n`;
+        contents = `"use strict";${contents}\n//# sourceURL=${fullPath}\n`;
 
         // Start rewatcher, regardless of status.
         rewatch();
 
-        if (verify(this.name, contents, this.root, this.path)) {
+        if (verify(this.name, contents, this.root)) {
           debug('Verified ' + fullPath);
           this.valid = true;
           this.def = contents;
@@ -238,7 +236,7 @@ class ModuleDef extends EventEmitter {
   instantiate(layoutGeometry, network, game, state, deadline) {
     // Only instantiate valid modules.
     assert(this.valid, 'Attempt to instantiate invalid module!');
-    let classes = evalModule(this.def, this.name, this.root, this.path, layoutGeometry, network, game, state);
+    let classes = evalModule(this.def, this.name, this.root, layoutGeometry, network, game, state);
     return new classes.server(this.config, deadline);
   }
 
@@ -246,7 +244,7 @@ class ModuleDef extends EventEmitter {
   serializeForClient() {
     return {
       name: this.name,
-      path: this.path,
+      path: this.clientPath,
       config: this.config,
       title: this.title,
       author: this.author,
@@ -256,4 +254,3 @@ class ModuleDef extends EventEmitter {
 
 // Export the module def class.
 module.exports = ModuleDef;
-
