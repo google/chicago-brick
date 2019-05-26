@@ -17,27 +17,34 @@ const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const wallGeometry = require('wallGeometry');
 
-class SolidColorClient extends ModuleInterface.Client {
-  constructor(config) {
-    super();
-    this.color = config.color || 'red';
-  }
-
+class ThreeJsTestClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
       this.surface.destroy();
     }
   }
+
   willBeShownSoon(container, deadline) {
-    const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
-    this.canvas = this.surface.context;
+    const Three = require('three-full');
+    this.startTime = deadline;
+    const ThreeJsSurface = require('client/surface/threejs_surface');
+    this.surface = new ThreeJsSurface(container, wallGeometry);
+
+    var geometry = new Three.BoxGeometry(3, 3, 3);
+    var material = new Three.MeshBasicMaterial({ color: 0x00ff00 });
+    this.cube = new Three.Mesh(geometry, material);
+    this.surface.scene.add(this.cube);
+
+    this.surface.camera.position.set(0, 0, 5);
+    this.surface.camera.updateProjectionMatrix();
     return Promise.resolve();
   }
+
   draw(time, delta) {
-    this.canvas.fillStyle = this.color;
-    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+    this.cube.rotation.x = time / 1000;
+    this.cube.rotation.y = time * 1.1 / 1000;
+    this.surface.render();
   }
 }
 
-register(ModuleInterface.Server, SolidColorClient);
+register(ModuleInterface.Server, ThreeJsTestClient);

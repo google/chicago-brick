@@ -1,6 +1,7 @@
 {
   "name": "chicago-brick-live",
-  "path": "./chicago-brick-live.js",
+  "client_path": "./chicago-brick-live-client.js",
+  "server_path": "./chicago-brick-live-server.js",
   "title": "Chicago Brick Live",
   "author": "Ian Atkinson"
 }

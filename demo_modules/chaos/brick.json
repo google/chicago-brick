@@ -1,6 +1,7 @@
 {
   "name": "chaos",
-  "path": "./chaos.js",
+  "client_path": "./chaos_client.js",
+  "server_path": "./chaos_server.js",
   "title": "Chaos Theory",
   "author": "Matt Cruikshank"
 }

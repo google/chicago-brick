@@ -1,0 +1,28 @@
+[
+  {
+    "name": "registration",
+    "path": "./registration.js",
+    "title": "Registration Test",
+    "author": "Matt Handley"
+  },
+  {
+    "name": "p5_test",
+    "path": "./p5_test.js",
+    "title": "p5 surface test",
+    "author": "Jason Gessner"
+  },
+  {
+    "name": "memory-debug",
+    "path": "./memory_debug.js"
+  },
+  {
+    "name": "genlock-test",
+    "path": "./genlock_test.js"
+  },
+  {
+    "name": "threejs",
+    "path": "./threejs_test.js",
+    "title": "threejs test",
+    "author": "Matt Handley"
+  }
+]

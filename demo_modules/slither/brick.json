@@ -1,6 +1,7 @@
 {
   "name": "slither",
-  "path": "./slither.js",
+  "client_path": "./slither_client.js",
+  "server_path": "./slither_server.js",
   "title": "Slither",
   "author": "Matt Handley",
   "config": {

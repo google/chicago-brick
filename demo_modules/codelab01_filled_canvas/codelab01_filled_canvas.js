@@ -17,8 +17,6 @@ const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 const wallGeometry = require('wallGeometry');
 
-class Codelab01FilledCanvasServer extends ModuleInterface.Server {}
-
 class Codelab01FilledCanvasClient extends ModuleInterface.Client {
   finishFadeOut() {
     if (this.surface) {
@@ -49,4 +47,4 @@ class Codelab01FilledCanvasClient extends ModuleInterface.Client {
   }
 }
 
-register(Codelab01FilledCanvasServer, Codelab01FilledCanvasClient);
+register(ModuleInterface.Server, Codelab01FilledCanvasClient);

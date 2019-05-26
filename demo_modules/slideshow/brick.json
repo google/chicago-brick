@@ -1,7 +1,8 @@
 [
   {
     "name": "slideshow",
-    "path": "./slideshow.js",
+    "client_path": "./slideshow_client.js",
+    "server_path": "./slideshow_server.js",
     "title": "Slideshow"
   },
   {

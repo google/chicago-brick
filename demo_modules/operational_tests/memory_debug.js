@@ -15,29 +15,24 @@ limitations under the License.
 
 const register = require('register');
 const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
+const network = require('network');
 
-class SolidColorClient extends ModuleInterface.Client {
+// This is a no-op module that shows what is leaking in the framework when we
+// switch modules.
+class MemoryDebugClient extends ModuleInterface.Client {
   constructor(config) {
     super();
-    this.color = config.color || 'red';
+    // TODO(applmak): Send something this message, maybe?
+    const memoryDebugHandler = () => {
+      this.thing = (this.thing || 0) + 1;
+    };
+    network.on('_memory_debug', memoryDebugHandler);
   }
 
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
-    }
-  }
-  willBeShownSoon(container, deadline) {
-    const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
-    this.canvas = this.surface.context;
+  willBeShownSoon(container) {
+    container.style.backgroundColor = 'black';
     return Promise.resolve();
-  }
-  draw(time, delta) {
-    this.canvas.fillStyle = this.color;
-    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
   }
 }
 
-register(ModuleInterface.Server, SolidColorClient);
+register(ModuleInterface.Server, MemoryDebugClient);
