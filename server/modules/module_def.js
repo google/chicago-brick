@@ -92,11 +92,12 @@ const verify = (name, contents, moduleRoot) => {
     debug('Module did not register a server-side module!');
     return false;
   }
-  if (!(classes.server.prototype instanceof module_interface.Server)) {
+  if (!(classes.server == module_interface.Server ||
+        classes.server.prototype instanceof module_interface.Server)) {
     debug('Module\'s server-side module did not implement module_interface.Server!');
     return false;
   }
-  
+
   return true;
 };
 

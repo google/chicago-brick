@@ -1,6 +1,7 @@
 {
   "name": "balls",
-  "path": "./balls.js",
+  "client_path": "./balls_client.js",
+  "server_path": "./balls_server.js",
   "title": "Bouncing Balls",
   "author": "Matt Handley"
 }

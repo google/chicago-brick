@@ -33,7 +33,7 @@ class LoadYouTubePlaylistServerStrategy extends interfaces.ServerLoadStrategy {
   constructor(config) {
     super();
     this.config = config;
-    
+
     // YouTube data api v3
     this.api = null;
   }
@@ -49,7 +49,7 @@ class LoadYouTubePlaylistServerStrategy extends interfaces.ServerLoadStrategy {
     });
   }
   loadMoreContent(opt_paginationToken) {
-    return new Promise((resolve, reject) => 
+    return new Promise((resolve, reject) =>
       this.api.playlistItems.list({
         playlistId: this.config.playlistId,
         pageToken: opt_paginationToken,
@@ -62,9 +62,9 @@ class LoadYouTubePlaylistServerStrategy extends interfaces.ServerLoadStrategy {
         resolve(response);
       })
     ).then((response) => {
-      debug('Downloaded ' + response.items.length + ' more content ids.');
+      debug('Downloaded ' + response.data.items.length + ' more content ids.');
       return {
-        content: response.items.map((item, index) => {
+        content: response.data.items.map((item, index) => {
           return {
             videoId: item.snippet.resourceId.videoId,
             index: index
@@ -127,15 +127,15 @@ class LoadYouTubePlaylistClientStrategy extends interfaces.ClientLoadStrategy {
           onStateChange: (e) => {
             debug('state', e.data);
             if (!this.config.playThroughPlaylist && e.data == YT.PlayerState.ENDED) {
-              // Restart the video. The loop=1 parameter should cause this to 
-              // happen automatically when playing a single video, but it 
+              // Restart the video. The loop=1 parameter should cause this to
+              // happen automatically when playing a single video, but it
               // doesn't work!
               player.seekTo(0);
             }
           }
         },
       });
-      
+
       let video = player.getIframe();
       if (this.config.sync) {
         video.draw = (time, delta) => {
@@ -144,19 +144,19 @@ class LoadYouTubePlaylistClientStrategy extends interfaces.ClientLoadStrategy {
           if (delta <= 0 || !player.getDuration) {
             return;
           }
-          
+
           let duration = player.getDuration() * 1000.0;
-          
-          // We want the videos to be sync'd to some ideal clock. We use the 
+
+          // We want the videos to be sync'd to some ideal clock. We use the
           // server's clock, as guessed by the client.
           let correctTime = ((time - this.startTime) % duration + duration) % duration;
-          
+
           // The video is currently here:
           let actualTime = player.getCurrentTime() * 1000.0;
-        
+
           // If these times are off by a lot, we should seek to the right time.
           // We can't always seek, because the HTML5 video spec doesn't specify
-          // the granuality of seeking, and browsers round by as much as 250ms 
+          // the granuality of seeking, and browsers round by as much as 250ms
           // in practice!
           if (Math.abs(actualTime - correctTime) > 3000) {
             video.lastSeekTime = video.lastSeekTime || time;
@@ -168,10 +168,10 @@ class LoadYouTubePlaylistClientStrategy extends interfaces.ClientLoadStrategy {
             }
           } else {
             // The time difference is too small to rely on seeking, so let's
-            // adjust the playback speed of the video in order to gradually 
+            // adjust the playback speed of the video in order to gradually
             // sync the videos.
             let msOff = correctTime - actualTime;
-            
+
             let rate = msOff >= 33 ? 2.0 : msOff <= -33 ? 0.5 : 1.0;
             player.setPlaybackRate(rate);
           }

@@ -1,6 +1,7 @@
 {
   "name": "gears",
-  "path": "./gears.js",
+  "client_path": "./gears_client.js",
+  "server_path": "./gears_server.js",
   "title": "Gears",
   "author": "Matt Handley"
 }

@@ -1,0 +1,94 @@
+/* Copyright 2018 Google Inc. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
+/**
+ * Displays images and videos on the wall in an interesting pattern. There are
+ * many potential sources for content, and we use a strategy specified in the
+ * config file to choose how to load them. There are also a variety of ways for
+ * content to be displayed: we choose one for the entire duration of the module,
+ * again specified in the config.
+ *
+ * This module unifies the various video- and image-playing modules we had at
+ * the time this module was created.
+ */
+
+const register = require('register');
+const ModuleInterface = require('lib/module_interface');
+const wallGeometry = require('wallGeometry');
+const debug = require('debug');
+const network = require('network');
+
+const LoadFromDriveStrategy = require('./load_from_drive');
+const LoadFromYouTubePlaylistStrategy = require('./load_from_youtube');
+const LoadLocalStrategy = require('./load_local');
+const LoadFromFlickrStrategy = require('./load_from_flickr');
+
+const FullscreenDisplayStrategy = require('./fullscreen_display');
+const FallingDisplayStrategy = require('./falling_display');
+
+// DISPATCH TABLES
+// These methods convert a load or display config to specific server or client
+// strategies. New strategies should be added to these methods.
+let parseClientLoadStrategy = (loadConfig) => {
+  if (loadConfig.drive) {
+    return new LoadFromDriveStrategy.Client(loadConfig.drive);
+  } else if (loadConfig.youtube) {
+    return new LoadFromYouTubePlaylistStrategy.Client(loadConfig.youtube);
+  } else if (loadConfig.local) {
+    return new LoadLocalStrategy.Client(loadConfig.local);
+  } else if (loadConfig.flickr) {
+    return new LoadFromFlickrStrategy.Client(loadConfig.flickr);
+  }
+  throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
+};
+
+let parseClientDisplayStrategy = (displayConfig) => {
+  if (displayConfig.fullscreen) {
+    return new FullscreenDisplayStrategy.Client(displayConfig.fullscreen);
+  } else if (displayConfig.falling) {
+    return new FallingDisplayStrategy.Client(displayConfig.falling);
+  }
+  throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
+};
+
+class ImageClient extends ModuleInterface.Client {
+  willBeShownSoon(container, deadline) {
+    const Surface = require('client/surface/surface');
+    this.surface = new Surface(container, wallGeometry);
+    return new Promise((resolve, reject) => {
+      debug('Waiting for network init...');
+      network.emit('req_init');
+      network.once('init', config => {
+        this.loadStrategy = parseClientLoadStrategy(config.load);
+        this.displayStrategy = parseClientDisplayStrategy(config.display);
+        this.loadStrategy.init(this.surface, deadline);
+        this.displayStrategy.init(this.surface, this.loadStrategy);
+        resolve();
+      });
+    });
+  }
+  finishFadeOut() {
+    if (this.surface) {
+      this.surface.destroy();
+    }
+  }
+  draw(time, delta) {
+    if (this.displayStrategy) {
+      this.displayStrategy.draw(time, delta);
+    }
+  }
+}
+
+register(null, ImageClient);

@@ -1,6 +1,7 @@
 {
   "name": "life",
-  "path": "./p5_game_of_life.js",
+  "client_path": "./p5_game_of_life_client.js",
+  "server_path": "./p5_game_of_life_server.js",
   "title": "The Game of Life",
   "author": "Jason Gessner"
 }
