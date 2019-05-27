@@ -24,95 +24,92 @@ limitations under the License.
  * the time this module was created.
  */
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const debug = require('debug');
-const network = require('network');
+import LoadFromDriveStrategy from './load_from_drive.js';
+import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
+import LoadLocalStrategy from './load_local.js';
+import LoadFromFlickrStrategy from './load_from_flickr.js';
+import FullscreenDisplayStrategy from './fullscreen_display.js';
+import FallingDisplayStrategy from './falling_display.js';
 
-const LoadFromDriveStrategy = require('./load_from_drive');
-const LoadFromYouTubePlaylistStrategy = require('./load_from_youtube');
-const LoadLocalStrategy = require('./load_local');
-const LoadFromFlickrStrategy = require('./load_from_flickr');
+import fetch from 'node-fetch';
+import _ from 'underscore';
 
-const FullscreenDisplayStrategy = require('./fullscreen_display');
-const FallingDisplayStrategy = require('./falling_display');
+export function load(debug, network, assert, wallGeometry) {
+  // DISPATCH TABLES
+  // These methods convert a load or display config to specific server or client
+  // strategies. New strategies should be added to these methods.
+  let parseServerLoadStrategy = (loadConfig) => {
+    if (loadConfig.drive) {
+      return new (LoadFromDriveStrategy({debug, assert}).Server)(loadConfig.drive);
+    } else if (loadConfig.youtube) {
+      return new (LoadFromYouTubePlaylistStrategy({debug, assert}).Server)(loadConfig.youtube);
+    } else if (loadConfig.local) {
+      return new (LoadLocalStrategy({debug, assert}).Server)(loadConfig.local);
+    } else if (loadConfig.flickr) {
+      return new (LoadFromFlickrStrategy({debug, assert, fetch}).Server)(loadConfig.flickr);
+    }
 
-// DISPATCH TABLES
-// These methods convert a load or display config to specific server or client
-// strategies. New strategies should be added to these methods.
-let parseServerLoadStrategy = (loadConfig) => {
-  if (loadConfig.drive) {
-    return new LoadFromDriveStrategy.Server(loadConfig.drive);
-  } else if (loadConfig.youtube) {
-    return new LoadFromYouTubePlaylistStrategy.Server(loadConfig.youtube);
-  } else if (loadConfig.local) {
-    return new LoadLocalStrategy.Server(loadConfig.local);
-  } else if (loadConfig.flickr) {
-    return new LoadFromFlickrStrategy.Server(loadConfig.flickr);
-  }
+    throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
+  };
 
-  throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
-};
+  let parseServerDisplayStrategy = (displayConfig) => {
+    if (displayConfig.fullscreen) {
+      return new (FullscreenDisplayStrategy({_, debug, assert, wallGeometry, network}).Server)(displayConfig.fullscreen);
+    } else if (displayConfig.falling) {
+      return new (FallingDisplayStrategy({_, debug, assert, wallGeometry, network}).Server)(displayConfig.falling);
+    }
+    throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
+  };
 
-let parseServerDisplayStrategy = (displayConfig) => {
-  if (displayConfig.fullscreen) {
-    return new FullscreenDisplayStrategy.Server(displayConfig.fullscreen);
-  } else if (displayConfig.falling) {
-    return new FallingDisplayStrategy.Server(displayConfig.falling);
-  }
-  throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
-};
+  // MODULE DEFINTIONS
+  class ImageServer {
+    constructor(config) {
+      // The load strategy for this run of the module.
+      this.loadStrategy = parseServerLoadStrategy(config.load);
 
-// MODULE DEFINTIONS
-class ImageServer extends ModuleInterface.Server {
-  constructor(config) {
-    super();
+      // The display strategy for this run of the module.
+      this.displayStrategy = parseServerDisplayStrategy(config.display);
+    }
+    willBeShownSoon(deadline) {
+      // Start the load strategy initing.
+      let loadingComplete = Promise.all([
+        this.displayStrategy.init(),
+        this.loadStrategy.init().then(() => {
+          let fetchContent = (opt_paginationToken) => {
+            this.loadStrategy.loadMoreContent(opt_paginationToken).then((result) => {
+              this.displayStrategy.newContent(result.content);
 
-    // The load strategy for this run of the module.
-    this.loadStrategy = parseServerLoadStrategy(config.load);
-
-    // The display strategy for this run of the module.
-    this.displayStrategy = parseServerDisplayStrategy(config.display);
-  }
-  willBeShownSoon(deadline) {
-    // Start the load strategy initing.
-    let loadingComplete = Promise.all([
-      this.displayStrategy.init(),
-      this.loadStrategy.init().then(() => {
-        let fetchContent = (opt_paginationToken) => {
-          this.loadStrategy.loadMoreContent(opt_paginationToken).then((result) => {
-            this.displayStrategy.newContent(result.content);
-
-            if (result.hasMoreContent) {
-              fetchContent(result.paginationToken);
-            }
-          });
-        };
-        fetchContent();
-      })
-    ]);
-    network.on('connection', (socket) => {
-      let initHandler = () => socket.emit('init', {
-        load: this.loadStrategy.serializeForClient(),
-        display: this.displayStrategy.serializeForClient()
+              if (result.hasMoreContent) {
+                fetchContent(result.paginationToken);
+              }
+            });
+          };
+          fetchContent();
+        })
+      ]);
+      network.on('connection', (socket) => {
+        let initHandler = () => socket.emit('init', {
+          load: this.loadStrategy.serializeForClient(),
+          display: this.displayStrategy.serializeForClient()
+        });
+        // Depending on when the client loads and we load, the client might send
+        // the req_init before we are listening for it, or we might finish loading
+        // and send our init event before the client is listening for it!
+        // To fix this, we listen for a one-time event from the client, req_init,
+        // which will cause us to send the init event. Then, we might send 1 or 2
+        // init messages, and we leave it up to the client to not process it
+        // twice.
+        loadingComplete.then(initHandler);
+        // If we get a note from the client that requests init, we don't want to
+        // reply until we've inited.
+        socket.once('req_init', () => loadingComplete.then(initHandler));
       });
-      // Depending on when the client loads and we load, the client might send
-      // the req_init before we are listening for it, or we might finish loading
-      // and send our init event before the client is listening for it!
-      // To fix this, we listen for a one-time event from the client, req_init,
-      // which will cause us to send the init event. Then, we might send 1 or 2
-      // init messages, and we leave it up to the client to not process it
-      // twice.
-      loadingComplete.then(initHandler);
-      // If we get a note from the client that requests init, we don't want to
-      // reply until we've inited.
-      socket.once('req_init', () => loadingComplete.then(initHandler));
-    });
-    return loadingComplete;
+      return loadingComplete;
+    }
+    tick(time, delta) {
+      this.displayStrategy.tick(time, delta);
+    }
   }
-  tick(time, delta) {
-    this.displayStrategy.tick(time, delta);
-  }
-}
 
-register(ImageServer, null);
+  return {server: ImageServer};
+}

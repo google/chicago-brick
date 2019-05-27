@@ -13,85 +13,79 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
+import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
 
-const network = require('network');
-const wallGeometry = require('wallGeometry');
-
-const {GOOGLE_COLORS, BALL_RADIUS} = require('./constants');
-
-class BallsClient extends ModuleInterface.Client {
-  constructor(config) {
-    super();
-    // We keep track of X data points.
-    // Each data point is of the form (time, balls).
-    // We lerp between the times to figure out what we are doing.
-    this.balls = [];
-    var client = this;
-    network.on('balls', function handleBalls(balls) {
-      var t = balls.time;
-      // Lie about when the balls came in so that the draw method, which is
-      // running at 'now' can find any data.
-      client.balls.push({time: t + 200, balls: balls.balls});
-      // Trash data older than a second.
-      while (client.balls[0].time < t - 1000) {
-        client.balls.shift();
-      }
-    });
-  }
-
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+export function load(network, wallGeometry, CanvasSurface) {
+  class BallsClient {
+    constructor(config) {
+      // We keep track of X data points.
+      // Each data point is of the form (time, balls).
+      // We lerp between the times to figure out what we are doing.
+      this.balls = [];
+      var client = this;
+      network.on('balls', function handleBalls(balls) {
+        var t = balls.time;
+        // Lie about when the balls came in so that the draw method, which is
+        // running at 'now' can find any data.
+        client.balls.push({time: t + 200, balls: balls.balls});
+        // Trash data older than a second.
+        while (client.balls[0].time < t - 1000) {
+          client.balls.shift();
+        }
+      });
     }
-  }
 
-  willBeShownSoon(container, deadline) {
-    const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
-    this.canvas = this.surface.context;
-    return Promise.resolve();
-  }
-
-  draw(time, delta) {
-    this.canvas.fillStyle = 'black';
-    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-
-    // TODO(applmak): What are you thinking, Matt?
-    // Find a time point that's roughly 300 ms behind the server.
-    var foundI = -1;
-    for (var i = 0; i < this.balls.length-1; ++i) {
-      if (this.balls[i].time < time && time < this.balls[i+1].time) {
-        foundI = i;
-        break;
+    finishFadeOut() {
+      if (this.surface) {
+        this.surface.destroy();
       }
     }
-    if (foundI == -1) {
-      return;
+
+    willBeShownSoon(container, deadline) {
+      this.surface = new CanvasSurface(container, wallGeometry);
+      this.canvas = this.surface.context;
+      return Promise.resolve();
     }
 
-    // Draw the balls!
-    this.surface.pushOffset();
+    draw(time, delta) {
+      this.canvas.fillStyle = 'black';
+      this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-    var numBalls = this.balls[0].balls.length;
-    for (var b = 0; b < numBalls; ++b) {
-      var prevBall = this.balls[foundI].balls[b];
-      var nextBall = this.balls[foundI+1].balls[b];
-      var alpha = (time - this.balls[foundI].time) / (this.balls[foundI+1].time - this.balls[foundI].time);
-      var ballPosition = {
-        x: nextBall.x * alpha + prevBall.x * (1 - alpha),
-        y: nextBall.y * alpha + prevBall.y * (1 - alpha)
-      };
-      this.canvas.fillStyle = GOOGLE_COLORS[prevBall.color];
-      this.canvas.beginPath();
-      this.canvas.arc(ballPosition.x, ballPosition.y, BALL_RADIUS, 0, 2*Math.PI);
-      this.canvas.closePath();
-      this.canvas.fill();
+      // TODO(applmak): What are you thinking, Matt?
+      // Find a time point that's roughly 300 ms behind the server.
+      var foundI = -1;
+      for (var i = 0; i < this.balls.length-1; ++i) {
+        if (this.balls[i].time < time && time < this.balls[i+1].time) {
+          foundI = i;
+          break;
+        }
+      }
+      if (foundI == -1) {
+        return;
+      }
+
+      // Draw the balls!
+      this.surface.pushOffset();
+
+      var numBalls = this.balls[0].balls.length;
+      for (var b = 0; b < numBalls; ++b) {
+        var prevBall = this.balls[foundI].balls[b];
+        var nextBall = this.balls[foundI+1].balls[b];
+        var alpha = (time - this.balls[foundI].time) / (this.balls[foundI+1].time - this.balls[foundI].time);
+        var ballPosition = {
+          x: nextBall.x * alpha + prevBall.x * (1 - alpha),
+          y: nextBall.y * alpha + prevBall.y * (1 - alpha)
+        };
+        this.canvas.fillStyle = GOOGLE_COLORS[prevBall.color];
+        this.canvas.beginPath();
+        this.canvas.arc(ballPosition.x, ballPosition.y, BALL_RADIUS, 0, 2*Math.PI);
+        this.canvas.closePath();
+        this.canvas.fill();
+      }
+
+      this.surface.popOffset();
     }
-
-    this.surface.popOffset();
   }
+
+  return {client: BallsClient};
 }
-
-register(null, BallsClient);

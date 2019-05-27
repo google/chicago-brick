@@ -28,7 +28,7 @@ const library = require('server/modules/module_library');
  */
 function create(flags) {
   // Force absolute paths.
-  // This allows us to execute chicago-brick as a dep from another repo while 
+  // This allows us to execute chicago-brick as a dep from another repo while
   // still finding the necessary dirs. However, this trick forces webapp.js to
   // always exist at /server/webapp.js. This will likely be true for a long
   // time, though. If the file moves, we just need to provide the relative path
@@ -40,7 +40,7 @@ function create(flags) {
 
   debug('webapp base dir is ' + base);
   debug('node_modules_dir is ' + flags.node_modules_dir);
-  
+
   // Sub-app showing the status page.
   var status = express();
   status.use('/', express.static('client/status'));
@@ -54,47 +54,6 @@ function create(flags) {
   for (let assets_dir of flags.assets_dir) {
     app.use('/asset', express.static(assets_dir));
   }
-  // Also, serve the modules on /modules
-  let moduleHandler = (function() {
-    // As we want to wrap the static-serve middleware response, and it's
-    // designed to not let you do that, really, we create a fake res object
-    // that can capture what the middleware would have written.
-    let write = null, end = null;
-    
-    return (req, res, next) => {
-      write = res.write;
-      end = res.end;
-
-      // Disable caching of module code.
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-      res.setHeader('Pragma', 'no-cache');
-      res.setHeader('Expires', '0');
-    
-      res.write = function() {
-        // Remove the length header.
-        res.removeHeader('Content-Length');
-    
-        // After headers, but before the real content, add the wrapping marker.
-        write.call(res, 'define(function(require, exports, module) {\n');
-        write.apply(res, Array.from(arguments));
-        // Restore original write function, so subsequent writes work just fine.
-        res.write = write;
-      };
-      res.end = function() {
-        let args = Array.from(arguments);
-        if (args.length) {
-          // Stuff to send... use normal write to send it.
-          write.apply(res, args);
-        } else {
-          write.call(res, '});\n');
-        }
-        end.call(res);
-        res.end = end;
-      };
-
-      next();
-    };
-  })();
 
   /**
    * A map from path to static file handlers for module-relative imports.
@@ -113,7 +72,7 @@ function create(flags) {
     }
   }
 
-  app.use('/module/:name', moduleHandler, function(req, res, next){
+  app.use('/module/:name', function(req, res, next){
     const module = library.modules[req.params.name];
     if (!module) {
       debug(`No module found by name: ${req.params.name}`);
@@ -124,6 +83,11 @@ function create(flags) {
       debug(`No static file handler for module root: ${module.root}`);
       return res.sendStatus(404);
     }
+    // Disable caching of module code.
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     return handler(req, res, next);
   });
 

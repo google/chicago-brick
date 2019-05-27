@@ -13,108 +13,102 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
-const debug = require('debug');
+export function load(wallGeometry, debug, P5Surface) {
+  // p5 must be a P5.js instance.
+  class CosinesSketch {
+    constructor(p5, surface) {
+      this.p5 = p5;
+      this.surface = surface;
 
-// p5 must be a P5.js instance.
-class CosinesSketch {
-  constructor(p5, surface) {
-    this.p5 = p5;
-    this.surface = surface;
+      this.width = 67*4;
+      this.height = 45*2;
+    }
 
-    this.width = 67*4;
-    this.height = 45*2;
-  }
+    setup() {
+      const p5 = this.p5;
+      p5.rectMode(p5.CENTER);
+      p5.fill(0);
+    }
 
-  setup() {
-    const p5 = this.p5;
-    p5.rectMode(p5.CENTER);
-    p5.fill(0);
-  }
+    scaledCos(x) {
+      return this.p5.cos(x);
+    }
 
-  scaledCos(x) {
-    return this.p5.cos(x);
-  }
+    draw(t) {
+      const p5 = this.p5;
 
-  draw(t) {
-    const p5 = this.p5;
+      p5.background(0);
 
-    p5.background(0);
+      const xspace = p5.wallWidth / this.width;
+      const yspace = p5.wallHeight / this.height;
+      const space = Math.min(xspace, yspace);
 
-    const xspace = p5.wallWidth / this.width;
-    const yspace = p5.wallHeight / this.height;
-    const space = Math.min(xspace, yspace);
+      for (var y = 0; y < this.height; ++y) {
+        const yp = 360 * y / this.height;
+        const yloc = yspace * 0.5 + yspace * y + yspace * 0.44 * this.scaledCos(p5.radians(t * 0.0391 + (4.65 * yp)));
 
-    for (var y = 0; y < this.height; ++y) {
-      const yp = 360 * y / this.height;
-      const yloc = yspace * 0.5 + yspace * y + yspace * 0.44 * this.scaledCos(p5.radians(t * 0.0391 + (4.65 * yp)));
+        if (yloc + space * 1 < this.surface.virtualRect.y) continue;
+        if (yloc - space * 1 > this.surface.virtualRect.y + this.surface.virtualRect.h) continue;
 
-      if (yloc + space * 1 < this.surface.virtualRect.y) continue;
-      if (yloc - space * 1 > this.surface.virtualRect.y + this.surface.virtualRect.h) continue;
+        for (var x = 0; x < this.width; ++x) {
+          const xp = 360 * x / this.width;
+          const xloc = xspace * 0.5 + xspace * x + xspace * 0.44 * this.scaledCos(p5.radians(t * 0.0381 + (4.55 * xp)))
 
-      for (var x = 0; x < this.width; ++x) {
-        const xp = 360 * x / this.width;
-        const xloc = xspace * 0.5 + xspace * x + xspace * 0.44 * this.scaledCos(p5.radians(t * 0.0381 + (4.55 * xp)))
+          if (xloc + space * 1 < this.surface.virtualRect.x) continue;
+          if (xloc - space * 1 > this.surface.virtualRect.x + this.surface.virtualRect.w) continue;
 
-        if (xloc + space * 1 < this.surface.virtualRect.x) continue;
-        if (xloc - space * 1 > this.surface.virtualRect.x + this.surface.virtualRect.w) continue;
+          var size =
+            0.5 + 0.5 *
+            this.scaledCos(p5.radians((3.5 * xp))) *
+            this.scaledCos(p5.radians((2.7 * yp))) *
+            this.scaledCos(p5.radians(t * 0.027));
 
-        var size =
-          0.5 + 0.5 *
-          this.scaledCos(p5.radians((3.5 * xp))) *
-          this.scaledCos(p5.radians((2.7 * yp))) *
-          this.scaledCos(p5.radians(t * 0.027));
+          const xf = Math.abs(((this.width / 2) - x) / this.width);
+          const yf = Math.abs(((this.height / 2) - y) / this.height);
+          const p = Math.sqrt(xf*xf+yf*yf);
 
-        const xf = Math.abs(((this.width / 2) - x) / this.width);
-        const yf = Math.abs(((this.height / 2) - y) / this.height);
-        const p = Math.sqrt(xf*xf+yf*yf);
+          p5.fill(
+            p5.color(
+              255*Math.max(
+                this.scaledCos(p5.radians(t * 0.032 + (2.09 * xp))),
+                this.scaledCos(p5.radians(-t * 0.03 + (3.11 * xp)))),
+              255*Math.max(
+                this.scaledCos(p5.radians(t * 0.042 + (2.17 * yp))),
+                this.scaledCos(p5.radians(-t * 0.04 + (3.64 * yp)))),
+              255*Math.max(
+                this.scaledCos(p5.radians(t * -0.0132 + 2.0 * 360.0 * p)),
+                this.scaledCos(p5.radians(-t * -0.013 + 3.0 * 360.0 * p)))
+              ));
 
-        p5.fill(
-          p5.color(
-            255*Math.max(
-              this.scaledCos(p5.radians(t * 0.032 + (2.09 * xp))),
-              this.scaledCos(p5.radians(-t * 0.03 + (3.11 * xp)))),
-            255*Math.max(
-              this.scaledCos(p5.radians(t * 0.042 + (2.17 * yp))),
-              this.scaledCos(p5.radians(-t * 0.04 + (3.64 * yp)))),
-            255*Math.max(
-              this.scaledCos(p5.radians(t * -0.0132 + 2.0 * 360.0 * p)),
-              this.scaledCos(p5.radians(-t * -0.013 + 3.0 * 360.0 * p)))
-            ));
-
-        p5.ellipse(
-          xloc,
-          yloc,
-          space * size,
-          space * size);
+          p5.ellipse(
+            xloc,
+            yloc,
+            space * size,
+            space * size);
+        }
       }
     }
   }
-}
 
-class CosinesClient extends ModuleInterface.Client {
-  constructor(config) {
-    super();
-    this.surface = null;
-  }
+  class CosinesClient {
+    constructor(config) {
+      this.surface = null;
+    }
 
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+    finishFadeOut() {
+      if (this.surface) {
+        this.surface.destroy();
+      }
+    }
+
+    willBeShownSoon(container, deadline) {
+      this.surface = new P5Surface(container, wallGeometry, CosinesSketch, deadline);
+      return Promise.resolve();
+    }
+
+    draw(time, delta) {
+      this.surface.p5.draw(time);
     }
   }
-
-  willBeShownSoon(container, deadline) {
-    const P5Surface = require('client/surface/p5_surface');
-    this.surface = new P5Surface(container, wallGeometry, CosinesSketch, deadline);
-    return Promise.resolve();
-  }
-
-  draw(time, delta) {
-    this.surface.p5.draw(time);
-  }
+  return {client: CosinesClient};
 }
-
-register(ModuleInterface.Server, CosinesClient);

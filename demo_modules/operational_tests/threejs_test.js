@@ -13,38 +13,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
+import * as Three from '/sys/three-full/builds/Three.es.js';
 
-class ThreeJsTestClient extends ModuleInterface.Client {
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+export function load(wallGeometry, ThreeJsSurface) {
+  class ThreeJsTestClient {
+    finishFadeOut() {
+      if (this.surface) {
+        this.surface.destroy();
+      }
+    }
+
+    async willBeShownSoon(container, deadline) {
+      this.startTime = deadline;
+      this.surface = new ThreeJsSurface(container, wallGeometry);
+
+      var geometry = new Three.BoxGeometry(3, 3, 3);
+      var material = new Three.MeshBasicMaterial({ color: 0x00ff00 });
+      this.cube = new Three.Mesh(geometry, material);
+      this.surface.scene.add(this.cube);
+
+      this.surface.camera.position.set(0, 0, 5);
+      this.surface.camera.updateProjectionMatrix();
+    }
+
+    draw(time, delta) {
+      this.cube.rotation.x = time / 1000;
+      this.cube.rotation.y = time * 1.1 / 1000;
+      this.surface.render();
     }
   }
 
-  willBeShownSoon(container, deadline) {
-    const Three = require('three-full');
-    this.startTime = deadline;
-    const ThreeJsSurface = require('client/surface/threejs_surface');
-    this.surface = new ThreeJsSurface(container, wallGeometry);
-
-    var geometry = new Three.BoxGeometry(3, 3, 3);
-    var material = new Three.MeshBasicMaterial({ color: 0x00ff00 });
-    this.cube = new Three.Mesh(geometry, material);
-    this.surface.scene.add(this.cube);
-
-    this.surface.camera.position.set(0, 0, 5);
-    this.surface.camera.updateProjectionMatrix();
-    return Promise.resolve();
-  }
-
-  draw(time, delta) {
-    this.cube.rotation.x = time / 1000;
-    this.cube.rotation.y = time * 1.1 / 1000;
-    this.surface.render();
-  }
+  return {client: ThreeJsTestClient};
 }
-
-register(ModuleInterface.Server, ThreeJsTestClient);

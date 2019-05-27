@@ -7,6 +7,4 @@ function hexToRgb(hex) {
   } : null;
 }
 
-const GOOGLE_COLORS = ['#3369e8', '#d50f25', '#eeb211', '#009925', '#FFFFFF'].map(hexToRgb);
-
-module.exports = {GOOGLE_COLORS};
+export const GOOGLE_COLORS = ['#3369e8', '#d50f25', '#eeb211', '#009925', '#FFFFFF'].map(hexToRgb);

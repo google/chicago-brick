@@ -22,30 +22,30 @@ const path = require('path');
 const assert = require('lib/assert');
 const debug = require('debug')('wall:module_def');
 const debugFactory = require('debug');
-const fakeRequire = require('server/fake_require');
+const conform = require('lib/conform');
+const inject = require('lib/inject');
 const module_interface = require('lib/module_interface');
-const safeEval = require('lib/eval');
 const util = require('util');
 const wallGeometry = require('server/util/wall_geometry');
 const geometry = require('lib/geometry');
+const Rectangle = require('lib/rectangle');
 
-const read = (path) => {
-  return new Promise(function(resolve, reject) {
-    fs.readFile(path, 'utf-8', function(err, content) {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(content);
-      }
-    });
-  });
-};
+const importCache = {};
+async function importIntoCache(moduleRoot, modulePath) {
+  const fullPath = path.join(process.cwd(), moduleRoot, modulePath);
+  const {load} = await import(fullPath);
+  importCache[fullPath] = load;
+  return load;
+}
 
-const evalModule = (contents, name, moduleRoot, layoutGeometry, network, game, state) => {
-  let classes = {};
+function extractFromImport(name, moduleRoot, modulePath, layoutGeometry, network, game, state) {
+  const fullPath = path.join(process.cwd(), moduleRoot, modulePath);
+  // TODO(applmak): When https://github.com/nodejs/node/issues/27492 is fixed,
+  // rm the cache, and just import here.
+  const load = importCache[fullPath];
 
   // Inject our deps into node's require environment.
-  let fakeRequireInstance = fakeRequire.createEnvironment({
+  const fakeEnv = {
     network,
     game,
     state,
@@ -57,48 +57,14 @@ const evalModule = (contents, name, moduleRoot, layoutGeometry, network, game, s
     })),
     debug: debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
-
-    // The main registration function.
-    register: function(server, client) {
-      classes.server = server;
-      classes.client = client;
-    },
-  }, moduleRoot);
-
-  let sandbox = {
-    require: fakeRequireInstance,
-    serverRequire: fakeRequireInstance
+    Rectangle,
+    geometry,
+    assert,
   };
 
-  try {
-    // Use safeEval to actually run the script so that Node doesn't leak
-    // anything: https://github.com/nodejs/node/issues/3113
-    // TODO(applmak): Convert this to just a require of this file.
-    safeEval(contents, sandbox);
-
-  } finally {
-    // Clean up our mess.
-    fakeRequireInstance.destroy();
-  }
-
-  return classes;
-};
-
-const verify = (name, contents, moduleRoot) => {
-  // Eval using fake globals.
-  const classes = evalModule(contents, name, moduleRoot, wallGeometry.getGeo(), {}, {}, {});
-
-  if (!classes.server) {
-    debug('Module did not register a server-side module!');
-    return false;
-  }
-  if (!(classes.server == module_interface.Server ||
-        classes.server.prototype instanceof module_interface.Server)) {
-    debug('Module\'s server-side module did not implement module_interface.Server!');
-    return false;
-  }
-
-  return true;
+  const {server} = inject(load, fakeEnv);
+  conform(server, module_interface.Server);
+  return {server};
 };
 
 /**
@@ -150,7 +116,7 @@ class ModuleDef extends EventEmitter {
       // TODO(applmak): ^ this hacky.
       this.clientPath = pathsOrBaseModule.client;
       this.serverPath = pathsOrBaseModule.server;
-      this.checkValidity_();
+      this.whenLoadedPromise = this.checkValidity_();
     }
   }
 
@@ -178,53 +144,17 @@ class ModuleDef extends EventEmitter {
   }
 
   // Loads a module from disk asynchronously, assigning def when complete.
-  checkValidity_() {
-    const fullPath = path.join(this.root, this.serverPath);
-    let loadModule = () => {
-      let rewatch = () => {
-        // Watch for future changes.
-        debug('Watching', fullPath);
-        let watch = fs.watch(fullPath, {persistent: true}, event => {
-          debug('Module changed! Reloading', fullPath);
-          watch.close();
-          loadModule();
-          // When the load is finished, tell listeners that we reloaded.
-          this.whenLoadedPromise.then(() => this.emit('reloaded'));
-        });
-      };
-
-      this.whenLoadedPromise = read(fullPath).then(contents => {
-        debug('Read ' + fullPath);
-        // Prepend a directive to make sure the module runs in strict mode.
-        // Append a directive that tells Chrome and Node that the client script
-        // is, in fact, a file. This makes debugging these far simpler.
-        contents = `"use strict";${contents}\n//# sourceURL=${fullPath}\n`;
-
-        // Start rewatcher, regardless of status.
-        rewatch();
-
-        if (verify(this.name, contents, this.root)) {
-          debug('Verified ' + fullPath);
-          this.valid = true;
-          this.def = contents;
-        } else {
-          debug('Failed verification at ' + fullPath);
-          throw new Error('Script at "' + fullPath + '" is not verifiable!');
-        }
-      }, e => {
-        debug(fullPath + ' not found!');
-
-        // Intentionally do not restart watcher.
-        // Allow users to note that this module failed to load correctly.
-        throw e;
-      }).catch(e => {
-        this.valid = false;
-        debug(e);
-        throw e;
-      });
-    };
-
-    loadModule();
+  async checkValidity_() {
+    this.valid = false;
+    assert(this.clientPath, `No client_path found in '${this.name}'`);
+    if (this.serverPath) {
+      await importIntoCache(this.root, this.serverPath);
+      extractFromImport(this.name, this.root, this.serverPath, wallGeometry.getGeo(), {}, {}, {});
+      debug('Verified ' + path.join(this.root,this.serverPath));
+    } else {
+      debug('No server path specified. Using default server module.');
+    }
+    this.valid = true;
   }
 
   // Instantiates this server-side version of this module, with any additional
@@ -237,15 +167,19 @@ class ModuleDef extends EventEmitter {
   instantiate(layoutGeometry, network, game, state, deadline) {
     // Only instantiate valid modules.
     assert(this.valid, 'Attempt to instantiate invalid module!');
-    let classes = evalModule(this.def, this.name, this.root, layoutGeometry, network, game, state);
-    return new classes.server(this.config, deadline);
+    if (this.serverPath) {
+      const {server} = extractFromImport(this.name, this.root, this.serverPath, layoutGeometry, network, game, state);
+      return new server(this.config, deadline);
+    } else {
+      return new module_interface.Server;
+    }
   }
 
   // Returns a JSON-serializable form of this for transmission to the client.
   serializeForClient() {
     return {
       name: this.name,
-      path: this.clientPath,
+      path: path.join('/module/', this.name, this.clientPath),
       config: this.config,
       title: this.title,
       author: this.author,

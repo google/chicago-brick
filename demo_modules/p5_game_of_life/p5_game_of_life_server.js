@@ -13,89 +13,85 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const network = require('network');
-const debug = require('debug');
+import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
 
-const {NUM_ROWS, NUM_COLUMNS} = require('./constants');
+export function load(network, debug) {
+  class P5GameOfLifeServer  {
+    constructor(config) {
+      debug('P5GameOfLife Server!', config);
 
-class P5GameOfLifeServer extends ModuleInterface.Server {
-  constructor(config) {
-    super();
-    debug('P5GameOfLife Server!', config);
+      this.numTicks = 0;
+      this.numTicksBetweenIterations = 2;
 
-    this.numTicks = 0;
-    this.numTicksBetweenIterations = 2;
-
-    this.gameBoard = new Array(NUM_COLUMNS);
-    this.tmpBoard = new Array(NUM_COLUMNS);
-    for (var i = 0; i < NUM_COLUMNS; i++) {
-      this.gameBoard[i] = new Array(NUM_ROWS);
-      this.tmpBoard[i] = new Array(NUM_ROWS);
-    }
-    for (i = 0; i < NUM_COLUMNS; i++) {
-      for (var j = 0; j < NUM_ROWS; j++) {
-        // Lining the edges with 0s
-        if (i === 0 || j === 0 || i == NUM_COLUMNS-1 || j == NUM_ROWS-1) {
-          this.gameBoard[i][j] = 0;
-        } else {
-          // Filling the rest randomly
-          this.gameBoard[i][j] = Math.round(Math.random());
+      this.gameBoard = new Array(NUM_COLUMNS);
+      this.tmpBoard = new Array(NUM_COLUMNS);
+      for (var i = 0; i < NUM_COLUMNS; i++) {
+        this.gameBoard[i] = new Array(NUM_ROWS);
+        this.tmpBoard[i] = new Array(NUM_ROWS);
+      }
+      for (i = 0; i < NUM_COLUMNS; i++) {
+        for (var j = 0; j < NUM_ROWS; j++) {
+          // Lining the edges with 0s
+          if (i === 0 || j === 0 || i == NUM_COLUMNS-1 || j == NUM_ROWS-1) {
+            this.gameBoard[i][j] = 0;
+          } else {
+            // Filling the rest randomly
+            this.gameBoard[i][j] = Math.round(Math.random());
+          }
+          this.tmpBoard[i][j] = 0;
         }
-        this.tmpBoard[i][j] = 0;
       }
     }
-  }
 
-  tick(time, delta) {
-    this.numTicks++;
+    tick(time, delta) {
+      this.numTicks++;
 
-    if (this.numTicks % this.numTicksBetweenIterations !== 0) {
-      return;
-    }
+      if (this.numTicks % this.numTicksBetweenIterations !== 0) {
+        return;
+      }
 
-    // Update the board and emit it.
-    // Loop through every spot in our 2D array and check spots neighbors
-    for (var x = 1; x < NUM_COLUMNS - 1; x++) {
-      for (var y = 1; y < NUM_ROWS - 1; y++) {
-        // Add up all the states in a 3x3 surrounding grid
-        var neighbors = 0;
-        for (var i = -1; i <= 1; i++) {
-          for (var j = -1; j <= 1; j++) {
-            neighbors += this.gameBoard[x+i][y+j];
+      // Update the board and emit it.
+      // Loop through every spot in our 2D array and check spots neighbors
+      for (var x = 1; x < NUM_COLUMNS - 1; x++) {
+        for (var y = 1; y < NUM_ROWS - 1; y++) {
+          // Add up all the states in a 3x3 surrounding grid
+          var neighbors = 0;
+          for (var i = -1; i <= 1; i++) {
+            for (var j = -1; j <= 1; j++) {
+              neighbors += this.gameBoard[x+i][y+j];
+            }
+          }
+
+          // A little trick to subtract the current cell's state since
+          // we added it in the above loop
+          neighbors -= this.gameBoard[x][y];
+          // Rules of Life
+          if (this.gameBoard[x][y] == 1 && neighbors <  2) {
+            // Died of loneliness.
+            this.tmpBoard[x][y] = 0;
+          } else if (this.gameBoard[x][y] == 1 && neighbors >  3) {
+            // Died of overpopulation.
+            this.tmpBoard[x][y] = 0;
+          } else if (this.gameBoard[x][y] === 0 && neighbors == 3) {
+            // Reproduction!
+            this.tmpBoard[x][y] = 1;
+          } else {
+            // Stasis.
+            this.tmpBoard[x][y] = this.gameBoard[x][y];
           }
         }
-
-        // A little trick to subtract the current cell's state since
-        // we added it in the above loop
-        neighbors -= this.gameBoard[x][y];
-        // Rules of Life
-        if (this.gameBoard[x][y] == 1 && neighbors <  2) {
-          // Died of loneliness.
-          this.tmpBoard[x][y] = 0;
-        } else if (this.gameBoard[x][y] == 1 && neighbors >  3) {
-          // Died of overpopulation.
-          this.tmpBoard[x][y] = 0;
-        } else if (this.gameBoard[x][y] === 0 && neighbors == 3) {
-          // Reproduction!
-          this.tmpBoard[x][y] = 1;
-        } else {
-          // Stasis.
-          this.tmpBoard[x][y] = this.gameBoard[x][y];
-        }
       }
+
+      // Swap!
+      var temp = this.gameBoard;
+      this.gameBoard = this.tmpBoard;
+      this.tmpBoard = temp;
+
+      network.emit('board', {
+        board : this.gameBoard,
+      });
     }
-
-    // Swap!
-    var temp = this.gameBoard;
-    this.gameBoard = this.tmpBoard;
-    this.tmpBoard = temp;
-
-    network.emit('board', {
-      board : this.gameBoard,
-    });
   }
-}
 
-register(P5GameOfLifeServer, null);
+  return {server: P5GameOfLifeServer};
+}
