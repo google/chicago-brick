@@ -64,16 +64,21 @@ define(function(require) {
 
       p5.setup = function() {
         // Videowall required setup.
-        p5.createCanvas(processing_canvas_width, processing_canvas_height, p5.webgl);
-        p5.scale(xScale, yScale);
+        p5.createCanvas(processing_canvas_width, processing_canvas_height);
+        p5.resetMatrix();
         p5.noLoop();
-        p5.translate(-xOffset, -yOffset);
         p5.randomSeed(randomSeed);
 
         surface.sketch.setup(p5);
       };
 
-      p5.draw = surface.sketch.draw.bind(surface.sketch);
+      p5.draw = (...args) => {
+        p5.push();
+        p5.scale(xScale, yScale);
+        p5.translate(-xOffset, -yOffset);
+        surface.sketch.draw(...args);
+        p5.pop();
+      };
 
       p5.frameRate(60);
     };
