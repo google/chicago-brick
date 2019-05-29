@@ -17,7 +17,7 @@ import '/lib/promise.js';
 import * as monitor from '/client/monitoring/monitor.js';
 import Debug from '/lib/lame_es6/debug.js';
 import {ClientModule} from '/client/modules/module.js';
-import {State, StateMachine} from '/lib/lame_es6/state_machine.js';
+import {State, StateMachine} from '/lib/state_machine.js';
 import {error} from '/client/util/log.js';
 import {now, until} from '/client/util/time.js';
 

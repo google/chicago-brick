@@ -13,19 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-var time = process.hrtime();
+const time = process.hrtime();
 
-exports.now = function() {
+export function now() {
   var timeBits = process.hrtime(time);
   return timeBits[0] * 1000 + timeBits[1] / 1e6;
-};
+}
 
-exports.inFuture = function(msDuration) {
-  return exports.now() + msDuration;
-};
+export function inFuture(msDuration) {
+  return now() + msDuration;
+}
 
-exports.until = function(msDeadline) {
-  var d = msDeadline - exports.now();
+export function until(msDeadline) {
+  var d = msDeadline - now();
   return Math.max(0, d);
-};
+}

@@ -37,9 +37,9 @@ export default function({debug}) {
       this.driveClient = null;
     }
     async init() {
-      const {default: googleapis} = await import('../../server/util/googleapis.js');
+      const {getAuthenticatedClient} = await import('../../server/util/googleapis.js');
       // Get an authenticated API. When init's promise is resolved, we succeeded.
-      const client = await googleapis.getAuthenticatedClient();
+      const client = await getAuthenticatedClient();
       debug('Initialized Drive Client.');
       this.config.credentials = client.credentials;
       this.driveClient = client.googleapis.drive('v2');

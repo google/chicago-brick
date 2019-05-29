@@ -13,10 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
-const {google} = require('googleapis');
-const credentials = require('server/util/credentials');
+import googleapis from 'googleapis';
+import * as credentials from './credentials.js';
+const {google} = googleapis;
 
 const SCOPES = [
   'https://www.googleapis.com/auth/drive.readonly',
@@ -35,7 +34,7 @@ let key = null;
  * and place the resulting key file in this directory as
  * googleserviceaccountkey.json.
  */
-async function getAuthenticatedClient() {
+export async function getAuthenticatedClient() {
   if (!key) {
     key = credentials.get('googleserviceaccountkey');
     if (!key) {
@@ -51,5 +50,3 @@ async function getAuthenticatedClient() {
   });
   return {googleapis: google, credentials: client.credentials};
 }
-
-module.exports = {getAuthenticatedClient};

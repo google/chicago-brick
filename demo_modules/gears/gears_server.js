@@ -2,7 +2,7 @@
 import _ from 'underscore';
 
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
-import {Rectangle} from '../../lib/lame_es6/rectangle.js';
+import {Rectangle} from '../../lib/rectangle.js';
 
 export function load(debug, state, wallGeometry) {
   const HOLE_VARIETIES = ['none', 'rounded', 'circles'];

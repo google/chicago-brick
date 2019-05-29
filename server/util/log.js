@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
 var recentErrors = [];
 var ERROR_BUFFER_SIZE = 100;
 
@@ -30,7 +28,7 @@ var pushError = function(record) {
  * provided by the standard debug module.
  * The returned function can consume strings or Error objects.
  */
-var error = function(debug) {
+export function error(debug) {
   return function(e) {
     debug(e);
     var record = {
@@ -46,14 +44,14 @@ var error = function(debug) {
     }
     pushError(record);
   };
-};
+}
 
 /**
  * Returns an error recording function that wraps a debugger
  * provided by the standard debug module.
  * The returned function consumes records supplied by the client.
  */
-var clientError = function(debug) {
+export function clientError(debug) {
   return function(e) {
     debug(e);
     pushError({
@@ -64,17 +62,11 @@ var clientError = function(debug) {
       namespace: e.namespace,
     });
   };
-};
+}
 
 /**
  * Retrieves a list of recent errors.
  */
-var getRecentErrors = function() {
+export function getRecentErrors() {
   return recentErrors;
-};
-
-module.exports = {
-  error: error,
-  clientError: clientError,
-  getRecentErrors: getRecentErrors,
-};
+}

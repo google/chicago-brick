@@ -13,23 +13,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
+import fs from 'fs';
+import path from 'path';
 
-var fs = require('fs');
-var path = require('path');
-var creds = {};
+const creds = {};
 
-module.exports = {
-  get: (name) => {
-    return creds[name];
-  },
-  // Loads every .json file in the specified dir. Credentials are stored under
-  // the key related to the filename.
-  loadFromDir: (dir) => {
-    // list...
-    fs.readdirSync(dir).filter((p) => p.match(/\.json$/)).forEach((p) => {
-      let cred = JSON.parse(fs.readFileSync(path.join(dir, p)));
-      creds[p.replace('.json', '')] = cred;
-    });
-  }
-};
+export function get(name) {
+  return creds[name];
+}
+
+// Loads every .json file in the specified dir. Credentials are stored under
+// the key related to the filename.
+export function loadFromDir(dir) {
+  // list...
+  fs.readdirSync(dir).filter((p) => p.match(/\.json$/)).forEach((p) => {
+    let cred = JSON.parse(fs.readFileSync(path.join(dir, p)));
+    creds[p.replace('.json', '')] = cred;
+  });
+}

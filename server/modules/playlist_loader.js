@@ -13,17 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
+import Debug from 'debug';
+import RJSON from 'relaxed-json';
+import assert from '../../lib/assert.js';
+import fs from 'fs';
+import library from './module_library.js';
+import {Layout} from './layout.js';
 
-var RJSON = require('relaxed-json');
-var assert = require('assert');
-var debug = require('debug')('wall:playlist_loader');
-var fs = require('fs');
+const debug = Debug('wall:playlist_loader');
 
-var Layout = require('server/modules/layout');
-var library = require('server/modules/module_library');
-
-class PlaylistLoader {
+export class PlaylistLoader {
 
   constructor(flags) {
     this.flags = flags;
@@ -40,7 +39,7 @@ class PlaylistLoader {
         // TODO(applmak): Once we support transition-on-reload, we don't need to do this.
         names = names.concat(names);
       }
-      
+
       names.forEach(m => assert(m in library.modules, `--module "${m}" can't be found!'`));
     } else if (layout.collection) {
       // Special collection name to run all available modules.
@@ -51,7 +50,7 @@ class PlaylistLoader {
             layout.collection in collections,
             'Unknown collection name: ' + layout.collection);
         names = collections[layout.collection];
-      }  
+      }
       names.forEach(m => assert(m in library.modules, `Module "${m}" referenced by collection "${layout.collection}" can't be found!'`));
     } else {
       assert('modules' in layout, 'Missing modules list in layout def!');
@@ -81,5 +80,3 @@ class PlaylistLoader {
     });
   }
 }
-
-module.exports = PlaylistLoader;

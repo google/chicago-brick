@@ -8,6 +8,7 @@
     "jshint": "node_modules/.bin/jshint **/*.js",
     "release": "node_modules/.bin/release-it -n"
   },
+  "type": "module",
   "repository": "github:google/chicago-brick",
   "author": "",
   "license": "Apache-2.0",

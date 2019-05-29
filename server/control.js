@@ -13,19 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
-const _ = require('underscore');
-const RJSON = require('relaxed-json');
-const debug = require('debug')('wall:control');
-const library = require('server/modules/module_library');
-const log = require('server/util/log');
-const wallGeometry = require('server/util/wall_geometry');
+import _ from 'underscore';
+import RJSON from 'relaxed-json';
+import Debug from 'debug';
+import library from './modules/module_library.js';
+import * as log from './util/log.js';
+import * as wallGeometry from './util/wall_geometry.js';
+const debug = Debug('wall:control');
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
-class Control {
+export class Control {
   constructor(playlistDriver, clients, moduleLoader, playlistLoader) {
     this.playlistDriver = playlistDriver;
     this.clients = clients;
@@ -126,7 +125,7 @@ class Control {
     ret.state = this.playlistDriver.getNextTransitionType();
     ret.deadline = this.playlistDriver.getNextDeadline();
     ret.wall = wallGeometry.getGeo();
-    
+
     res.json(ret);
   }
 
@@ -152,5 +151,3 @@ class Control {
     res.send('Enqueued');
   }
 }
-
-module.exports = Control;

@@ -13,12 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
 /**
  * Defines the wall layout: what modules to run, for how long, etc.
  */
-class Layout {
+export class Layout {
   constructor(config) {
     // The list of module names to play.
     this.modules = config.modules;
@@ -30,5 +28,3 @@ class Layout {
     this.moduleDuration = config.moduleDuration || config.duration;
   }
 }
-
-module.exports = Layout;

@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as geometry from '/lib/lame_es6/geometry.js';
+import * as geometry from '/lib/geometry.js';
 import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
 import {P5Surface} from '/client/surface/p5_surface.js';
 

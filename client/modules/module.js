@@ -13,18 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {delay} from '/lib/lame_es6/promise.js';
-import * as geometry from '/lib/lame_es6/geometry.js';
+import {delay} from '/lib/promise.js';
+import * as geometry from '/lib/geometry.js';
 import * as log from '/client/util/log.js';
-import * as moduleInterface from '/lib/lame_es6/module_interface.js';
+import * as moduleInterface from '/lib/module_interface.js';
 import * as moduleTicker from '/client/modules/module_ticker.js';
 import * as network from '/client/network/network.js';
 import * as peerNetwork from '/client/network/peer.js';
 import Debug from '/lib/lame_es6/debug.js';
-import assert from '/lib/lame_es6/assert.js';
+import assert from '/lib/assert.js';
 import asset from '/client/asset/asset.js';
-import conform from '/lib/lame_es6/conform.js';
-import inject from '/lib/lame_es6/inject.js';
+import conform from '/lib/conform.js';
+import inject from '/lib/inject.js';
 import {StateManager} from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
 import {now, until} from '/client/util/time.js';

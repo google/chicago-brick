@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Rectangle} from '/lib/lame_es6/rectangle.js';
+import {Rectangle} from '/lib/rectangle.js';
 
 function readClientRectFromLocation() {
   const config = new URL(window.location.href).searchParams.get('config') || '0,0,1920,1080';
