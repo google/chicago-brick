@@ -13,45 +13,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  const time = require('client/util/time');
-  const debug = require('debug')('wall:module_ticker');
-  const error = require('client/util/log').error(debug);
-  const monitor = require('client/monitoring/monitor');
-  
-  // An array of {module:Module, globals:Object}.
-  var modulesToDraw = [];
+import * as log from '/client/util/log.js';
+import * as monitor from '/client/monitoring/monitor.js';
+import Debug from '/lib/lame_es6/debug.js';
+import {now} from '/client/util/time.js';
 
-  // Drawing loop.
-  var lastTime = 0;
-  function draw() {
-    var now = time.now();
-    var delta = now - lastTime;
+const debug = Debug('wall:module_ticker');
+const error = log.error(debug);
 
-    modulesToDraw.forEach(function(pair) {
-      try {
-        pair.module.draw(now, delta);
-      } catch (e) {
-        error(e);
-      }
-    });
+// An array of modules.
+let modulesToDraw = [];
 
-    lastTime = now;
-    window.requestAnimationFrame(draw);
-  }
-  window.requestAnimationFrame(draw);
+// Drawing loop.
+let lastTime = 0;
+function draw() {
+  const n = now();
+  const delta = n - lastTime;
 
-  return {
-    add: function(name, module, globals) {
-      modulesToDraw.push({name, module, globals});
-      debug('Add: We are now drawing ' + modulesToDraw.length + ' modules');
-      monitor.markDrawnModules(modulesToDraw.map(m => m.name));
-    },
-    remove: function(module) {
-      modulesToDraw = modulesToDraw.filter(pair => pair.module !== module);
-      debug('Remove: We are now drawing ' + modulesToDraw.length + ' modules');
-      monitor.markDrawnModules(modulesToDraw.map(m => m.name));
+  for (const {module} of modulesToDraw) {
+    try {
+      module.draw(n, delta);
+    } catch (e) {
+      error(e);
     }
-  };
-});
+  }
+
+  lastTime = now;
+  window.requestAnimationFrame(draw);
+}
+window.requestAnimationFrame(draw);
+
+export function add(name, module) {
+  modulesToDraw.push({name, module});
+  debug('Add: We are now drawing ' + modulesToDraw.length + ' modules');
+  monitor.markDrawnModules(modulesToDraw.map(m => m.name));
+}
+export function remove(module) {
+  modulesToDraw = modulesToDraw.filter(pair => pair.module !== module);
+  debug('Remove: We are now drawing ' + modulesToDraw.length + ' modules');
+  monitor.markDrawnModules(modulesToDraw.map(m => m.name));
+}

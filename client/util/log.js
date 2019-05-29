@@ -13,26 +13,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import * as network from '/client/network/network.js';
+
 /**
- * Returns an error recording function that wraps a debugger
- * provided by the standard debug module.
+ * Returns an error recording function that wraps a logger provided by the
+ * standard debug module.
  * Recorded errors are sent to the server.
  */
-define(function(require) {
-  'use strict';
-
-  var network = require('client/network/network');
-
-  return {
-    error: function(debug) {
-      return function(e) {
-        debug(e);
-        network.send('record-error', {
-          message: e.message || e,
-          stack: e.stack,
-          namespace: debug.namespace,
-        });
-      };
-    },
+export function error(debug) {
+  return function(e) {
+    debug(e);
+    network.send('record-error', {
+      message: e.message || e,
+      stack: e.stack,
+      namespace: debug.namespace,
+    });
   };
-});
+}

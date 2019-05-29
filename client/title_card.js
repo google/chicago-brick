@@ -61,80 +61,76 @@ limitations under the License.
  *     }
  */
 
-define(function(require) {
-  'use strict';
-  var asset = require('client/asset/asset');
+import asset from '/client/asset/asset.js';
 
-  function makeEmptyTitleCard() {
-    var elem = document.createElement('div');
-    elem.id = 'title-card';
-    return elem;
+function makeEmptyTitleCard() {
+  var elem = document.createElement('div');
+  elem.id = 'title-card';
+  return elem;
+}
+
+function makeDefaultTitleCard(config) {
+  var elem = makeEmptyTitleCard();
+  if (typeof config.title === 'string') {
+    elem.innerHTML = `<div>${config.title}</div>
+        <div>${config.author}</div>`;
+  } else if (config.title && typeof config.title.path === 'string') {
+    elem.innerHTML = `<img src="${asset(config.title.path)}">`;
+  }
+  return elem;
+}
+
+export class TitleCard {
+  constructor(config) {
+    this.config = config;
+    this.inDocument_ = false;
+    this.elem_ = makeDefaultTitleCard(config);
   }
 
-  function makeDefaultTitleCard(config) {
-    var elem = makeEmptyTitleCard();
-    if (typeof config.title === 'string') {
-      elem.innerHTML = `<div>${config.title}</div>
-          <div>${config.author}</div>`;
-    } else if (config.title && typeof config.title.path === 'string') {
-      elem.innerHTML = `<img src="${asset(config.title.path)}">`;
+  replaceCard_(newCard) {
+    if (this.inDocument_) {
+      this.elem_.parentNode.replaceChild(newCard, this.elem_);
     }
-    return elem;
+    this.elem_ = newCard;
+    return this.elem_;
   }
 
-  class TitleCard {
-    constructor(config) {
-      this.config = config;
+  // Creates a global API instance for use by the module code.
+  getModuleAPI() {
+    var card = this;
+    // This is the titleCard API provided to modules.
+    return {
+      // Creates a custom (empty) card and returns a reference to the caller.
+      useCustomCard: function() {
+        return card.replaceCard_(makeEmptyTitleCard());
+      },
+      // Creates a standard (config-based) card and returns a reference to the
+      // caller.
+      useDefaultCard: function() {
+        return card.replaceCard_(makeDefaultTitleCard(card.config));
+      },
+    };
+  }
+
+  // Called by the framework when the module has faded in.
+  enter() {
+    if (this.isTitleClient() && !this.inDocument_) {
+      if (this.config.author || this.config.title) {
+        document.body.insertBefore(this.elem_, document.body.firstChild);
+      }
+      this.inDocument_ = true;
+    }
+  }
+
+  // Called by the framework when the module is fading out.
+  exit() {
+    if (this.isTitleClient() && this.inDocument_) {
+      this.elem_.remove();
       this.inDocument_ = false;
-      this.elem_ = makeDefaultTitleCard(config);
-    }
-
-    replaceCard_(newCard) {
-      if (this.inDocument_) {
-        this.elem_.parentNode.replaceChild(newCard, this.elem_);
-      }
-      this.elem_ = newCard;
-      return this.elem_;
-    }
-
-    // Creates a global API instance for use by the module code.
-    getModuleAPI() {
-      var card = this;
-      // This is the titleCard API provided to modules.
-      return {
-        // Creates a custom (empty) card and returns a reference to the caller.
-        useCustomCard: function() {
-          return card.replaceCard_(makeEmptyTitleCard());
-        },
-        // Creates a standard (config-based) card and returns a reference to the
-        // caller.
-        useDefaultCard: function() {
-          return card.replaceCard_(makeDefaultTitleCard(card.config));
-        },
-      };
-    }
-
-    // Called by the framework when the module has faded in.
-    enter() {
-      if (this.isTitleClient() && !this.inDocument_) {
-        if (this.config.author || this.config.title) {
-          document.body.insertBefore(this.elem_, document.body.firstChild);
-        }
-        this.inDocument_ = true;
-      }
-    }
-
-    // Called by the framework when the module is fading out.
-    exit() {
-      if (this.isTitleClient() && this.inDocument_) {
-        this.elem_.remove();
-        this.inDocument_ = false;
-      }
-    }
-
-    isTitleClient() {
-      return !!new URL(window.location.href).searchParams.get('title');
     }
   }
-  return TitleCard;
-});
+
+  isTitleClient() {
+    return !!new URL(window.location.href).searchParams.get('title');
+  }
+}

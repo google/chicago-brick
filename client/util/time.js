@@ -13,30 +13,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  var clockSkew = require('clock-skew')({});
+import ClockSkew from '/sys/clock-skew/lib/clock_skew.js';
+import * as network from '/client/network/network.js';
 
-  var network = require('client/network/network');
+const clockSkew = ClockSkew({});
+let timeRequester = null;
 
-  var timeRequester = null;
-  
-  return {
-    start: function() {
-      network.on('time', clockSkew.adjustTimeByReference);
-      network.send('time');
-      timeRequester = setInterval(function() { network.send('time'); }, 10000);
-    },
-    stop: function() {
-      network.removeListener('time', clockSkew.adjustTimeByReference);
-      clearInterval(timeRequester);
-      timeRequester = null;
-    },
-    now: function() {
-      return clockSkew.getTime();
-    },
-    until: function(serverDeadline) {
-      return Math.max(0, serverDeadline - clockSkew.getTime());
-    }
-  };
-});
+export function start() {
+  network.on('time', clockSkew.adjustTimeByReference);
+  network.send('time');
+  timeRequester = setInterval(function() { network.send('time'); }, 10000);
+}
+export function stop() {
+  network.removeListener('time', clockSkew.adjustTimeByReference);
+  clearInterval(timeRequester);
+  timeRequester = null;
+}
+export function now() {
+  return clockSkew.getTime();
+}
+export function until(serverDeadline) {
+  return Math.max(0, serverDeadline - clockSkew.getTime());
+}

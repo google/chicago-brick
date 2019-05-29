@@ -1,7 +1,6 @@
 {
   "extends": "../.jshintrc",
   "browser": true,
-  "strict": true,
   "-W097": false,
   "globals": {
     "console": false,

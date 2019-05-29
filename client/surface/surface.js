@@ -15,7 +15,7 @@ limitations under the License.
 
 import {Rectangle} from '/lib/lame_es6/rectangle.js';
 import * as geometry from '/lib/lame_es6/geometry.js';
-import * as info from '/client/util/info.es6.js';
+import * as info from '/client/util/info.js';
 
 // Installs a surface in the given container & readies the surface for
 // drawing.

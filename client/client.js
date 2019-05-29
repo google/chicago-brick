@@ -13,25 +13,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  
-  var network = require('client/network/network');
-  var ModuleManager = require('client/modules/module_manager');
-  var debug = require('debug');
-  var info = require('client/util/info');
-  const monitor = require('client/monitoring/monitor');
+import * as network from '/client/network/network.js';
+import {ModuleManager} from '/client/modules/module_manager.js';
+import Debug from '/lib/lame_es6/debug.js';
 
-  debug.enable('wall:*');
+import * as info from '/client/util/info.js';
+import * as monitor from '/client/monitoring/monitor.js';
 
-  // Open our socket to the server.
-  network.openConnection(info.virtualRectNoBezel);
+Debug.enable('wall:*');
 
-  if (new URL(window.location.href).searchParams.get('monitor')) {
-    monitor.enable();
-  }
+// Open our socket to the server.
+network.openConnection(info.virtualRectNoBezel);
 
-  // Ready to receive some code!
-  var manager = new ModuleManager;
-  manager.start();
-});
+if (new URL(window.location.href).searchParams.get('monitor')) {
+  monitor.enable();
+}
+
+// Ready to receive some code!
+const manager = new ModuleManager;
+manager.start();
