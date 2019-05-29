@@ -1,8 +1,10 @@
 /* globals Path2D */
 
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {Rectangle} from '/lib/lame_es6/rectangle.js';
 
-export function load(Rectangle, debug, state, wallGeometry, CanvasSurface) {
+export function load(debug, state, wallGeometry) {
   // Initially start with two layers.
   const layers = 2;
 

@@ -57,8 +57,6 @@ function extractFromImport(name, moduleRoot, modulePath, layoutGeometry, network
     })),
     debug: debugFactory('wall:module:' + name),
     globalWallGeometry: wallGeometry.getGeo(),
-    Rectangle,
-    geometry,
     assert,
   };
 

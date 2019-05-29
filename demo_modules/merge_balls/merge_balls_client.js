@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export function load(state, network, wallGeometry, CanvasSurface) {
+import {CanvasSurface} from '/client/surface/canvas_surface.js';
+
+export function load(state, network, wallGeometry) {
   //
   // Client Module
   //

@@ -1,4 +1,6 @@
-export function load(debug, state, wallGeometry, CanvasSurface) {
+import {CanvasSurface} from '/client/surface/canvas_surface.js';
+
+export function load(debug, state, wallGeometry) {
   // TODO(applmak): Use a real color object/library.
   const darken = (color, i) => {
     return `#${color.substr(1).match(/.{2}/g).map(c => Math.max(0, parseInt(c, 16) - 5*i).toString(16).padStart(2, '0')).join('')}`;

@@ -13,18 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  require('p5.dom');
-  var Surface = require('client/surface/surface');
-  var P5 = require('p5');
+import {Surface} from '/client/surface/surface.js';
+import P5 from '/lib/lame_es6/p5.js';
 
-  // Sets up the sizes and scaling factors. The P5 library will take care of creating a canvas.
-  // sketch is the actual p5.js code that will be executed.  sketch.setup() will be called at
-  // the end of the wall-provided setup() method and draw() will be invoked as well.
-  // sketchArgs will be passed along to the constructor call on providedSketchClass.
-  var P5Surface = function(container, wallGeometry, providedSketchClass, startTime, sketchConstructorArgs) {
-    Surface.call(this, container, wallGeometry);
+// Sets up the sizes and scaling factors. The P5 library will take care of creating a canvas.
+// sketch is the actual p5.js code that will be executed.  sketch.setup() will be called at
+// the end of the wall-provided setup() method and draw() will be invoked as well.
+// sketchArgs will be passed along to the constructor call on providedSketchClass.
+export class P5Surface extends Surface {
+  constructor(container, wallGeometry, providedSketchClass, startTime, sketchConstructorArgs) {
+    super(container, wallGeometry);
+
     this.realPixelScalingFactors = {
       x : this.container.offsetWidth / this.virtualRect.w,
       y : this.container.offsetHeight / this.virtualRect.h,
@@ -84,15 +83,10 @@ define(function(require) {
     };
 
     this.p5 = new P5(scaffolding, container);
-  };
-
-  P5Surface.prototype = Object.create(Surface.prototype);
-
-  P5Surface.prototype.destroy = function() {
+  }
+  destroy() {
     if (this.p5) {
       this.p5.remove();
     }
-  };
-
-  return P5Surface;
-});
+  }
+}

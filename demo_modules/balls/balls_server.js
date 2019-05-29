@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import * as geometry from '../../lib/lame_es6/geometry.js';
 import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
+import {Rectangle} from '../../lib/lame_es6/rectangle.js';
 
-export function load(geometry, Rectangle, network, wallGeometry) {
+export function load(network, wallGeometry) {
   class BallsServer {
     willBeShownSoon(container, deadline) {
       this.balls = [];

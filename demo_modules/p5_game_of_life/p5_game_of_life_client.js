@@ -13,9 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import * as geometry from '/lib/lame_es6/geometry.js';
 import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
+import {P5Surface} from '/client/surface/p5_surface.js';
 
-export function load(geometry, wallGeometry, network, debug, P5Surface) {
+export function load(wallGeometry, network, debug) {
 
   // Create a polygon extending from x,y by w,h.
   function makeCornerRectPolygon(x, y, w, h) {

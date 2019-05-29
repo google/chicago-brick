@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export function load(wallGeometry, debug, P5Surface) {
+import {P5Surface} from '/client/surface/p5_surface.js';
+
+export function load(wallGeometry, debug) {
   // p5 must be a P5.js instance.
   class P5TestSketch {
     constructor(p5, surface) {

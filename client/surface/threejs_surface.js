@@ -13,13 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  const Surface = require('client/surface/surface');
-  const Three = require('three-full');
+import {Surface} from '/client/surface/surface.js';
+import * as Three from '/sys/three-full/builds/Three.es.js';
 
-  var ThreeJsSurface = function(container, wallGeometry, properties) {
-    Surface.call(this, container, wallGeometry);
+export class ThreeJsSurface extends Surface {
+  constructor(container, wallGeometry, properties) {
+    super(container, wallGeometry);
     this.renderer = new Three.WebGLRenderer(properties);
     this.renderer.setSize(this.container.offsetWidth, this.container.offsetHeight);
     container.appendChild(this.renderer.domElement);
@@ -31,31 +30,24 @@ define(function(require) {
         this.wallRect.w, this.wallRect.h,
         this.virtualRect.x, this.virtualRect.y,
         this.virtualRect.w, this.virtualRect.h);
-  };
-  ThreeJsSurface.prototype = Object.create(Surface.prototype);
-
-  ThreeJsSurface.prototype.setTileViewOffsetForCamera = function(camera) {
+  }
+  setTileViewOffsetForCamera(camera) {
     var cam = camera || this.camera;
     cam.setViewOffset(
         this.wallRect.w, this.wallRect.h,
         this.virtualRect.x, this.virtualRect.y,
         this.virtualRect.w, this.virtualRect.h);
-  };
-
-  ThreeJsSurface.prototype.destroy = function() {
+  }
+  destroy() {
     this.renderer.dispose();
     this.renderer = null;
     this.camera = null;
     this.scene = null;
-  };
-
-  ThreeJsSurface.prototype.setOpacity = function(alpha) {
+  }
+  setOpacity(alpha) {
     this.renderer.domElement.style.opacity = alpha;
-  };
-
-  ThreeJsSurface.prototype.render = function() {
+  }
+  render() {
     this.renderer.render(this.scene, this.camera);
-  };
-
-  return ThreeJsSurface;
-});
+  }
+}
