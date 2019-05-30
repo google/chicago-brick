@@ -14,8 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.js';
 
-export function load(network, wallGeometry, CanvasSurface) {
+export function load(network, wallGeometry) {
   class BallsClient {
     constructor(config) {
       // We keep track of X data points.

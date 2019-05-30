@@ -13,13 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  var Surface = require('client/surface/surface');
+import {Surface} from '/client/surface/surface.js';
 
-  var CanvasSurface = function(container, wallGeometry) {
-    Surface.call(this, container, wallGeometry);
-    
+export class CanvasSurface extends Surface {
+  constructor(container, wallGeometry) {
+    super(container, wallGeometry);
+
     this.canvas = document.createElement('canvas');
     this.canvas.style.position = 'absolute';
     this.canvas.style.left = 0;
@@ -31,33 +30,24 @@ define(function(require) {
 
     this.canvas.setAttribute('width', this.virtualRect.w);
     this.canvas.setAttribute('height', this.virtualRect.h);
-    
-    container.appendChild(this.canvas);
-    
-    this.context = this.canvas.getContext('2d');
-    
-  };
-  CanvasSurface.prototype = Object.create(Surface.prototype);
 
-  CanvasSurface.prototype.destroy = function() {
+    container.appendChild(this.canvas);
+
+    this.context = this.canvas.getContext('2d');
+  }
+  destroy() {
     this.canvas.remove();
     this.canvas = null;
-  };
-
-  CanvasSurface.prototype.pushOffset = function() {
+  }
+  pushOffset() {
     this.context.save();
     this.applyOffset();
-  };
-  
-  CanvasSurface.prototype.applyOffset = function() {
+  }
+  applyOffset() {
     this.context.translate(-this.virtualRect.x, -this.virtualRect.y);
-  };
-
-  CanvasSurface.prototype.popOffset = function() { this.context.restore(); };
-
-  CanvasSurface.prototype.setOpacity = function(alpha) {
+  }
+  popOffset() { this.context.restore(); }
+  setOpacity(alpha) {
     this.canvas.style.opacity = alpha;
-  };
-
-  return CanvasSurface;
-});
+  }
+}

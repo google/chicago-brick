@@ -13,15 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  var Rectangle = require('lib/rectangle');
-  var geometry = require('lib/geometry');
-  var info = require('client/util/info');
+import {Rectangle} from '/lib/lame_es6/rectangle.js';
+import * as geometry from '/lib/lame_es6/geometry.js';
+import * as info from '/client/util/info.es6.js';
 
-  // Installs a surface in the given container & readies the surface for
-  // drawing.
-  var Surface = function Surface(container, wallGeometry) {
+// Installs a surface in the given container & readies the surface for
+// drawing.
+export class Surface {
+  constructor(container, wallGeometry) {
     this.container = container;
 
     this.wallGeometry = wallGeometry;
@@ -43,29 +42,24 @@ define(function(require) {
         info.virtualOffset.x, info.virtualOffset.y,
         this.wallRect.w / info.virtualRectNoBezel.w,
         this.wallRect.h / info.virtualRectNoBezel.h);
-  };
-
-  Surface.prototype.isVisible = function(x, y) {
+  }
+  isVisible(x, y) {
     return geometry.isInside(this.wallGeometry, x, y);
-  };
-  Surface.prototype.isOffsetVisible = function(x, y) {
+  }
+  isOffsetVisible(x, y) {
     return this.isVisible((x+0.5) * this.virtualRect.w,
                           (y+0.5) * this.virtualRect.h);
-  };
-  Surface.prototype.isOffsetWithinExtents = function(x, y) {
+  }
+  isOffsetWithinExtents(x, y) {
     x = (x+0.5) * this.virtualRect.w;
     y = (y+0.5) * this.virtualRect.h;
     return geometry.isInsideRect(this.wallRect, x, y);
-  };
-  
-  Surface.prototype.wallExtentLineTest = function(ax, ay, bx, by) {
+  }
+  wallExtentLineTest(ax, ay, bx, by) {
     return geometry.intersectPolygonLine(this.wallGeometry, ax, ay, bx, by);
-  };
-  
+  }
   // Destroys a surface.
-  Surface.prototype.destroy = function() {};
+  destroy() {}
   // Returns the visible rect of the surface, anchored at 0,0
-  Surface.prototype.getRect = function() {};
-
-  return Surface;
-});
+  getRect() {}
+}

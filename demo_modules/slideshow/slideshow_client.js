@@ -30,8 +30,9 @@ import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display.js';
 import FallingDisplayStrategy from './falling_display.js';
+import {Surface} from '/client/surface/surface.js';
 
-export function load(wallGeometry, debug, network, Surface, assert, asset) {
+export function load(wallGeometry, debug, network, assert, asset) {
   // DISPATCH TABLES
   // These methods convert a load or display config to specific server or client
   // strategies. New strategies should be added to these methods.

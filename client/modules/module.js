@@ -32,11 +32,6 @@ define(function(require) {
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
-  const CanvasSurface = require('client/surface/canvas_surface');
-  const P5Surface = require('client/surface/p5_surface');
-  const ThreeJsSurface = require('client/surface/threejs_surface');
-  const Surface = require('client/surface/surface');
-  const Rectangle = require('lib/rectangle');
   const assert = require('lib/assert');
 
   function createNewContainer(name) {
@@ -138,12 +133,6 @@ define(function(require) {
           return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
         }, this)),
         peerNetwork,
-        CanvasSurface,
-        P5Surface,
-        ThreeJsSurface,
-        Rectangle,
-        Surface,
-        geometry,
         assert,
       }
       const {load} = await import(this.path);

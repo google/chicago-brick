@@ -14,8 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 import {GOOGLE_COLORS} from './colors.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.js';
 
-export function load(network, wallGeometry, CanvasSurface) {
+export function load(network, wallGeometry) {
   // Maximum value in a particular pixel.
   const MAX_VALUE = 32;
 

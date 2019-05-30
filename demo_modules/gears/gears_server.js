@@ -2,8 +2,9 @@
 import _ from 'underscore';
 
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
+import {Rectangle} from '../../lib/lame_es6/rectangle.js';
 
-export function load(debug, state, wallGeometry, Rectangle) {
+export function load(debug, state, wallGeometry) {
   const HOLE_VARIETIES = ['none', 'rounded', 'circles'];
 
   function overlaps(x1, y1, r1, x2, y2, r2) {
