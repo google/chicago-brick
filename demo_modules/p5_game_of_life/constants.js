@@ -1,4 +1,2 @@
-const NUM_COLUMNS = 184;
-const NUM_ROWS = 40;
-
-module.exports = {NUM_COLUMNS, NUM_ROWS};
+export const NUM_COLUMNS = 184;
+export const NUM_ROWS = 40;

@@ -13,31 +13,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
+export function load(wallGeometry, CanvasSurface) {
+  class SolidColorClient {
+    constructor(config) {
+      this.color = config.color || 'red';
+    }
 
-class SolidColorClient extends ModuleInterface.Client {
-  constructor(config) {
-    super();
-    this.color = config.color || 'red';
-  }
-
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+    finishFadeOut() {
+      if (this.surface) {
+        this.surface.destroy();
+      }
+    }
+    willBeShownSoon(container, deadline) {
+      this.surface = new CanvasSurface(container, wallGeometry);
+      this.canvas = this.surface.context;
+      return Promise.resolve();
+    }
+    draw(time, delta) {
+      this.canvas.fillStyle = this.color;
+      this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
     }
   }
-  willBeShownSoon(container, deadline) {
-    const CanvasSurface = require('client/surface/canvas_surface');
-    this.surface = new CanvasSurface(container, wallGeometry);
-    this.canvas = this.surface.context;
-    return Promise.resolve();
-  }
-  draw(time, delta) {
-    this.canvas.fillStyle = this.color;
-    this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
-  }
-}
 
-register(ModuleInterface.Server, SolidColorClient);
+  return {client: SolidColorClient};
+}

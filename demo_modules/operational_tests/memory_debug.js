@@ -13,26 +13,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const network = require('network');
+export function load(network) {
+  // This is a no-op module that shows what is leaking in the framework when we
+  // switch modules.
+  class MemoryDebugClient {
+    constructor(config) {
+      // TODO(applmak): Send something this message, maybe?
+      const memoryDebugHandler = () => {
+        this.thing = (this.thing || 0) + 1;
+      };
+      network.on('_memory_debug', memoryDebugHandler);
+    }
 
-// This is a no-op module that shows what is leaking in the framework when we
-// switch modules.
-class MemoryDebugClient extends ModuleInterface.Client {
-  constructor(config) {
-    super();
-    // TODO(applmak): Send something this message, maybe?
-    const memoryDebugHandler = () => {
-      this.thing = (this.thing || 0) + 1;
-    };
-    network.on('_memory_debug', memoryDebugHandler);
+    willBeShownSoon(container) {
+      container.style.backgroundColor = 'black';
+      return Promise.resolve();
+    }
   }
 
-  willBeShownSoon(container) {
-    container.style.backgroundColor = 'black';
-    return Promise.resolve();
-  }
+  return {client: MemoryDebugClient};
 }
-
-register(ModuleInterface.Server, MemoryDebugClient);

@@ -24,71 +24,65 @@ limitations under the License.
  * the time this module was created.
  */
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
-const debug = require('debug');
-const network = require('network');
+import LoadFromDriveStrategy from './load_from_drive.js';
+import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
+import LoadLocalStrategy from './load_local.js';
+import LoadFromFlickrStrategy from './load_from_flickr.js';
+import FullscreenDisplayStrategy from './fullscreen_display.js';
+import FallingDisplayStrategy from './falling_display.js';
 
-const LoadFromDriveStrategy = require('./load_from_drive');
-const LoadFromYouTubePlaylistStrategy = require('./load_from_youtube');
-const LoadLocalStrategy = require('./load_local');
-const LoadFromFlickrStrategy = require('./load_from_flickr');
+export function load(wallGeometry, debug, network, Surface, assert, asset) {
+  // DISPATCH TABLES
+  // These methods convert a load or display config to specific server or client
+  // strategies. New strategies should be added to these methods.
+  let parseClientLoadStrategy = (loadConfig) => {
+    if (loadConfig.drive) {
+      return new (LoadFromDriveStrategy({debug, assert}).Client)(loadConfig.drive);
+    } else if (loadConfig.youtube) {
+      return new (LoadFromYouTubePlaylistStrategy({debug, assert}).Client)(loadConfig.youtube);
+    } else if (loadConfig.local) {
+      return new (LoadLocalStrategy({debug, assert, asset}).Client)(loadConfig.local);
+    } else if (loadConfig.flickr) {
+      return new (LoadFromFlickrStrategy({debug, assert}).Client)(loadConfig.flickr);
+    }
+    throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
+  };
 
-const FullscreenDisplayStrategy = require('./fullscreen_display');
-const FallingDisplayStrategy = require('./falling_display');
+  let parseClientDisplayStrategy = (displayConfig) => {
+    if (displayConfig.fullscreen) {
+      return new (FullscreenDisplayStrategy({debug, assert, wallGeometry, network}).Client)(displayConfig.fullscreen);
+    } else if (displayConfig.falling) {
+      return new (FallingDisplayStrategy({debug, assert, wallGeometry, network}).Client)(displayConfig.falling);
+    }
+    throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
+  };
 
-// DISPATCH TABLES
-// These methods convert a load or display config to specific server or client
-// strategies. New strategies should be added to these methods.
-let parseClientLoadStrategy = (loadConfig) => {
-  if (loadConfig.drive) {
-    return new LoadFromDriveStrategy.Client(loadConfig.drive);
-  } else if (loadConfig.youtube) {
-    return new LoadFromYouTubePlaylistStrategy.Client(loadConfig.youtube);
-  } else if (loadConfig.local) {
-    return new LoadLocalStrategy.Client(loadConfig.local);
-  } else if (loadConfig.flickr) {
-    return new LoadFromFlickrStrategy.Client(loadConfig.flickr);
-  }
-  throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
-};
-
-let parseClientDisplayStrategy = (displayConfig) => {
-  if (displayConfig.fullscreen) {
-    return new FullscreenDisplayStrategy.Client(displayConfig.fullscreen);
-  } else if (displayConfig.falling) {
-    return new FallingDisplayStrategy.Client(displayConfig.falling);
-  }
-  throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
-};
-
-class ImageClient extends ModuleInterface.Client {
-  willBeShownSoon(container, deadline) {
-    const Surface = require('client/surface/surface');
-    this.surface = new Surface(container, wallGeometry);
-    return new Promise((resolve, reject) => {
-      debug('Waiting for network init...');
-      network.emit('req_init');
-      network.once('init', config => {
-        this.loadStrategy = parseClientLoadStrategy(config.load);
-        this.displayStrategy = parseClientDisplayStrategy(config.display);
-        this.loadStrategy.init(this.surface, deadline);
-        this.displayStrategy.init(this.surface, this.loadStrategy);
-        resolve();
+  class ImageClient {
+    willBeShownSoon(container, deadline) {
+      this.surface = new Surface(container, wallGeometry);
+      return new Promise((resolve, reject) => {
+        debug('Waiting for network init...');
+        network.emit('req_init');
+        network.once('init', config => {
+          this.loadStrategy = parseClientLoadStrategy(config.load);
+          this.displayStrategy = parseClientDisplayStrategy(config.display);
+          this.loadStrategy.init(this.surface, deadline);
+          this.displayStrategy.init(this.surface, this.loadStrategy);
+          resolve();
+        });
       });
-    });
-  }
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+    }
+    finishFadeOut() {
+      if (this.surface) {
+        this.surface.destroy();
+      }
+    }
+    draw(time, delta) {
+      if (this.displayStrategy) {
+        this.displayStrategy.draw(time, delta);
+      }
     }
   }
-  draw(time, delta) {
-    if (this.displayStrategy) {
-      this.displayStrategy.draw(time, delta);
-    }
-  }
-}
 
-register(null, ImageClient);
+  return {client: ImageClient};
+}

@@ -1,5 +1,3 @@
-const GOOGLE_COLORS = ['#3369E8', '#D50F25', '#EEB211', '#009925'];
-const BALL_RADIUS = 50;
-const NUM_BALLS = 200;
-
-module.exports = {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS};
+export const GOOGLE_COLORS = ['#3369E8', '#D50F25', '#EEB211', '#009925'];
+export const BALL_RADIUS = 50;
+export const NUM_BALLS = 200;

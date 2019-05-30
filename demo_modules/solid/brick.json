@@ -1,6 +1,6 @@
 {
   "name": "solid",
-  "path": "./solid.js",
+  "client_path": "./solid.js",
   "title": "Solid Color",
   "author": "Matt Handley",
   "config": {

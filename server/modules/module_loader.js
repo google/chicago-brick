@@ -74,7 +74,7 @@ class ModuleLoader {
           cfg.name, cfg.title, cfg.author, cfg.config));
       } else {
         const paths = {client: cfg.path || cfg.client_path, server: cfg.path || cfg.server_path};
-        debug('Adding module ' + cfg.name + ' from ' + path.join(cfg.root, paths.server));
+        debug('Adding module ' + cfg.name);
         library.register(new ModuleDef(cfg.name, cfg.root, paths, cfg.title,
               cfg.author, cfg.config));
       }

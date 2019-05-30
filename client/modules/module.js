@@ -18,19 +18,26 @@ define(function(require) {
 
   var _ = require('underscore');
 
+  const asset = require('client/asset/asset');
+  const conform = require('lib/conform');
   var debug = require('debug')('wall:client_module');
   var debugFactory = require('debug');
   var error = require('client/util/log').error(debug);
-  var fakeRequire = require('client/fake_require');
+  const inject = require('lib/inject');
   var geometry = require('lib/geometry');
   var moduleInterface = require('lib/module_interface');
   var network = require('client/network/network');
   var peerNetwork = require('client/network/peer');
-  var safeEval = require('lib/eval');
   var StateManager = require('client/state/state_manager');
   var timeManager = require('client/util/time');
   var TitleCard = require('client/title_card');
   var moduleTicker = require('client/modules/module_ticker');
+  const CanvasSurface = require('client/surface/canvas_surface');
+  const P5Surface = require('client/surface/p5_surface');
+  const ThreeJsSurface = require('client/surface/threejs_surface');
+  const Surface = require('client/surface/surface');
+  const Rectangle = require('lib/rectangle');
+  const assert = require('lib/assert');
 
   function createNewContainer(name) {
     var newContainer = document.createElement('div');
@@ -105,7 +112,7 @@ define(function(require) {
       );
     }
 
-    instantiate() {
+    async instantiate() {
       this.container = createNewContainer(this.name);
 
       if (!this.path) {
@@ -119,7 +126,8 @@ define(function(require) {
       this.contextName = 'module-' + this.deadline;
       let classes = {};
 
-      return fakeRequire.createEnvironment(this.contextName, this.name, {
+      const fakeEnv = {
+        asset,
         debug: debugFactory('wall:module:' + this.name),
         game: undefined,
         network: openNetwork,
@@ -129,33 +137,23 @@ define(function(require) {
         wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
           return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
         }, this)),
-        peerNetwork: peerNetwork,
-        register: (server, client) => {
-          classes.server = server;
-          classes.client = client;
-        },
-      }).then((moduleRequire) => {
-        return new Promise((resolve, reject) => {
-          moduleRequire([this.path], () => {
-            // Remove the module-specific requirejs context. This will force the
-            // next require of this module to go to the server, as we're
-            // essentially invalidating the local cache of files by trashing
-            // this context. Furthermore, as our server will serve this up with
-            // a no-cache header, we'll always get fresh code.
-            fakeRequire.deleteEnvironment(this.contextName);
+        peerNetwork,
+        CanvasSurface,
+        P5Surface,
+        ThreeJsSurface,
+        Rectangle,
+        Surface,
+        geometry,
+        assert,
+      }
+      const {load} = await import(this.path);
+      if (!load) {
+        throw new Error(`${this.name} did not export a 'load' function!`);
+      }
+      const {client} = inject(load, fakeEnv);
+      conform(client, moduleInterface.Client);
 
-            // Sanity checks on requested code.
-            if (!classes.client) {
-              throw new Error('Failed to parse module ' + this.name);
-            }
-            if (!(classes.client.prototype instanceof moduleInterface.Client)) {
-              throw new Error('Malformed module definition! ' + this.name);
-            }
-            this.instance = new classes.client(this.config);
-            resolve();
-          }, reject);
-        });
-      });
+      this.instance = new client(this.config);
     }
 
     willBeHiddenSoon() {

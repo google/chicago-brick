@@ -13,64 +13,51 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const register = require('register');
-const ModuleInterface = require('lib/module_interface');
-const wallGeometry = require('wallGeometry');
-const debug = require('debug');
+export function life(wallGeometry, debug, P5Surface) {
+  // p5 must be a P5.js instance.
+  // TODO(jgessner): Make a P5Sketch base class.  I'm keeping the empty methods in
+  //   here for now to remind me of the interface it should have.
+  class P5TemplateSketch {
+    constructor(p5, surface) {
+      this.p5 = p5;
+      this.surface = surface;
+    }
 
-class P5TemplateServer extends ModuleInterface.Server {
-  constructor(config, startTime) {
-    super();
-    debug('P5Template Server!', config);
-    this.startTime = startTime;
-  }
-}
+    setup() {
+      var p5 = this.p5;
 
-// p5 must be a P5.js instance.
-// TODO(jgessner): Make a P5Sketch base class.  I'm keeping the empty methods in
-//   here for now to remind me of the interface it should have.
-class P5TemplateSketch {
-  constructor(p5, surface) {
-    this.p5 = p5;
-    this.surface = surface;
-  }
+      p5.background(128, 128, 128);
+    }
 
-  setup() {
-    var p5 = this.p5;
+    preload() {
+    }
 
-    p5.background(128, 128, 128);
-  }
-
-  preload() {
-  }
-
-  draw(t) {
-  }
-}
-
-class P5TemplateClient extends ModuleInterface.Client {
-  constructor(config) {
-    super();
-    debug('P5Template Client!', config);
-  }
-
-  finishFadeOut() {
-    if (this.surface) {
-      this.surface.destroy();
+    draw(t) {
     }
   }
 
-  willBeShownSoon(container, deadline) {
-    this.startTime = deadline;
+  class P5TemplateClient {
+    constructor(config) {
+      debug('P5Template Client!', config);
+    }
 
-    const P5Surface = require('client/surface/p5_surface');
-    this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
-    return Promise.resolve();
+    finishFadeOut() {
+      if (this.surface) {
+        this.surface.destroy();
+      }
+    }
+
+    willBeShownSoon(container, deadline) {
+      this.startTime = deadline;
+
+      this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
+      return Promise.resolve();
+    }
+
+    draw(time, delta) {
+      this.surface.p5.draw(time);
+    }
   }
 
-  draw(time, delta) {
-    this.surface.p5.draw(time);
-  }
+  return {client: P5TemplateClient};
 }
-
-register(P5TemplateServer, P5TemplateClient);

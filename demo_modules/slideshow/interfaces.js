@@ -13,12 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
 // INTERFACES
 // Here, we specify the interfaces for the load and display strategies. There is
 // a separate interface for the server and the client.
-class ServerLoadStrategy {
+export class ServerLoadStrategy {
   init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
@@ -38,20 +36,20 @@ class ServerLoadStrategy {
   }
 }
 
-class ClientLoadStrategy {
+export class ClientLoadStrategy {
   init(surface, deadline) {
     // Init the load strategy with the surface information and a timestamp that
     // is guaranteed to be shared among all clients.
   }
   loadContent(content) {
-    // Loads content specified by the content id. The first parameter comes 
-    // from the  server version of this strategy by way of the display 
+    // Loads content specified by the content id. The first parameter comes
+    // from the  server version of this strategy by way of the display
     // strategy. The promise is expected to resolve to an Element.
     return Promise.resolve();
-  }  
+  }
 }
 
-class ServerDisplayStrategy {
+export class ServerDisplayStrategy {
   init() {
     // Return a promise when initialization is complete.
     return Promise.resolve();
@@ -70,7 +68,7 @@ class ServerDisplayStrategy {
   }
 }
 
-class ClientDisplayStrategy {
+export class ClientDisplayStrategy {
   init(surface, loadStrategy) {
     // The surface on which the strategy should draw, and the client-side load
     // strategy, which is invoked when new content is downloaded.
@@ -79,10 +77,3 @@ class ClientDisplayStrategy {
     // Update the surface with the content.
   }
 }
-
-module.exports = {
-  ServerLoadStrategy,
-  ClientLoadStrategy,
-  ServerDisplayStrategy,
-  ClientDisplayStrategy
-};

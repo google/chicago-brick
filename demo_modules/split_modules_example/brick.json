@@ -1,7 +1,0 @@
-{
-  "name": "split_modules_example",
-  "client_path": "./hello_world_client.js",
-  "server_path": "./hello_world_server.js",
-  "title": "A \"Mandelbrot\" demo",
-  "author": "Matt Handley"
-}
