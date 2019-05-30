@@ -13,27 +13,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
+import * as network from '/client/network/network.js';
+import {ClientModule} from '/client/modules/module.js';
+import {ClientStateMachine} from '/client/modules/client_state_machine.js';
+import {start} from '/client/util/time.js';
 
-  const ClientModule = require('client/modules/module');
-  const ClientStateMachine = require('client/modules/client_state_machine');
-  const network = require('client/network/network');
-  const timeManager = require('client/util/time');
-
-  class ModuleManager {
-    constructor() {
-      // The state machine.
-      this.stateMachine = new ClientStateMachine;
-    }
-    start() {
-      timeManager.start();
-
-      // Server has asked us to load a new module.
-      network.on('loadModule',
-          bits => this.stateMachine.playModule(ClientModule.deserialize(bits)));
-    }
+export class ModuleManager {
+  constructor() {
+    // The state machine.
+    this.stateMachine = new ClientStateMachine;
   }
+  start() {
+    start();
 
-  return ModuleManager;
-});
+    // Server has asked us to load a new module.
+    network.on('loadModule',
+        bits => this.stateMachine.playModule(ClientModule.deserialize(bits)));
+  }
+}

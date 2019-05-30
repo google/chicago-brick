@@ -13,43 +13,41 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-define(function(require) {
-  'use strict';
-  var sharedState = require('lib/shared_state');
-  var debug = require('debug')('wall:state_manager');
+import * as sharedState from '/lib/lame_es6/shared_state.js';
+import Debug from '/lib/lame_es6/debug.js';
+const debug = Debug('wall:state_manager');
 
-  class ClientSharedState extends sharedState.SharedState {
-    constructor(name, interpolator, network) {
-      super(name, interpolator);
-      this.network_ = network;
-      this.owner_ = network.id;
-    }
-    set(value, time) {
-      if (this.owner_ !== undefined && this.network_.id !== this.owner_) {
-        throw new Error('Attempted to set state for state owned by ' + this.owner_);
-      }
-      super.set(value, time);
-      this.network_.emit('newclientstateset',
-          { name: this.name_, value: value, time: time });
-    }
+class ClientSharedState extends sharedState.SharedState {
+  constructor(name, interpolator, network) {
+    super(name, interpolator);
+    this.network_ = network;
+    this.owner_ = network.id;
   }
+  set(value, time) {
+    if (this.owner_ !== undefined && this.network_.id !== this.owner_) {
+      throw new Error('Attempted to set state for state owned by ' + this.owner_);
+    }
+    super.set(value, time);
+    this.network_.emit('newclientstateset',
+        { name: this.name_, value: value, time: time });
+  }
+}
 
-  // Describes something that tracks all sharedstate and provides methods for
-  // the communication of that state across the network.
-  var StateManager = function(network) {
+// Describes something that tracks all sharedstate and provides methods for
+// the communication of that state across the network.
+export class StateManager {
+  constructor(network) {
     // A map of tracked state name -> state variable.
     this.trackedState_ = {};
     this.network_ = network;
-    
+
     // Listen for communication from the server. NOTE: we rely on the network's
     // own cleanup protocol to stop listening here.
     // TODO(applmak): Vet that this works as expected and that no further
     // disposal is needed.
-    var manager = this;
-
-    network.on('newstate', function(newstate) {
-      if (newstate.name in manager.trackedState_) {
-        var currentState = manager.trackedState_[newstate.name];
+    network.on('newstate', (newstate) => {
+      if (newstate.name in this.trackedState_) {
+        var currentState = this.trackedState_[newstate.name];
         if (currentState.owner_ === newstate.owner) {
           return;
         } else if (currentState.owner_ === undefined &&
@@ -63,26 +61,26 @@ define(function(require) {
             'to create state with the same name as one already registered.');
       }
       debug('Received new state registration ' + newstate.name);
-      manager.trackedState_[newstate.name] = new sharedState.SharedState(
+      this.trackedState_[newstate.name] = new sharedState.SharedState(
           newstate.name,
           sharedState.decodeInterpolator(newstate.interpolatorDef),
           newstate.owner);
     });
-    
-    network.on('state', function(data) {
-      data.forEach(function(state) {
-        if (!(state.name in manager.trackedState_)) {
+
+    network.on('state', data => {
+      data.forEach(state => {
+        if (!(state.name in this.trackedState_)) {
           debug('Data received for state that wasn\'t created! ' + state.name);
           return;
         }
         if (state.dataPoint !== undefined) {
-          manager.get(state.name).set(state.dataPoint.value, state.dataPoint.time);
+          this.get(state.name).set(state.dataPoint.value, state.dataPoint.time);
         }
       });
     });
-  };
+  }
 
-  StateManager.prototype.create = function(name, interpolatorDef) {
+  create(name, interpolatorDef) {
     debug('Created state ' + name);
     if (name in this.trackedState_) {
       throw new Error(
@@ -92,12 +90,9 @@ define(function(require) {
         name, sharedState.decodeInterpolator(interpolatorDef), this.network_);
     this.network_.emit('newclientstatecreated',
         { name: name, interpolatorDef: interpolatorDef });
-  };
+  }
 
-  StateManager.prototype.get = function(name) {
+  get(name) {
     return this.trackedState_[name];
-  };
-
-
-  return StateManager;
-});
+  }
+}

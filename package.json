@@ -14,7 +14,7 @@
   "dependencies": {
     "amdefine": "^1.0.0",
     "body-parser": "^1.18.3",
-    "clock-skew": "^0.2.3",
+    "clock-skew": "^0.3.0",
     "command-line-args": "^5.0.0",
     "command-line-usage": "^5.0.0",
     "d3": "^5.9.1",
