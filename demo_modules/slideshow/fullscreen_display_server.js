@@ -15,7 +15,11 @@ limitations under the License.
 
 import {ServerDisplayStrategy, ClientDisplayStrategy} from './interfaces.js';
 
-export default function({debug, _, assert, wallGeometry, network}) {
+import assert from '../../lib/assert.js';
+import randomjs from 'random-js';
+const random = new randomjs.Random();
+
+export default function({debug, wallGeometry, network}) {
   // FULLSCREEN DISPLAY STRATEGY
   // This display strategy shows a single element per screen, updating at a rate
   // specified in the config. We wait for the corresponding element to load
@@ -78,7 +82,9 @@ export default function({debug, _, assert, wallGeometry, network}) {
     newContent(content) {
       this.content.push(...content);
       // We've loaded new content. Generate a list of new indices and shuffle.
-      let newIndices = _.shuffle(_.range(this.nextContentIndices.length, content.length));
+      let newIndices = random.shuffle(Array.from(
+        {length: content.length - this.nextContentIndices.length},
+        (v, k) => this.nextContentIndices.length + k));
       // Add the content indices.
       this.nextContentIndices.push(...newIndices);
 
@@ -94,7 +100,7 @@ export default function({debug, _, assert, wallGeometry, network}) {
         // Otherwise, tell a specific client to show a specific bit of content.
         if (time - this.lastUpdate >= this.config.period) {
           // Pick a random client.
-          let client = _.sample(network.getClientsInRect(wallGeometry.extents));
+          let client = random.pick(network.getClientsInRect(wallGeometry.extents));
           if (client) {
             this.chooseSomeContent(client.socket);
           }
@@ -107,83 +113,7 @@ export default function({debug, _, assert, wallGeometry, network}) {
     }
   }
 
-  class FullscreenClientDisplayStrategy extends ClientDisplayStrategy {
-    constructor(config) {
-      super();
-      this.config_ = config;
-    }
-    init(surface, loadStrategy) {
-      let logError = (...args) => console.error(...args);
-      //const logErrorPromise = import('../../client/util/log.js').then(e => logError = e.error(debug));
-      this.content = null;
-      network.emit('display:init');
-      this.surface = surface;
-      network.on('display:content', c => {
-        let container = this.surface.container;
-        let info = container.querySelector('#fullscreen-info');
-        if (!info) {
-          info = document.createElement('div');
-          info.id = 'fullscreen-info';
-          info.style.position = 'absolute';
-          info.style.left = '0';
-          info.style.right = '0';
-          info.style.top = '0';
-          info.style.bottom  = '0';
-          info.style.color = 'white';
-          info.style.font = 'bolder 18px monospace';
-          container.appendChild(info);
-        }
-        info.textContent = `Loading "${c}..."`;
-
-        loadStrategy.loadContent(c).then(content => {
-          // One piece of content per client.
-          this.content = content;
-          let s = this.config_.image && this.config_.image.scale || 'stretch';
-          this.surface.container.style.display = 'flex';
-          this.surface.container.style.alignItems = 'center';
-          this.surface.container.style.justifyContent = 'center';
-          switch(s) {
-            case 'stretch':
-              content.style.position = 'absolute';
-              content.style.top = 0;
-              content.style.left = 0;
-              content.style.width = '100%';
-              content.style.height = '100%';
-              break;
-            case 'full':
-              content.style.display = 'block';
-              if (content.naturalWidth/this.surface.virtualRect.w >=
-                  content.naturalHeight/this.surface.virtualRect.h) {
-                content.style.width = '100%';
-              } else {
-                content.style.height = '100%';
-              }
-          }
-
-          // Clear surface.
-          while (this.surface.container.firstChild) {
-            this.surface.container.removeChild(this.surface.container.firstChild);
-          }
-          // Add content.
-          this.surface.container.appendChild(content);
-        }).catch(err => {
-          info.innerHTML += '<br>';
-          info.innerHTML += `<span style="color:red">Error! ${err}</span>`;
-          if (logError) {
-            logError(err);
-          }
-        });
-      });
-    }
-    draw(time, delta) {
-      if (this.content && this.content.draw) {
-        this.content.draw(time, delta);
-      }
-    }
-  }
-
   return {
     Server: FullscreenServerDisplayStrategy,
-    Client: FullscreenClientDisplayStrategy
   };
 }
