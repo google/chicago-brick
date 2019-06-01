@@ -2,6 +2,8 @@
   "name": "chicago-brick-live",
   "client_path": "./chicago-brick-live-client.js",
   "server_path": "./chicago-brick-live-server.js",
-  "title": "Chicago Brick Live",
-  "author": "Ian Atkinson"
+  "credit": {
+    "title": "Chicago Brick Live",
+    "author": "Ian Atkinson"
+  }
 }

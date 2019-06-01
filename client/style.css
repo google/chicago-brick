@@ -81,6 +81,7 @@ div[debug] {
     background-color: rgba(0, 0, 0, 0.4);
     font: 180px Podkova,sans-serif;
     z-index: 1000;
+    white-space: nowrap;
 }
 
 .beam {

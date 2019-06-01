@@ -22,26 +22,30 @@ limitations under the License.
  * config:
  *
  * - Author/Title Card: Shows a title and author for the current module. It can
- *   be configured by setting "title" to a string in the module config.
- *   "author" can optionally be set to a string to show the author as well.
+ *   be configured by setting "title" to a string in the "credit" object of the
+ *   module config. "author" can optionally be set to a string to show the
+ *   author as well.
  *   Example:
  *     {
  *       "name": "balls",
  *       "path": "demo_modules/balls/balls.js",
- *       "title": "Bouncing Balls",
- *       "author": "Matt Handley"
+ *       "credit": {
+ *         "title": "Bouncing Balls",
+ *         "author": "Matt Handley"
+ *       }
  *     },
  *
  * - Image Card: Shows a custom image over that client.  It can be configured by
- *   setting "title" to an object containing a "path" field which corresponds to
- *   a local file path relative to the install root. Any image format supported
- *   by chrome is valid.
+ *   setting "credit" to an object containing an "image" field which corresponds
+ *   to a file that will be found via the `asset` function. Any image format
+ *   supported by Chrome is valid.
  *   Example:
  *     {
  *       "name": "balls",
  *       "path": "demo_modules/balls/balls.js",
- *       "title": {"path": "local/path/to/title.png"}
- *       "author": "Matt Handley"
+ *       "credit": {
+ *         "image": "local/path/to/title.png"
+ *       }
  *     }
  * - Custom Card: Cilents can implement their own custom title card using the
  *   titleCard API from their module. useCustomCard() will return a reference to
@@ -64,27 +68,30 @@ limitations under the License.
 import asset from '/client/asset/asset.js';
 
 function makeEmptyTitleCard() {
-  var elem = document.createElement('div');
+  const elem = document.createElement('div');
   elem.id = 'title-card';
   return elem;
 }
 
-function makeDefaultTitleCard(config) {
-  var elem = makeEmptyTitleCard();
-  if (typeof config.title === 'string') {
-    elem.innerHTML = `<div>${config.title}</div>
-        <div>${config.author}</div>`;
-  } else if (config.title && typeof config.title.path === 'string') {
-    elem.innerHTML = `<img src="${asset(config.title.path)}">`;
+function makeDefaultTitleCard(credit) {
+  const elem = makeEmptyTitleCard();
+  if (credit.image) {
+    elem.innerHTML = `<img src="${asset(credit.image)}">`;
+  } else if (credit.title && credit.author) {
+    elem.innerHTML = `<div>${credit.title}</div>
+        <div>${credit.author}</div>`;
+  } else if (credit.title) {
+    elem.innerHTML = `<div>${credit.title}</div>`;
   }
+
   return elem;
 }
 
 export class TitleCard {
-  constructor(config) {
-    this.config = config;
+  constructor(credit) {
+    this.credit = credit;
     this.inDocument_ = false;
-    this.elem_ = makeDefaultTitleCard(config);
+    this.elem_ = makeDefaultTitleCard(credit);
   }
 
   replaceCard_(newCard) {
@@ -107,7 +114,7 @@ export class TitleCard {
       // Creates a standard (config-based) card and returns a reference to the
       // caller.
       useDefaultCard: function() {
-        return card.replaceCard_(makeDefaultTitleCard(card.config));
+        return card.replaceCard_(makeDefaultTitleCard(card.credit));
       },
     };
   }
@@ -115,10 +122,20 @@ export class TitleCard {
   // Called by the framework when the module has faded in.
   enter() {
     if (this.isTitleClient() && !this.inDocument_) {
-      if (this.config.author || this.config.title) {
+      // Only add the document to the page if there's something to be added.
+      if (this.elem_.children.length) {
         document.body.insertBefore(this.elem_, document.body.firstChild);
+        this.inDocument_ = true;
+        // Shrink the fonts so that things don't wrap beyond the containing box.
+        for (let e of this.elem_.querySelectorAll('div')) {
+          // Read the initial font size:
+          let fontSize = parseInt(window.getComputedStyle(e).fontSize);
+          while (e.scrollWidth > this.elem_.offsetWidth) {
+            fontSize *= 0.95;
+            e.style.fontSize = `${fontSize.toFixed(2)}px`;
+          }
+        }
       }
-      this.inDocument_ = true;
     }
   }
 

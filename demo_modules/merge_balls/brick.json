@@ -2,6 +2,8 @@
   "name": "merge-balls",
   "client_path": "./merge_balls_client.js",
   "server_path": "./merge_balls_server.js",
-  "title": "Hungry Hungry Circles",
-  "author": "Ian Atkinson"
+  "credit": {
+    "title": "Hungry Hungry Circles",
+    "author": "Ian Atkinson"
+  }
 }

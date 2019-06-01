@@ -62,13 +62,12 @@ function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
  * instantiate a module, including code location and config parameters.
  */
 export class ModuleDef extends EventEmitter {
-  constructor(name, moduleRoot, pathsOrBaseModule, title, author, config) {
+  constructor(name, moduleRoot, pathsOrBaseModule, config, credit) {
     super();
     this.name = name;
     this.root = moduleRoot;
-    this.config = config || {};
-    this.title = title;
-    this.author = author;
+    this.config = config;
+    this.credit = credit;
 
     // The path to the client main file of the module.
     this.clientPath = '';
@@ -112,19 +111,17 @@ export class ModuleDef extends EventEmitter {
       clientPath: this.clientPath,
       serverPath: this.serverPath,
       config: util.inspect(this.config),
-      title: this.title,
-      author: this.author
     };
   }
   // Returns a new module def that extends this def with new configuration.
-  extend(name, title, author, config) {
+  extend(name, config, credit) {
     return new ModuleDef(
       name,
       this.root,
       {base: this},
-      title === undefined ? '' : (title || this.title),
-      author === undefined ? '' : (author || this.author),
-      config);
+      config,
+      credit,
+    );
   }
 
   // Loads a module from disk asynchronously, assigning def when complete.
@@ -165,8 +162,7 @@ export class ModuleDef extends EventEmitter {
       name: this.name,
       path: path.join('/module/', this.name, this.clientPath),
       config: this.config,
-      title: this.title,
-      author: this.author,
+      credit: this.credit,
     };
   }
 }

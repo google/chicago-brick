@@ -1,6 +1,8 @@
 {
   "name": "cosines",
   "client_path": "./cosines.js",
-  "title": "Cosines",
-  "author": "Matt Cruikshank"
+  "credit": {
+    "title": "Cosines",
+    "author": "Matt Cruikshank"
+  }
 }
