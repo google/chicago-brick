@@ -18,18 +18,18 @@ Next, install the external npm deps that aren't in the repo:
 path/to/your/chicago-brick$ npm install
 ```
 
-Then, to run the server in 1x1 mode with stars module:
+Then, to run the server in 1x1 mode with the gears module:
 ```
-chicago-brick$ ./bin/run_1x1.sh -m stars
+chicago-brick$ ./bin/run_1x1.sh -m gears
 ```
 
 And open a Chrome window to http://localhost:3000/?config=0,0,1920,1080.
-You should be able to see many stars zooming towards you.
+You should be able to see some gears rotating.
 If you don't see that, try running the `npm install` command again.
 
-Or, to run the server in 2x2 mode with stars module:
+Or, to run the server in 2x2 mode with the gears module:
 ```
-chicago-brick$ ./bin/run_2x2.sh -m stars
+chicago-brick$ ./bin/run_2x2.sh -m gears
 ```
 
 And open the client windows like so:
@@ -38,7 +38,7 @@ chicago-brick$ ./bin/start_2x2_clients.sh
 ```
 You should be able to see the same thing with four browser windows instead.
 
-You can play with different modules by substituting the `stars` argument
+You can play with different modules by substituting the `gears` argument
 with other names in `chicago-brick/config/demo-playlist.json`.
 
 ## Modules
