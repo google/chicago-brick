@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as geometry from '/lib/geometry.js';
+import {Polygon} from '/lib/math/polygon2d.js';
 import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
 import {P5Surface} from '/client/surface/p5_surface.js';
 
@@ -21,7 +21,7 @@ export function load(wallGeometry, network, debug) {
 
   // Create a polygon extending from x,y by w,h.
   function makeCornerRectPolygon(x, y, w, h) {
-    return new geometry.Polygon([
+    return new Polygon([
       {x: x, y: y},
       {x: x + w, y: y},
       {x: x + w, y: y + h},
@@ -93,8 +93,8 @@ export function load(wallGeometry, network, debug) {
         for (var j = 0; j < NUM_ROWS; j++) {
           var point = [i*this.cellWidth, j*this.cellHeight];
           var newPolygon = makeCornerRectPolygon(point[0], point[1], this.cellWidth, this.cellHeight);
-          var visible = !!geometry.intersectPolygonPolygon(newPolygon, this.virtualRectPolygon) ||
-               geometry.isInsidePolygon(newPolygon, this.virtualRectPolygon);
+          var visible = !!newPolygon.intersectionWithPolygon(this.virtualRectPolygon) ||
+               newPolygon.isInsidePolygon(this.virtualRectPolygon);
           this.visibleCells[i][j] = visible;
         }
       }

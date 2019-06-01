@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as geometry from '../../lib/geometry.js';
+import {Polygon} from '../../lib/math/polygon2d.js';
 import Debug from 'debug';
 import _ from 'underscore';
 import fs from 'fs';
@@ -40,16 +40,7 @@ function parseGeometry(polygonPoints) {
     return agg;
   }, [{x: 0, y: 0}]);
 
-  var poly = new geometry.Polygon(points);
-
-  // Check to ensure we are closed.
-  var last = _(poly.points).last();
-  var first = poly.points[0];
-  if (last.x != first.x || last.y != first.y) {
-    throw new Error('Polygon is not closed!');
-  }
-
-  return poly;
+  return new Polygon(points);
 }
 
 export function loadGeometry(path) {

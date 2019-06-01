@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {delay} from '/lib/promise.js';
-import * as geometry from '/lib/geometry.js';
+import {Polygon} from '/lib/math/polygon2d.js';
 import * as log from '/client/util/log.js';
 import * as moduleInterface from '/lib/module_interface.js';
 import * as moduleTicker from '/client/modules/module_ticker.js';
@@ -90,7 +90,7 @@ export class ClientModule {
       bits.module.config,
       new TitleCard(bits.module),
       bits.time,
-      new geometry.Polygon(bits.geo)
+      new Polygon(bits.geo)
     );
   }
 
@@ -101,7 +101,7 @@ export class ClientModule {
       {},
       new TitleCard({}),
       deadline,
-      new geometry.Polygon([{x: 0, y:0}])
+      new Polygon([{x: 0, y:0}])
     );
   }
 
@@ -127,7 +127,7 @@ export class ClientModule {
       titleCard: this.titleCard.getModuleAPI(),
       state: new StateManager(openNetwork),
       globalWallGeometry: this.geo,
-      wallGeometry: new geometry.Polygon(this.geo.points.map(function(p) {
+      wallGeometry: new Polygon(this.geo.points.map(function(p) {
         return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
       }, this)),
       peerNetwork,

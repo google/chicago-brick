@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as geometry from '../../lib/geometry.js';
+import {Polygon} from '../../lib/math/polygon2d.js';
 import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
-import {Rectangle} from '../../lib/rectangle.js';
+import {Rectangle} from '../../lib/math/rectangle.js';
 
 export function load(network, wallGeometry) {
   class BallsServer {
@@ -54,13 +54,13 @@ export function load(network, wallGeometry) {
         // BUT we can assume that all balls start inside.
 
         // If we are moving outside of the wall...
-        if (!geometry.isInsidePolygon(newPolygon, wallGeometry)) {
+        if (!newPolygon.isInsidePolygon(wallGeometry)) {
           // Figure out which line we are passing through...
-          var intersection = geometry.intersectPolygonPolygon(newPolygon, wallGeometry);
+          var intersection = newPolygon.intersectionWithPolygon(wallGeometry);
           if (intersection) {
             // We definitely need to flip, because we are leaving the wall.
             // Figure out if this is a horizontal line.
-            var horiz = intersection.p1.y == intersection.p2.y;
+            var horiz = intersection.a.y == intersection.b.y;
             // Change the velocity...
             if (horiz) {
               ball.vy *= -1;
@@ -84,7 +84,7 @@ export function load(network, wallGeometry) {
     }
 
     static makeBoxPolygon(x, y, radius) {
-      return new geometry.Polygon([
+      return new Polygon([
         {x: x - radius, y: y - radius},
         {x: x + radius, y: y - radius},
         {x: x + radius, y: y + radius},

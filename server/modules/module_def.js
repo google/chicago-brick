@@ -25,7 +25,7 @@ import inject from '../../lib/inject.js';
 import {Server} from '../../lib/module_interface.js';
 import util from 'util';
 import * as wallGeometry from '../util/wall_geometry.js';
-import * as geometry from '../../lib/geometry.js';
+import {Polygon} from '../../lib/math/polygon2d.js';
 
 const importCache = {};
 async function importIntoCache(moduleRoot, modulePath) {
@@ -46,7 +46,7 @@ function extractFromImport(name, moduleRoot, modulePath, layoutGeometry, network
     network,
     game,
     state,
-    wallGeometry: new geometry.Polygon(layoutGeometry.points.map((p) => {
+    wallGeometry: new Polygon(layoutGeometry.points.map((p) => {
       return {
         x: p.x - layoutGeometry.extents.x,
         y: p.y - layoutGeometry.extents.y

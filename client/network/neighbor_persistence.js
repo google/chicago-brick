@@ -15,8 +15,7 @@ limitations under the License.
 
 var _ = require('underscore');
 import Debug from '/lib/es6-lame/debug.js';
-import * as geometry from '/lib/geometry.js';
-import {Rectangle} from '/lib/rectangle.js';
+import {Rectangle} from '/lib/math/rectangle.js';
 const debug = Debug('wall:neighbor-persistence');
 
 class NeighborPersistence {
@@ -78,12 +77,12 @@ class NeighborPersistence {
       var rect = new Rectangle(
           client.x * this.rect_.w, client.y * this.rect_.h,
           this.rect_.w, this.rect_.h);
-      return geometry.isInsideRect(rect, x, y);
+      return rect.isInside({x, y});
     });
   }
   // Returns the ideal status of a point.
   computeIdealStatus_(x, y) {
-    if (geometry.isInsideRect(this.rect_, x, y)) {
+    if (this.rect_.isInside({x, y})) {
       // We should be owning this data.
       return 'authoritative';
     } else {
