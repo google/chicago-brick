@@ -30,7 +30,7 @@
     "p5": "^0.8.0",
     "peer": "^0.2.10",
     "peerjs": "^1.0.0",
-    "random-js": "^1.0.6",
+    "random-js": "^2.1.0",
     "relaxed-json": "^1.0.0",
     "request": "^2.88.0",
     "requirejs": "^2.3.6",

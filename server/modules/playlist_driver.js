@@ -16,12 +16,12 @@ limitations under the License.
 import * as monitor from '../monitoring/monitor.js';
 import * as wallGeometry from '../util/wall_geometry.js';
 import Debug from 'debug';
-import Random from 'random-js';
+import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
 
 const debug = Debug('wall::playlist_driver');
-const random = Random();
+const random = new randomjs.Random();
 
 export class PlaylistDriver {
   constructor(moduleSM) {
