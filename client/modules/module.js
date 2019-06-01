@@ -126,10 +126,7 @@ export class ClientModule {
       network: openNetwork,
       titleCard: this.titleCard.getModuleAPI(),
       state: new StateManager(openNetwork),
-      globalWallGeometry: this.geo,
-      wallGeometry: new Polygon(this.geo.points.map(function(p) {
-        return {x: p.x - this.geo.extents.x, y: p.y - this.geo.extents.y};
-      }, this)),
+      wallGeometry: this.geo,
       peerNetwork,
       assert,
     }

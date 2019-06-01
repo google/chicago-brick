@@ -13,13 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {StateManager} from '../state/state_manager.js';
-import assert from '../../lib/assert.js';
 import * as game from '../game/game.js';
-import network from '../network/network.js';
-
 import Debug from 'debug';
+import assert from '../../lib/assert.js';
+import network from '../network/network.js';
+import {StateManager} from '../state/state_manager.js';
 import {error} from '../util/log.js';
+import {getGeo} from '../util/wall_geometry.js';
+
 const debug = Debug('wall:server_state_machine');
 const logError = error(debug);
 
@@ -28,15 +29,14 @@ export class RunningModule {
    * Constructs a running module.
    * NOTE that's it's fine to create one of these with no def, which will simply blank the screen.
    */
-  constructor(moduleDef, geo, deadline) {
+  constructor(moduleDef, deadline) {
     assert(moduleDef, 'Empty def passed to running module!');
     this.moduleDef = moduleDef;
-    this.geo = geo;
     this.deadline = deadline;
 
     if (this.moduleDef.valid) {
       // Only instantiate support objects for valid module defs.
-      const INSTANTIATION_ID = `${geo.extents.serialize()}-${deadline}`;
+      const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
       this.gameManager = game.forModule(INSTANTIATION_ID);
     } else {
@@ -51,7 +51,7 @@ export class RunningModule {
     if (this.network) {
       let openNetwork = this.network.open();
       this.stateManager = new StateManager(openNetwork);
-      this.instance = this.moduleDef.instantiate(this.geo, openNetwork, this.gameManager, this.stateManager, this.deadline);
+      this.instance = this.moduleDef.instantiate(openNetwork, this.gameManager, this.stateManager, this.deadline);
     }
   }
 
