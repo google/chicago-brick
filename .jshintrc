@@ -2,6 +2,7 @@
   "-W041": false,  /* Disable "Use '===' to compare with 0". */
   "-W058": true,  /* Disable 'Missing () invoking a constructor' */
   "-W126": false,  /* Disable 'Unnecessary grouping operator.' */
+  "module": true,
   "newcap": false,
   "curly": true,
   "eqeqeq": false,
@@ -14,9 +15,11 @@
   "singleGroups": true,
   "undef": true,
   "unused": "vars",
-  "esnext": true,  
+  "esversion": 9,
   "globals": {
-    "require": true,
+    "describe": false,
+    "it": false,
+    "chai": false,
     "console": true
   }
 }
