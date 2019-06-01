@@ -36,8 +36,7 @@
     "requirejs": "^2.3.6",
     "socket.io": "^2.2.0",
     "socket.io-client": "^2.2.0",
-    "three-full": "^11.3.2",
-    "underscore": "^1.9.1"
+    "three-full": "^11.3.2"
   },
   "pre-commit": [
     "jshint"

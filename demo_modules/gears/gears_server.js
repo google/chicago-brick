@@ -196,7 +196,7 @@ export function load(debug, state, wallGeometry) {
         }
 
         const newColorIndex = random.pick(
-            Array.from({length: GOOGLE_COLORS.length}, (k,v) => k)
+            Array.from({length: GOOGLE_COLORS.length}, (u,i) => i)
                 .filter(i => i != chosenGear.colorIndex));
 
         this.gears_.push({

@@ -19,6 +19,13 @@ import assert from '../../lib/assert.js';
 import randomjs from 'random-js';
 const random = new randomjs.Random();
 
+function pick(arr) {
+  if (arr.length) {
+    return random.pick(arr);
+  }
+  return null;
+}
+
 export default function({debug, wallGeometry, network}) {
   // FULLSCREEN DISPLAY STRATEGY
   // This display strategy shows a single element per screen, updating at a rate
@@ -100,7 +107,7 @@ export default function({debug, wallGeometry, network}) {
         // Otherwise, tell a specific client to show a specific bit of content.
         if (time - this.lastUpdate >= this.config.period) {
           // Pick a random client.
-          let client = random.pick(network.getClientsInRect(wallGeometry.extents));
+          let client = pick(network.getClientsInRect(wallGeometry.extents));
           if (client) {
             this.chooseSomeContent(client.socket);
           }
