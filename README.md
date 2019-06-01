@@ -6,7 +6,7 @@ Then, check you have a recent node:
 ```
 $ node --version
 ```
-The wall uses all the new JS shiny, so node should be at least 8.
+The wall uses all the new JS shiny, so node should be at least 12.
 
 Clone the repo to your machine:
 ```

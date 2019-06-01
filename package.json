@@ -8,6 +8,9 @@
     "jshint": "node_modules/.bin/jshint **/*.js",
     "release": "node_modules/.bin/release-it -n"
   },
+  "engines": {
+    "node" : ">=12.0.0"
+  },
   "type": "module",
   "repository": "github:google/chicago-brick",
   "author": "",
