@@ -16,10 +16,6 @@ limitations under the License.
 'use strict';
 /* globals d3 */
 
-var bgColors = [
-  'red', 'blue', 'green', 'yellow',
-];
-
 // Returns a map of module name to number.
 // 1 means the module exists in the config.
 // > 1 means the module exists and is in a loaded playlist.
@@ -36,7 +32,7 @@ function buildPlayableModuleMap(modules, config) {
     if (playlist.collection === undefined) {
       modules.forEach(module => playableModules[module.name] += 1);
     } else if (playlist.collection == '__ALL__') {
-      playableCollections['__ALL__'] = new Array();
+      playableCollections['__ALL__'] = [];
       modules.forEach(
         module => playableCollections['__ALL__'].push(module.name)
       );
@@ -46,9 +42,9 @@ function buildPlayableModuleMap(modules, config) {
   });
 
   for (let collection in playableCollections) {
-    playableCollections[collection].forEach(
-      module => playableModules[module] += 1
-    );
+    playableCollections[collection].forEach(module => {
+      playableModules[module] += 1;
+    });
   }
   return playableModules;
 }

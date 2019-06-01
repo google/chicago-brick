@@ -14,10 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {Polygon} from '../../lib/math/polygon2d.js';
-import Debug from 'debug';
 import fs from 'fs';
-
-const debug = Debug('wall:wall_geometry');
 
 // Returns a polygon that entirely contains the wall geometry. NOTE: any point
 // to the left of the polygon is outside of it, because we assume that points
@@ -46,7 +43,7 @@ export function loadGeometry(path) {
   // Convert from config description to actual polygon.
   var config = JSON.parse(fs.readFileSync(path));
   return config.polygon;
-};
+}
 
 var xscale = 1920;
 var yscale = 1080;

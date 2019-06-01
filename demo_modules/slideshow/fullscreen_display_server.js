@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ServerDisplayStrategy, ClientDisplayStrategy} from './interfaces.js';
+import {ServerDisplayStrategy} from './interfaces.js';
 
 import assert from '../../lib/assert.js';
 import randomjs from 'random-js';

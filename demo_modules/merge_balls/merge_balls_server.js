@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Rectangle} from '../../lib/math/rectangle.js';
-
 export function load(state, network, wallGeometry) {
   var NUM_BALLS = 10;
   var INITIAL_RADIUS = 150;

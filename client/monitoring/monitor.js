@@ -68,12 +68,12 @@ let watchForModelChanges = () => {
   // Open connection to the server, monitor for updates to the model.
   network.send('enable-monitoring');
   network.on('monitor', handleManyModelChanges);
-}
+};
 
 let stopWatchingModelChanges = () => {
   network.send('disable-monitoring');
   network.removeListener('monitor', handleManyModelChanges);
-}
+};
 
 let enabled = false;
 let monitoringElement;
@@ -387,7 +387,7 @@ class StateTimeline {
       let slots = labelSlotsEnds.map((v, i) => ({v, i}));
       slots.sort((a, b) => a.v - b.v);
       return slots.shift();
-    }
+    };
 
     return events.filter(e => {
       // There are two kinds of events: Ones with 'state' and ones without.
@@ -397,7 +397,7 @@ class StateTimeline {
 
         let x = e.time;
         if ('deadline' in e) {
-          this.canvas.strokeArrow(e.time, .1, e.deadline, 0.1, 5);
+          this.canvas.strokeArrow(e.time, 0.1, e.deadline, 0.1, 5);
           x = (e.time + e.deadline) * 0.5;
         }
         this.canvas.strokeGeneratedPath([[e.time, 0.0], [e.time, 1.0]]);
@@ -450,13 +450,11 @@ function* allNumbers() {
   }
 }
 
-let lastT = 0;
-
 let localFrameTimes, syncedFrameTimes, localTimeDeltas, syncedTimeDeltas;
 let driftDeltaTimes;
 let clientSmTimeline, serverSmTimeline, moduleSmTimeline, layoutSmTimeline, playlistTimeline;
 let updateUI = () => {
-  let now = time.now();
+  let t = now();
   let width = monitoringElement.offsetWidth;
   // Assume 60 fps, assume 1 frame of data per pixel.
 
@@ -471,7 +469,7 @@ let updateUI = () => {
 
   // Update fps
   localFrameTimes.push(performance.now());
-  syncedFrameTimes.push(now);
+  syncedFrameTimes.push(t);
 
   if (localFrameTimes.size > 1) {
     let [oldT, newT] = localFrameTimes.last(2);
@@ -539,8 +537,8 @@ let updateUI = () => {
   // Calculate time bounds:
   let timeWidth = width / 1 / 60.0 * 1000.0;
 
-  let earlyTime = now - timeWidth / 2;
-  let lateTime = now + timeWidth / 2;
+  let earlyTime = t - timeWidth / 2;
+  let lateTime = t + timeWidth / 2;
 
   // Update client local sm
   if (!clientSmTimeline) {
@@ -574,7 +572,7 @@ let updateUI = () => {
 
   // Update the time labels.
   monitoringElement.querySelector('.label.early').textContent = (earlyTime / 1000).toFixed(1);
-  monitoringElement.querySelector('.label.now').textContent = (now / 1000).toFixed(1);
+  monitoringElement.querySelector('.label.now').textContent = (t / 1000).toFixed(1);
   monitoringElement.querySelector('.label.late').textContent = (lateTime / 1000).toFixed(1);
 
   // Update drawn modules.

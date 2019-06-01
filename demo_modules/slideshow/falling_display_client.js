@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ServerDisplayStrategy, ClientDisplayStrategy} from './interfaces.js';
+import {ClientDisplayStrategy} from './interfaces.js';
 
 export default function({debug, wallGeometry, network}) {
   // FALLING DISPLAY STRATEGY

@@ -1,5 +1,4 @@
-/* globals Path2D */
-import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
+import {GOOGLE_COLORS} from './colors.js';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import randomjs from 'random-js';
 const random = new randomjs.Random();

@@ -59,7 +59,7 @@ export class P5Surface extends Surface {
         if (typeof(surface.sketch.preload) == "function") {
           surface.sketch.preload(p5);
         }
-      }
+      };
 
       p5.setup = function() {
         // Videowall required setup.

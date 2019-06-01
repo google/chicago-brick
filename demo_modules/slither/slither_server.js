@@ -22,7 +22,7 @@ export function load(debug, state, wallGeometry) {
     '#ff6347',
     '#d02090',
     '#8a2be2',
-  ]
+  ];
   const SPEED = 0.2;
 
   const isOutOfBounds = ({x, y}, rect) => {

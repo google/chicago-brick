@@ -13,14 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import Debug from 'debug';
 import RJSON from 'relaxed-json';
 import assert from '../../lib/assert.js';
 import fs from 'fs';
 import library from './module_library.js';
 import {Layout} from './layout.js';
-
-const debug = Debug('wall:playlist_loader');
 
 export class PlaylistLoader {
 

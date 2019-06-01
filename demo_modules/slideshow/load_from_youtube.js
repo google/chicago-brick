@@ -116,7 +116,7 @@ export default function({debug}) {
               player.mute();
             },
             onError: (e) => {
-              reject(e)
+              debug(e);
             },
             onStateChange: (e) => {
               debug('state', e.data);

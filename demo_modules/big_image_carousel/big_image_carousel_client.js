@@ -32,7 +32,7 @@ export function load(wallGeometry, asset) {
 
       this.backgroundColor = p5.color(120);
 
-      this.tiles = new Array();
+      this.tiles = [];
       for (let path in this.image_list_config) {
         let images = this.image_list_config[path];
         for (let i in images) {
@@ -108,8 +108,7 @@ export function load(wallGeometry, asset) {
         let image = this.tiles[x];
         let right_x = x_offset + image.width;
           // Do we need to draw this image?
-          if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge)
-              ||
+          if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge) ||
               (right_x >= this.surface.virtualRect.x && right_x < screen_right_edge)) {
             p5.image(image, x_offset, this.surface.virtualRect.y);
           }
@@ -123,8 +122,7 @@ export function load(wallGeometry, asset) {
             let image = this.tiles[x];
             let right_x = x_offset + image.width;
               // Do we need to draw this image?
-              if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge)
-                  ||
+              if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge) ||
                   (right_x >= this.surface.virtualRect.x && right_x < screen_right_edge)) {
                 p5.image(image, x_offset, this.surface.virtualRect.y);
               }
@@ -140,8 +138,7 @@ export function load(wallGeometry, asset) {
           x_offset -= image.width;
           let right_x = x_offset + image.width;
             // Do we need to draw this image?
-            if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge)
-                ||
+            if ((x_offset >= this.surface.virtualRect.x && x_offset <= screen_right_edge) ||
                 (right_x >= this.surface.virtualRect.x && right_x < screen_right_edge)) {
               p5.image(image, x_offset, this.surface.virtualRect.y);
             }

@@ -28,4 +28,4 @@ export function loadYoutubeApi() {
       window.onYouTubeIframeAPIReady = resolve;
     }
   });
-};
+}

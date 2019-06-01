@@ -129,7 +129,7 @@ export class ClientModule {
       wallGeometry: this.geo,
       peerNetwork,
       assert,
-    }
+    };
     const {load} = await import(this.path);
     if (!load) {
       throw new Error(`${this.name} did not export a 'load' function!`);
