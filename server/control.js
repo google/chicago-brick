@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import _ from 'underscore';
 import RJSON from 'relaxed-json';
 import Debug from 'debug';
 import library from './modules/module_library.js';
@@ -75,7 +74,7 @@ export class Control {
   }
 
   getModules(req, res) {
-    res.json(_.values(library.modules));
+    res.json(Object.values(library.modules));
   }
 
   getPlaylist(req, res) {

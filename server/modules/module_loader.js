@@ -15,7 +15,6 @@ limitations under the License.
 
 import Debug from 'debug';
 import RJSON from 'relaxed-json';
-import _ from 'underscore';
 import assert from '../../lib/assert.js';
 import fs from 'fs';
 import glob from 'glob';
@@ -35,35 +34,35 @@ export class ModuleLoader {
   loadModules(playlistConfig) {
     library.reset();
     debug(this.flags.module_dir);
-    const configPaths = _.flatten(this.flags.module_dir.map((p) => {
+    const configPaths = this.flags.module_dir.flatMap(p => {
       return glob.sync(path.join(p, 'brick.json'));
-    }));
+    });
 
     // TODO(bmt): Do something more clever here to order loading based on
     // extends dependencies. Right now it relies on the order of loading which
     // will be more fragile when the config is spread across several packages.
-    const configs = _.filter(_.flatten(configPaths.map((cfgPath) => {
-      return this.loadModule(cfgPath);
-    }, (cfg) => {
-      if (!cfg.name || (!cfg.extends && !cfg.path)) {
-        debug('Skipping invalid configuration: ' + cfg);
+    const configs = configPaths.flatMap(cfgPath => this.loadModule(cfgPath))
+        .filter(cfg => {
+      if (!cfg.name) {
+        debug('Skipping invalid configuration:', cfg);
         return false;
       }
       return true;
-    })));
+    });
 
     // We support overriding config values of existing modules or extending
     // existing modules from the playlist.
     const playlistModules = playlistConfig.modules || [];
-    const extensions = _.filter(playlistModules, m => m.extends);
-    const overrides = _.difference(playlistModules, extensions);
+    const extensions = playlistModules.filter(m => m.extends);
+    const overrides = playlistModules.filter(m => !m.extends);
 
     // Add modules to library.
     configs.concat(extensions).forEach((defaultConfig) => {
       // Apply any overrides from the playlist modules.
-      const cfg = _.defaults(
-        _.where(overrides, {name: defaultConfig.name}) || {},
-        defaultConfig);
+      const cfg = Object.assign(
+          {},
+          defaultConfig,
+          ...overrides.filter(o => o.name == defaltConfig.name));
 
       if (cfg.extends) {
         assert(cfg.extends in library.modules, 'Module ' + cfg.name +
@@ -97,7 +96,7 @@ export class ModuleLoader {
     const root = path.dirname(moduleConfigFile);
     try {
       const cfg = RJSON.parse(moduleConfig);
-      const cfgs = _.isArray(cfg) ? cfg : [cfg];
+      const cfgs = Array.isArray(cfg) ? cfg : [cfg];
       cfgs.forEach((c) => c.root = root);
       return cfgs;
     } catch (e) {

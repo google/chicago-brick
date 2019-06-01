@@ -32,7 +32,6 @@ import FullscreenDisplayStrategy from './fullscreen_display_server.js';
 import FallingDisplayStrategy from './falling_display_server.js';
 
 import fetch from 'node-fetch';
-import _ from 'underscore';
 
 export function load(debug, network, assert, wallGeometry) {
   // DISPATCH TABLES

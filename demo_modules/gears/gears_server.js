@@ -1,8 +1,8 @@
 /* globals Path2D */
-import _ from 'underscore';
-
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
 import {Rectangle} from '../../lib/math/rectangle.js';
+import randomjs from 'random-js';
+const random = new randomjs.Random();
 
 export function load(debug, state, wallGeometry) {
   const HOLE_VARIETIES = ['none', 'rounded', 'circles'];
@@ -49,9 +49,9 @@ export function load(debug, state, wallGeometry) {
         x: wallGeometry.extents.w/2,
         y: wallGeometry.extents.h/2,
         z: 1,  // Which layer we're talking about.
-        radius: _.random(35, 300),
-        teeth: _.random(6, 50),
-        speed: _.random(1, 10)/40,
+        radius: random.integer(35, 300),
+        teeth: random.integer(6, 50),
+        speed: random.integer(1, 10)/40,
         angle: 0,
         colorIndex: -1,
         holes: 'none',
@@ -98,7 +98,7 @@ export function load(debug, state, wallGeometry) {
       // 5) If still no luck, goto 1, unless we've tried 20 times, then stop.
       for (let a = 0; a < 20; ++a) {
         // 1) Pick a gear to connect to.
-        const chosenGear = _.sample(this.gears_);
+        const chosenGear = random.pick(this.gears_);
 
         // 2) Pick a number of teeth:
         const newTeeth = Math.floor(Math.random() * (150 - 6) + 6);
@@ -113,7 +113,7 @@ export function load(debug, state, wallGeometry) {
           newZ = 1-newZ;
           // 2.5) Pick a random new radius (which might generate a random new
           // pitch), but that's okay.
-          newRadius = _.random(35, 1000);
+          newRadius = random.integer(35, 1000);
           // The new gear is in exactly the same x,y position.
           newX = chosenGear.x;
           newY = chosenGear.y;
@@ -188,12 +188,16 @@ export function load(debug, state, wallGeometry) {
         }
 
         // 3.8) Pick a look for the gear.
-        let holes = _.sample(HOLE_VARIETIES);
+        let holes = random.pick(HOLE_VARIETIES);
         if (holes == 'rounded') {
-          holes = ['rounded', _.random(2, Math.floor(newTeeth / 4))];
+          holes = ['rounded', random.integer(2, Math.floor(newTeeth / 4))];
         } else if (holes == 'circles') {
-          holes = ['circles', _.random(2, 8)];
+          holes = ['circles', random.integer(2, 8)];
         }
+
+        const newColorIndex = random.pick(
+            Array.from({length: GOOGLE_COLORS.length}, (k,v) => k)
+                .filter(i => i != chosenGear.colorIndex));
 
         this.gears_.push({
           x: newX,
@@ -203,7 +207,7 @@ export function load(debug, state, wallGeometry) {
           teeth: newTeeth,
           speed: newSpeed,
           angle: rotation,
-          colorIndex: _.sample(_(Array.from(Array(GOOGLE_COLORS.length).keys())).without(chosenGear.colorIndex)),
+          colorIndex: newColorIndex,
           holes: holes,
           pitch: calculatePitch(newRadius, newTeeth),
         });
