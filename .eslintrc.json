@@ -9,7 +9,9 @@
   "globals": {
       "Atomics": "readonly",
       "SharedArrayBuffer": "readonly",
-      "chai": "readonly"
+      "chai": "readonly",
+      "sinon": "readonly",
+      "debug": true
   },
   "parser": "babel-eslint",
   "parserOptions": {
