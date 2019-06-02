@@ -1,3 +1,16 @@
 node_modules/
 extras/
 lib/lame_es6/
+
+# These are templates that are meant to be filled in,
+# or interfaces which document their arguments.
+demo_modules/p5_template/p5_template.js
+demo_modules/slideshow/interfaces.js
+lib/module_interface.js
+lib/state_machine.js
+
+# At some point, fix these:
+demo_modules/operational_tests/shared_test.js
+demo_modules/particles/particles.js
+demo_modules/wind
+lib/interpolate.js
