@@ -103,7 +103,7 @@ export function load(debug, state, wallGeometry) {
           strategySeed *= (index + 1) * 17;
           const strategies = [
             // Go straight:
-            snake => {},
+            () => {},
             // Turn left a bit.
             snake => snake.heading += .02,
             // Turn right a bit.

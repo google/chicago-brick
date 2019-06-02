@@ -42,7 +42,7 @@ export class PlaylistDriver {
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
 
-    this.moduleSM.setErrorListener(error => {
+    this.moduleSM.setErrorListener(() => {
       // Stop normal advancement.
       this.resetTimer_();
       this.nextModule();

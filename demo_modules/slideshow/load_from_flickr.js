@@ -59,7 +59,7 @@ export default function({debug, assert, fetch}) {
           debug('Downloaded ' + content.length + ' more content ids.');
           return {content};
         });
-      }, (error) => {
+      }, () => {
         debug('Failed to download flickr content! Delay a bit...');
         return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent());
       });

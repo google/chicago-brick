@@ -31,7 +31,7 @@ export function load(network, wallGeometry) {
   }
 
   class ChaosServer {
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon() {
       // The time we last tried to place a new shape.
       this.oldtime = -Infinity;
       // The time we last sent information to the clients about the shapes.
@@ -44,7 +44,7 @@ export function load(network, wallGeometry) {
       return Promise.resolve();
     }
 
-    tick(time, delta) {
+    tick(time) {
       if (time > this.oldtime + (1000 * 60)) {
         this.oldtime = time;
         // Reset shape data (effectively blanking the screen).

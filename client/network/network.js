@@ -28,7 +28,7 @@ let ready, readyPromise = new Promise(r => ready = r);
 export function openConnection(opt_displayRect) {
   socket = io(location.host);
   if (opt_displayRect) {
-    socket.on('config', function(config) {
+    socket.on('config', function() {
       socket.emit('config-response', opt_displayRect.serialize());
       ready();
     });

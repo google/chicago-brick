@@ -128,7 +128,7 @@ export class Control {
     res.json(ret);
   }
 
-  skip(req, res) {
+  skip() {
     this.playlistDriver.skipAhead();
   }
 

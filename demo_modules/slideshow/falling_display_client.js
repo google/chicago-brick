@@ -15,7 +15,7 @@ limitations under the License.
 
 import {ClientDisplayStrategy} from './interfaces.js';
 
-export default function({debug, wallGeometry, network}) {
+export default function({network}) {
   // FALLING DISPLAY STRATEGY
   // Elements fall from the top of the wall to the bottom at the constant speed
   // 'gravity', spawing every 'spawnPeriod' seconds.

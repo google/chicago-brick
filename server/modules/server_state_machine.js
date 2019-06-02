@@ -85,7 +85,7 @@ class PrepareState extends State {
     // state.
     this.resolve_ = resolve;
   }
-  enter(transition, context) {
+  enter(transition) {
     if (monitor.isEnabled()) {
       monitor.update({server: {
         time: now(),

@@ -57,7 +57,7 @@ export default function({debug, wallGeometry, network}) {
       // The time we last updated a display.
       this.lastUpdate = 0;
 
-      let contentHasArrived = new Promise((resolve, reject) => {
+      let contentHasArrived = new Promise(resolve => {
         this.signalContentArrived = resolve;
       });
 
@@ -97,7 +97,7 @@ export default function({debug, wallGeometry, network}) {
 
       this.signalContentArrived();
     }
-    tick(time, delta) {
+    tick(time) {
       // If there's no content to show, just stop.
       if (!this.content.length) {
         return;

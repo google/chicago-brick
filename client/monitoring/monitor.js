@@ -301,7 +301,7 @@ class Canvas {
   }
   text(text, x, y, baseline) {
     let width = this.c.measureText(text);
-    this.c.textBaseline = 'middle';
+    this.c.textBaseline = baseline;
     this.c.fillText(text, this.convertX(x), this.convertY(y));
     return width;
   }

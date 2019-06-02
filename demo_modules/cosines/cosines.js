@@ -15,7 +15,7 @@ limitations under the License.
 
 import {P5Surface} from '/client/surface/p5_surface.js';
 
-export function load(wallGeometry, debug) {
+export function load(wallGeometry) {
   // p5 must be a P5.js instance.
   class CosinesSketch {
     constructor(p5, surface) {
@@ -93,7 +93,7 @@ export function load(wallGeometry, debug) {
   }
 
   class CosinesClient {
-    constructor(config) {
+    constructor() {
       this.surface = null;
     }
 
@@ -108,7 +108,7 @@ export function load(wallGeometry, debug) {
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.surface.p5.draw(time);
     }
   }

@@ -18,7 +18,7 @@ import {CanvasSurface} from '/client/surface/canvas_surface.js';
 
 export function load(network, wallGeometry) {
   class BallsClient {
-    constructor(config) {
+    constructor() {
       // We keep track of X data points.
       // Each data point is of the form (time, balls).
       // We lerp between the times to figure out what we are doing.
@@ -42,13 +42,13 @@ export function load(network, wallGeometry) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 

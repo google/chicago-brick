@@ -61,7 +61,7 @@ export function load(wallGeometry, debug, network, assert, asset) {
   class ImageClient {
     willBeShownSoon(container, deadline) {
       this.surface = new Surface(container, wallGeometry);
-      return new Promise((resolve, reject) => {
+      return new Promise(resolve => {
         debug('Waiting for network init...');
         network.emit('req_init');
         network.once('init', config => {

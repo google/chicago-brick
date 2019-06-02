@@ -82,7 +82,7 @@ export default function({debug, wallGeometry, network}) {
       // Add the content indices.
       this.nextContentIndices.push(...newIndices);
     }
-    tick(time, delta) {
+    tick(time) {
       // If there's no content to show, just stop.
       if (!this.content.length) {
         return;

@@ -102,7 +102,7 @@ export class ModuleDef extends EventEmitter {
   }
 
   // Returns a custom object for serializing in debug logs.
-  inspect(depth, opts) {
+  inspect() {
     return {
       name: this.name,
       root: this.root,

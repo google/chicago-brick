@@ -103,7 +103,7 @@ export function load(state, network, wallGeometry) {
   // Server Module
   //
   class MergeBallsServer {
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon() {
         function getInitialBallPosition(ballradius) {
             var rect = wallGeometry.extents;
             return {

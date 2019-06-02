@@ -23,7 +23,7 @@ export function load(wallGeometry) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
 
@@ -36,7 +36,7 @@ export function load(wallGeometry) {
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.canvas.fillStyle = 'blue';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 

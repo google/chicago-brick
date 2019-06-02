@@ -5,8 +5,8 @@
   "main": "server/server.js",
   "scripts": {
     "test": "node_modules/karma/bin/karma start --single-run",
-    "jshint": "node_modules/jshint/bin/jshint .",
-    "lint": "node_modules/jshint/bin/jshint .",
+    "jshint": "node_modules/eslint/bin/eslint.js .",
+    "lint": "node_modules/eslint/bin/eslint.js .",
     "release": "node_modules/.bin/release-it -n"
   },
   "engines": {
@@ -40,14 +40,15 @@
   },
   "husky": {
     "hooks": {
-      "pre-commit": "npm run-script lint &&  npm test",
+      "pre-commit": "npm run-script lint && npm test",
       "pre-push": "npm run-script lint && npm test"
     }
   },
   "devDependencies": {
+    "babel-eslint": "^8.2.6",
     "chai": "^4.2.0",
+    "eslint": "^5.16.0",
     "husky": "^2.3.0",
-    "jshint": "^2.10.1",
     "karma": "^4.1.0",
     "karma-chrome-launcher": "^2.2.0",
     "karma-mocha": "^1.3.0",

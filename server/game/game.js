@@ -191,7 +191,7 @@ let host = '';
 export function init(flags) {
   host = flags.game_server_host;
 }
-export function forModule(forModule) {
+export function forModule() {
   var connections = [];
   var games = [];
 

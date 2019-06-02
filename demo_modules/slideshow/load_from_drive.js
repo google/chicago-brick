@@ -63,7 +63,7 @@ export default function({debug}) {
           hasMoreContent: !!response.data.nextPageToken,
           paginationToken: response.data.nextPageToken
         };
-      }, (error) => {
+      }, () => {
         debug('Failed to download more drive content! Delay a bit...');
         return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
       });

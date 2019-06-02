@@ -116,7 +116,7 @@ class IdleState extends State {
 
     this.transition_ = transition;
   }
-  newClient(client) {}
+  newClient() {}
   playModule(moduleName, timeToStartDisplay) {
     this.transition_(new DisplayState(moduleName, timeToStartDisplay));
   }

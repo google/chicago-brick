@@ -163,7 +163,7 @@ export function load(wallGeometry, asset) {
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.surface.p5.draw(time);
     }
   }

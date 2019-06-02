@@ -17,7 +17,7 @@ export function load(network) {
   // This is a no-op module that shows what is leaking in the framework when we
   // switch modules.
   class MemoryDebugClient {
-    constructor(config) {
+    constructor() {
       // TODO(applmak): Send something this message, maybe?
       const memoryDebugHandler = () => {
         this.thing = (this.thing || 0) + 1;

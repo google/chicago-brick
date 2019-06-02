@@ -69,7 +69,7 @@ export function load(debug, network, assert, wallGeometry) {
       // The display strategy for this run of the module.
       this.displayStrategy = parseServerDisplayStrategy(config.display);
     }
-    willBeShownSoon(deadline) {
+    willBeShownSoon() {
       // Start the load strategy initing.
       let loadingComplete = Promise.all([
         this.displayStrategy.init(),
