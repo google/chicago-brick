@@ -75,12 +75,6 @@ export class RunningModule {
     }
   }
 
-  willBeHiddenSoon(deadline) {
-    if (this.instance) {
-      this.instance.willBeHiddenSoon(deadline);
-    }
-  }
-
   willBeShownSoon(deadline) {
     if (this.instance) {
       let ret = this.instance.willBeShownSoon(deadline);

@@ -59,9 +59,6 @@ class PrepareState extends State {
     }
     this.transition_ = transition;
 
-    // First, tell the old module that we're going to hide it.
-    this.oldModule_.willBeHiddenSoon();
-
     // Tell the new module to instantiate, which may require loading deps.
     let moduleDone = this.module_.instantiate().then(() => {
       if (this.willTransitionAway_) {
@@ -107,7 +104,6 @@ class PrepareState extends State {
     // current. This ensures that everything gets disposed correctly and we
     // still meet the module interface contract.
     if (this.moduleIsReady_) {
-      this.module_.willBeHiddenSoon();
       this.module_.dispose();
     } else if (this.module_.instance) {
       // The module isn't yet ready, but it's currently loading.

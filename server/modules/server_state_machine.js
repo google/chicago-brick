@@ -102,9 +102,6 @@ class PrepareState extends State {
       this.module_ = new RunningModule(this.moduleDef_, this.deadline_);
       this.module_.instantiate();
 
-      // Tell the old server module that it will be hidden soon.
-      this.oldModule_.willBeHiddenSoon(this.deadline_);
-
       // Tell the server module that it will be shown soon.
       this.module_.willBeShownSoon(this.deadline_).then(() => {
         transition(new TransitionState(this.oldModule_, this.module_, this.deadline_, this.resolve_));
@@ -123,11 +120,6 @@ class PrepareState extends State {
   }
   playModule(moduleName, deadline, resolve) {
     if (this.module_) {
-      // If we are preparing to show some things, but then suddenly we're told
-      // to go somewhere else, we need to meet the module interface contract by
-      // telling the module that we are going to hide it at the old deadline.
-      this.module_.willBeHiddenSoon(this.deadline_);
-
       // And because we're going to forget about this module after this point, we
       // really need to dispose of it.
       this.module_.dispose();
@@ -135,8 +127,6 @@ class PrepareState extends State {
 
     // Now, we're already told the old module that we are hiding it,
     // and we'll tell it we're going to hide it again with a different deadline.
-    // TODO(applmak): We should tighten up the API here to avoid the double
-    // willBeHiddenSoon.
     // Note, too, that we drop any old resolver for this.
     this.transition_(new PrepareState(this.oldModule_, moduleName, deadline, resolve));
   }
@@ -190,7 +180,6 @@ class TransitionState extends State {
     // Hmm... so, we are in the middle of transition from O -> N, and we just got asked to show M.
     // We need to prepare M for display, and then transition from O -> M, which is surely fine, guess.
     // But that means that we need to manually clean up N.
-    this.module_.willBeHiddenSoon(deadline);
     moduleTicker.remove(this.module_);
 
     // Safely prepare the new module.

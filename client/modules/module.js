@@ -139,18 +139,6 @@ export class ClientModule {
     this.instance = new client(this.config);
   }
 
-  willBeHiddenSoon() {
-    if (!this.path) {
-      return true;
-    }
-    try {
-      this.instance.willBeHiddenSoon();
-    } catch(e) {
-      error(e);
-    }
-    return true;
-  }
-
   // Returns true if module is still OK.
   willBeShownSoon() {
     if (!this.path) {
