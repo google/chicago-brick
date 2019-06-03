@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
 // Maintains all open socket connections to the clients. Because this connection
 // is inherently a global singleton, we provide global functions for sending
 // information to the clients and for registering for specific messages from
@@ -27,28 +26,26 @@ limitations under the License.
 //   client fails to do this, the client is considered invalid and omitted from
 //   future calculations.
 
-var socketio = require('socket.io');
-var ioClient = require('socket.io-client');
-var EventEmitter = require('events').EventEmitter;
-var Debug = require('debug');
-var debug = Debug('wall:network');
-var url = require('url');
+import * as wallGeometry from '../util/wall_geometry.js';
+import Debug from 'debug';
+import ioClient from 'socket.io-client';
+import socketio from 'socket.io';
+import {EventEmitter} from 'events';
+import {Rectangle} from '../../lib/rectangle.js';
+import {clientError} from '../util/log.js';
+import {now} from '../util/time.js';
+let io;
 
-var Rectangle = require('lib/rectangle');
-var error = require('server/util/log')
-    .clientError(Debug('wall:client_error'));
-var time = require('server/util/time');
-var wallGeometry = require('server/util/wall_geometry');
+clientError(Debug('wall:client_error'));
 
-var io;
-
+const debug = Debug('wall:network');
 var network = new EventEmitter;
 
 function installAlwaysAvailableHandlers(socket) {
   // We listen for the time message and respond with the server's version of
   // that time.
   socket.on('time', function() {
-    socket.emit('time', time.now());
+    socket.emit('time', now());
   });
 }
 
@@ -90,13 +87,13 @@ network.openWebSocket = function(server) {
 
   io.on('connection', function(socket) {
     installAlwaysAvailableHandlers(socket);
-    
-    var id = url.parse(socket.request.url, true).query.id;
+
+    var id = new URL(socket.request.url, 'http://localhost/').searchParams.get('id')
     if (id) {
       // Ignore this, as it's not a main connection.
       return;
     }
-    
+
     debug('New client:', socket.id);
     installDisplayClientHandlers(socket);
     // Tell the clients the whole wall geo.
@@ -132,7 +129,7 @@ network.forModule = function(id) {
         sockets.push(socket);
         return socket;
       };
-      
+
       nsp.on('connection', (socket) => {
         var rect = Rectangle.deserialize(socket.handshake.query.rect);
         clients.push({socket, rect});
@@ -144,13 +141,13 @@ network.forModule = function(id) {
           debug(`Tracking per-module disconnect ${socket.handshake.query.id} from ${rect.serialize()}`, clients.length);
         });
       });
-      
+
       nsp.getClientsInRect = function(rect) {
         return clients.filter((client) => {
           return rect.intersects(client.rect);
         });
       };
-      
+
       return nsp;
     },
     close: function() {
@@ -171,4 +168,4 @@ network.forModule = function(id) {
   };
 };
 
-module.exports = network;
+export default network;

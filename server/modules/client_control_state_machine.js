@@ -15,15 +15,17 @@ limitations under the License.
 
 'use strict';
 
-const stateMachine = require('lib/state_machine');
-const time = require('server/util/time');
+import * as wallGeometry from '../util/wall_geometry.js';
+import Debug from 'debug';
+import library from './module_library.js';
+import {State, StateMachine} from '../../lib/state_machine.js';
+import {error} from '../util/log.js';
+import {until} from '../util/time.js';
 
-const debug = require('debug')('wall:client_control_state_machine');
-const library = require('server/modules/module_library');
-const logError = require('server/util/log').error(debug);
-const wallGeometry = require('server/util/wall_geometry');
+const debug = Debug('wall:client_control_state_machine');
+const logError = error(debug);
 
-class ClientControlStateMachine extends stateMachine.Machine {
+export class ClientControlStateMachine extends StateMachine {
   constructor(client) {
     super(new IdleState, debug);
 
@@ -49,7 +51,7 @@ class ClientControlStateMachine extends stateMachine.Machine {
   }
 }
 
-class IdleState extends stateMachine.State {
+class IdleState extends State {
   enter(transition) {
     this.transition_ = transition;
   }
@@ -61,7 +63,7 @@ class IdleState extends stateMachine.State {
   }
 }
 
-class PrepareState extends stateMachine.State {
+class PrepareState extends State {
   constructor(module, deadline) {
     super();
 
@@ -70,13 +72,13 @@ class PrepareState extends stateMachine.State {
 
     // The deadline at which we should transition to the new module.
     this.deadline_ = deadline;
-    
+
     this.timer_ = null;
   }
   enter(transition, context) {
     this.transition_ = transition;
     let client = context.client;
-    
+
     // Tell the client to load the relevant module.
     client.socket.emit('loadModule', {
       module: this.moduleDef_.serializeForClient(),
@@ -86,7 +88,7 @@ class PrepareState extends stateMachine.State {
 
     this.timer_ = setTimeout(() => {
       transition(new DisplayState(this.moduleDef_.name));
-    }, time.until(this.deadline_));
+    }, until(this.deadline_));
   }
   exit() {
     clearTimeout(this.timer_);
@@ -101,7 +103,7 @@ class PrepareState extends stateMachine.State {
   }
 }
 
-class DisplayState extends stateMachine.State {
+class DisplayState extends State {
   constructor(moduleName) {
     super();
     this.moduleName_ = moduleName;
@@ -116,5 +118,3 @@ class DisplayState extends stateMachine.State {
     return this.moduleName_;
   }
 }
-
-module.exports = ClientControlStateMachine;

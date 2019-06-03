@@ -13,12 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-var fs = require('fs');
-var _ = require('underscore');
-var debug = require('debug')('wall:wall_geometry');
+import * as geometry from '../../lib/geometry.js';
+import Debug from 'debug';
+import _ from 'underscore';
+import fs from 'fs';
 
-var geometry = require('lib/geometry');
+const debug = Debug('wall:wall_geometry');
 
 // Returns a polygon that entirely contains the wall geometry. NOTE: any point
 // to the left of the polygon is outside of it, because we assume that points
@@ -52,7 +52,7 @@ function parseGeometry(polygonPoints) {
   return poly;
 }
 
-var loadGeometry = function(path) {
+export function loadGeometry(path) {
   // Convert from config description to actual polygon.
   var config = JSON.parse(fs.readFileSync(path));
   return config.polygon;
@@ -63,19 +63,15 @@ var yscale = 1080;
 var unscaledGeo;
 var geo;
 
-module.exports = {
-  getGeo: function() {
-    return geo;
-  },
-  loadGeometry: loadGeometry,
-  useGeo: function(polygon) {
-    unscaledGeo = parseGeometry(polygon);
-    geo = unscaledGeo.scale(xscale, yscale);
-  },
-  setScale: function(newXScale, newYScale) {
-    xscale = newXScale;
-    yscale = newYScale;
-    geo = unscaledGeo.scale(xscale, yscale);
-  },
-};
-
+export function getGeo() {
+  return geo;
+}
+export function useGeo(polygon) {
+  unscaledGeo = parseGeometry(polygon);
+  geo = unscaledGeo.scale(xscale, yscale);
+}
+export function setScale(newXScale, newYScale) {
+  xscale = newXScale;
+  yscale = newYScale;
+  geo = unscaledGeo.scale(xscale, yscale);
+}

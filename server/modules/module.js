@@ -13,15 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const StateManager = require('server/state/state_manager');
-const assert = require('lib/assert');
-const game = require('server/game/game');
-const network = require('server/network/network');
+import {StateManager} from '../state/state_manager.js';
+import assert from '../../lib/assert.js';
+import * as game from '../game/game.js';
+import network from '../network/network.js';
 
-const debug = require('debug')('wall:server_state_machine');
-const logError = require('server/util/log').error(debug);
+import Debug from 'debug';
+import {error} from '../util/log.js';
+const debug = Debug('wall:server_state_machine');
+const logError = error(debug);
 
-class RunningModule {
+export class RunningModule {
   /**
    * Constructs a running module.
    * NOTE that's it's fine to create one of these with no def, which will simply blank the screen.
@@ -31,7 +33,7 @@ class RunningModule {
     this.moduleDef = moduleDef;
     this.geo = geo;
     this.deadline = deadline;
-    
+
     if (this.moduleDef.valid) {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID = `${geo.extents.serialize()}-${deadline}`;
@@ -42,8 +44,8 @@ class RunningModule {
       this.gameManager = null;
     }
   }
-  
-  // This is a separate method in order to guard against exceptions in 
+
+  // This is a separate method in order to guard against exceptions in
   // instantiate.
   instantiate() {
     if (this.network) {
@@ -67,18 +69,18 @@ class RunningModule {
     if (this.network) {
       // Clean up game sockets.
       this.gameManager.dispose();
-    
+
       // This also cleans up stateManager.
       this.network.close();
     }
   }
-  
+
   willBeHiddenSoon(deadline) {
     if (this.instance) {
       this.instance.willBeHiddenSoon(deadline);
     }
   }
-  
+
   willBeShownSoon(deadline) {
     if (this.instance) {
       let ret = this.instance.willBeShownSoon(deadline);
@@ -91,5 +93,3 @@ class RunningModule {
     return Promise.resolve();
   }
 }
-
-module.exports = RunningModule;

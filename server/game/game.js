@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
 /**
  * @fileoverview Game management for the video wall.
  *
@@ -64,12 +63,12 @@ limitations under the License.
  * a wall somewhere.
  */
 
-var ioClient = require('socket.io-client');
-var debug = require('debug')('wall:game');
-var os = require('os');
-var _ = require('underscore');
-var util = require('util');
-var EventEmitter = require('events');
+import Debug from 'debug';
+import EventEmitter from 'events';
+import _ from 'underscore';
+import ioClient from 'socket.io-client';
+import os from 'os';
+const debug = Debug('wall:game');
 
 /**
  * An individual player.
@@ -78,13 +77,15 @@ var EventEmitter = require('events');
  * Controls are updated asynchronously and can be read directly in server module
  * code.
  */
-var Player = function(playerId, index, color) {
-  this.id = playerId;
-  this.index = index;
-  this.color = color;
-  this.score = 0;
-  this.controls = {};
-};
+class Player {
+  constructor(playerId, index, color) {
+    this.id = playerId;
+    this.index = index;
+    this.color = color;
+    this.score = 0;
+    this.controls = {};
+  }
+}
 
 /**
  * This class is returned to clients who create a game using
@@ -92,124 +93,123 @@ var Player = function(playerId, index, color) {
  * lifecycle events are emitted by instances of this class.  Games are
  * automatically cleaned up when modules are torn down.
  */
-var Game = function(socket, host, name, opt_options) {
-  EventEmitter.call(this);
-  var options = opt_options || {};
+class Game extends EventEmitter {
+  constructor(socket, host, name, opt_options) {
+    super();
+    var options = opt_options || {};
 
-  var maxPlayers = options.maxPlayers || 4;
-  var colors = options.colors || ['#4285F4', '#34A853', '#FBBC05', '#EA4335'];
+    var maxPlayers = options.maxPlayers || 4;
+    var colors = options.colors || ['#4285F4', '#34A853', '#FBBC05', '#EA4335'];
 
-  if (!colors.length || colors.length < 4) {
-    throw new Error(
-        'Invalid game options: ' + options.maxPlayers + ' players and ' +
-        colors.length + ' colors.');
-  }
-
-  var players = _.map(_.range(maxPlayers), _.constant(undefined));
-  var playerMap = {};
-  var gameStateInterval = null;
-
-  var game = this;
-  this.players = players;
-  this.playerMap = playerMap;
-
-  function sendGameState() {
-    socket.emit('gameState', {
-      // Sending controls back makes no sense.
-      players: _.map(game.players, function(p) {
-        return _.omit(p, 'controls');
-      }),
-    });
-  }
-
-  function onConnect() {
-    debug('Connected to game server.');
-    // TODO: rename this to gameReady.
-    socket.emit('serverReady', {host: host, name: name});
-    gameStateInterval = setInterval(sendGameState, 1000);
-  }
-
-  function onDisconnect() {
-    debug('Disconnected from game server.');
-    clearInterval(gameStateInterval);
-  }
-
-  function provisionPlayer(playerId) {
-    var slot = _.findIndex(players, function(s) { return !s; });
-    if (slot == -1) {
-      debug('Too many players: ', playerId);
-      socket.emit('errorMsg', 'Too many players.', playerId);
-    } else {
-      var color = colors[slot];
-      var player = new Player(playerId, slot, color);
-      players[slot] = player;
-      playerMap[playerId] = player;
-
-      debug('Player ready: ', playerId);
-      socket.emit('playerReady', player);
-      game.emit('playerJoin', player);
+    if (!colors.length || colors.length < 4) {
+      throw new Error(
+          'Invalid game options: ' + options.maxPlayers + ' players and ' +
+          colors.length + ' colors.');
     }
-  }
 
-  function removePlayer(playerId) {
-    debug('Removing player: ' + playerId);
-    var player = playerMap[playerId];
-    delete playerMap[playerId];
-    delete players[player.index];
-    game.emit('playerQuit', player);
-  }
+    var players = _.map(_.range(maxPlayers), _.constant(undefined));
+    var playerMap = {};
+    var gameStateInterval = null;
 
-  function setControls(playerId, controls) {
-    if (playerMap[playerId]) {
-      _.extend(playerMap[playerId].controls, controls);
-      game.emit('controlsUpdate', playerMap[playerId]);
+    var game = this;
+    this.players = players;
+    this.playerMap = playerMap;
+
+    function sendGameState() {
+      socket.emit('gameState', {
+        // Sending controls back makes no sense.
+        players: _.map(game.players, function(p) {
+          return _.omit(p, 'controls');
+        }),
+      });
     }
-  }
 
-  function setPlayerName(playerId, name) {
-    if (playerMap[playerId]) {
-      debug("Setting Name.");
-      playerMap[playerId].name = name;
+    function onConnect() {
+      debug('Connected to game server.');
+      // TODO: rename this to gameReady.
+      socket.emit('serverReady', {host: host, name: name});
+      gameStateInterval = setInterval(sendGameState, 1000);
     }
-  }
 
-  // Hook up listeners.
-  socket.on('connect', onConnect);
-  socket.on('disconnect', onDisconnect);
+    function onDisconnect() {
+      debug('Disconnected from game server.');
+      clearInterval(gameStateInterval);
+    }
 
-  // TODO: Remove players that quit (heartbeat?).
-  socket.on('playerJoin', provisionPlayer);
-  socket.on('playerExit', removePlayer);
-  socket.on('playerName', setPlayerName);
-  socket.on('control', setControls);
-};
-util.inherits(Game, EventEmitter);
+    function provisionPlayer(playerId) {
+      var slot = _.findIndex(players, function(s) { return !s; });
+      if (slot == -1) {
+        debug('Too many players: ', playerId);
+        socket.emit('errorMsg', 'Too many players.', playerId);
+      } else {
+        var color = colors[slot];
+        var player = new Player(playerId, slot, color);
+        players[slot] = player;
+        playerMap[playerId] = player;
 
-var host = '';
-module.exports = {
-  init: function(flags) {
-    host = flags.game_server_host;
-  },
-  forModule: function(forModule) {
-    var connections = [];
-    var games = [];
-
-    return {
-      // Called by module code to add a game. Returns a new Game.
-      create: function(gameName, options) {
-        debug('Connecting to game server.');
-        var client = ioClient('http://' + host + '/servers', {multiplex: false});
-        connections.push(client);
-
-        var game = new Game(client, os.hostname(), gameName, options);
-        games.push(game);
-        return game;
-      },
-
-      // Called when module is finished.
-      dispose: function() {
-        _.invoke(connections, 'close');
+        debug('Player ready: ', playerId);
+        socket.emit('playerReady', player);
+        game.emit('playerJoin', player);
       }
-    };
+    }
+
+    function removePlayer(playerId) {
+      debug('Removing player: ' + playerId);
+      var player = playerMap[playerId];
+      delete playerMap[playerId];
+      delete players[player.index];
+      game.emit('playerQuit', player);
+    }
+
+    function setControls(playerId, controls) {
+      if (playerMap[playerId]) {
+        _.extend(playerMap[playerId].controls, controls);
+        game.emit('controlsUpdate', playerMap[playerId]);
+      }
+    }
+
+    function setPlayerName(playerId, name) {
+      if (playerMap[playerId]) {
+        debug("Setting Name.");
+        playerMap[playerId].name = name;
+      }
+    }
+
+    // Hook up listeners.
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+
+    // TODO: Remove players that quit (heartbeat?).
+    socket.on('playerJoin', provisionPlayer);
+    socket.on('playerExit', removePlayer);
+    socket.on('playerName', setPlayerName);
+    socket.on('control', setControls);
   }
-};
+}
+
+let host = '';
+export function init(flags) {
+  host = flags.game_server_host;
+}
+export function forModule(forModule) {
+  var connections = [];
+  var games = [];
+
+  return {
+    // Called by module code to add a game. Returns a new Game.
+    create: function(gameName, options) {
+      debug('Connecting to game server.');
+      var client = ioClient('http://' + host + '/servers', {multiplex: false});
+      connections.push(client);
+
+      var game = new Game(client, os.hostname(), gameName, options);
+      games.push(game);
+      return game;
+    },
+
+    // Called when module is finished.
+    dispose: function() {
+      _.invoke(connections, 'close');
+    }
+  };
+}

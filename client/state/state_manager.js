@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as sharedState from '/lib/lame_es6/shared_state.js';
+import * as sharedState from '/lib/shared_state.js';
 import Debug from '/lib/lame_es6/debug.js';
 const debug = Debug('wall:state_manager');
 

@@ -13,20 +13,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
+import Debug from 'debug';
+import bodyParser from 'body-parser';
+import express from 'express';
+import glob from 'glob';
+import library from './modules/module_library.js';
+import path from 'path';
 
-var path = require('path');
-
-var bodyParser = require('body-parser');
-var debug = require('debug')('wall:webapp');
-var express = require('express');
-const glob = require('glob');
-const library = require('server/modules/module_library');
+const debug = Debug('wall:webapp');
 
 /**
  * Creates the main ExpressJS web app.
  */
-function create(flags) {
+export function create(flags) {
   // Force absolute paths.
   // This allows us to execute chicago-brick as a dep from another repo while
   // still finding the necessary dirs. However, this trick forces webapp.js to
@@ -36,7 +35,7 @@ function create(flags) {
   // TODO(applmak): Calculate this path dynamically.
   // TODO(applmak): Figure out a way so that chicago-brick can be require'd, and
   // used as a normal node dep.
-  let base = path.join(__dirname, '..');
+  let base = path.join(process.cwd());
 
   debug('webapp base dir is ' + base);
   debug('node_modules_dir is ' + flags.node_modules_dir);
@@ -98,7 +97,3 @@ function create(flags) {
   app.use(bodyParser.urlencoded({extended: false}));
   return app;
 }
-
-module.exports = {
-  create: create,
-};

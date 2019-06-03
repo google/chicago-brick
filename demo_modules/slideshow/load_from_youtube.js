@@ -37,8 +37,8 @@ export default function({debug}) {
     }
     async init() {
       // Get an authenticated API. When init's promise is resolved, we succeeded.
-      const {default: googleapis} = await import('../../server/util/googleapis.js');
-      const client = await googleapis.getAuthenticatedClient();
+      const {getAuthenticatedClient} = await import('../../server/util/googleapis.js');
+      const client = await getAuthenticatedClient();
       debug('Initialized YouTube Client.');
       this.config.credentials = client.credentials;
       this.api = client.googleapis.youtube('v3');

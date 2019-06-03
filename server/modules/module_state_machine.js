@@ -13,18 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-require('lib/promise');
+import * as geometry from '../../lib/geometry.js';
+import * as monitor from '../monitoring/monitor.js';
+import Debug from 'debug';
+import assert from '../../lib/assert.js';
+import library from './module_library.js';
+import {ServerStateMachine} from './server_state_machine.js';
+import {State, StateMachine} from '../../lib/state_machine.js';
+import {now} from '../util/time.js';
 
-const debug = require('debug')('wall:module_state_machine');
-const assert = require('lib/assert');
-
-const stateMachine = require('lib/state_machine');
-const time = require('server/util/time');
-const library = require('server/modules/module_library');
-const ServerStateMachine = require('server/modules/server_state_machine');
-const geometry = require('lib/geometry');
-const monitor = require('server/monitoring/monitor');
+const debug = Debug('wall:module_state_machine');
 
 function isDisplayInPoly(rect, poly) {
   // find the center point of this display:
@@ -36,10 +34,10 @@ function isDisplayInPoly(rect, poly) {
 
 // Takes a map of client ids -> client state machines. Not owned or changed
 // by this class, only read.
-class ModuleStateMachine extends stateMachine.Machine {
+export class ModuleStateMachine extends StateMachine {
   constructor(allClients) {
     super(new IdleState, debug);
-    
+
     // Map of ID to ClientControlStateMachine for all clients.
     this.allClients_ = allClients;
 
@@ -47,7 +45,7 @@ class ModuleStateMachine extends stateMachine.Machine {
       server: new ServerStateMachine,
       allClients,
     });
-    
+
     // Forward errors from my child state machines to my listener.
     this.context_.server.setErrorListener(error => this.errorListener_(error));
     for (const id in this.allClients_) {
@@ -64,11 +62,11 @@ class ModuleStateMachine extends stateMachine.Machine {
       }
     };
     library.on('reloaded', this.reloadHandler);
-    
+
     /** True when the reload handler is installed. */
     this.reloadHandlerInstalled_ = true;
   }
-  
+
   // Turn off the state machine at the specified, coordinated time.
   fadeToBlack(deadline) {
     if (monitor.isEnabled()) {
@@ -78,7 +76,7 @@ class ModuleStateMachine extends stateMachine.Machine {
         deadline: deadline
       }});
     }
-    
+
     if (this.reloadHandlerInstalled_) {
       library.removeListener('reloaded', this.reloadHandler);
       this.reloadHandlerInstalled_ = false;
@@ -88,19 +86,19 @@ class ModuleStateMachine extends stateMachine.Machine {
     for (const id in this.allClients_) {
       this.allClients_[id].playModule('_empty', deadline);
     }
-    
+
     // Set us back to idle, awaiting further instructions.
     this.transitionTo(new IdleState);
 
     // Tell the server to stop.
     return this.context_.server.playModule('_empty', deadline);
   }
-  
+
   newClient(clientInfo) {
     let client = this.allClients_[clientInfo.socket.id];
     this.state.newClient(client);
   }
-  
+
   playModule(moduleName, timeToStartDisplay) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
@@ -112,12 +110,12 @@ class ModuleStateMachine extends stateMachine.Machine {
       library.on('reloaded', this.reloadHandler);
       this.reloadHandlerInstalled_ = true;
     }
-    
+
     this.state.playModule(moduleName, timeToStartDisplay);
   }
 }
 
-class IdleState extends stateMachine.State {
+class IdleState extends State {
   enter(transition) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
@@ -125,7 +123,7 @@ class IdleState extends stateMachine.State {
         state: this.getName(),
       }});
     }
-    
+
     this.transition_ = transition;
   }
   newClient(client) {}
@@ -137,21 +135,21 @@ class IdleState extends stateMachine.State {
   }
 }
 
-class DisplayState extends stateMachine.State {
+class DisplayState extends State {
   constructor(moduleName, timeToStartDisplay) {
     super();
 
     // This current module we are attempting to show.
     this.moduleName_ = moduleName;
-    
+
     // The time that we should begin to show the new module.
     this.timeToStartDisplay_ = timeToStartDisplay;
   }
   enter(transition, context) {
     this.transition_ = transition;
-    
+
     debug(`Displaying ${this.moduleName_} starting at ${this.timeToStartDisplay_}`);
-    
+
     if (monitor.isEnabled()) {
       monitor.update({module: {
         time: time.now(),
@@ -159,7 +157,7 @@ class DisplayState extends stateMachine.State {
         state: this.getName(),
       }});
     }
-    
+
     // Tell the server to transition to this new module.
     context.server.playModule(this.moduleName_, this.timeToStartDisplay_);
 
@@ -167,7 +165,7 @@ class DisplayState extends stateMachine.State {
     for (const id in context.allClients) {
       context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_)
     }
-    
+
     // Wait here until we're told to do something else.
   }
   newClient(client) {
@@ -182,5 +180,3 @@ class DisplayState extends stateMachine.State {
     return this.moduleName_;
   }
 }
-
-module.exports = ModuleStateMachine;

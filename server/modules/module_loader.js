@@ -13,19 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
+import Debug from 'debug';
+import RJSON from 'relaxed-json';
+import _ from 'underscore';
+import assert from '../../lib/assert.js';
+import fs from 'fs';
+import glob from 'glob';
+import library from './module_library.js';
+import path from 'path';
+import {ModuleDef} from './module_def.js';
+const debug = Debug('wall:module_loader');
 
-const assert = require('assert');
-const debug = require('debug')('wall:module_loader');
-const fs = require('fs');
-const library = require('server/modules/module_library');
-const ModuleDef = require('server/modules/module_def');
-const glob = require('glob');
-const path = require('path');
-const RJSON = require('relaxed-json');
-const _ = require('underscore');
-
-class ModuleLoader {
+export class ModuleLoader {
   constructor(flags) {
     this.flags = flags;
   }
@@ -108,5 +107,3 @@ class ModuleLoader {
     }
   }
 }
-
-module.exports = ModuleLoader;

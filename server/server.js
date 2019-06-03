@@ -15,33 +15,33 @@ limitations under the License.
 
 'use strict';
 
-const fs = require('fs');
-const https = require('https');
-const path = require('path');
+import * as credentials from './util/credentials.js';
+import * as game from './game/game.js';
+import * as monitor from './monitoring/monitor.js';
+import network from './network/network.js';
+import * as wallGeometry from './util/wall_geometry.js';
+import * as webapp from './webapp.js';
+import Debug from 'debug';
+import commandLineArgs from 'command-line-args';
+import commandLineUsage from 'command-line-usage';
+import fs from 'fs';
+import https from 'https';
+import path from 'path';
+import {ClientControlStateMachine} from './modules/client_control_state_machine.js';
+import {Control} from './control.js';
+import {ModuleLoader} from './modules/module_loader.js';
+import {ModuleStateMachine} from './modules/module_state_machine.js';
+import peer from 'peer';
+import {PlaylistDriver} from './modules/playlist_driver.js';
+import {PlaylistLoader} from './modules/playlist_loader.js';
+import {now} from './util/time.js';
 
-const Control = require('server/control');
-const ClientControlStateMachine = require('server/modules/client_control_state_machine');
-const ModuleStateMachine = require('server/modules/module_state_machine');
-const ModuleLoader = require('server/modules/module_loader');
-const PeerServer = require('peer').PeerServer;
-const PlaylistDriver = require('server/modules/playlist_driver');
-const PlaylistLoader = require('server/modules/playlist_loader');
-
-const commandLineArgs = require('command-line-args');
-const commandLineUsage = require('command-line-usage');
-const credentials = require('server/util/credentials');
-const debug = require('debug')('wall:server');
-const game = require('./game/game');
-const monitor = require('server/monitoring/monitor');
-const network = require('server/network/network');
-const time = require('server/util/time');
-const wallGeometry = require('server/util/wall_geometry');
-const webapp = require('server/webapp');
-
+const {PeerServer} = peer;
+const debug = Debug('wall:server');
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
-      defaultValue: path.join(__dirname, '..', 'node_modules'),
+      defaultValue: path.join(process.cwd(), '..', 'node_modules'),
       description: 'If you are running a chicago-brick instance where ' +
           'chicago-brick is a dep and lives in node_modules, you must set ' +
           'this to your project\'s node_modules dir or the /sys path will ' +
@@ -162,7 +162,7 @@ network.openWebSocket(server);
 network.on('new-client', function(client) {
   if (monitor.isEnabled()) {
     monitor.update({layout: {
-      time: time.now(),
+      time: now(),
       event: `newClient: ${client.rect.serialize()}`,
     }});
   }
@@ -175,14 +175,14 @@ network.on('lost-client', function(id) {
     if (monitor.isEnabled()) {
       const rect = clients[id].getClientInfo().rect;
       monitor.update({layout: {
-        time: time.now(),
+        time: now(),
         event: `dropClient: ${rect.serialize()}`,
       }});
     }
   } else {
     if (monitor.isEnabled()) {
       monitor.update({layout: {
-        time: time.now(),
+        time: now(),
         event: `dropClient: id ${id}`,
       }});
     }

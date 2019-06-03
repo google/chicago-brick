@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Rectangle} from '/lib/lame_es6/rectangle.js';
-import * as geometry from '/lib/lame_es6/geometry.js';
+import {Rectangle} from '/lib/rectangle.js';
+import * as geometry from '/lib/geometry.js';
 import * as info from '/client/util/info.js';
 
 // Installs a surface in the given container & readies the surface for

@@ -2,7 +2,7 @@
 
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
-import {Rectangle} from '/lib/lame_es6/rectangle.js';
+import {Rectangle} from '/lib/rectangle.js';
 
 export function load(debug, state, wallGeometry) {
   // Initially start with two layers.

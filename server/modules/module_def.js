@@ -13,22 +13,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
+import EventEmitter from 'events';
+import fs from 'fs';
+import path from 'path';
 
-const EventEmitter = require('events');
-const fs = require('fs');
-const path = require('path');
-
-const assert = require('lib/assert');
-const debug = require('debug')('wall:module_def');
-const debugFactory = require('debug');
-const conform = require('lib/conform');
-const inject = require('lib/inject');
-const module_interface = require('lib/module_interface');
-const util = require('util');
-const wallGeometry = require('server/util/wall_geometry');
-const geometry = require('lib/geometry');
-const Rectangle = require('lib/rectangle');
+import assert from '../../lib/assert.js';
+import debugFactory from 'debug';
+const debug = debugFactory('wall:module_def');
+import conform from '../../lib/conform.js';
+import inject from '../../lib/inject.js';
+import {Server} from '../../lib/module_interface.js';
+import util from 'util';
+import * as wallGeometry from '../util/wall_geometry.js';
+import * as geometry from '../../lib/geometry.js';
 
 const importCache = {};
 async function importIntoCache(moduleRoot, modulePath) {
@@ -61,7 +58,7 @@ function extractFromImport(name, moduleRoot, modulePath, layoutGeometry, network
   };
 
   const {server} = inject(load, fakeEnv);
-  conform(server, module_interface.Server);
+  conform(server, Server);
   return {server};
 };
 
@@ -69,7 +66,7 @@ function extractFromImport(name, moduleRoot, modulePath, layoutGeometry, network
  * The ModuleDef class contains all the information necessary to load &
  * instantiate a module, including code location and config parameters.
  */
-class ModuleDef extends EventEmitter {
+export class ModuleDef extends EventEmitter {
   constructor(name, moduleRoot, pathsOrBaseModule, title, author, config) {
     super();
     this.name = name;
@@ -169,7 +166,7 @@ class ModuleDef extends EventEmitter {
       const {server} = extractFromImport(this.name, this.root, this.serverPath, layoutGeometry, network, game, state);
       return new server(this.config, deadline);
     } else {
-      return new module_interface.Server;
+      return new Server;
     }
   }
 
@@ -184,6 +181,3 @@ class ModuleDef extends EventEmitter {
     };
   }
 }
-
-// Export the module def class.
-module.exports = ModuleDef;

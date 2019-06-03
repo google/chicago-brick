@@ -13,16 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
+import * as monitor from '../monitoring/monitor.js';
+import * as wallGeometry from '../util/wall_geometry.js';
+import Debug from 'debug';
+import Random from 'random-js';
+import assert from '../../lib/assert.js';
+import {now, inFuture, until} from '../util/time.js';
 
-const assert = require('lib/assert');
-const monitor = require('server/monitoring/monitor');
-const random = require('random-js')();
-const time = require('server/util/time');
-const wallGeometry = require('server/util/wall_geometry');
-const debug = require('debug')('wall::playlist_driver');
+const debug = Debug('wall::playlist_driver');
+const random = Random();
 
-class PlaylistDriver {
+export class PlaylistDriver {
   constructor(moduleSM) {
     // The module state machine that we control.
     this.moduleSM = moduleSM;
@@ -41,7 +42,7 @@ class PlaylistDriver {
     this.newLayoutTime = Infinity;
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
-    
+
     this.moduleSM.setErrorListener(error => {
       // Stop normal advancement.
       this.resetTimer_();
@@ -88,7 +89,7 @@ class PlaylistDriver {
     // We need to cancel any existing timer, because we are disrupting the
     // normal timing.
     this.resetTimer_();
-    
+
     // Now, force the next module to play.
     this.nextModule();
   }
@@ -108,7 +109,7 @@ class PlaylistDriver {
     this.resetTimer_();
 
     // Reset duration for this module.
-    this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+    this.newModuleTime = inFuture(layout.moduleDuration * 1000);
     // Ensure that we won't change layouts until this module is done.
     this.newLayoutTime = Math.max(this.newModuleTime, this.newLayoutTime);
     // Now play this module.
@@ -118,19 +119,19 @@ class PlaylistDriver {
   nextLayout() {
     // Update layoutIndex.
     this.layoutIndex = (this.layoutIndex + 1) % this.playlist.length;
-  
+
     // Show this layout next:
     let layout = this.playlist[this.layoutIndex];
-  
+
     // Reset moduleIndex
     this.moduleIndex = -1;
 
     // The time that we'll switch to a new layout.
-    this.newLayoutTime = time.inFuture(layout.duration * 1000);
+    this.newLayoutTime = inFuture(layout.duration * 1000);
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
-        time: time.now(),
+        time: now(),
         event: `change layout`,
         deadline: this.newLayoutTime
       }});
@@ -138,7 +139,7 @@ class PlaylistDriver {
 
     debug(`Next Layout: ${this.layoutIndex}`);
 
-    this.moduleSM.fadeToBlack(time.now() + 5000).then(() => {
+    this.moduleSM.fadeToBlack(now() + 5000).then(() => {
       // Shuffle the module list:
       this.modules = Array.from(layout.modules);
       random.shuffle(this.modules);
@@ -155,38 +156,36 @@ class PlaylistDriver {
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];
-  
+
     // The time that we'll switch to the next module.
-    this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
+    this.newModuleTime = inFuture(layout.moduleDuration * 1000);
 
     this.playModule_(this.modules[this.moduleIndex]);
   }
   // Private helper function that does the work of going to a module by name
   // and scheduling the next module to play after a certain duration.
   playModule_(module) {
-    // Play a module until the next transition time.
-    this.moduleSM.playModule(module, time.now());
+    // Play a module until the next transition
+    this.moduleSM.playModule(module, now());
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
-        time: time.now(),
+        time: now(),
         event: `change module ${module}`,
         deadline: this.getNextDeadline(),
       }});
     }
 
-    // Now, in so many seconds, we'll need to switch to another module 
+    // Now, in so many seconds, we'll need to switch to another module
     // or another layout. How much time do we have?
     if (this.newLayoutTime < this.newModuleTime) {
-      this.timer = setTimeout(() => this.nextLayout(), time.until(this.newLayoutTime));
+      this.timer = setTimeout(() => this.nextLayout(), until(this.newLayoutTime));
     } else if (this.modules.length > 1 || this.modules.indexOf(module) == -1) {
       // Only schedule the next module to play if:
       // a) There are multiple modules in the current layout, or
       // b) The module we are now playing is not in the current layout, and so
       //    we wish to return to that layout.
-      this.timer = setTimeout(() => this.nextModule(), time.until(this.newModuleTime));
+      this.timer = setTimeout(() => this.nextModule(), until(this.newModuleTime));
     }
   }
 }
-
-module.exports = PlaylistDriver;

@@ -13,9 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
-const network = require('server/network/network');
+import network from '../network/network.js';
 
 let currentStatus = {};
 let sendCurrentState = socket => {
@@ -38,18 +36,16 @@ network.on('new-client', info => {
 });
 
 let enabled = false;
-module.exports = {
-  isEnabled: function() {
-    return enabled;
-  },
-  enable: function() {
-    enabled = true;
-    monitoringSockets.forEach(sendCurrentState);
-  },
-  update: function(change) {
-    if (enabled) {
-      Object.assign(currentStatus, change);
-      monitoringSockets.forEach(socket => socket.emit('monitor', change));
-    }
+export function isEnabled() {
+  return enabled;
+}
+export function enable() {
+  enabled = true;
+  monitoringSockets.forEach(sendCurrentState);
+}
+export function update(change) {
+  if (enabled) {
+    Object.assign(currentStatus, change);
+    monitoringSockets.forEach(socket => socket.emit('monitor', change));
   }
-};
+}

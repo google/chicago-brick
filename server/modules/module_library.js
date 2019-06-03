@@ -13,11 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
-
-const EventEmitter = require('events');
-const ModuleDef = require('server/modules/module_def');
-const assert = require('assert');
+import EventEmitter from 'events';
+import {ModuleDef} from './module_def.js';
+import assert from '../../lib/assert.js';
 
 class EmptyModuleDef extends ModuleDef {
   constructor() {
@@ -48,4 +46,4 @@ class ModuleLibrary extends EventEmitter {
   }
 }
 
-module.exports = new ModuleLibrary;
+export default new ModuleLibrary;

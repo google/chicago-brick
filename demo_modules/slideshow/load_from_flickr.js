@@ -28,7 +28,7 @@ export default function({debug, assert, fetch}) {
       this.config = config;
     }
     async init() {
-      const {default: credentials} = await import('../../server/util/credentials.js');
+      const credentials = await import('../../server/util/credentials.js');
       this.apiKey = credentials.get('flickr');
     }
     loadMoreContent() {
