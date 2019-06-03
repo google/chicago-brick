@@ -13,8 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as geometry from '../../lib/geometry.js';
-import {Rectangle} from '../../lib/rectangle.js';
+import {Rectangle} from '../../lib/math/rectangle.js';
 
 export function load(state, network, wallGeometry) {
   var NUM_BALLS = 10;

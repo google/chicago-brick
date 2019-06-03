@@ -31,7 +31,7 @@ import Debug from 'debug';
 import ioClient from 'socket.io-client';
 import socketio from 'socket.io';
 import {EventEmitter} from 'events';
-import {Rectangle} from '../../lib/rectangle.js';
+import {Rectangle} from '../../lib/math/rectangle.js';
 import {clientError} from '../util/log.js';
 import {now} from '../util/time.js';
 let io;

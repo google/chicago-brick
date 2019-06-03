@@ -13,8 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Rectangle} from '/lib/rectangle.js';
-import * as geometry from '/lib/geometry.js';
+import {Rectangle} from '/lib/math/rectangle.js';
 import * as info from '/client/util/info.js';
 
 // Installs a surface in the given container & readies the surface for
@@ -44,7 +43,7 @@ export class Surface {
         this.wallRect.h / info.virtualRectNoBezel.h);
   }
   isVisible(x, y) {
-    return geometry.isInside(this.wallGeometry, x, y);
+    return this.wallGeometry.isInside({x, y});
   }
   isOffsetVisible(x, y) {
     return this.isVisible((x+0.5) * this.virtualRect.w,
@@ -53,10 +52,10 @@ export class Surface {
   isOffsetWithinExtents(x, y) {
     x = (x+0.5) * this.virtualRect.w;
     y = (y+0.5) * this.virtualRect.h;
-    return geometry.isInsideRect(this.wallRect, x, y);
+    return this.wallRect.isInside({x, y});
   }
   wallExtentLineTest(ax, ay, bx, by) {
-    return geometry.intersectPolygonLine(this.wallGeometry, ax, ay, bx, by);
+    return this.wallGeometry.intersectionWithSegment({x: ax, y: ay}, {x: bx, y: by});
   }
   // Destroys a surface.
   destroy() {}

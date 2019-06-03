@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as geometry from '../../lib/geometry.js';
 import * as monitor from '../monitoring/monitor.js';
 import Debug from 'debug';
 import assert from '../../lib/assert.js';
@@ -29,7 +28,7 @@ function isDisplayInPoly(rect, poly) {
   var cx = rect.w / 2 + rect.x;
   var cy = rect.h / 2 + rect.y;
 
-  return geometry.isInside(poly, cx, cy);
+  return poly.isInside({x: cx, y: cy});
 }
 
 // Takes a map of client ids -> client state machines. Not owned or changed
