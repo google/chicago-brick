@@ -16,7 +16,6 @@ limitations under the License.
 const d3 = require('d3');
 const register = require('register');
 const ModuleInterface = require('lib/module_interface');
-const globalWallGeometry = require('globalWallGeometry');
 const wallGeometry = require('wallGeometry');
 const network = require('network');
 
@@ -85,13 +84,13 @@ class WindClient extends ModuleInterface.Client {
     this.overlaySurface = new CanvasSurface(container, wallGeometry);
     this.animationSurface = new CanvasSurface(container, wallGeometry);
 
-    this.scale = 2.5 * (globalWallGeometry.extents.w / 3);
+    this.scale = 2.5 * (wallGeometry.extents.w / 3);
 
     this.projection = d3.geoOrthographic()
       .scale(this.scale)
       .rotate([ROTATEX, ROTATEY])
-      .translate([globalWallGeometry.extents.w/2 - this.virtualRect.x,
-                  globalWallGeometry.extents.h/2 - this.virtualRect.y])
+      .translate([wallGeometry.extents.w/2 - this.virtualRect.x,
+                  wallGeometry.extents.h/2 - this.virtualRect.y])
       .clipAngle(90);
 
     // Bounds relative to the virtual rectangle.
@@ -143,14 +142,14 @@ class WindClient extends ModuleInterface.Client {
 
     function drawSphere(context, virtualRect) {
       const grad = context.createRadialGradient(
-        globalWallGeometry.extents.w/2 - virtualRect.x, globalWallGeometry.extents.h/2 - virtualRect.y, 0,
-        globalWallGeometry.extents.w/2 - virtualRect.x, globalWallGeometry.extents.h/2 - virtualRect.y, r);
+        wallGeometry.extents.w/2 - virtualRect.x, wallGeometry.extents.h/2 - virtualRect.y, 0,
+        wallGeometry.extents.w/2 - virtualRect.x, wallGeometry.extents.h/2 - virtualRect.y, r);
       grad.addColorStop(.69, "#303030");
       grad.addColorStop(.91, "#202020");
       grad.addColorStop(.96, "#000005");
       context.fillStyle = grad;
-      context.fillRect(0, 0, globalWallGeometry.extents.w,
-        globalWallGeometry.extents.h);
+      context.fillRect(0, 0, wallGeometry.extents.w,
+        wallGeometry.extents.h);
     }
 
     function drawGraticules(context) {

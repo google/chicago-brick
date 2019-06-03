@@ -5,7 +5,6 @@
     "chrome": false,
     "debug": false,
     "game": false,
-    "globalWallGeometry": false,
     "Headers": false,
     "network": false,
     "peerNetwork": false,

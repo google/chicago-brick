@@ -100,7 +100,7 @@ class PrepareState extends State {
     // Don't begin preparing the module until we've loaded it.
     this.moduleDef_.whenLoadedPromise.then(() => {
       // The module we're trying to load.
-      this.module_ = new RunningModule(this.moduleDef_, wallGeometry.getGeo(), this.deadline_);
+      this.module_ = new RunningModule(this.moduleDef_, this.deadline_);
       this.module_.instantiate();
 
       // Tell the old server module that it will be hidden soon.
