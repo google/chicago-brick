@@ -13,9 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {delay} from '/lib/promise.js';
 import {Polygon} from '/lib/math/polygon2d.js';
-import * as log from '/client/util/log.js';
 import * as moduleInterface from '/lib/module_interface.js';
 import * as moduleTicker from '/client/modules/module_ticker.js';
 import * as network from '/client/network/network.js';
@@ -27,18 +25,13 @@ import conform from '/lib/conform.js';
 import inject from '/lib/inject.js';
 import {StateManager} from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
-import {now, until} from '/client/util/time.js';
-
-const debug = Debug('wall:client_module');
-const error = log.error(debug);
+import {now} from '/client/util/time.js';
 
 function createNewContainer(name) {
   var newContainer = document.createElement('div');
   newContainer.className = 'container';
   newContainer.id = 't-' + now();
-  newContainer.style.opacity = 0.0;
   newContainer.setAttribute('moduleName', name);
-  document.querySelector('#containers').appendChild(newContainer);
   return newContainer;
 }
 
@@ -105,11 +98,16 @@ export class ClientModule {
     );
   }
 
+  // Extracted out for testing purposes.
+  static async loadPath(path) {
+    return await import(path);
+  }
+
   async instantiate() {
     this.container = createNewContainer(this.name);
 
     if (!this.path) {
-      return Promise.resolve();
+      return;
     }
 
     this.network = network.forModule(
@@ -129,73 +127,71 @@ export class ClientModule {
       peerNetwork,
       assert,
     };
-    const {load} = await import(this.path);
-    if (!load) {
-      throw new Error(`${this.name} did not export a 'load' function!`);
-    }
-    const {client} = inject(load, fakeEnv);
-    conform(client, moduleInterface.Client);
-
-    this.instance = new client(this.config);
-  }
-
-  // Returns true if module is still OK.
-  willBeShownSoon() {
-    if (!this.path) {
-      return true;
-    }
     try {
-      this.instance.willBeShownSoon(this.container, this.deadline);
-      return true;
-    } catch(e) {
-      error(e);
-      return false;
+      const {load} = await ClientModule.loadPath(this.path);
+      if (!load) {
+        throw new Error(`${this.name} did not export a 'load' function!`);
+      }
+      const {client} = inject(load, fakeEnv);
+      conform(client, moduleInterface.Client);
+
+      this.instance = new client(this.config);
+    } catch (e) {
+      // something went very wrong. Wind everything down.!
+      this.network.close();
+      this.network = null;
+      throw e;
     }
   }
 
   // Returns true if module is still OK.
-  fadeIn(deadline) {
-    this.container.style.transition =
-        'opacity ' + until(deadline).toFixed(0) + 'ms';
-    this.container.style.opacity = 1.0;
-
+  async willBeShownSoon() {
     if (!this.path) {
-      return true;
+      return;
     }
     try {
-      this.instance.beginFadeIn(deadline);
+      await this.instance.willBeShownSoon(this.container, this.deadline);
     } catch(e) {
-      error(e);
-      return false;
+      this.dispose();
+      throw e;
+    }
+  }
+
+  // Returns true if module is still OK.
+  beginFadeIn(deadline) {
+    if (!this.path) {
+      return;
     }
     moduleTicker.add(this.name, this.instance);
-    delay(until(deadline)).done(() => {
-      this.titleCard.enter();
-      try {
-        this.instance.finishFadeIn();
-      } catch(e) {
-        error(e);
-      }
-    });
-    return true;
+    try {
+      this.instance.beginFadeIn(deadline);
+    } catch (e) {
+      this.dispose();
+      throw e;
+    }
   }
 
-  fadeOut(deadline) {
-    if (this.container) {
-      this.container.style.transition =
-          'opacity ' + until(deadline).toFixed(0) + 'ms';
-      this.container.style.opacity = 0.0;
-    }
+  finishFadeIn() {
     if (!this.path) {
-      return true;
+      return;
+    }
+    this.titleCard.enter();
+    this.instance.finishFadeIn();
+  }
+
+  beginFadeOut(deadline) {
+    if (!this.path) {
+      return;
     }
     this.titleCard.exit();
-    try {
-      this.instance.beginFadeOut(deadline);
-    } catch(e) {
-      error(e);
+    this.instance.beginFadeOut(deadline);
+  }
+
+  finishFadeOut() {
+    if (!this.path) {
+      return;
     }
-    return true;
+    this.instance.finishFadeOut();
   }
 
   dispose() {
@@ -204,20 +200,14 @@ export class ClientModule {
       this.container = null;
     }
     if (!this.path) {
-      return true;
+      return;
     }
     this.titleCard.exit();  // Just in case.
     moduleTicker.remove(this.instance);
 
     if (this.network) {
       this.network.close();
+      this.network = null;
     }
-    try {
-      this.instance.finishFadeOut();
-    } catch(e) {
-      error(e);
-    }
-
-    return true;
   }
 }

@@ -13,12 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as network from '/client/network/network.js';
-import {ModuleManager} from '/client/modules/module_manager.js';
-import Debug from '/lib/lame_es6/debug.js';
-
 import * as info from '/client/util/info.js';
 import * as monitor from '/client/monitoring/monitor.js';
+import * as network from '/client/network/network.js';
+import * as time from '/client/util/time.js';
+import Debug from '/lib/lame_es6/debug.js';
+import {ClientModulePlayer} from '/client/modules/client_module_player.js';
+import {ClientModule} from '/client/modules/module.js';
 
 Debug.enable('wall:*');
 
@@ -30,5 +31,10 @@ if (new URL(window.location.href).searchParams.get('monitor')) {
 }
 
 // Ready to receive some code!
-const manager = new ModuleManager;
-manager.start();
+time.start();
+
+// Server has asked us to load a new module.
+const modulePlayer = new ClientModulePlayer;
+
+network.on('loadModule',
+    bits => modulePlayer.playModule(ClientModule.deserialize(bits)));

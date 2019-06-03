@@ -45,11 +45,11 @@ window.requestAnimationFrame(draw);
 
 export function add(name, module) {
   modulesToDraw.push({name, module});
-  debug('Add: We are now drawing ' + modulesToDraw.length + ' modules');
+  debug(`Add: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
   monitor.markDrawnModules(modulesToDraw.map(m => m.name));
 }
 export function remove(module) {
   modulesToDraw = modulesToDraw.filter(pair => pair.module !== module);
-  debug('Remove: We are now drawing ' + modulesToDraw.length + ' modules');
+  debug(`Remove: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
   monitor.markDrawnModules(modulesToDraw.map(m => m.name));
 }

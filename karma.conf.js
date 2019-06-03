@@ -5,7 +5,7 @@ module.exports = function(config) {
   config.set({
 
     // base path that will be used to resolve all patterns (eg. files, exclude)
-    basePath: '',
+    basePath: '.',
 
 
     // frameworks to use
@@ -25,8 +25,15 @@ module.exports = function(config) {
       {pattern: 'node_modules/sinon/pkg/sinon.js'},
       {pattern: 'node_modules/sinon-chai/lib/sinon-chai.js'},
       {pattern: 'node_modules/debug/dist/debug.js'},
+      {pattern: 'node_modules/clock-skew/lib/clock_skew.js', type: 'module', included: false},
     ],
 
+    proxies: {
+      '/lib/': '/base/lib/',
+      '/client/': '/base/client/',
+      '/server/': '/base/server/',
+      '/sys/': '/base/node_modules/',
+    },
 
     // list of files / patterns to exclude
     exclude: [
