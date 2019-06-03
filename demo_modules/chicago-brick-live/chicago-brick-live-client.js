@@ -169,7 +169,7 @@ export function load(debug, network, wallGeometry) {
       }
     }
 
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.extendCanvas(this.surface.context);
       this.screen = { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height };
@@ -189,7 +189,6 @@ export function load(debug, network, wallGeometry) {
 
       // Ask for some code to run.
       network.emit('requestCode', { client: this.client });
-      return Promise.resolve();
     }
 
     extendCanvas(canvas) {

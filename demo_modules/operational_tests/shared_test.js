@@ -23,13 +23,12 @@ class SharedTestClient extends ModuleInterface.Client {
     }
   }
 
-  willBeShownSoon(container, deadline) {
+  async willBeShownSoon(container, deadline) {
     const CanvasSurface = require('client/surface/canvas_surface');
     this.surface = new CanvasSurface(container, wallGeometry);
     this.canvas = this.surface.context;
     this.clientId = 'client' + this.surface.virtualRect.x + this.surface.virtualRect.y;
     state.create(this.clientId, 'ValueNearestInterpolator');
-    return Promise.resolve();
   }
 
   draw(time, delta) {

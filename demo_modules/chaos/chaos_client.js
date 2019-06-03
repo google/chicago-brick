@@ -50,12 +50,11 @@ export function load(network, wallGeometry) {
       }
     }
 
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
       this.imageData = this.canvas.getImageData(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
       this.raw = new Array(this.surface.virtualRect.w * this.surface.virtualRect.h).fill(0);
-      return Promise.resolve();
     }
 
     initialize() {

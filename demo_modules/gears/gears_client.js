@@ -9,7 +9,7 @@ export function load(debug, state, wallGeometry) {
   const layers = 2;
 
   class GearsClient {
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.c = this.surface.context;
       this.gears_ = null;

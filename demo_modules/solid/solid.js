@@ -26,10 +26,9 @@ export function load(wallGeometry) {
         this.surface.destroy();
       }
     }
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
-      return Promise.resolve();
     }
     draw() {
       this.canvas.fillStyle = this.color;

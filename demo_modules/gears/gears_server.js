@@ -40,7 +40,7 @@ export function load(debug, state, wallGeometry) {
   }
 
   class GearsServer {
-    willBeShownSoon() {
+    async willBeShownSoon() {
       // Generate a random gear train.
 
       // To start, place the middle gear.
@@ -83,7 +83,6 @@ export function load(debug, state, wallGeometry) {
         pitch: 'ValueNearestInterpolator',
       });
       state.get('gears').set(this.gears_, 0);
-      return Promise.resolve();
     }
 
     makeNewGear_() {

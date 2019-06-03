@@ -31,7 +31,7 @@ export function load(network, wallGeometry) {
   }
 
   class ChaosServer {
-    willBeShownSoon() {
+    async willBeShownSoon() {
       // The time we last tried to place a new shape.
       this.oldtime = -Infinity;
       // The time we last sent information to the clients about the shapes.
@@ -40,8 +40,6 @@ export function load(network, wallGeometry) {
       this.shapes = [];
       // A counter indicating how many times we've added shapes.
       this.build = 0;
-
-      return Promise.resolve();
     }
 
     tick(time) {

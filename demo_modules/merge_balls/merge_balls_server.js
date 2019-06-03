@@ -103,7 +103,7 @@ export function load(state, network, wallGeometry) {
   // Server Module
   //
   class MergeBallsServer {
-    willBeShownSoon() {
+    async willBeShownSoon() {
         function getInitialBallPosition(ballradius) {
             var rect = wallGeometry.extents;
             return {
@@ -147,7 +147,6 @@ export function load(state, network, wallGeometry) {
               y: 'NumberLerpInterpolator'
             }
       }]);
-      return Promise.resolve();
     }
 
     tick(time, delta) {

@@ -25,9 +25,8 @@ export function load(network) {
       network.on('_memory_debug', memoryDebugHandler);
     }
 
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       container.style.backgroundColor = 'black';
-      return Promise.resolve();
     }
   }
 

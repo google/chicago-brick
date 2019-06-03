@@ -103,9 +103,8 @@ export function load(wallGeometry) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    async willBeShownSoon(container, deadline) {
       this.surface = new P5Surface(container, wallGeometry, CosinesSketch, deadline);
-      return Promise.resolve();
     }
 
     draw(time) {
