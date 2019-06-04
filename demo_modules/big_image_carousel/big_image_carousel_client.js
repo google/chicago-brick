@@ -54,6 +54,9 @@ export function load(wallGeometry, asset) {
       p5.strokeWeight(4);
       // Each instance will only ever draw images from one Y offset, but many X offsets.
 
+      if (!this.tiles || !this.tiles.length) {
+        return;
+      }
       this.sum_tile_width = 0;
       for (let x = 0; x < this.tiles.length; x++) {
         this.sum_tile_width += this.tiles[x].width;

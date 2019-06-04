@@ -2,18 +2,18 @@
   {
     "name": "registration",
     "client_path": "./registration.js",
-    "title": "Registration Test",
-    "author": "Matt Handley"
   },
   {
     "name": "p5_test",
     "client_path": "./p5_test.js",
-    "title": "p5 surface test",
-    "author": "Jason Gessner"
   },
   {
     "name": "memory-debug",
-    "client_path": "./memory_debug.js"
+    "client_path": "./memory_debug.js",
+    "credit": {
+      "title": "Super Long Title That Will Totally Cause Wrapping",
+      "author": "Author, who likes to have<br>his name on two lines."
+    }
   },
   {
     "name": "genlock-test",
@@ -22,7 +22,5 @@
   {
     "name": "threejs",
     "client_path": "./threejs_test.js",
-    "title": "threejs test",
-    "author": "Matt Handley"
   }
 ]

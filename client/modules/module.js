@@ -88,7 +88,7 @@ export class ClientModule {
       bits.module.name,
       bits.module.path,
       bits.module.config,
-      new TitleCard(bits.module),
+      new TitleCard(bits.module.credit),
       bits.time,
       new Polygon(bits.geo)
     );

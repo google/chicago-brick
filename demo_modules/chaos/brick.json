@@ -2,6 +2,8 @@
   "name": "chaos",
   "client_path": "./chaos_client.js",
   "server_path": "./chaos_server.js",
-  "title": "Chaos Theory",
-  "author": "Matt Cruikshank"
+  "credit": {
+    "title": "Chaos Theory",
+    "author": "Matt Cruikshank"
+  }
 }

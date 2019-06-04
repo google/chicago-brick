@@ -3,7 +3,9 @@
     "name": "slideshow",
     "client_path": "./slideshow_client.js",
     "server_path": "./slideshow_server.js",
-    "title": "Slideshow"
+    "credit": {
+      "title": "Slideshow"
+    }
   },
   {
     "name": "cta",
