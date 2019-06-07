@@ -13,13 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+// TODO(applmak): Make this work.
+
 const register = require('register');
 const ModuleInterface = require('lib/module_interface');
 
 // TODO(applmak): Take care of this lint error for real.
 /*jshint loopfunc: true */
 const Rectangle = require('lib/rectangle');
-const _ = require('underscore');
 const Noise = require('noisejs');
 const assert = require('lib/assert');
 const wallGeometry = require('wallGeometry');
@@ -114,15 +115,15 @@ class ParticleEmitter {
     this.geometry.setDrawRange(0, 0);
     this.geometry.addAttribute('posVel', posVelBuffer);
     this.geometry.addAttribute('misc', miscBuffer);
-    
+
     // Store the Three versions of those attribute buffers for later mutation.
     this.posVelBuffer_ = this.geometry.getAttribute('posVel');
     this.miscBuffer_ = this.geometry.getAttribute('misc');
-    
+
     // Provide an aliased buffer over the misc buffer so we can address the
     // color field.
     this.color_ = new Uint8Array(this.miscBuffer_.array.buffer);
-    
+
     // We don't always have a fixed number of active particles. We'll use an
     // index buffer to mention the particles we want to change.
     var indices = new Uint16Array(MAX_PARTICLES_PER_CLIENT);
@@ -133,16 +134,16 @@ class ParticleEmitter {
     for (var i = 0; i < MAX_PARTICLES_PER_CLIENT; ++i) {
       this.indexBuffer_.array[i] = -1;
     }
-    
+
     // Because we want to avoid looking through the indexBuffer for particles
     // that are available, we'll track this via a pool of unused indices.
     // Initially, all particles are dead.
     this.deadParticles_ = Array.from({length: MAX_PARTICLES_PER_CLIENT}).map((_, index) => index);
-    
+
     // We'll also track where each index is in the index buffer. Whew!
     this.indexIndexes_ = Array.from({length: MAX_PARTICLES_PER_CLIENT}).map((_) => -1);
   }
-  
+
   // Adds a particle to the emitter. All initial values must be well-specified.
   // If there are no particles, returns -1. No data is flushed to the GPU.
   addParticle(x, y, vx, vy, r, g, b, a, s, t0, l) {
@@ -150,10 +151,10 @@ class ParticleEmitter {
       // Can't handle any more particles!
       return -1;
     }
-    
+
     // What is the index of our new particle?
     var index = this.deadParticles_.pop();
-    
+
     // Assign the values into the buffers:
     // Enable this particle in the index buffer. We calculate the next available
     // index by remembering that MAX_PARTICLES_PER_CLIENT = dead + live, and
@@ -170,29 +171,29 @@ class ParticleEmitter {
     this.color_[4*(4 * index + 0) + 1] = b;
     this.color_[4*(4 * index + 0) + 2] = g;
     this.color_[4*(4 * index + 0) + 3] = r;
-  
+
     this.miscBuffer_.array[4 * index + 1] = s;
     this.miscBuffer_.array[4 * index + 2] = t0;
     this.miscBuffer_.array[4 * index + 3] = l;
-    
+
     this.indexBuffer_.needsUpdate = true;
     this.posVelBuffer_.needsUpdate = true;
     this.miscBuffer_.needsUpdate = true;
-    
+
     // Update the indices we will draw:
     this.geometry.setDrawRange(0, this.numLiveParticles());
-    
+
     // All done!
     return index;
   }
-  
+
   numLiveParticles() {
     return MAX_PARTICLES_PER_CLIENT - this.deadParticles_.length;
   }
-  
+
   removeParticle(index) {
     var lastParticleIndex = this.numLiveParticles() - 1;
-    
+
     // Add a hole in the index buffer, because this index is invalid.
     this.indexBuffer_.array[this.indexIndexes_[index]] = -1;
     // But also, don't leave it there!
@@ -201,39 +202,39 @@ class ParticleEmitter {
     // Update our reverse index map, too:
     this.indexIndexes_[swappedLiveParticleIndex] = this.indexIndexes_[index];
     this.indexIndexes_[index] = -1;
-    
+
     this.deadParticles_.push(index);
     this.indexBuffer_.needsUpdate = true;
 
     this.geometry.setDrawRange(0, this.numLiveParticles());
   }
-  
+
   updateParticle(cb, index, opt_obj) {
     var particle = opt_obj || {x:0, y:0, vx:0, vy:0, r:0, g:0, b:0, a:0, s:0, t0:0, l:0};
-    
+
     // copy to object
     particle.x = this.posVelBuffer_.array[4 * index + 0];
     particle.y = this.posVelBuffer_.array[4 * index + 1];
     particle.vx = this.posVelBuffer_.array[4 * index + 2];
     particle.vy = this.posVelBuffer_.array[4 * index + 3];
-    
+
     particle.a = this.color_[4*(4 * index + 0) + 0];
     particle.b = this.color_[4*(4 * index + 0) + 1];
     particle.g = this.color_[4*(4 * index + 0) + 2];
     particle.r = this.color_[4*(4 * index + 0) + 3];
-    
+
     particle.s = this.miscBuffer_.array[4 * index + 1];
     particle.t0 = this.miscBuffer_.array[4 * index + 2];
     particle.l = this.miscBuffer_.array[4 * index + 3];
-    
+
     cb(particle, index);
-    
+
     // copy back to buffer.
     this.posVelBuffer_.array[4 * index + 0] = particle.x;
     this.posVelBuffer_.array[4 * index + 1] = particle.y;
     this.posVelBuffer_.array[4 * index + 2] = particle.vx;
     this.posVelBuffer_.array[4 * index + 3] = particle.vy;
-    
+
     this.color_[4*(4 * index + 0) + 0] = Math.floor(particle.a);
     this.color_[4*(4 * index + 0) + 1] = Math.floor(particle.b);
     this.color_[4*(4 * index + 0) + 2] = Math.floor(particle.g);
@@ -243,12 +244,12 @@ class ParticleEmitter {
     this.miscBuffer_.array[4 * index + 2] = particle.t0;
     this.miscBuffer_.array[4 * index + 3] = particle.l;
   }
-  
+
   markBuffersDirty() {
     this.posVelBuffer_.needsUpdate = true;
     this.miscBuffer_.needsUpdate = true;
   }
-  
+
   // Updates particle state by calling cb with decoded data for each particle.
   // Remove & add are safe to call during this method.
   updateParticles(cb) {
@@ -260,7 +261,7 @@ class ParticleEmitter {
       var index = this.indexBuffer_.array[i];
       this.updateParticle(cb, index, particle);
     }
-    
+
     this.markBuffersDirty();
   }
   // Expensive sanity checks:
@@ -272,7 +273,7 @@ class ParticleEmitter {
             'Bad index found!', index, reverseIndex, this.indexBuffer_.array[reverseIndex]);
       }
     });
-    
+
     // Next, check that each particle at every valid index has a + lifetime.
     for (var i = 0; i < this.numLiveParticles(); ++i) {
       var index = this.indexBuffer_.array[i];
@@ -327,36 +328,36 @@ class ParticlesClient extends ModuleInterface.Client {
             return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
           }
           highp vec4 c = vec4(0.0, 0.0, 0.0, 0.0);
-          
+
           // Exponent & mantissa:
           highp float e = floor(log2(av));
           highp float m = av * pow(2.0, -e) - 1.0;
-          
+
           // Unpack mantissa:
           c[1] = floor(128.0 * m);
           m -= c[1] / 128.0;
           c[2] = floor(32768.0 * m);
           m -= c[2] / 32768.0;
           c[3] = floor(8388608.0 * m);
-          
+
           // Unpack exponent:
           highp float ebias = e + 127.0;
           c[0] = floor(ebias / 2.0);
           ebias -= c[0] * 2.0;
           c[1] += floor(ebias) * 128.0;
-          
+
           // Unpack sign:
           c[0] += 128.0 * step(0.0, -v);
-          
+
           // Scale to [0,1]:
           return c / 255.0;
         }
-        
+
         attribute vec4 posVel;
         attribute vec4 misc;
-        
+
         varying vec4 vColor;
-        
+
         void main() {
           // We store color in x as a uint32_t
           vColor = decodeFloat(misc.x);
@@ -367,13 +368,13 @@ class ParticlesClient extends ModuleInterface.Client {
       `,
       fragmentShader: `
         varying vec4 vColor;
-        
+
         void main() {
           gl_FragColor = vColor;
         }
       `
     });
-    
+
     this.points = new Three.Points(this.emitter.geometry, mat);
     this.points.frustumCulled = false;
     this.surface.scene.add(this.points);
@@ -383,7 +384,7 @@ class ParticlesClient extends ModuleInterface.Client {
         this.surface.virtualRect.y, this.surface.virtualRect.y+this.surface.virtualRect.h,
         -1, 1);
     this.surface.camera.updateProjectionMatrix();
-    
+
     this.idToIndex_ = {};
     return peerNetwork.open(deadline).then((peer) => {
       debug('Connected to peer network.');
@@ -422,7 +423,7 @@ class ParticlesClient extends ModuleInterface.Client {
         debug('Emitter is full!', data._id);
         return false;
       }
-      
+
       // Remember this data in our particle map.
       this.idToIndex_[data._id] = index;
       return true;
@@ -435,7 +436,7 @@ class ParticlesClient extends ModuleInterface.Client {
         // no big deal, the emitter ignores them.
         _.extend(p, data);
       }, index);
-      
+
       return data.l >= 0;
     }, (data) => {
       assert(data._id in this.idToIndex_, 'Updating an owned particle ' + data._id + ' that isn\'t in the index map!');
@@ -446,19 +447,19 @@ class ParticlesClient extends ModuleInterface.Client {
       var windSampleY = Math.sin(2*Math.PI * time / 100000);
       var windX = 10000*this.noise.perlin3(windSampleX, windSampleY, 0.1);
       var windY = 10000*this.noise.perlin3(windSampleX, windSampleY, 0.6);
-      
+
       var m = data.s + 0.1;
       var Fx = windX;
       var Fy = windY + 200;
-      
+
       // Add perturbation:
       Fx += 10000*this.noise.perlin3(data.x, data.y, 0.13);
       Fy += 10000*this.noise.perlin3(data.x, data.y, 0.47);
-      
-      
+
+
       var ax = Fx / m;
       var ay = Fy / m;
-      
+
       data.vx += ax * delta/1000;
       data.vy += ay * delta/1000;
       data.x += data.vx * delta/1000;
@@ -479,7 +480,7 @@ class ParticlesClient extends ModuleInterface.Client {
         // We copy over p with the new data.
         _.extend(p, data);
       }, index);
-      
+
       if (data.l < 0) {
         // Don't continue to persist.
         return false;
@@ -493,21 +494,21 @@ class ParticlesClient extends ModuleInterface.Client {
       this.emitter.removeParticle(index);
       delete this.idToIndex_[data._id];
     });
-    
+
     this.emitter.markBuffersDirty();
-    
+
     this.surface.render();
-    
+
     // Generate debug info.
     // C: x, y, connection.id
     if (false) {
       var debugText = [(time/1000).toFixed(2)];
-    
+
       debugText = debugText.concat(this.persistence_.clients.map((client) => {
         return ['C:', client.x + ',' + client.y, client.conn.id].join(' ');
       }));
-    
-      // P: index x,y,_index oldStatus newStatus 
+
+      // P: index x,y,_index oldStatus newStatus
       debugText = debugText.concat(
         _(this.persistence_.data_)
             .sortBy((data) => data.l, true)
@@ -517,7 +518,7 @@ class ParticlesClient extends ModuleInterface.Client {
           var l = (data.l >= 0 ? '+' : '') + data.l.toFixed(2);
           return ['P:', data._id, x + ',' + y, l, this.idToIndex_[data._id], data._status].join(' ');
         }));
-    
+
       this.drawDebugText(_.flatten(debugText));
     }
   }

@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import _ from 'underscore';
 import socketIoClient from 'socket.io-client';
 
 export function load(debug, network) {
@@ -44,7 +43,7 @@ export function load(debug, network) {
   //
   class ChicagoBrickLiveServer {
     constructor(config) {
-      this.config = _.defaults(config, DEFAULT_CONFIG);
+      this.config = Object.assign({}, DEFAULT_CONFIG, config);
       debug(`Attempting to use codeserver at ${this.config.codeServer}`);
 
       // All clients (x, y) that have ever connected.  Used to notify all clients
@@ -93,14 +92,14 @@ export function load(debug, network) {
           debug(`Code server connected: ${this.codeServer.connected}`);
 
           // Track the client
-          this.clients[key] = _.extend(this.clients[key] || {}, { client: data.client });
-          this.clients[key] = _.defaults(this.clients[key], { code: undefined });
+          this.clients[key] = Object.assign(this.clients[key] || {}, { client: data.client });
+          this.clients[key] = Object.assign({}, this.clients[key], { code: undefined });
 
           let response;
 
           if (this.clients[key].code || !this.codeServer.connected) {
             debug(`Sending cached code to client(${key}).`);
-            response = _.defaults(this.clients[key], {
+            response = Object.assign({}, this.clients[key], {
               client: data.client,
               code: defaultClientCode(data.client, "No code server available")
             });

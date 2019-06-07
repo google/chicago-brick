@@ -28,11 +28,10 @@ import LoadFromDriveStrategy from './load_from_drive.js';
 import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
 import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
-import FullscreenDisplayStrategy from './fullscreen_display.js';
-import FallingDisplayStrategy from './falling_display.js';
+import FullscreenDisplayStrategy from './fullscreen_display_server.js';
+import FallingDisplayStrategy from './falling_display_server.js';
 
 import fetch from 'node-fetch';
-import _ from 'underscore';
 
 export function load(debug, network, assert, wallGeometry) {
   // DISPATCH TABLES
@@ -54,9 +53,9 @@ export function load(debug, network, assert, wallGeometry) {
 
   let parseServerDisplayStrategy = (displayConfig) => {
     if (displayConfig.fullscreen) {
-      return new (FullscreenDisplayStrategy({_, debug, assert, wallGeometry, network}).Server)(displayConfig.fullscreen);
+      return new (FullscreenDisplayStrategy({debug, wallGeometry, network}).Server)(displayConfig.fullscreen);
     } else if (displayConfig.falling) {
-      return new (FallingDisplayStrategy({_, debug, assert, wallGeometry, network}).Server)(displayConfig.falling);
+      return new (FallingDisplayStrategy({debug, wallGeometry, network}).Server)(displayConfig.falling);
     }
     throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
   };

@@ -65,7 +65,6 @@ limitations under the License.
 
 import Debug from 'debug';
 import EventEmitter from 'events';
-import _ from 'underscore';
 import ioClient from 'socket.io-client';
 import os from 'os';
 const debug = Debug('wall:game');
@@ -107,7 +106,7 @@ class Game extends EventEmitter {
           colors.length + ' colors.');
     }
 
-    var players = _.map(_.range(maxPlayers), _.constant(undefined));
+    var players = Array.from({length:maxPlayers});
     var playerMap = {};
     var gameStateInterval = null;
 
@@ -118,8 +117,9 @@ class Game extends EventEmitter {
     function sendGameState() {
       socket.emit('gameState', {
         // Sending controls back makes no sense.
-        players: _.map(game.players, function(p) {
-          return _.omit(p, 'controls');
+        players: game.players.map(p => {
+          const {controls, ...newP} = p;
+          return newP;
         }),
       });
     }
@@ -137,7 +137,7 @@ class Game extends EventEmitter {
     }
 
     function provisionPlayer(playerId) {
-      var slot = _.findIndex(players, function(s) { return !s; });
+      var slot = players.findIndex(s => !s);
       if (slot == -1) {
         debug('Too many players: ', playerId);
         socket.emit('errorMsg', 'Too many players.', playerId);
@@ -163,7 +163,7 @@ class Game extends EventEmitter {
 
     function setControls(playerId, controls) {
       if (playerMap[playerId]) {
-        _.extend(playerMap[playerId].controls, controls);
+        Object.assign(playerMap[playerId].controls, controls);
         game.emit('controlsUpdate', playerMap[playerId]);
       }
     }
@@ -209,7 +209,7 @@ export function forModule(forModule) {
 
     // Called when module is finished.
     dispose: function() {
-      _.invoke(connections, 'close');
+      connections.forEach(c => c.close());
     }
   };
 }

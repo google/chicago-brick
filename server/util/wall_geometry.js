@@ -15,7 +15,6 @@ limitations under the License.
 
 import {Polygon} from '../../lib/math/polygon2d.js';
 import Debug from 'debug';
-import _ from 'underscore';
 import fs from 'fs';
 
 const debug = Debug('wall:wall_geometry');
@@ -25,7 +24,7 @@ const debug = Debug('wall:wall_geometry');
 // are addressed from the top-left pixel.
 function parseGeometry(polygonPoints) {
   var points = polygonPoints.reduce(function(agg, point) {
-    var last = _(agg).last();
+    var last = agg[agg.length - 1];
     var next;
     if (point.right) {
       next = {x: last.x + point.right, y: last.y};

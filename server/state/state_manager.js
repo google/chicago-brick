@@ -15,7 +15,6 @@ limitations under the License.
 
 import * as sharedState from '../../lib/shared_state.js';
 import Debug from 'debug';
-import _  from 'underscore';
 import {StateSchedule} from './state_schedule.js';
 
 const debug = Debug('wall:state_manager');
@@ -118,10 +117,11 @@ export class StateManager {
   // value of the variable for the latest time (which seems safe).
   send() {
     // Build a packet of data about all of the tracked state.
-    var stateData = _.map(this.trackedState_, function(state, name) {
+    const stateData = Object.keys(this.trackedState_).map(name => {
+      const store = this.trackedState_[name].store_;
       return {
-        name: name,
-        dataPoint: _.last(state.store_)
+        name,
+        dataPoint: store[store.length - 1],
       };
     });
 
