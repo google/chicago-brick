@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from '../monitoring/monitor.js';
+import * as wallGeometry from '../util/wall_geometry.js';
 import Debug from 'debug';
 import library from './module_library.js';
 import {ServerStateMachine} from './server_state_machine.js';
@@ -22,13 +23,21 @@ import {now} from '../util/time.js';
 
 const debug = Debug('wall:module_state_machine');
 
+function tellClientToPlay(client, name, deadline) {
+  client.socket.emit('loadModule', {
+    module: library.modules[name].serializeForClient(),
+    time: deadline,
+    geo: wallGeometry.getGeo().points
+  });
+}
+
 // Takes a map of client ids -> client state machines. Not owned or changed
 // by this class, only read.
 export class ModuleStateMachine extends StateMachine {
   constructor(allClients) {
     super(new IdleState, debug);
 
-    // Map of ID to ClientControlStateMachine for all clients.
+    // Map of ID to client for all clients.
     this.allClients_ = allClients;
 
     this.setContext({
@@ -74,7 +83,7 @@ export class ModuleStateMachine extends StateMachine {
 
     // Tell the clients to stop.
     for (const id in this.allClients_) {
-      this.allClients_[id].playModule('_empty', deadline);
+      tellClientToPlay(this.allClients_[id], '_empty', deadline);
     }
 
     // Set us back to idle, awaiting further instructions.
@@ -153,7 +162,7 @@ class DisplayState extends State {
 
     // Tell each client to transition to the module.
     for (const id in context.allClients) {
-      context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_);
+      tellClientToPlay(context.allClients[id], this.moduleName_, this.timeToStartDisplay_);
     }
 
     // Wait here until we're told to do something else.
@@ -161,7 +170,7 @@ class DisplayState extends State {
   newClient(client) {
     // Tell the new guy to load the next module NOW.
     // We'll presume that this guy arrived way after our coordinating time, so we'll tell him to switch now.
-    client.playModule(this.moduleName_, this.timeToStartDisplay_);
+    tellClientToPlay(client, this.moduleName_, this.timeToStartDisplay_);
   }
   playModule(moduleName, timeToStartDisplay) {
     this.transition_(new DisplayState(moduleName, timeToStartDisplay));

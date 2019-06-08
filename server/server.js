@@ -27,7 +27,6 @@ import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
 import https from 'https';
 import path from 'path';
-import {ClientControlStateMachine} from './modules/client_control_state_machine.js';
 import {Control} from './control.js';
 import {ModuleLoader} from './modules/module_loader.js';
 import {ModuleStateMachine} from './modules/module_state_machine.js';
@@ -166,7 +165,7 @@ network.on('new-client', function(client) {
       event: `newClient: ${client.rect.serialize()}`,
     }});
   }
-  clients[client.socket.id] = new ClientControlStateMachine(client);
+  clients[client.socket.id] = client;
   moduleSM.newClient(client);
 });
 
