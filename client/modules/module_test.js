@@ -51,10 +51,10 @@ describe('client module', () => {
         await m.instantiate();
         await willReject(() => m.willBeShownSoon());
       });
-      it('when beginFadeIn throws', async () => {
+      it('when beginTransitionIn throws', async () => {
         const m = fakes.makeClientModule(makeLoad(fakes.THROWS_ON_BEGIN_FADE_IN));
         await m.instantiate();
-        await willReject(() => m.beginFadeIn());
+        await willReject(() => m.beginTransitionIn());
       });
     });
 
@@ -62,20 +62,20 @@ describe('client module', () => {
       afterEach(() => {
         expect(networkClose).not.to.have.been.called;
       });
-      it('when beginFadeOut throws', async () => {
+      it('when beginTransitionOut throws', async () => {
         const m = fakes.makeClientModule(makeLoad(fakes.THROWS_ON_BEGIN_FADE_OUT));
         await m.instantiate();
-        await willReject(() => m.beginFadeOut());
+        await willReject(() => m.beginTransitionOut());
       });
-      it('when finishFadeIn throws', async () => {
+      it('when finishTransitionIn throws', async () => {
         const m = fakes.makeClientModule(makeLoad(fakes.THROWS_ON_FINISH_FADE_IN));
         await m.instantiate();
-        await willReject(() => m.finishFadeIn());
+        await willReject(() => m.finishTransitionIn());
       });
-      it('when finishFadeOut throws', async () => {
+      it('when finishTransitionOut throws', async () => {
         const m = fakes.makeClientModule(makeLoad(fakes.THROWS_ON_FINISH_FADE_OUT));
         await m.instantiate();
-        await willReject(() => m.finishFadeOut());
+        await willReject(() => m.finishTransitionOut());
       });
     });
   });

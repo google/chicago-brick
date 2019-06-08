@@ -25,18 +25,36 @@ import conform from '/lib/conform.js';
 import inject from '/lib/inject.js';
 import {StateManager} from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
-import {now} from '/client/util/time.js';
+import * as time from '/client/util/time.js';
+import {delay} from '/lib/promise.js';
 
 function createNewContainer(name) {
   var newContainer = document.createElement('div');
   newContainer.className = 'container';
-  newContainer.id = 't-' + now();
+  newContainer.id = 't-' + time.now();
   newContainer.setAttribute('moduleName', name);
   return newContainer;
 }
 
+export const FadeTransition = {
+  start(container) {
+    if (container) {
+      container.style.opacity = 0.001;
+      document.querySelector('#containers').appendChild(container);
+    }
+  },
+  async perform(oldModule, newModule, deadline) {
+    newModule.container.style.transition =
+        'opacity ' + time.until(deadline).toFixed(0) + 'ms';
+    newModule.container.style.opacity = 1.0;
+    // TODO(applmak): Maybe wait until css says that the transition is done?
+    await delay(time.until(deadline));
+  }
+}
+
+
 export class ClientModule {
-  constructor(name, path, config, titleCard, deadline, geo) {
+  constructor(name, path, config, titleCard, deadline, geo, transition) {
     // The module name.
     this.name = name;
 
@@ -56,8 +74,8 @@ export class ClientModule {
     // The wall geometry.
     this.geo = geo;
 
-    // Globals that are associated with this module.
-    this.globals = {};
+    // The transition to use to transition to this module.
+    this.transition = transition;
 
     // The dom container for the module's content.
     this.container = null;
@@ -67,9 +85,6 @@ export class ClientModule {
 
     // Network instance for this module.
     this.network = null;
-
-    // The name of the requirejs context for this module.
-    this.contextName = null;
   }
 
   // Deserializes from the json serialized form of ModuleDef in the server.
@@ -83,18 +98,20 @@ export class ClientModule {
       bits.module.config,
       new TitleCard(bits.module.credit),
       bits.time,
-      new Polygon(bits.geo)
+      new Polygon(bits.geo),
+      FadeTransition,
     );
   }
 
-  static newEmptyModule(deadline = 0) {
+  static newEmptyModule(deadline = 0, transition = FadeTransition) {
     return new ClientModule(
       'empty-module',
       '',
       {},
       new TitleCard({}),
       deadline,
-      new Polygon([{x: 0, y:0}])
+      new Polygon([{x: 0, y:0}]),
+      transition
     );
   }
 
@@ -113,8 +130,6 @@ export class ClientModule {
     this.network = network.forModule(
       `${this.geo.extents.serialize()}-${this.deadline}`);
     let openNetwork = this.network.open();
-
-    this.contextName = 'module-' + this.deadline;
 
     const fakeEnv = {
       asset,
@@ -149,6 +164,9 @@ export class ClientModule {
     if (!this.path) {
       return;
     }
+    // Prep the container for transition.
+    // TODO(applmak): Move the transition smarts out of ClientModule.
+    this.transition.start(this.container);
     try {
       await this.instance.willBeShownSoon(this.container, this.deadline);
     } catch(e) {
@@ -158,7 +176,7 @@ export class ClientModule {
   }
 
   // Returns true if module is still OK.
-  beginFadeIn(deadline) {
+  beginTransitionIn(deadline) {
     if (!this.path) {
       return;
     }
@@ -171,7 +189,7 @@ export class ClientModule {
     }
   }
 
-  finishFadeIn() {
+  finishTransitionIn() {
     if (!this.path) {
       return;
     }
@@ -179,7 +197,7 @@ export class ClientModule {
     this.instance.finishFadeIn();
   }
 
-  beginFadeOut(deadline) {
+  beginTransitionOut(deadline) {
     if (!this.path) {
       return;
     }
@@ -187,11 +205,15 @@ export class ClientModule {
     this.instance.beginFadeOut(deadline);
   }
 
-  finishFadeOut() {
+  finishTransitionOut() {
     if (!this.path) {
       return;
     }
     this.instance.finishFadeOut();
+  }
+
+  async performTransition(otherModule, transitionFinishDeadline) {
+    await this.transition.perform(otherModule, this, transitionFinishDeadline);
   }
 
   dispose() {

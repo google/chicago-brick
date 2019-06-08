@@ -4,16 +4,16 @@ import {ClientModulePlayer} from './client_module_player.js';
 
 const expect = chai.expect;
 
-const transition = {
-  start() {},
-  async perform() {},
-};
+function makeEmptyModule() {
+  return ClientModule.newEmptyModule(0, fakes.NopTransition);
+}
 
 // Major concern here is that no matter where untrusted module code throws, we
 // are always able to continue moving forward.
 describe('client module player', () => {
   let player;
   beforeEach(() => {
+    ClientModulePlayer.makeEmptyModule = makeEmptyModule;
     player = new ClientModulePlayer;
     document.body.querySelectorAll('#containers').forEach(e => e.remove());
     const containersEl = document.createElement('div');
@@ -24,13 +24,13 @@ describe('client module player', () => {
     sinon.restore();
   });
 
-  // The goToModule tests are all similar: Given a badly behaving module, do we
+  // The playModule tests are all similar: Given a badly behaving module, do we
   // do the right thing: either give up the proposed transition or succeed?
   describe('goToModule keeps the original module', () => {
     async function ensureOriginalModule(m, resume) {
       const originalModule = player.oldModule;
-      const p = player.goToModule(m, transition);
-      player.playModule(ClientModule.newEmptyModule());
+      const p = player.goToModule(m);
+      player.playModule(makeEmptyModule());
       resume();
       await p;
       expect(player.oldModule).to.equal(originalModule);
@@ -39,13 +39,13 @@ describe('client module player', () => {
     it('when the module throws during load', async () => {
       const m = fakes.makeClientModule(fakes.THROWS_ON_LOAD);
       const originalModule = player.oldModule;
-      await player.goToModule(m, transition);
+      await player.playModule(m);
       expect(player.oldModule).to.equal(originalModule);
     });
     it('when the module throws during construction', async () => {
       const m = fakes.makeClientModule(fakes.THROWS_ON_CONSTRUCTION);
       const originalModule = player.oldModule;
-      await player.goToModule(m, transition);
+      await player.playModule(m);
       expect(player.oldModule).to.equal(originalModule);
     });
     it('cleanly aborts if new module during instantiation', async () => {
@@ -68,16 +68,14 @@ describe('client module player', () => {
       const badModule = fakes.makeClientModule(fakes.THROWS_ON_BEGIN_FADE_OUT);
       const disposeSpy = sinon.spy(badModule, 'dispose');
       player.oldModule = badModule;
-      player.playModule(ClientModule.newEmptyModule());
-      await player.goToModule(player.nextModule, transition);
+      await player.playModule(makeEmptyModule());
       expect(disposeSpy).to.have.been.called;
       expect(player.oldModule).not.to.equal(badModule);
     });
     it('the new module throwing in beginFadeIn', async () => {
       const badModule = fakes.makeClientModule(fakes.THROWS_ON_BEGIN_FADE_IN);
       const disposeSpy = sinon.spy(badModule, 'dispose');
-      player.playModule(badModule);
-      await player.goToModule(player.nextModule, transition);
+      await player.playModule(badModule);
       expect(disposeSpy).to.have.been.called;
       expect(player.oldModule).not.to.equal(badModule);
       expect(player.nextModule.name).to.equal('empty-module');
@@ -86,16 +84,14 @@ describe('client module player', () => {
       const badModule = fakes.makeClientModule(fakes.THROWS_ON_FINISH_FADE_OUT);
       const disposeSpy = sinon.spy(badModule, 'dispose');
       player.oldModule = badModule;
-      player.playModule(ClientModule.newEmptyModule());
-      await player.goToModule(player.nextModule, transition);
+      await player.playModule(makeEmptyModule());
       expect(disposeSpy).to.have.been.called;
       expect(player.oldModule).not.to.equal(badModule);
     });
     it('the new module throwing in finishFadeIn', async () => {
       const badModule = fakes.makeClientModule(fakes.THROWS_ON_FINISH_FADE_IN);
       const disposeSpy = sinon.spy(badModule, 'dispose');
-      player.playModule(badModule);
-      await player.goToModule(player.nextModule, transition);
+      await player.playModule(badModule);
       expect(disposeSpy).not.to.have.been.called;
       expect(player.oldModule).to.equal(badModule);
     });

@@ -67,12 +67,17 @@ export function allowPauseOnWillBeShownSoon() {
   };
 }
 
+export const NopTransition = {
+  start() {},
+  async perform() {},
+}
+
 export function makeClientModule(load) {
   sinon.replace(ClientModule, 'loadPath', function() {
     return {load};
   });
   const titleCard = new TitleCard({});
-  return new ClientModule('fake', 'path', {}, titleCard, 0, new Polygon([{x: 0, y:0}]));
+  return new ClientModule('fake', 'path', {}, titleCard, 0, new Polygon([{x: 0, y:0}]), NopTransition);
 }
 
 export function makeClientModuleWithPause(load) {
@@ -83,7 +88,7 @@ export function makeClientModuleWithPause(load) {
   });
   const titleCard = new TitleCard({});
   return {
-    module: new ClientModule('fake', 'path', {}, titleCard, 0, new Polygon([{x: 0, y:0}])),
+    module: new ClientModule('fake', 'path', {}, titleCard, 0, new Polygon([{x: 0, y:0}]), NopTransition),
     resume
   };
 }
