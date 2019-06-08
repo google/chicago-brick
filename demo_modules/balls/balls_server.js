@@ -17,9 +17,9 @@ import {Polygon} from '../../lib/math/polygon2d.js';
 import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
 import {Rectangle} from '../../lib/math/rectangle.js';
 
-export function load(network, wallGeometry) {
+export function load(wallGeometry, state) {
   class BallsServer {
-    willBeShownSoon() {
+    async willBeShownSoon() {
       this.balls = [];
       var extents = wallGeometry.extents;
       var spawnRect = new Rectangle(
@@ -36,7 +36,13 @@ export function load(network, wallGeometry) {
           color: Math.floor(GOOGLE_COLORS.length * Math.random())
         });
       }
-      return Promise.resolve();
+      state.create('balls', [{
+        x: 'NumberLerpInterpolator',
+        y: 'NumberLerpInterpolator',
+        vx: 'ValueNearestInterpolator',
+        vy: 'ValueNearestInterpolator',
+        color: 'ValueNearestInterpolator',
+      }]);
     }
 
     tick(time, delta) {
@@ -80,7 +86,7 @@ export function load(network, wallGeometry) {
         ball.y = ny;
       });
 
-      network.emit('balls', {time: time, balls: this.balls});
+      state.get('balls').set(this.balls, time);
     }
 
     static makeBoxPolygon(x, y, radius) {
