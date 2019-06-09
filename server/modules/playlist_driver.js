@@ -44,10 +44,12 @@ export class PlaylistDriver {
     this.newLayoutTime = Infinity;
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
+    // Timestamp of the last deadline we used to play a module.
+    this.lastDeadline_ = 0;
 
     emitter.on('new-client', client => {
       if (this.modules[this.moduleIndex]) {
-        tellClientToPlay(client, this.modules[this.moduleIndex], 0);
+        tellClientToPlay(client, this.modules[this.moduleIndex], this.lastDeadline_);
       }
     });
   }
@@ -151,7 +153,8 @@ export class PlaylistDriver {
     this.modules = Array.from(layout.modules);
     random.shuffle(this.modules);
 
-    concurrentWork.push(...layout.modules.map(m => m.whenLoadedPromise));
+    concurrentWork.push(...layout.modules.map(m => library.modules[m].whenLoadedPromise));
+
     // Wait until all of the modules are loaded.
     await Promise.all(concurrentWork);
     this.nextModule();
@@ -161,6 +164,8 @@ export class PlaylistDriver {
   // module.
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
+
+    debug(`Next module: ${this.modules[this.moduleIndex]} (${library.modules[this.modules[this.moduleIndex]].valid ? 'valid' : 'invalid'})`);
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];
@@ -175,7 +180,8 @@ export class PlaylistDriver {
   playModule_(module) {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
-    this.modulePlayer.playModule(new RunningModule(library.modules[module], now() + 5000));
+    this.lastDeadline_ = now() + 5000;
+    this.modulePlayer.playModule(new RunningModule(library.modules[module], this.lastDeadline_));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
