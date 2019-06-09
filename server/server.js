@@ -19,6 +19,7 @@ import * as credentials from './util/credentials.js';
 import * as game from './game/game.js';
 import * as monitor from './monitoring/monitor.js';
 import network from './network/network.js';
+import * as clients from './network/clients.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as webapp from './webapp.js';
 import Debug from 'debug';
@@ -29,11 +30,10 @@ import https from 'https';
 import path from 'path';
 import {Control} from './control.js';
 import {ModuleLoader} from './modules/module_loader.js';
-import {ModuleStateMachine} from './modules/module_state_machine.js';
+import {ServerModulePlayer} from './modules/server_module_player.js';
 import peer from 'peer';
 import {PlaylistDriver} from './modules/playlist_driver.js';
 import {PlaylistLoader} from './modules/playlist_loader.js';
-import {now} from './util/time.js';
 
 const {PeerServer} = peer;
 const debug = Debug('wall:server');
@@ -115,10 +115,9 @@ if (playlist.length === 0) {
 
 var app = webapp.create(flags);
 
-const clients = {};
-const moduleSM = new ModuleStateMachine(clients);
-const driver = new PlaylistDriver(moduleSM);
-var control = new Control(driver, clients, moduleLoader, playlistLoader);
+const modulePlayer = new ServerModulePlayer();
+const driver = new PlaylistDriver(modulePlayer);
+var control = new Control(driver, {}, moduleLoader, playlistLoader);
 control.installHandlers(app);
 
 game.init(flags);
@@ -157,38 +156,7 @@ peerServer.on('disconnect', function(id) {
 });
 
 network.openWebSocket(server);
-
-network.on('new-client', function(client) {
-  if (monitor.isEnabled()) {
-    monitor.update({layout: {
-      time: now(),
-      event: `newClient: ${client.rect.serialize()}`,
-    }});
-  }
-  clients[client.socket.id] = client;
-  moduleSM.newClient(client);
-});
-
-network.on('lost-client', function(id) {
-  if (id in clients) {
-    if (monitor.isEnabled()) {
-      const rect = clients[id].getClientInfo().rect;
-      monitor.update({layout: {
-        time: now(),
-        event: `dropClient: ${rect.serialize()}`,
-      }});
-    }
-  } else {
-    if (monitor.isEnabled()) {
-      monitor.update({layout: {
-        time: now(),
-        event: `dropClient: id ${id}`,
-      }});
-    }
-    // Don't bother the moduleSM if we don't know anything about this client.
-  }
-  delete clients[id];
-});
+clients.init();
 
 if (flags.enable_monitoring) {
   monitor.enable();

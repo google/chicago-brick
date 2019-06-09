@@ -18,6 +18,9 @@ import Debug from 'debug';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
+import {RunningModule, tellClientToPlay} from './module.js';
+import library from './module_library.js';
+import {emitter} from '../network/clients.js';
 
 const debug = Debug('wall::playlist_driver');
 const random = new randomjs.Random();
@@ -42,10 +45,15 @@ export class PlaylistDriver {
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
 
-    this.moduleSM.setErrorListener(() => {
-      // Stop normal advancement.
-      this.resetTimer_();
-      this.nextModule();
+    // this.moduleSM.setErrorListener(() => {
+    //   // Stop normal advancement.
+    //   this.resetTimer_();
+    //   this.nextModule();
+    // });
+    emitter.on('new-client', client => {
+      if (this.modules[this.moduleIndex]) {
+        tellClientToPlay(client, this.modules[this.moduleIndex], 0);
+      }
     });
   }
   // Returns the timestamp of the next module change.
@@ -138,7 +146,7 @@ export class PlaylistDriver {
 
     debug(`Next Layout: ${this.layoutIndex}`);
 
-    this.moduleSM.fadeToBlack(now() + 5000).then(() => {
+    this.moduleSM.playModule(RunningModule.empty(now() + 5000)).then(() => {
       // Shuffle the module list:
       this.modules = Array.from(layout.modules);
       random.shuffle(this.modules);
@@ -165,7 +173,7 @@ export class PlaylistDriver {
   // and scheduling the next module to play after a certain duration.
   playModule_(module) {
     // Play a module until the next transition
-    this.moduleSM.playModule(module, now());
+    this.moduleSM.playModule(new RunningModule(library.modules[module], now()));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
