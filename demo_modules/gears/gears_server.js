@@ -3,6 +3,9 @@ import {Rectangle} from '../../lib/math/rectangle.js';
 import randomjs from 'random-js';
 const random = new randomjs.Random();
 
+const MIN_GEAR_RADIUS = 50;
+const MAX_GEAR_RADIUS = 500;
+
 export function load(debug, state, wallGeometry) {
   const HOLE_VARIETIES = ['none', 'rounded', 'circles'];
 
@@ -48,7 +51,7 @@ export function load(debug, state, wallGeometry) {
         x: wallGeometry.extents.w/2,
         y: wallGeometry.extents.h/2,
         z: 1,  // Which layer we're talking about.
-        radius: random.integer(35, 300),
+        radius: random.integer(MIN_GEAR_RADIUS, MAX_GEAR_RADIUS),
         teeth: random.integer(6, 50),
         speed: random.integer(1, 10)/40,
         angle: 0,
@@ -111,7 +114,7 @@ export function load(debug, state, wallGeometry) {
           newZ = 1-newZ;
           // 2.5) Pick a random new radius (which might generate a random new
           // pitch), but that's okay.
-          newRadius = random.integer(35, 1000);
+          newRadius = random.integer(MIN_GEAR_RADIUS, MAX_GEAR_RADIUS * 2);
           // The new gear is in exactly the same x,y position.
           newX = chosenGear.x;
           newY = chosenGear.y;
