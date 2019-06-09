@@ -62,6 +62,10 @@ export class RunningModule {
   // This is a separate method in order to guard against exceptions in
   // instantiate.
   instantiate() {
+    // Tell clients to get ready to play this module at the deadline.
+    for (const id in clients) {
+      tellClientToPlay(clients[id], this.name, this.deadline);
+    }
     if (this.network) {
       let openNetwork = this.network.open();
       this.stateManager = new StateManager(openNetwork);
@@ -104,9 +108,6 @@ export class RunningModule {
   }
 
   async willBeShownSoon(deadline) {
-    for (const id in clients) {
-      tellClientToPlay(clients[id], this.name, this.deadline);
-    }
     if (this.instance) {
       await this.instance.willBeShownSoon(deadline);
     }
