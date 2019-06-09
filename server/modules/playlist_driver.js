@@ -26,9 +26,9 @@ const debug = Debug('wall::playlist_driver');
 const random = new randomjs.Random();
 
 export class PlaylistDriver {
-  constructor(moduleSM) {
-    // The module state machine that we control.
-    this.moduleSM = moduleSM;
+  constructor(modulePlayer) {
+    // The module player.
+    this.modulePlayer = modulePlayer;
     // If non-zero, a handle to the current timer, which when fired, will tell
     // the wall to play a new module.
     this.timer = 0;
@@ -45,11 +45,6 @@ export class PlaylistDriver {
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
 
-    // this.moduleSM.setErrorListener(() => {
-    //   // Stop normal advancement.
-    //   this.resetTimer_();
-    //   this.nextModule();
-    // });
     emitter.on('new-client', client => {
       if (this.modules[this.moduleIndex]) {
         tellClientToPlay(client, this.modules[this.moduleIndex], 0);
@@ -146,7 +141,7 @@ export class PlaylistDriver {
 
     debug(`Next Layout: ${this.layoutIndex}`);
 
-    this.moduleSM.playModule(RunningModule.empty(now() + 5000)).then(() => {
+    this.modulePlayer.playModule(RunningModule.empty(now() + 5000)).then(() => {
       // Shuffle the module list:
       this.modules = Array.from(layout.modules);
       random.shuffle(this.modules);
@@ -173,7 +168,7 @@ export class PlaylistDriver {
   // and scheduling the next module to play after a certain duration.
   playModule_(module) {
     // Play a module until the next transition
-    this.moduleSM.playModule(new RunningModule(library.modules[module], now()));
+    this.modulePlayer.playModule(new RunningModule(library.modules[module], now()));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
