@@ -118,7 +118,7 @@ export class PlaylistDriver {
     this.playModule_(moduleName);
   }
   // Advances to the next layout in the playlist, fading out between them.
-  nextLayout() {
+  async nextLayout() {
     // Update layoutIndex.
     this.layoutIndex = (this.layoutIndex + 1) % this.playlist.length;
 
@@ -141,14 +141,20 @@ export class PlaylistDriver {
 
     debug(`Next Layout: ${this.layoutIndex}`);
 
-    this.modulePlayer.playModule(RunningModule.empty(now() + 5000)).then(() => {
-      // Shuffle the module list:
-      this.modules = Array.from(layout.modules);
-      random.shuffle(this.modules);
+    // If the wall isn't already faded out, fade it out:
+    let concurrentWork = [];
+    if (this.modulePlayer.oldModule.name != '_empty') {
+      // Give the wall 1 second to get ready to fade out.
+      concurrentWork.push(this.modulePlayer.playModule(RunningModule.empty(now() + 1000)));
+    }
+    // Shuffle the module list:
+    this.modules = Array.from(layout.modules);
+    random.shuffle(this.modules);
 
-      // Wait until all of the modules are loaded.
-      return Promise.all(layout.modules.map(m => m.whenLoadedPromise));
-    }).then(() => this.nextModule());
+    concurrentWork.push(...layout.modules.map(m => m.whenLoadedPromise));
+    // Wait until all of the modules are loaded.
+    await Promise.all(concurrentWork);
+    this.nextModule();
   }
   // Advances to the next module in the current layout. If there is only 1
   // module in the current playlist, transitions to another copy of that
@@ -167,8 +173,9 @@ export class PlaylistDriver {
   // Private helper function that does the work of going to a module by name
   // and scheduling the next module to play after a certain duration.
   playModule_(module) {
-    // Play a module until the next transition
-    this.modulePlayer.playModule(new RunningModule(library.modules[module], now()));
+    // Play a module until the next transition.
+    // Give the wall 5 seconds to prep the new module and inform the clients.
+    this.modulePlayer.playModule(new RunningModule(library.modules[module], now() + 5000));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
