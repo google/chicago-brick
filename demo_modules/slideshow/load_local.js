@@ -59,7 +59,7 @@ export default function({debug, asset}) {
         }
       }
     }
-    loadMoreContent(opt_paginationToken) {
+    loadMoreContent() {
       return Promise.resolve({
         content: this.paths
       });

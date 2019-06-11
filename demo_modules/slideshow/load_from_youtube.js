@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+/* globals YT */
+
 import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
 import {loadYoutubeApi} from './load_youtube_api.js';
 
@@ -68,7 +70,7 @@ export default function({debug}) {
           hasMoreContent: !!response.nextPageToken,
           paginationToken: response.nextPageToken
         };
-      }, (error) => {
+      }, () => {
         debug('Failed to download more youtube content! Delay a bit...');
         return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
       });
@@ -116,7 +118,7 @@ export default function({debug}) {
               player.mute();
             },
             onError: (e) => {
-              reject(e)
+              debug(e);
             },
             onStateChange: (e) => {
               debug('state', e.data);

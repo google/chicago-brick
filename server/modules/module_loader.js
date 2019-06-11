@@ -62,7 +62,7 @@ export class ModuleLoader {
       const cfg = Object.assign(
           {},
           defaultConfig,
-          ...overrides.filter(o => o.name == defaltConfig.name));
+          ...overrides.filter(o => o.name == defaultConfig.name));
 
       if (cfg.extends) {
         assert(cfg.extends in library.modules, 'Module ' + cfg.name +

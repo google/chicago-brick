@@ -26,12 +26,12 @@ export function load(wallGeometry) {
         this.surface.destroy();
       }
     }
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
       return Promise.resolve();
     }
-    draw(time, delta) {
+    draw() {
       this.canvas.fillStyle = this.color;
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
     }

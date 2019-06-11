@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ServerDisplayStrategy, ClientDisplayStrategy} from './interfaces.js';
+import {ClientDisplayStrategy} from './interfaces.js';
 
-export default function({debug, wallGeometry, network}) {
+export default function({network}) {
   // FULLSCREEN DISPLAY STRATEGY
   // This display strategy shows a single element per screen, updating at a rate
   // specified in the config. We wait for the corresponding element to load

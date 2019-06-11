@@ -37,7 +37,7 @@ export function load(wallGeometry) {
       this.surface.camera.updateProjectionMatrix();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.cube.rotation.x = time / 1000;
       this.cube.rotation.y = time * 1.1 / 1000;
       this.surface.render();

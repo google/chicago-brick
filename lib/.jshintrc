@@ -1,9 +1,0 @@
-{
-  "extends": "../.jshintrc",
-  "globals": {
-    "module": true,
-    "define": true,
-    "setTimeout": true
-  },
-  "strict": false
-}

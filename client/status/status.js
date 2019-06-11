@@ -13,12 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-'use strict';
 /* globals d3 */
 
-var bgColors = [
-  'red', 'blue', 'green', 'yellow',
-];
+import * as network from '/client/network/network.js';
+import * as time from '/client/util/time.js';
 
 // Returns a map of module name to number.
 // 1 means the module exists in the config.
@@ -36,7 +34,7 @@ function buildPlayableModuleMap(modules, config) {
     if (playlist.collection === undefined) {
       modules.forEach(module => playableModules[module.name] += 1);
     } else if (playlist.collection == '__ALL__') {
-      playableCollections['__ALL__'] = new Array();
+      playableCollections['__ALL__'] = [];
       modules.forEach(
         module => playableCollections['__ALL__'].push(module.name)
       );
@@ -46,9 +44,9 @@ function buildPlayableModuleMap(modules, config) {
   });
 
   for (let collection in playableCollections) {
-    playableCollections[collection].forEach(
-      module => playableModules[module] += 1
-    );
+    playableCollections[collection].forEach(module => {
+      playableModules[module] += 1;
+    });
   }
   return playableModules;
 }
@@ -77,13 +75,13 @@ class BigBoard {
 
   update() {
     var layoutReq = fetchJson('layout')
-        .then(layout => this.layout = layout, err => {
+        .then(layout => this.layout = layout, () => {
           if (this.layout) {
             this.layout.state = null;
           }
         });
     var clientsReq = fetchJson('clients')
-        .then(clients => this.clients = clients, err => {
+        .then(clients => this.clients = clients, () => {
           this.clients = [];
         });
     Promise.all([layoutReq, clientsReq]).then(() => this.render());
@@ -178,11 +176,11 @@ class BigBoard {
           }
           return r;
         })
-        .attr('x', d => {
+        .attr('x', () => {
           var bbox = chart[0][0].getBBox();
           return bbox.x + bbox.width / 2;
         })
-        .attr('y', d => {
+        .attr('y', () => {
           var bbox = chart[0][0].getBBox();
           return bbox.y + bbox.height / 2;
         });
@@ -193,18 +191,13 @@ var board = new BigBoard();
 board.update();
 setInterval(() => board.update(), 5000);
 
-requirejs(['/config.js'], function(require) {
-  requirejs(['client/network/network',
-             'client/util/time'], function(network, time) {
-    network.openConnection();
-    time.start();
-    setInterval(function() {
-      if (board) {
-        board.setNow(time.now());
-      }
-    }, 100);
-  });
-});
+network.openConnection();
+time.start();
+setInterval(function() {
+  if (board) {
+    board.setNow(time.now());
+  }
+}, 100);
 
 Promise.all([fetchJson('modules'), fetchJson('config')]).then(bits => {
   const [modules, config] = bits;

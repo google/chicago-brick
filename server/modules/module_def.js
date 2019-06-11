@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 import EventEmitter from 'events';
-import fs from 'fs';
 import path from 'path';
 
 import assert from '../../lib/assert.js';
@@ -25,7 +24,6 @@ import inject from '../../lib/inject.js';
 import {Server} from '../../lib/module_interface.js';
 import util from 'util';
 import * as wallGeometry from '../util/wall_geometry.js';
-import {Polygon} from '../../lib/math/polygon2d.js';
 
 const importCache = {};
 async function importIntoCache(moduleRoot, modulePath) {
@@ -55,7 +53,7 @@ function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
   const {server} = inject(load, fakeEnv);
   conform(server, Server);
   return {server};
-};
+}
 
 /**
  * The ModuleDef class contains all the information necessary to load &
@@ -104,7 +102,7 @@ export class ModuleDef extends EventEmitter {
   }
 
   // Returns a custom object for serializing in debug logs.
-  inspect(depth, opts) {
+  inspect() {
     return {
       name: this.name,
       root: this.root,

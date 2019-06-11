@@ -15,7 +15,7 @@ limitations under the License.
 
 import {P5Surface} from '/client/surface/p5_surface.js';
 
-export function load(wallGeometry, debug) {
+export function load(wallGeometry) {
   // p5 must be a P5.js instance.
   class CosinesSketch {
     constructor(p5, surface) {
@@ -54,7 +54,7 @@ export function load(wallGeometry, debug) {
 
         for (var x = 0; x < this.width; ++x) {
           const xp = 360 * x / this.width;
-          const xloc = xspace * 0.5 + xspace * x + xspace * 0.44 * this.scaledCos(p5.radians(t * 0.0381 + (4.55 * xp)))
+          const xloc = xspace * 0.5 + xspace * x + xspace * 0.44 * this.scaledCos(p5.radians(t * 0.0381 + (4.55 * xp)));
 
           if (xloc + space * 1 < this.surface.virtualRect.x) continue;
           if (xloc - space * 1 > this.surface.virtualRect.x + this.surface.virtualRect.w) continue;
@@ -93,7 +93,7 @@ export function load(wallGeometry, debug) {
   }
 
   class CosinesClient {
-    constructor(config) {
+    constructor() {
       this.surface = null;
     }
 
@@ -108,7 +108,7 @@ export function load(wallGeometry, debug) {
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.surface.p5.draw(time);
     }
   }

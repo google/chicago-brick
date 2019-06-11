@@ -15,21 +15,12 @@ limitations under the License.
 
 import * as monitor from '../monitoring/monitor.js';
 import Debug from 'debug';
-import assert from '../../lib/assert.js';
 import library from './module_library.js';
 import {ServerStateMachine} from './server_state_machine.js';
 import {State, StateMachine} from '../../lib/state_machine.js';
 import {now} from '../util/time.js';
 
 const debug = Debug('wall:module_state_machine');
-
-function isDisplayInPoly(rect, poly) {
-  // find the center point of this display:
-  var cx = rect.w / 2 + rect.x;
-  var cy = rect.h / 2 + rect.y;
-
-  return poly.isInside({x: cx, y: cy});
-}
 
 // Takes a map of client ids -> client state machines. Not owned or changed
 // by this class, only read.
@@ -70,7 +61,7 @@ export class ModuleStateMachine extends StateMachine {
   fadeToBlack(deadline) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
-        time: time.now(),
+        time: now(),
         event: 'fade-to-black',
         deadline: deadline
       }});
@@ -101,7 +92,7 @@ export class ModuleStateMachine extends StateMachine {
   playModule(moduleName, timeToStartDisplay) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
-        time: time.now(),
+        time: now(),
         event: moduleName
       }});
     }
@@ -118,14 +109,14 @@ class IdleState extends State {
   enter(transition) {
     if (monitor.isEnabled()) {
       monitor.update({module: {
-        time: time.now(),
+        time: now(),
         state: this.getName(),
       }});
     }
 
     this.transition_ = transition;
   }
-  newClient(client) {}
+  newClient() {}
   playModule(moduleName, timeToStartDisplay) {
     this.transition_(new DisplayState(moduleName, timeToStartDisplay));
   }
@@ -151,7 +142,7 @@ class DisplayState extends State {
 
     if (monitor.isEnabled()) {
       monitor.update({module: {
-        time: time.now(),
+        time: now(),
         name: this.moduleName_,
         state: this.getName(),
       }});
@@ -162,7 +153,7 @@ class DisplayState extends State {
 
     // Tell each client to transition to the module.
     for (const id in context.allClients) {
-      context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_)
+      context.allClients[id].playModule(this.moduleName_, this.timeToStartDisplay_);
     }
 
     // Wait here until we're told to do something else.

@@ -117,7 +117,6 @@ export class ClientModule {
     let openNetwork = this.network.open();
 
     this.contextName = 'module-' + this.deadline;
-    let classes = {};
 
     const fakeEnv = {
       asset,
@@ -129,7 +128,7 @@ export class ClientModule {
       wallGeometry: this.geo,
       peerNetwork,
       assert,
-    }
+    };
     const {load} = await import(this.path);
     if (!load) {
       throw new Error(`${this.name} did not export a 'load' function!`);
@@ -164,7 +163,6 @@ export class ClientModule {
       error(e);
       return false;
     }
-    return true;
   }
 
   // Returns true if module is still OK.
@@ -182,7 +180,7 @@ export class ClientModule {
       error(e);
       return false;
     }
-    moduleTicker.add(this.name, this.instance, this.globals);
+    moduleTicker.add(this.name, this.instance);
     delay(until(deadline)).done(() => {
       this.titleCard.enter();
       try {

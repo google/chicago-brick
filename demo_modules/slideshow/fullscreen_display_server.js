@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ServerDisplayStrategy, ClientDisplayStrategy} from './interfaces.js';
+import {ServerDisplayStrategy} from './interfaces.js';
 
 import assert from '../../lib/assert.js';
 import randomjs from 'random-js';
@@ -57,7 +57,7 @@ export default function({debug, wallGeometry, network}) {
       // The time we last updated a display.
       this.lastUpdate = 0;
 
-      let contentHasArrived = new Promise((resolve, reject) => {
+      let contentHasArrived = new Promise(resolve => {
         this.signalContentArrived = resolve;
       });
 
@@ -97,7 +97,7 @@ export default function({debug, wallGeometry, network}) {
 
       this.signalContentArrived();
     }
-    tick(time, delta) {
+    tick(time) {
       // If there's no content to show, just stop.
       if (!this.content.length) {
         return;

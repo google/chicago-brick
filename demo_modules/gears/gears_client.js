@@ -9,7 +9,7 @@ export function load(debug, state, wallGeometry) {
   const layers = 2;
 
   class GearsClient {
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.c = this.surface.context;
       this.gears_ = null;
@@ -62,12 +62,7 @@ export function load(debug, state, wallGeometry) {
       const key = [holes, pitchRadius, numberOfTeeth].join(',');
       if (!this.gearPaths_[key]) {
         const {
-          pitchDiameter,
-          diametralPitch,
-          addendum,
-          wholeDepth,
           radiusAngle,
-          baseDiameter,
           baseRadius,
           outsideRadius,
           rootRadius
@@ -118,7 +113,7 @@ export function load(debug, state, wallGeometry) {
               path.arc(cx, cy, barThickness/2, csa, angle + 3*Math.PI/2, false);
               const ea = Math.asin(barThickness/2/ed);
               if (ed < 0) {
-                debugger;
+                throw new Error(`... huh? ed shouldn't be negative!`);
               }
               path.arc(0, 0, ed, angle + ea, angle + deltaAngle - ea, false);
             }
@@ -210,7 +205,7 @@ export function load(debug, state, wallGeometry) {
       this.c.fillStyle = colorIndex >= 0 ? colors[colorIndex] : 'white';
       this.c.fill(path, 'evenodd');
     }
-    draw(time, delta) {
+    draw(time) {
       this.c.setTransform(1, 0, 0, 1, 0, 0);
       this.c.fillStyle = 'black';
       this.c.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);

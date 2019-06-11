@@ -40,7 +40,7 @@ function tick() {
 }
 tick();
 
-export function add(module, globals) {
+export function add(module) {
   if (module.instance) {
     modulesToTick.push(module);
     debug(

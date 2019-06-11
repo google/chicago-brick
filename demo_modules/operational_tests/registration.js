@@ -27,13 +27,13 @@ export function load(wallGeometry) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 

@@ -19,7 +19,7 @@ import {Rectangle} from '../../lib/math/rectangle.js';
 
 export function load(network, wallGeometry) {
   class BallsServer {
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon() {
       this.balls = [];
       var extents = wallGeometry.extents;
       var spawnRect = new Rectangle(
@@ -41,7 +41,7 @@ export function load(network, wallGeometry) {
 
     tick(time, delta) {
       // Move the balls a bit.
-      this.balls.forEach(function(ball, index) {
+      this.balls.forEach(function(ball) {
         var nx = ball.x + ball.vx * delta / 2.0;
         var ny = ball.y + ball.vy * delta / 2.0;
 

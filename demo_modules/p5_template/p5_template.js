@@ -54,7 +54,7 @@ export function life(wallGeometry, debug, P5Surface) {
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.surface.p5.draw(time);
     }
   }

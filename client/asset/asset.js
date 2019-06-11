@@ -21,4 +21,4 @@ export default function asset(name) {
   }
   // By default, we pass the pass-through.
   return `/asset/${name}`;
-};
+}

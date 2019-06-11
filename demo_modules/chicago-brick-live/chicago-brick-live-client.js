@@ -169,7 +169,7 @@ export function load(debug, network, wallGeometry) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.extendCanvas(this.surface.context);
       this.screen = { x: 0, y: 0, width: this.canvas.canvas.width, height: this.canvas.canvas.height };
@@ -265,7 +265,7 @@ export function load(debug, network, wallGeometry) {
       }
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.clientCode.time0 = this.clientCode.time0 || time;
       this.canvas.draw.rectangle(this.screen, 'black');
 

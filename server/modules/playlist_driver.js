@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from '../monitoring/monitor.js';
-import * as wallGeometry from '../util/wall_geometry.js';
 import Debug from 'debug';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
@@ -43,7 +42,7 @@ export class PlaylistDriver {
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
 
-    this.moduleSM.setErrorListener(error => {
+    this.moduleSM.setErrorListener(() => {
       // Stop normal advancement.
       this.resetTimer_();
       this.nextModule();

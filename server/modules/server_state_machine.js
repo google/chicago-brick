@@ -15,7 +15,6 @@ limitations under the License.
 
 import * as moduleTicker from './module_ticker.js';
 import * as monitor from '../monitoring/monitor.js';
-import * as wallGeometry from '../util/wall_geometry.js';
 import Debug from 'debug';
 import assert from '../../lib/assert.js';
 import library from './module_library.js';
@@ -86,7 +85,7 @@ class PrepareState extends State {
     // state.
     this.resolve_ = resolve;
   }
-  enter(transition, context) {
+  enter(transition) {
     if (monitor.isEnabled()) {
       monitor.update({server: {
         time: now(),

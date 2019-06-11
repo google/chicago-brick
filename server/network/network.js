@@ -26,7 +26,6 @@ limitations under the License.
 //   client fails to do this, the client is considered invalid and omitted from
 //   future calculations.
 
-import * as wallGeometry from '../util/wall_geometry.js';
 import Debug from 'debug';
 import ioClient from 'socket.io-client';
 import socketio from 'socket.io';
@@ -76,7 +75,7 @@ function installDisplayClientHandlers(socket) {
   });
 
   socket.on('record-error', function(e) {
-    error(e);
+    debug(e);
   });
 }
 
@@ -88,7 +87,7 @@ network.openWebSocket = function(server) {
   io.on('connection', function(socket) {
     installAlwaysAvailableHandlers(socket);
 
-    var id = new URL(socket.request.url, 'http://localhost/').searchParams.get('id')
+    var id = new URL(socket.request.url, 'http://localhost/').searchParams.get('id');
     if (id) {
       // Ignore this, as it's not a main connection.
       return;

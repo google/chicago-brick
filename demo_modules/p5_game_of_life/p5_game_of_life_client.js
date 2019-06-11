@@ -174,7 +174,7 @@ export function load(wallGeometry, network, debug) {
       return Promise.resolve();
     }
 
-    draw(time, delta) {
+    draw(time) {
       this.surface.p5.draw(time, this.gameBoard);
     }
   }

@@ -72,7 +72,7 @@ function createScreens(grid, xOffset, yOffset, screenWidth, screenHeight) {
   }
 }
 
-function go() {
+function go() {  // eslint-disable-line no-unused-vars
   let params = getUriParams();
   if ('hidecontrols' in params) {
     console.log('hiding controls');

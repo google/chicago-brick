@@ -22,7 +22,7 @@ export function load(debug, state, wallGeometry) {
     '#ff6347',
     '#d02090',
     '#8a2be2',
-  ]
+  ];
   const SPEED = 0.2;
 
   const isOutOfBounds = ({x, y}, rect) => {
@@ -103,7 +103,7 @@ export function load(debug, state, wallGeometry) {
           strategySeed *= (index + 1) * 17;
           const strategies = [
             // Go straight:
-            snake => {},
+            () => {},
             // Turn left a bit.
             snake => snake.heading += .02,
             // Turn right a bit.

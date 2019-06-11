@@ -22,7 +22,7 @@ export function load(network, wallGeometry) {
 
   class ChaosClient {
 
-    constructor(config) {
+    constructor() {
       // Boolean that prevents drawing until we have data from the client.
       // The server layout
       this.shapes = [];
@@ -50,7 +50,7 @@ export function load(network, wallGeometry) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
       this.imageData = this.canvas.getImageData(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
@@ -106,7 +106,7 @@ export function load(network, wallGeometry) {
       return [x, y];
     }
 
-    draw(time, delta) {
+    draw() {
       if (!this.shapes.length) return;
       if (this.time != this.oldtime) {
         this.initialize();

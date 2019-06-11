@@ -22,6 +22,9 @@ module.exports = function(config) {
       {pattern: 'client/**/*.js', type: 'module', included: false},
       {pattern: 'server/**/*.js', type: 'module', included: false},
       {pattern: 'node_modules/chai/chai.js'},
+      {pattern: 'node_modules/sinon/pkg/sinon.js'},
+      {pattern: 'node_modules/sinon-chai/lib/sinon-chai.js'},
+      {pattern: 'node_modules/debug/dist/debug.js'},
     ],
 
 
@@ -71,5 +74,5 @@ module.exports = function(config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity
-  })
-}
+  });
+};

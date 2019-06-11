@@ -43,7 +43,7 @@ export function load(network, debug) {
       }
     }
 
-    tick(time, delta) {
+    tick() {
       this.numTicks++;
 
       if (this.numTicks % this.numTicksBetweenIterations !== 0) {
