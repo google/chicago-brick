@@ -158,9 +158,8 @@ export function load(wallGeometry, asset) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    async willBeShownSoon(container, deadline) {
       this.surface = new P5Surface(container, wallGeometry, BigImageCarouselSketch, deadline, this.config);
-      return Promise.resolve();
     }
 
     draw(time) {

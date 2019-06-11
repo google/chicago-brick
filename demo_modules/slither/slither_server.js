@@ -36,7 +36,7 @@ export function load(debug, state, wallGeometry) {
 
       this.numSnakes = config.numSnakes || 10;
     }
-    willBeShownSoon(deadline) {
+    async willBeShownSoon(deadline) {
       // Initialize the snakes.
       this.snakes = Array.from({length: this.numSnakes}).map(() => {
         return {
@@ -59,7 +59,6 @@ export function load(debug, state, wallGeometry) {
         },
         color: 'ValueNearestInterpolator'
       }]);
-      return Promise.resolve();
     }
     tick(time, delta) {
       if (!time) {

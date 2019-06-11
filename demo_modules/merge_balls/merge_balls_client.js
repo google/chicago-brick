@@ -26,10 +26,9 @@ export function load(state, network, wallGeometry) {
       }
     }
 
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
-      return Promise.resolve();
     }
 
     draw(time) {

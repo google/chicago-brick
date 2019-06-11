@@ -169,9 +169,8 @@ export function load(wallGeometry, network, debug) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    async willBeShownSoon(container, deadline) {
       this.surface = new P5Surface(container, wallGeometry, P5GameOfLifeSketch, deadline);
-      return Promise.resolve();
     }
 
     draw(time) {

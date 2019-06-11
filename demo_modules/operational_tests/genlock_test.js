@@ -23,7 +23,7 @@ export function load(wallGeometry) {
       }
     }
 
-    willBeShownSoon(container) {
+    async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
 
@@ -33,7 +33,6 @@ export function load(wallGeometry) {
       var fontHeight = Math.floor(this.surface.virtualRect.h / 10);
       this.canvas.font = fontHeight + 'px Helvetica';
       this.canvas.textBaseline = 'middle';
-      return Promise.resolve();
     }
 
     draw(time, delta) {

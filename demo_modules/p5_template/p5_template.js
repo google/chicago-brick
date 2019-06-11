@@ -47,11 +47,10 @@ export function life(wallGeometry, debug, P5Surface) {
       }
     }
 
-    willBeShownSoon(container, deadline) {
+    async willBeShownSoon(container, deadline) {
       this.startTime = deadline;
 
       this.surface = new P5Surface(container, wallGeometry, P5TemplateSketch, deadline);
-      return Promise.resolve();
     }
 
     draw(time) {
