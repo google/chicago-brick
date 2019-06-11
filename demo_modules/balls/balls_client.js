@@ -46,11 +46,10 @@ export function load(state, wallGeometry) {
       // Draw the balls!
       this.surface.pushOffset();
 
-      var numBalls = balls.length;
-      for (var b = 0; b < numBalls; ++b) {
-        this.canvas.fillStyle = GOOGLE_COLORS[balls[b].color];
+      for (const b of balls) {
+        this.canvas.fillStyle = GOOGLE_COLORS[b.color];
         this.canvas.beginPath();
-        this.canvas.arc(balls[b].x, balls[b].y, BALL_RADIUS, 0, 2*Math.PI);
+        this.canvas.arc(b.x, b.y, BALL_RADIUS, 0, 2*Math.PI);
         this.canvas.closePath();
         this.canvas.fill();
       }
