@@ -21,12 +21,13 @@ export function init() {
   network.on('lost-client', function(id) {
     if (id in clients) {
       if (monitor.isEnabled()) {
-        const rect = clients[id].getClientInfo().rect;
+        const rect = clients[id].rect;
         monitor.update({layout: {
           time: time.now(),
           event: `dropClient: ${rect.serialize()}`,
         }});
       }
+      emitter.emit('lost-client', clients[id]);
     } else {
       if (monitor.isEnabled()) {
         monitor.update({layout: {
