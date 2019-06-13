@@ -22,7 +22,6 @@ const debug = debugFactory('wall:module_def');
 import conform from '../../lib/conform.js';
 import inject from '../../lib/inject.js';
 import {Server} from '../../lib/module_interface.js';
-import util from 'util';
 import * as wallGeometry from '../util/wall_geometry.js';
 
 const importCache = {};
@@ -108,7 +107,9 @@ export class ModuleDef extends EventEmitter {
       root: this.root,
       clientPath: this.clientPath,
       serverPath: this.serverPath,
-      config: util.inspect(this.config),
+      config: this.config,
+      credit: this.credit,
+      valie: this.valid,
     };
   }
   // Returns a new module def that extends this def with new configuration.
