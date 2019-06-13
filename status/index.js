@@ -63,9 +63,14 @@ control.on('time', data => {
   lastUpdateFromServer = data.time;
   timeOfLastUpdateFromServer = window.performance.now();
 });
-control.on('client-error', e => {
+control.on('error', e => {
   playlistController.error(e);
   errorController.error(e);
+});
+control.on('errors', es => {
+  es.forEach(e => {
+    errorController.error(e);
+  });
 });
 control.on('new-client', c => {
   clientController.newClient(c);

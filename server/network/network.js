@@ -76,7 +76,6 @@ function installDisplayClientHandlers(socket) {
 
   socket.on('record-error', function(e) {
     logClientError(e);
-    network.emit('client-error', e);
   });
 }
 

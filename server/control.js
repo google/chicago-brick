@@ -17,8 +17,8 @@ import RJSON from 'relaxed-json';
 import Debug from 'debug';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
-import network from './network/network.js';
 import {emitter, clients} from './network/clients.js';
+import * as log from './util/log.js';
 
 const debug = Debug('wall:control');
 // Basic server management hooks.
@@ -40,8 +40,8 @@ export class Control {
       transitionData = data;
       io.emit('transition', data);
     });
-    network.on('client-error', e => {
-      io.emit('client-error', e);
+    log.emitter.on('error', e => {
+      io.emit('error', e);
     })
     emitter.on('new-client', c => {
       io.emit('new-client', c.rect.serialize());
@@ -55,6 +55,7 @@ export class Control {
       socket.emit('transition', transitionData);
       socket.emit('clients', Object.values(clients).map(c => c.rect.serialize()));
       socket.emit('wallGeometry', wallGeometry.getGeo().points);
+      socket.emit('errors', log.recentErrors);
     });
     io.emit('time', {time: time.now()});
     setInterval(() => {

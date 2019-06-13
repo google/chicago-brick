@@ -6,6 +6,9 @@ export class ErrorController {
     this.errors = [];
   }
   error(e) {
+    if (!e.client) {
+      e.client = 'server';
+    }
     // See if I can dedup these errors:
     for (const otherError of this.errors) {
       // Maybe include module deadline to ensure that we're talking about the
@@ -25,6 +28,7 @@ export class ErrorController {
         otherError.count = otherError.count || 1;
         otherError.count++;
         e = null;
+        break;
       }
     }
     if (e) {

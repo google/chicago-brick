@@ -14,12 +14,14 @@ limitations under the License.
 ==============================================================================*/
 
 import * as time from './time.js';
+import EventEmitter from 'events';
 
 export const recentErrors = [];
 const ERROR_BUFFER_SIZE = 100;
 
 function pushError(record) {
   recentErrors.push(record);
+  emitter.emit('error', record);
   while (recentErrors.length > ERROR_BUFFER_SIZE) {
     recentErrors.shift();
   }
@@ -54,3 +56,5 @@ export function clientError(debug) {
     });
   };
 }
+
+export const emitter = new EventEmitter();
