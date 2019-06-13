@@ -33,8 +33,8 @@ if (new URL(window.location.href).searchParams.get('monitor')) {
 // Ready to receive some code!
 time.start();
 
-// Server has asked us to load a new module.
 const modulePlayer = new ClientModulePlayer;
 
+// Server has asked us to load a new module.
 network.on('loadModule',
     bits => modulePlayer.playModule(ClientModule.deserialize(bits)));
