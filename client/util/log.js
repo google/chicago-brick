@@ -14,6 +14,8 @@ limitations under the License.
 ==============================================================================*/
 
 import * as network from '/client/network/network.js';
+import {now} from './time.js';
+import {virtualRect} from './info.js';
 
 /**
  * Returns an error recording function that wraps a logger provided by the
@@ -21,12 +23,15 @@ import * as network from '/client/network/network.js';
  * Recorded errors are sent to the server.
  */
 export function error(debug) {
-  return function(e) {
+  return function(e, data = {}) {
     debug(e);
     network.send('record-error', {
       message: e.message || e,
       stack: e.stack,
       namespace: debug.namespace,
+      timestamp: now(),
+      client: virtualRect.serialize(),
+      ...data,
     });
   };
 }
