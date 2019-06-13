@@ -7,6 +7,7 @@ lib/lame_es6/
 demo_modules/p5_template/p5_template.js
 demo_modules/slideshow/interfaces.js
 lib/module_interface.js
+status/socket.io-client.js
 
 # At some point, fix these:
 demo_modules/operational_tests/shared_test.js

@@ -112,6 +112,10 @@ network.broadcast = function(msg, data) {
   io.emit(msg, data);
 };
 
+network.controlSocket = function() {
+  return io.of('/control');
+}
+
 network.forModule = function(id) {
   var externalNspName = `module${id.replace(/[^0-9]/g, 'X')}`;
   var internalNspName = `/${externalNspName}`;

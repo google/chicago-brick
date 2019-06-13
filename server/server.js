@@ -117,8 +117,6 @@ var app = webapp.create(flags);
 
 const modulePlayer = new ServerModulePlayer();
 const driver = new PlaylistDriver(modulePlayer);
-var control = new Control(driver, {}, moduleLoader, playlistLoader);
-control.installHandlers(app);
 
 game.init(flags);
 
@@ -161,6 +159,9 @@ clients.init();
 if (flags.enable_monitoring) {
   monitor.enable();
 }
+
+const control = new Control(driver, moduleLoader, playlistLoader);
+control.installHandlers(app, network.controlSocket());
 
 debug('Running playlist of ' + playlist.length + ' items');
 driver.start(playlist);

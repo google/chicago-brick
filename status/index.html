@@ -1,0 +1,179 @@
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <style>
+    html {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+
+      font: 12px 'Roboto', sans-serif;
+    }
+    header {
+      flex: 0 0 auto;
+      padding: 5px;
+      background-color: #EEE;
+    }
+    header > span {
+      font-weight: bolder;
+    }
+    section {
+      flex: 1 1 0;
+      display: flex;
+    }
+    footer {
+      flex: 0 0 auto;
+      overflow-y: scroll;
+      max-height: 200px;
+      min-height: 25px;
+      padding: 5px;
+      border-top: 1px solid black;
+    }
+    footer .count {
+      background-color: #4288b7;
+      color: white;
+      font-weight: bolder;
+      border-radius: 20px;
+      padding: 1px 3px;
+      margin-right: 4px;
+    }
+    footer .clients {
+      color: gray;
+    }
+    footer .module {
+      font-weight: bolder;
+    }
+
+    .diagram {
+      flex: 1 1 auto;
+    }
+    .diagram svg {
+      width: 100%;
+      height: 100%;
+      background-color: gray;
+    }
+    .diagram path {
+      fill: white;
+      stroke: black;
+    }
+    .diagram rect {
+      stroke: #DDD;
+      fill: #EEE;
+    }
+
+    .playlist {
+      flex: 0 0 auto;
+      width: 400px;
+      background-color: #EEE;
+    }
+    .playlist-scroll {
+      overflow-y: scroll;
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .playlist-scroll::-webkit-scrollbar {
+      width: 6px;
+      background: #CCC;
+    }
+    .playlist-scroll::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 10px;
+    }
+    .playlist #line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      top: 0;
+      background-color: red;
+    }
+
+    .layout {
+      border: 1px solid #444;
+      margin: 3px;
+      transition: margin-left 0.5s ease-in-out 0.0s;
+      background-color: white;
+    }
+    .layout:last-child {
+      margin-left: 30px;
+    }
+
+    .layout > div {
+      padding: 2px;
+    }
+
+    .layout > div:nth-child(even):not(.header):not(.footer) {
+      background-color: #EEE;
+    }
+
+    .layout .header, .layout .footer {
+      background-color: #444;
+      font-weight: bolder;
+      color: white;
+      text-align: center;
+    }
+
+    .layout .past:not(.current) {
+      font-style: italic;
+    }
+
+    .layout .current > span:first-child {
+      font-weight: bolder;
+    }
+    .layout .error {
+      color: red;
+    }
+
+    #disconnected-warning {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      color: red;
+      font-size: 128;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background-color: rgba(127, 127, 127, 0.5);
+      visibility: hidden;
+    }
+    #disconnected-warning > * {
+      flex: 1 1 auto;
+      transform: rotate(-35deg);
+    }
+    </style>
+    <script src="./index.js" type="module"></script>
+  </head>
+  <body>
+    <header>
+      Current Server Time: <span id="time">Time</span>
+      Current Module Playing: <span id="module">Module</span>
+      Prior Deadline: <span id="zero-point">Deadline</span>
+      Next Deadline: <span id="deadline">Deadline</span>
+      Remaining: <span id="remaining">Remaining</span>
+    </header>
+    <section>
+      <article class="diagram"></article>
+      <article class="playlist">
+        <div class="playlist-scroll"></div>
+      </article>
+    </section>
+    <footer>
+    </footer>
+    <div id="disconnected-warning"><div>Disconnected</div></div>
+  </body>
+</html>
