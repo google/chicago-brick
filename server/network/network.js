@@ -35,7 +35,7 @@ import {clientError} from '../util/log.js';
 import {now} from '../util/time.js';
 let io;
 
-clientError(Debug('wall:client_error'));
+const logClientError = clientError(Debug('wall:client_error'));
 
 const debug = Debug('wall:network');
 var network = new EventEmitter;
@@ -75,7 +75,8 @@ function installDisplayClientHandlers(socket) {
   });
 
   socket.on('record-error', function(e) {
-    debug(e);
+    logClientError(e);
+    network.emit('client-error', e);
   });
 }
 

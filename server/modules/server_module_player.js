@@ -18,8 +18,10 @@ import * as time from '../util/time.js';
 import Debug from 'debug';
 import {configure} from '../../lib/module_player.js';
 import {RunningModule} from './module.js';
+import {error} from '../util/log.js';
 
 const debug = Debug('wall:module_state_machine');
+const logError = error(debug);
 
 export const ServerModulePlayer = configure({
   makeEmptyModule: () => {
@@ -35,7 +37,12 @@ export const ServerModulePlayer = configure({
   },
   debug,
   time,
-  logError: (error) => {
-    debug(error)
+  logError: (e, data) => {
+    logError({
+      message: e.message || e,
+      stack: e.stack,
+      timestamp: time.now(),
+      ...data,
+    });
   }
 });
