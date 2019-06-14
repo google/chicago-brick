@@ -89,4 +89,8 @@ export class P5Surface extends Surface {
       this.p5.remove();
     }
   }
+  takeSnapshot() {
+    const canvas = this.container.querySelector('canvas');
+    return canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+  }
 }

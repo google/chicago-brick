@@ -28,11 +28,14 @@ function getTime() {
   return lastUpdateFromServer + window.performance.now() - timeOfLastUpdateFromServer;
 }
 
+const control = io('http://localhost:3000/control');
 const playlistController = new PlaylistController(document.querySelector('.playlist-scroll'), getTime);
 const errorController = new ErrorController(document.querySelector('footer'));
-const clientController = new ClientController(document.querySelector('.diagram'));
+const clientController = new ClientController(
+  document.querySelector('.diagram'),
+  req => control.emit('takeSnapshot', req),
+);
 
-const control = io('http://localhost:3000/control');
 let transitionData = {};
 control.on('transition', data => {
   transitionData = data;
@@ -81,7 +84,9 @@ control.on('lost-client', c => {
 control.on('wallGeometry', p => {
   clientController.setWallGeometry(p);
 });
-
+control.on('takeSnapshotRes', res => {
+  clientController.takeSnapshotRes(res);
+});
 
 const timeEl = document.querySelector('#time');
 const remainingEl = document.querySelector('#remaining');

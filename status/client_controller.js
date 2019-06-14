@@ -1,7 +1,10 @@
 
+let snapshotReqId = 1;
+
 export class ClientController {
-  constructor(container) {
+  constructor(container, takeSnapshotFn) {
     this.container = container;
+    this.takeSnapshotFn = takeSnapshotFn;
     this.width = this.container.offsetWidth;
     this.height = this.container.offsetHeight;
 
@@ -96,8 +99,36 @@ export class ClientController {
         text.setAttribute('x', this.tx(c.rect[0] + c.rect[2] / 2));
         text.setAttribute('y', this.ty(c.rect[1] + c.rect[3] / 2));
 
+        c.element.addEventListener('click', () => {
+          this.takeSnapshotFn({client: c.id, id: snapshotReqId++});
+        });
+
         this.svg.appendChild(c.element);
       }
+    }
+  }
+  takeSnapshotRes(res) {
+    if (res.data) {
+      const c = this.clients.find(c => c.id == res.client);
+      const groupEl = c.element;
+      // We got a snapshot! Make an image.
+      const buffer = new Uint8ClampedArray(res.data);
+      const data = new ImageData(buffer, res.width, buffer.length / 4 / res.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = data.width;
+      canvas.height = data.height;
+      const context = canvas.getContext('2d');
+      context.putImageData(data, 0, 0);
+      const url = canvas.toDataURL('image/png');
+
+      Array.from(groupEl.querySelectorAll('image')).forEach(e => e.remove());
+      const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      image.setAttribute('href', url);
+      image.setAttribute('x', this.tx(c.rect[0]));
+      image.setAttribute('y', this.ty(c.rect[1]));
+      image.setAttribute('width', this.tx(c.rect[2]) - this.tx(c.rect[0]));
+      image.setAttribute('height', this.ty(c.rect[3]) - this.ty(c.rect[1]));
+      groupEl.appendChild(image);
     }
   }
   lostClient(c) {

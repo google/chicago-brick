@@ -45,6 +45,9 @@ export class Control {
     })
     emitter.on('new-client', c => {
       io.emit('new-client', c.rect.serialize());
+      c.socket.on('takeSnapshotRes', res => {
+        io.emit('takeSnapshotRes', res);
+      });
     });
     emitter.on('lost-client', c => {
       io.emit('lost-client', c.rect.serialize());
@@ -56,6 +59,18 @@ export class Control {
       socket.emit('clients', Object.values(clients).map(c => c.rect.serialize()));
       socket.emit('wallGeometry', wallGeometry.getGeo().points);
       socket.emit('errors', log.recentErrors);
+
+      socket.on('takeSnapshot', req => {
+        const client = Object.values(clients).find(c => c.rect.serialize() == req.client);
+        if (client) {
+          client.socket.emit('takeSnapshot', req);
+        } else {
+          socket.emit('takeSnapshotRes', {
+            ...req,
+            error: `Client ${req.client} not found`
+          });
+        }
+      });
     });
     io.emit('time', {time: time.now()});
     setInterval(() => {

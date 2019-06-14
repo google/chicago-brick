@@ -61,4 +61,6 @@ export class Surface {
   destroy() {}
   // Returns the visible rect of the surface, anchored at 0,0
   getRect() {}
+  // Returns an ImageData of pixel values for the canvas.
+  takeSnapshot() {}
 }

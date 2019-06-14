@@ -38,3 +38,39 @@ const modulePlayer = new ClientModulePlayer;
 // Server has asked us to load a new module.
 network.on('loadModule',
     bits => modulePlayer.playModule(ClientModule.deserialize(bits)));
+
+network.on('takeSnapshot', async req => {
+  if (modulePlayer.oldModule &&
+      modulePlayer.oldModule.instance &&
+      modulePlayer.oldModule.instance.surface) {
+    const image = modulePlayer.oldModule.instance.surface.takeSnapshot();
+    if (image) {
+      // You can't draw an imagedata, so we convert to an imagebitmap.
+      const WIDTH = 192;
+      const HEIGHT = Math.floor(WIDTH / image.width * image.height);
+      const bitmap = await createImageBitmap(image, {
+        resizeWidth: WIDTH,
+        resizeHeight: HEIGHT,
+      });
+
+      // We can't get the data of a bitmap, so we make a new canvas to get
+      // back an imagedata.
+      const canvas = document.createElement('canvas');
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+      const context = canvas.getContext('2d');
+      context.drawImage(bitmap, 0, 0);
+      const smallData = context.getImageData(0, 0, WIDTH, HEIGHT);
+
+      // And now, we get the array itself.
+      network.send('takeSnapshotRes', {
+        data: Array.from(smallData.data),
+        width: smallData.width,
+        ...req,
+      });
+      return;
+    }
+  }
+  console.error('snapshot failed', req);
+  network.send('takeSnapshotRes', {...req});
+});
