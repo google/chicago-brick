@@ -13,9 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {delay} from '/lib/promise.js';
 import {Polygon} from '/lib/math/polygon2d.js';
-import * as log from '/client/util/log.js';
 import * as moduleInterface from '/lib/module_interface.js';
 import * as moduleTicker from '/client/modules/module_ticker.js';
 import * as network from '/client/network/network.js';
@@ -27,23 +25,36 @@ import conform from '/lib/conform.js';
 import inject from '/lib/inject.js';
 import {StateManager} from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
-import {now, until} from '/client/util/time.js';
-
-const debug = Debug('wall:client_module');
-const error = log.error(debug);
+import * as time from '/client/util/time.js';
+import {delay} from '/lib/promise.js';
 
 function createNewContainer(name) {
   var newContainer = document.createElement('div');
   newContainer.className = 'container';
-  newContainer.id = 't-' + now();
-  newContainer.style.opacity = 0.0;
+  newContainer.id = 't-' + time.now();
   newContainer.setAttribute('moduleName', name);
-  document.querySelector('#containers').appendChild(newContainer);
   return newContainer;
 }
 
+export const FadeTransition = {
+  start(container) {
+    if (container) {
+      container.style.opacity = 0.001;
+      document.querySelector('#containers').appendChild(container);
+    }
+  },
+  async perform(oldModule, newModule, deadline) {
+    newModule.container.style.transition =
+        'opacity ' + time.until(deadline).toFixed(0) + 'ms';
+    newModule.container.style.opacity = 1.0;
+    // TODO(applmak): Maybe wait until css says that the transition is done?
+    await delay(time.until(deadline));
+  }
+}
+
+
 export class ClientModule {
-  constructor(name, path, config, titleCard, deadline, geo) {
+  constructor(name, path, config, titleCard, deadline, geo, transition) {
     // The module name.
     this.name = name;
 
@@ -63,8 +74,8 @@ export class ClientModule {
     // The wall geometry.
     this.geo = geo;
 
-    // Globals that are associated with this module.
-    this.globals = {};
+    // The transition to use to transition to this module.
+    this.transition = transition;
 
     // The dom container for the module's content.
     this.container = null;
@@ -74,9 +85,6 @@ export class ClientModule {
 
     // Network instance for this module.
     this.network = null;
-
-    // The name of the requirejs context for this module.
-    this.contextName = null;
   }
 
   // Deserializes from the json serialized form of ModuleDef in the server.
@@ -90,33 +98,38 @@ export class ClientModule {
       bits.module.config,
       new TitleCard(bits.module.credit),
       bits.time,
-      new Polygon(bits.geo)
+      new Polygon(bits.geo),
+      FadeTransition,
     );
   }
 
-  static newEmptyModule(deadline = 0) {
+  static newEmptyModule(deadline = 0, transition = FadeTransition) {
     return new ClientModule(
       'empty-module',
       '',
       {},
       new TitleCard({}),
       deadline,
-      new Polygon([{x: 0, y:0}])
+      new Polygon([{x: 0, y:0}]),
+      transition
     );
+  }
+
+  // Extracted out for testing purposes.
+  static async loadPath(path) {
+    return await import(path);
   }
 
   async instantiate() {
     this.container = createNewContainer(this.name);
 
     if (!this.path) {
-      return Promise.resolve();
+      return;
     }
 
     this.network = network.forModule(
       `${this.geo.extents.serialize()}-${this.deadline}`);
     let openNetwork = this.network.open();
-
-    this.contextName = 'module-' + this.deadline;
 
     const fakeEnv = {
       asset,
@@ -129,85 +142,78 @@ export class ClientModule {
       peerNetwork,
       assert,
     };
-    const {load} = await import(this.path);
-    if (!load) {
-      throw new Error(`${this.name} did not export a 'load' function!`);
-    }
-    const {client} = inject(load, fakeEnv);
-    conform(client, moduleInterface.Client);
-
-    this.instance = new client(this.config);
-  }
-
-  willBeHiddenSoon() {
-    if (!this.path) {
-      return true;
-    }
     try {
-      this.instance.willBeHiddenSoon();
-    } catch(e) {
-      error(e);
-    }
-    return true;
-  }
+      const {load} = await ClientModule.loadPath(this.path);
+      if (!load) {
+        throw new Error(`${this.name} did not export a 'load' function!`);
+      }
+      const {client} = inject(load, fakeEnv);
+      conform(client, moduleInterface.Client);
 
-  // Returns true if module is still OK.
-  willBeShownSoon() {
-    if (!this.path) {
-      return true;
-    }
-    try {
-      this.instance.willBeShownSoon(this.container, this.deadline);
-      return true;
-    } catch(e) {
-      error(e);
-      return false;
+      this.instance = new client(this.config);
+    } catch (e) {
+      // something went very wrong. Wind everything down.!
+      this.network.close();
+      this.network = null;
+      throw e;
     }
   }
 
   // Returns true if module is still OK.
-  fadeIn(deadline) {
-    this.container.style.transition =
-        'opacity ' + until(deadline).toFixed(0) + 'ms';
-    this.container.style.opacity = 1.0;
-
+  async willBeShownSoon() {
     if (!this.path) {
-      return true;
+      return;
     }
+    // Prep the container for transition.
+    // TODO(applmak): Move the transition smarts out of ClientModule.
+    this.transition.start(this.container);
     try {
-      this.instance.beginFadeIn(deadline);
+      await this.instance.willBeShownSoon(this.container, this.deadline);
     } catch(e) {
-      error(e);
-      return false;
+      this.dispose();
+      throw e;
+    }
+  }
+
+  // Returns true if module is still OK.
+  beginTransitionIn(deadline) {
+    if (!this.path) {
+      return;
     }
     moduleTicker.add(this.name, this.instance);
-    delay(until(deadline)).done(() => {
-      this.titleCard.enter();
-      try {
-        this.instance.finishFadeIn();
-      } catch(e) {
-        error(e);
-      }
-    });
-    return true;
+    try {
+      this.instance.beginFadeIn(deadline);
+    } catch (e) {
+      this.dispose();
+      throw e;
+    }
   }
 
-  fadeOut(deadline) {
-    if (this.container) {
-      this.container.style.transition =
-          'opacity ' + until(deadline).toFixed(0) + 'ms';
-      this.container.style.opacity = 0.0;
-    }
+  finishTransitionIn() {
     if (!this.path) {
-      return true;
+      return;
+    }
+    this.titleCard.enter();
+    this.instance.finishFadeIn();
+  }
+
+  beginTransitionOut(deadline) {
+    if (!this.path) {
+      return;
     }
     this.titleCard.exit();
-    try {
-      this.instance.beginFadeOut(deadline);
-    } catch(e) {
-      error(e);
+    this.instance.beginFadeOut(deadline);
+  }
+
+  finishTransitionOut() {
+    if (!this.path) {
+      return;
     }
-    return true;
+    this.instance.finishFadeOut();
+  }
+
+  async performTransition(otherModule, transitionFinishDeadline) {
+    await this.transition.perform(otherModule, this, transitionFinishDeadline);
   }
 
   dispose() {
@@ -216,20 +222,14 @@ export class ClientModule {
       this.container = null;
     }
     if (!this.path) {
-      return true;
+      return;
     }
     this.titleCard.exit();  // Just in case.
     moduleTicker.remove(this.instance);
 
     if (this.network) {
       this.network.close();
+      this.network = null;
     }
-    try {
-      this.instance.finishFadeOut();
-    } catch(e) {
-      error(e);
-    }
-
-    return true;
   }
 }

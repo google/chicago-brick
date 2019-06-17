@@ -14,17 +14,29 @@ limitations under the License.
 ==============================================================================*/
 
 import * as game from '../game/game.js';
-import Debug from 'debug';
+import * as time from '../util/time.js';
+import * as wallGeometry from '../util/wall_geometry.js';
+import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
+import library from './module_library.js';
 import network from '../network/network.js';
 import {StateManager} from '../state/state_manager.js';
-import {error} from '../util/log.js';
+import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
+import {clients} from '../network/clients.js';
 
-const debug = Debug('wall:server_state_machine');
-const logError = error(debug);
+export function tellClientToPlay(client, name, deadline) {
+  client.socket.emit('loadModule', {
+    module: library.modules[name].serializeForClient(),
+    time: deadline,
+    geo: wallGeometry.getGeo().points
+  });
+}
 
 export class RunningModule {
+  static empty(deadline = 0) {
+    return new RunningModule(library.modules['_empty'], deadline);
+  }
   /**
    * Constructs a running module.
    * NOTE that's it's fine to create one of these with no def, which will simply blank the screen.
@@ -33,6 +45,8 @@ export class RunningModule {
     assert(moduleDef, 'Empty def passed to running module!');
     this.moduleDef = moduleDef;
     this.deadline = deadline;
+
+    this.name = this.moduleDef.name;
 
     if (this.moduleDef.valid) {
       // Only instantiate support objects for valid module defs.
@@ -48,6 +62,10 @@ export class RunningModule {
   // This is a separate method in order to guard against exceptions in
   // instantiate.
   instantiate() {
+    // Tell clients to get ready to play this module at the deadline.
+    for (const id in clients) {
+      tellClientToPlay(clients[id], this.name, this.deadline);
+    }
     if (this.network) {
       let openNetwork = this.network.open();
       this.stateManager = new StateManager(openNetwork);
@@ -62,6 +80,19 @@ export class RunningModule {
     }
   }
 
+  beginTransitionIn() {
+    moduleTicker.add(this);
+  }
+  beginTransitionOut() {}
+  finishTransitionIn() {}
+  finishTransitionOut() {
+    moduleTicker.remove(this);
+  }
+
+  async performTransition(otherModule, transitionFinishDeadline) {
+    await delay(time.until(transitionFinishDeadline));
+  }
+
   dispose() {
     if (this.instance) {
       this.instance.dispose();
@@ -72,24 +103,13 @@ export class RunningModule {
 
       // This also cleans up stateManager.
       this.network.close();
+      this.network = null;
     }
   }
 
-  willBeHiddenSoon(deadline) {
+  async willBeShownSoon(deadline) {
     if (this.instance) {
-      this.instance.willBeHiddenSoon(deadline);
+      await this.instance.willBeShownSoon(deadline);
     }
-  }
-
-  willBeShownSoon(deadline) {
-    if (this.instance) {
-      let ret = this.instance.willBeShownSoon(deadline);
-      if (!ret) {
-        logError(new Error(`Module ${this.moduleDef.name} should return a promise from willBeShownSoon`));
-        return Promise.resolve();
-      }
-      return ret;
-    }
-    return Promise.resolve();
   }
 }

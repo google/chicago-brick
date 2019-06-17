@@ -45,7 +45,9 @@ export function removeListener(event, callback) {
 }
 export const whenReady = readyPromise;
 export function send(event, data) {
-  socket.emit(event, data);
+  if (socket) {
+    socket.emit(event, data);
+  }
 }
 export function forModule(id) {
   var moduleSocket;

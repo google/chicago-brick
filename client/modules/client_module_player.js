@@ -13,28 +13,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as info from '/client/util/info.js';
 import * as monitor from '/client/monitoring/monitor.js';
-import * as network from '/client/network/network.js';
 import * as time from '/client/util/time.js';
 import Debug from '/lib/lame_es6/debug.js';
-import {ClientModulePlayer} from '/client/modules/client_module_player.js';
 import {ClientModule} from '/client/modules/module.js';
+import {error} from '/client/util/log.js';
 
-Debug.enable('wall:*');
+import {configure} from '/lib/module_player.js';
 
-// Open our socket to the server.
-network.openConnection(info.virtualRectNoBezel);
+const debug = Debug('wall:client_state_machine');
+const reportError = error(debug);
 
-if (new URL(window.location.href).searchParams.get('monitor')) {
-  monitor.enable();
+function logError(e) {
+  if (monitor.isEnabled()) {
+    monitor.update({client: {
+      event: e.toString(),
+      time: time.now(),
+      color: [255, 0, 0]
+    }});
+  }
+  reportError(e);
+  debug(e);
 }
 
-// Ready to receive some code!
-time.start();
+const clientMonitorWrapper = {
+  isEnabled() { return monitor.isEnabled(); },
+  update(obj) { monitor.update({client: obj}); }
+}
 
-const modulePlayer = new ClientModulePlayer;
-
-// Server has asked us to load a new module.
-network.on('loadModule',
-    bits => modulePlayer.playModule(ClientModule.deserialize(bits)));
+export const ClientModulePlayer = configure({
+  makeEmptyModule: ClientModule.newEmptyModule,
+  monitor: clientMonitorWrapper,
+  debug,
+  time,
+  logError
+});

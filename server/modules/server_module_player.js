@@ -13,21 +13,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as network from '/client/network/network.js';
-import {ClientModule} from '/client/modules/module.js';
-import {ClientStateMachine} from '/client/modules/client_state_machine.js';
-import {start} from '/client/util/time.js';
+import * as monitor from '../monitoring/monitor.js';
+import * as time from '../util/time.js';
+import Debug from 'debug';
+import {configure} from '../../lib/module_player.js';
+import {RunningModule} from './module.js';
 
-export class ModuleManager {
-  constructor() {
-    // The state machine.
-    this.stateMachine = new ClientStateMachine;
-  }
-  start() {
-    start();
+const debug = Debug('wall:module_state_machine');
 
-    // Server has asked us to load a new module.
-    network.on('loadModule',
-        bits => this.stateMachine.playModule(ClientModule.deserialize(bits)));
+export const ServerModulePlayer = configure({
+  makeEmptyModule: () => {
+    return RunningModule.empty();
+  },
+  monitor: {
+    isEnabled() {
+      return monitor.isEnabled();
+    },
+    update(obj) {
+      monitor.update({server: obj});
+    }
+  },
+  debug,
+  time,
+  logError: (error) => {
+    debug(error)
   }
-}
+});

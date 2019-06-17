@@ -18,14 +18,17 @@ import Debug from 'debug';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
+import {RunningModule, tellClientToPlay} from './module.js';
+import library from './module_library.js';
+import {emitter} from '../network/clients.js';
 
 const debug = Debug('wall::playlist_driver');
 const random = new randomjs.Random();
 
 export class PlaylistDriver {
-  constructor(moduleSM) {
-    // The module state machine that we control.
-    this.moduleSM = moduleSM;
+  constructor(modulePlayer) {
+    // The module player.
+    this.modulePlayer = modulePlayer;
     // If non-zero, a handle to the current timer, which when fired, will tell
     // the wall to play a new module.
     this.timer = 0;
@@ -41,11 +44,13 @@ export class PlaylistDriver {
     this.newLayoutTime = Infinity;
     // Timestamp of next module change.
     this.newModuleTime = Infinity;
+    // Timestamp of the last deadline we used to play a module.
+    this.lastDeadline_ = 0;
 
-    this.moduleSM.setErrorListener(() => {
-      // Stop normal advancement.
-      this.resetTimer_();
-      this.nextModule();
+    emitter.on('new-client', client => {
+      if (this.modules[this.moduleIndex]) {
+        tellClientToPlay(client, this.modules[this.moduleIndex], this.lastDeadline_);
+      }
     });
   }
   // Returns the timestamp of the next module change.
@@ -115,7 +120,7 @@ export class PlaylistDriver {
     this.playModule_(moduleName);
   }
   // Advances to the next layout in the playlist, fading out between them.
-  nextLayout() {
+  async nextLayout() {
     // Update layoutIndex.
     this.layoutIndex = (this.layoutIndex + 1) % this.playlist.length;
 
@@ -138,20 +143,29 @@ export class PlaylistDriver {
 
     debug(`Next Layout: ${this.layoutIndex}`);
 
-    this.moduleSM.fadeToBlack(now() + 5000).then(() => {
-      // Shuffle the module list:
-      this.modules = Array.from(layout.modules);
-      random.shuffle(this.modules);
+    // If the wall isn't already faded out, fade it out:
+    let concurrentWork = [];
+    if (this.modulePlayer.oldModule.name != '_empty') {
+      // Give the wall 1 second to get ready to fade out.
+      concurrentWork.push(this.modulePlayer.playModule(RunningModule.empty(now() + 1000)));
+    }
+    // Shuffle the module list:
+    this.modules = Array.from(layout.modules);
+    random.shuffle(this.modules);
 
-      // Wait until all of the modules are loaded.
-      return Promise.all(layout.modules.map(m => m.whenLoadedPromise));
-    }).then(() => this.nextModule());
+    concurrentWork.push(...layout.modules.map(m => library.modules[m].whenLoadedPromise));
+
+    // Wait until all of the modules are loaded.
+    await Promise.all(concurrentWork);
+    this.nextModule();
   }
   // Advances to the next module in the current layout. If there is only 1
   // module in the current playlist, transitions to another copy of that
   // module.
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
+
+    debug(`Next module: ${this.modules[this.moduleIndex]} (${library.modules[this.modules[this.moduleIndex]].valid ? 'valid' : 'invalid'})`);
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];
@@ -164,8 +178,10 @@ export class PlaylistDriver {
   // Private helper function that does the work of going to a module by name
   // and scheduling the next module to play after a certain duration.
   playModule_(module) {
-    // Play a module until the next transition
-    this.moduleSM.playModule(module, now());
+    // Play a module until the next transition.
+    // Give the wall 5 seconds to prep the new module and inform the clients.
+    this.lastDeadline_ = now() + 5000;
+    this.modulePlayer.playModule(new RunningModule(library.modules[module], this.lastDeadline_));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
