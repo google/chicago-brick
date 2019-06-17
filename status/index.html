@@ -87,12 +87,13 @@
       flex-direction: column;
     }
     .playlist-container {
+      position: relative;
+      overflow-y: scroll;
       flex: 1 1 auto;
     }
     .playlist-scroll {
-      overflow-y: scroll;
+      position: absolute;
       width: 100%;
-      position: relative;
     }
     .playlist-scroll::-webkit-scrollbar {
       width: 6px;
@@ -143,6 +144,9 @@
 
     .layout .past:not(.current) {
       font-style: italic;
+    }
+    .layout:not(:last-child) .module:not(.past):not(.current) {
+      color: gray;
     }
 
     .layout .current > span:first-child {
