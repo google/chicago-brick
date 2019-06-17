@@ -16,6 +16,7 @@ limitations under the License.
 import {ClientController} from './client_controller.js';
 import {PlaylistController} from './playlist_controller.js';
 import {ErrorController} from './error_controller.js';
+import {PlaylistCreator} from './playlist_creator.js';
 import io from './socket.io-client.js';
 
 let lastUpdateFromServer = 0;
@@ -29,6 +30,13 @@ function getTime() {
 }
 
 const control = io('http://localhost:3000/control');
+const creatorEl = document.querySelector('#playlist-creator');
+
+function applyNewPlaylist(playlist) {
+  control.emit('newPlaylist', {playlist});
+}
+
+const playlistCreator = new PlaylistCreator(creatorEl, applyNewPlaylist);
 const playlistController = new PlaylistController(document.querySelector('.playlist-scroll'), getTime);
 const errorController = new ErrorController(document.querySelector('footer'));
 const clientController = new ClientController(
@@ -47,6 +55,8 @@ control.on('transition', data => {
   deadlineEl.textContent = data.nextDeadline.toFixed(0);
 
   playlistController.updateTransitionData(data);
+  playlistCreator.setLivePlaylist(data.layouts);
+  playlistCreator.setModuleConfig(data.configMap);
 });
 control.on('clients', data => {
   clientController.setClients(data);
@@ -86,6 +96,11 @@ control.on('wallGeometry', p => {
 });
 control.on('takeSnapshotRes', res => {
   clientController.takeSnapshotRes(res);
+});
+
+const openCreatorEl = document.querySelector('#open-creator');
+openCreatorEl.addEventListener('click', () => {
+  playlistCreator.open();
 });
 
 const timeEl = document.querySelector('#time');

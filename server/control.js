@@ -71,6 +71,10 @@ export class Control {
           });
         }
       });
+      socket.on('newPlaylist', data => {
+        const {playlist} = data;
+        this.playlistDriver.setPlaylist(playlist);
+      });
     });
     io.emit('time', {time: time.now()});
     setInterval(() => {

@@ -56,9 +56,15 @@
     }
 
     .diagram {
+      position: relative;
       flex: 1 1 auto;
     }
     .diagram svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
       width: 100%;
       height: 100%;
       background-color: gray;
@@ -76,11 +82,16 @@
       flex: 0 0 auto;
       width: 400px;
       background-color: #EEE;
+
+      display: flex;
+      flex-direction: column;
+    }
+    .playlist-container {
+      flex: 1 1 auto;
     }
     .playlist-scroll {
       overflow-y: scroll;
       width: 100%;
-      height: 100%;
       position: relative;
     }
     .playlist-scroll::-webkit-scrollbar {
@@ -90,6 +101,11 @@
     .playlist-scroll::-webkit-scrollbar-thumb {
       background: #444;
       border-radius: 10px;
+    }
+    .playlist-control {
+      flex: 0 0 auto;
+      border-top: 1px solid black;
+      padding: 2px;
     }
     .playlist #line {
       position: absolute;
@@ -150,10 +166,68 @@
       text-align: center;
       background-color: rgba(127, 127, 127, 0.5);
       visibility: hidden;
+      z-index: 10;
     }
     #disconnected-warning > * {
       flex: 1 1 auto;
       transform: rotate(-35deg);
+    }
+    #playlist-creator {
+      position: absolute;
+      right: -600px;
+      width: 600px;
+      top: 0;
+      bottom: 0;
+      border-left: 3px solid gray;
+      background-color: #EEE;
+      transition: right 0.5s ease-in-out 0.0s;
+
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #preset-playlists {
+      flex: 0 0 auto;
+    }
+    #current-playlist-container {
+      flex: 1 1 auto;
+      border-top: 1px solid #AAA;
+      border-bottom: 1px solid #AAA;
+      background-color: white;
+      /* So our offsets are relative to this. */
+      position: relative;
+      overflow-y: auto;
+    }
+    #current-playlist {
+    }
+    #all-known-modules {
+      flex: 0 0 auto;
+      height: 200px;
+      overflow-y: scroll;
+    }
+
+    #playlist-creator .module > span {
+      font-weight: bolder;
+    }
+
+    #playlist-creator .layout > div.module {
+      background-color: inherit;
+      padding: 0;
+      transition: margin-top 0.2s ease-out 0.0s, margin-bottom 0.2s ease-out 0.0s;
+    }
+
+    .extend-bottom {
+      margin-bottom: 15px;
+    }
+    .extend-top {
+      margin-top: 15px;
+    }
+
+    .accept-drop {
+      border: 1px solid green;
+    }
+    .reject-drop {
+      border: 1px solid red;
     }
     </style>
     <script src="./index.js" type="module"></script>
@@ -169,11 +243,29 @@
     <section>
       <article class="diagram"></article>
       <article class="playlist">
-        <div class="playlist-scroll"></div>
+        <div class="playlist-container">
+          <div class="playlist-scroll"></div>
+        </div>
+        <div class="playlist-control"><button id="open-creator">Creator</button></div>
       </article>
     </section>
     <footer>
     </footer>
     <div id="disconnected-warning"><div>Disconnected</div></div>
+    <div id="playlist-creator">
+      <div id="preset-playlists">
+        <button id="close-creator">Discard</button>
+        <button id="apply-playlist">Apply</button>
+        <button id="clear-playlist">Clear</button>
+        <button id="new-layout">New Layout</button>
+        <button id="load-live">Load Current Playlist</button>
+        <button>Drive Folder of Images</button>
+        <button>Single, Big Image</button>
+      </div>
+      <div id="current-playlist-container">
+        <div id="current-playlist"></div>
+      </div>
+      <div id="all-known-modules"></div>
+    </div>
   </body>
 </html>

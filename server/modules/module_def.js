@@ -75,23 +75,24 @@ export class ModuleDef extends EventEmitter {
     // If true, the module has no parse errors in its source.
     this.valid = false;
 
+
     if (pathsOrBaseModule.base) {
-      let base = pathsOrBaseModule.base;
-      this.clientPath = base.clientPath;
-      this.serverPath = base.serverPath;
+      this.base = pathsOrBaseModule.base;
+      this.clientPath = this.base.clientPath;
+      this.serverPath = this.base.serverPath;
 
       let updateValidity = () => {
-        this.valid = base.valid;
+        this.valid = this.base.valid;
       };
 
       // When the base is loaded, check its valid status.
-      base.whenLoadedPromise.then(updateValidity);
+      this.base.whenLoadedPromise.then(updateValidity);
 
       // I'm loaded when my base is loaded.
-      this.whenLoadedPromise = base.whenLoadedPromise;
+      this.whenLoadedPromise = this.base.whenLoadedPromise;
 
       // Also, register for any reloads, and reset validity.
-      base.on('reloaded', updateValidity);
+      this.base.on('reloaded', updateValidity);
     } else if (name != '_empty') {
       // TODO(applmak): ^ this hacky.
       this.clientPath = pathsOrBaseModule.client;
@@ -105,11 +106,12 @@ export class ModuleDef extends EventEmitter {
     return {
       name: this.name,
       root: this.root,
+      extends: this.base ? this.base.name : '',
       clientPath: this.clientPath,
       serverPath: this.serverPath,
       config: this.config,
       credit: this.credit,
-      valie: this.valid,
+      valid: this.valid,
     };
   }
   // Returns a new module def that extends this def with new configuration.

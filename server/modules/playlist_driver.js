@@ -55,6 +55,16 @@ export class PlaylistDriver extends EventEmitter {
       }
     });
   }
+  async setPlaylist(newPlaylist) {
+    if (this.modulePlayer.oldModule.name != '_empty') {
+      // Give the wall 1 second to get ready to fade out.
+      this.lastDeadline_ = now() + 1000;
+      await this.modulePlayer.playModule(RunningModule.empty(this.lastDeadline_));
+    }
+
+    this.start(newPlaylist);
+  }
+
   // Returns the timestamp of the next module change.
   getNextDeadline() {
     return Math.min(this.newLayoutTime, this.newModuleTime);
