@@ -27,6 +27,12 @@ function makeEditableText(el, getFn, setFn) {
   });
 }
 
+function getDate() {
+  const d = new Date();
+  const offset = d.getTimezoneOffset();
+  return new Date(d.getTime() - offset * 60 * 1000).toISOString().split('T')[0];
+}
+
 export class PlaylistCreator {
   constructor(container, applyPlaylistFn) {
     this.container = container;
@@ -55,6 +61,10 @@ export class PlaylistCreator {
         .addEventListener('click', () => this.resetMaker());
     container.querySelector('#create-module')
         .addEventListener('click', () => this.createModule());
+    container.querySelector('#set-drive-images')
+        .addEventListener('click', () => this.setDriveFolderConfig());
+    container.querySelector('#set-single-big-image')
+        .addEventListener('click', () => this.setLocalImageConfig());
     // A playlist is a list of layouts.
     // A layout is a duration + a list of modules + a module duration.
     // A module is a name of a module.
@@ -101,6 +111,23 @@ export class PlaylistCreator {
   }
   resetMaker() {
     this.container.querySelector('#module-maker-form').reset();
+    this.container.querySelector('#normal-config').style.display = 'block';
+    this.container.querySelector('#drive-folder-config').style.display = 'none';
+    this.container.querySelector('#local-image-config').style.display = 'none';
+  }
+  setDriveFolderConfig() {
+    this.container.querySelector('#name-field').value = getDate();
+    this.container.querySelector('#extend-field option[value="slideshow"]').selected = true;
+    this.container.querySelector('#normal-config').style.display = 'none';
+    this.container.querySelector('#drive-folder-config').style.display = 'block';
+    this.container.querySelector('#local-image-config').style.display = 'none';
+  }
+  setLocalImageConfig() {
+    this.container.querySelector('#name-field').value = getDate();
+    this.container.querySelector('#extend-field option[value="slideshow"]').selected = true;
+    this.container.querySelector('#normal-config').style.display = 'none';
+    this.container.querySelector('#drive-folder-config').style.display = 'none';
+    this.container.querySelector('#local-image-config').style.display = 'block';
   }
   createModule() {
     const extendEl = this.container.querySelector('#extend-field');
@@ -150,10 +177,63 @@ export class PlaylistCreator {
     }
 
     let config;
-    if (configEl.value) {
-      try {
-        config = JSON.parse(configEl.value);
-      } catch (e) {
+    if (this.container.querySelector('#normal-config').style.display != 'none') {
+      if (configEl.value) {
+        try {
+          config = JSON.parse(configEl.value);
+        } catch (e) {
+          invalid = true;
+        }
+      }
+    } else if (this.container.querySelector('#drive-folder-config').style.display != 'none') {
+      // TODO(applmak): Add fancy validation that actually queries that the
+      // folder is accessible.
+      const folderEl = this.container.querySelector('#drive-folder-field');
+      if (folderEl.value) {
+        folderEl.classList.remove('invalid');
+        config = {
+          load: {
+            drive: {
+              folderId: folderEl.value
+            }
+          },
+          display: {
+            fullscreen: {
+              period: 8000,
+              image: {
+                scale: "full"
+              }
+            }
+          }
+        };
+      } else {
+        folderEl.classList.add('invalid');
+        invalid = true;
+      }
+    } else if (this.container.querySelector('#local-image-config').style.display != 'none') {
+      const imageEl = this.container.querySelector('#local-image-field');
+      if (imageEl.value) {
+        imageEl.classList.remove('invalid');
+        config = {
+          load: {
+            local: {
+              image: {
+                file: imageEl.value,
+                presplit: true
+              }
+            }
+          },
+          display: {
+            fullscreen: {
+              period: 0,
+              image: {
+                scale: "full"
+              }
+            }
+          }
+        };
+      } else {
+        imageEl.classList.add('invalid');
         invalid = true;
       }
     }

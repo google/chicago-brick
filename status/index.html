@@ -262,6 +262,12 @@
     textarea.invalid {
       border: 3px solid red;
     }
+    #drive-folder-config {
+      display: none;
+    }
+    #local-image-config {
+      display: none;
+    }
     </style>
     <script src="./index.js" type="module"></script>
   </head>
@@ -304,8 +310,8 @@
           <button id="discard-module">Discard</button>
           <button id="create-module">Create</button>
           <button id="reset-maker">Reset</button>
-          <!--<button id="set-drive-images">Drive Images</button>
-          <button id="set-single-big-image">Single, big image</button>-->
+          <button id="set-drive-images">Drive Images</button>
+          <button id="set-single-big-image">Single, big image</button>
         </header>
         <form id="module-maker-form">
           <label for="extend-field">Extend:</label><br>
@@ -329,10 +335,20 @@
               <input type="text" id="image-field" placeholder="Path"><br>
             </fieldset>
           </div>
-          <label for="config-field">Config:</label><br>
-          <textarea id="config-field" placeholder="{
-    &quot;option1&quot;: &quot;value&quot;,
-  }"></textarea>
+          <div id="normal-config">
+            <label for="config-field">Config:</label><br>
+            <textarea id="config-field" placeholder="{
+      &quot;option1&quot;: &quot;value&quot;,
+    }"></textarea>
+          </div>
+          <div id="drive-folder-config">
+            <label for="drive-folder-field">Drive Folder ID:</label><br>
+            <input type="text" id="drive-folder-field" placeholder="Drive Folder ID"><br>
+          </div>
+          <div id="local-image-config">
+            <label for="local-image-field">Local Image Name:</label><br>
+            <input type="text" id="local-image-field" placeholder="Name"><br>
+          </div>
         </form>
       </div>
     </div>
