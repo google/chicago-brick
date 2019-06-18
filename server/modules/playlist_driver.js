@@ -225,7 +225,7 @@ export class PlaylistDriver extends EventEmitter {
     // or another layout. How much time do we have?
     if (this.newLayoutTime < this.newModuleTime) {
       this.timer = setTimeout(() => this.nextLayout(), until(this.newLayoutTime));
-    } else if (this.modules.length > 1 || this.modules.indexOf(module) == -1) {
+    } else {
       // Only schedule the next module to play if:
       // a) There are multiple modules in the current layout, or
       // b) The module we are now playing is not in the current layout, and so
