@@ -35,11 +35,6 @@ class ModuleLibrary extends EventEmitter {
   register(def) {
     assert(!(def.name in this.modules), 'Def ' + def.name + ' already exists!');
     this.modules[def.name] = def;
-    // We can safely use 'on' rather than 'once' here, because neither the
-    // moduledefs nor this library are ever destroyed.
-    def.on('reloaded', () => {
-      this.emit('reloaded', def);
-    });
   }
   reset() {
     this.modules = {'_empty': new EmptyModuleDef};

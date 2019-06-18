@@ -39,9 +39,22 @@ export class PlaylistCreator {
         .addEventListener('click', () => this.clearPlaylist());
     container.querySelector('#load-live')
         .addEventListener('click', () => this.loadLivePlaylist());
+    container.querySelector('#load-all')
+        .addEventListener('click', () => this.loadAll());
     container.querySelector('#new-layout')
         .addEventListener('click', () => this.newLayout());
-
+    container.querySelector('#extend-module-maker')
+        .addEventListener('click', () => this.openModuleMaker());
+    container.querySelector('#credits-fields')
+        .addEventListener('click', e => this.chooseCredits(e));
+    container.querySelector('#config-field')
+        .addEventListener('input', () => this.validateConfig());
+    container.querySelector('#discard-module')
+        .addEventListener('click', () => this.closeModuleMaker());
+    container.querySelector('#reset-maker')
+        .addEventListener('click', () => this.resetMaker());
+    container.querySelector('#create-module')
+        .addEventListener('click', () => this.createModule());
     // A playlist is a list of layouts.
     // A layout is a duration + a list of modules + a module duration.
     // A module is a name of a module.
@@ -61,6 +74,14 @@ export class PlaylistCreator {
     this.playlist = JSON.parse(JSON.stringify(this.livePlaylist));
     this.render();
   }
+  loadAll() {
+    this.playlist = [{
+      moduleDuration: 30,
+      duration: 600,
+      modules: Object.keys(this.moduleConfig || {})
+    }];
+    this.render();
+  }
   newLayout() {
     let duration = 1800;
     let moduleDuration = 300;
@@ -72,11 +93,90 @@ export class PlaylistCreator {
     this.playlist.push({modules: ['_empty'], duration, moduleDuration});
     this.render();
   }
+  openModuleMaker() {
+    this.container.querySelector('#module-maker').style.right = '0';
+  }
+  closeModuleMaker() {
+    this.container.querySelector('#module-maker').style.right = '';
+  }
+  resetMaker() {
+    this.container.querySelector('#module-maker-form').reset();
+  }
+  createModule() {
+    const extendEl = this.container.querySelector('#extend-field');
+    const nameEl = this.container.querySelector('#name-field');
+    const titleEl = this.container.querySelector('#title-field');
+    const authorEl = this.container.querySelector('#author-field');
+    const imageEl = this.container.querySelector('#image-field');
+    const configEl = this.container.querySelector('#config-field');
+
+    let invalid = false;
+    if (nameEl.value) {
+      nameEl.classList.remove('invalid');
+    } else {
+      nameEl.classList.add('invalid');
+      invalid = true;
+    }
+
+    let credits = {};
+    if (!titleEl.parentElement.disabled) {
+      if (titleEl.value) {
+        titleEl.classList.remove('invalid');
+        credits = {
+          credit: {
+            title: titleEl.value
+          }
+        };
+
+        if (authorEl.value) {
+          credits.credit.author = authorEl.value;
+        }
+      } else {
+        titleEl.classList.add('invalid');
+        invalid = true;
+      }
+    } else if (!imageEl.parentElement.disabled) {
+      if (imageEl.value) {
+        imageEl.classList.remove('invalid');
+        credits = {
+          credit: {
+            path: imageEl.value
+          }
+        };
+      } else {
+        imageEl.classList.add('invalid');
+        invalid = true;
+      }
+    }
+
+    let config;
+    if (configEl.value) {
+      try {
+        config = JSON.parse(configEl.value);
+      } catch (e) {
+        invalid = true;
+      }
+    }
+
+    if (invalid) {
+      return;
+    }
+
+    const newModuleDef = {
+      extends: extendEl.value,
+      name: nameEl.value,
+      ...credits,
+      config
+    };
+
+    this.setModuleConfig({[newModuleDef.name]: newModuleDef});
+    this.closeModuleMaker();
+  }
   setLivePlaylist(livePlaylist) {
     this.livePlaylist = livePlaylist;
   }
   setModuleConfig(moduleConfig) {
-    this.moduleConfig = moduleConfig;
+    this.moduleConfig = Object.assign({}, this.moduleConfig || {}, moduleConfig);
     this.renderModuleConfig();
   }
   open() {
@@ -87,7 +187,25 @@ export class PlaylistCreator {
   }
   applyPlaylist() {
     this.close();
-    this.applyPlaylistFn(this.playlist);
+    this.applyPlaylistFn(this.playlist, this.moduleConfig);
+  }
+  chooseCredits(e) {
+    const fieldsetEl = e.target.closest('fieldset');
+    if (fieldsetEl) {
+      if (fieldsetEl.disabled) {
+        Array.from(fieldsetEl.parentElement.children).forEach(e => e.disabled = true);
+        fieldsetEl.disabled = false;
+      }
+    }
+  }
+  validateConfig() {
+    const textareaEl = this.container.querySelector('#config-field');
+    try {
+      JSON.parse(textareaEl.value);
+      textareaEl.classList.remove('invalid');
+    } catch (e) {
+      textareaEl.classList.add('invalid');
+    }
   }
 
   render() {
@@ -182,7 +300,6 @@ export class PlaylistCreator {
         }
       });
 
-
       const footer = document.createElement('div');
       footer.className = 'footer';
       footer.innerHTML = '&nbsp;'
@@ -233,5 +350,22 @@ export class PlaylistCreator {
         Array.from(evt.item.childNodes).slice(1).forEach(e => e.parentNode.removeChild(e));
       }
     });
+
+    // Also update extend-field:
+    const extendEl = this.container.querySelector('#extend-field');
+    // Get a set of options.
+    const optionsToRemove = new Set(Array.from(extendEl.children).map(c => c.value));
+    for (const name in this.moduleConfig) {
+      if (optionsToRemove.has(name)) {
+        optionsToRemove.delete(name);
+      } else {
+        const option = document.createElement('option');
+        option.textContent = name;
+        option.value = name;
+        extendEl.appendChild(option);
+      }
+    }
+
+    optionsToRemove.forEach(c => c.remove());
   }
 }

@@ -90,9 +90,6 @@ export class ModuleDef extends EventEmitter {
 
       // I'm loaded when my base is loaded.
       this.whenLoadedPromise = this.base.whenLoadedPromise;
-
-      // Also, register for any reloads, and reset validity.
-      this.base.on('reloaded', updateValidity);
     } else if (name != '_empty') {
       // TODO(applmak): ^ this hacky.
       this.clientPath = pathsOrBaseModule.client;

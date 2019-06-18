@@ -19,6 +19,7 @@ import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
 import {emitter, clients} from './network/clients.js';
 import * as log from './util/log.js';
+import library from './modules/module_library.js';
 
 const debug = Debug('wall:control');
 // Basic server management hooks.
@@ -72,7 +73,18 @@ export class Control {
         }
       });
       socket.on('newPlaylist', data => {
-        const {playlist} = data;
+        const {playlist, moduleConfig} = data;
+        for (const name in moduleConfig) {
+          const cfg = moduleConfig[name];
+          // Only update new modules that extend other ones.
+          if (cfg.extends) {
+            debug(`Loaded new config: ${cfg.name}`);
+            // HACK!
+            library.modules[cfg.name] = library.modules[cfg.extends].extend(
+                cfg.name, cfg.config || {}, cfg.credit || {});
+          }
+        }
+
         this.playlistDriver.setPlaylist(playlist);
       });
     });

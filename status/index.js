@@ -32,8 +32,8 @@ function getTime() {
 const control = io('http://localhost:3000/control');
 const creatorEl = document.querySelector('#playlist-creator');
 
-function applyNewPlaylist(playlist) {
-  control.emit('newPlaylist', {playlist});
+function applyNewPlaylist(playlist, moduleConfig) {
+  control.emit('newPlaylist', {playlist, moduleConfig});
 }
 
 const playlistCreator = new PlaylistCreator(creatorEl, applyNewPlaylist);

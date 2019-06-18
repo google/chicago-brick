@@ -158,6 +158,7 @@
 
     #disconnected-warning {
       position: absolute;
+      overflow: hidden;
       left: 0;
       right: 0;
       top: 0;
@@ -233,6 +234,34 @@
     .reject-drop {
       border: 1px solid red;
     }
+
+    #module-maker {
+      position: absolute;
+      width: 100%;
+      right: -600px;
+      top: 0;
+      bottom: 0;
+      border-left: 2px solid gray;
+      background-color: white;
+      transition: right 0.5s ease-out 0.0s;
+    }
+
+    #credits-fields {
+      display: flex;
+      flex-direction: row;
+    }
+
+    fieldset[disabled] {
+      background-color: #DDD;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+    }
+    textarea.invalid {
+      border: 3px solid red;
+    }
     </style>
     <script src="./index.js" type="module"></script>
   </head>
@@ -262,14 +291,50 @@
         <button id="apply-playlist">Apply</button>
         <button id="clear-playlist">Clear</button>
         <button id="new-layout">New Layout</button>
-        <button id="load-live">Load Current Playlist</button>
-        <button>Drive Folder of Images</button>
-        <button>Single, Big Image</button>
+        <button id="load-live">Current Playlist</button>
+        <button id="load-all">All Modules</button>
+        <button id="extend-module-maker">Extend Module...</button>
       </div>
       <div id="current-playlist-container">
         <div id="current-playlist"></div>
       </div>
       <div id="all-known-modules"></div>
+      <div id="module-maker">
+        <header>
+          <button id="discard-module">Discard</button>
+          <button id="create-module">Create</button>
+          <button id="reset-maker">Reset</button>
+          <!--<button id="set-drive-images">Drive Images</button>
+          <button id="set-single-big-image">Single, big image</button>-->
+        </header>
+        <form id="module-maker-form">
+          <label for="extend-field">Extend:</label><br>
+          <select id="extend-field">
+          </select><br>
+          <label for="name-field">Name:</label><br>
+          <input type="text" id="name-field" placeholder="Name" required><br>
+          Choose Credits Type:<br>
+          <div id="credits-fields">
+            <fieldset>
+              <div>No attribution.</div>
+            </fieldset>
+            <fieldset disabled>
+              <label for="title-field">Credits - Title:</label><br>
+              <input type="text" id="title-field" placeholder="Title"><br>
+              <label for="author-field">Credits - Author:</label><br>
+              <input type="text" id="author-field" placeholder="Author"><br>
+            </fieldset>
+            <fieldset disabled>
+              <label for="image-field">Credits - Image Path:</label><br>
+              <input type="text" id="image-field" placeholder="Path"><br>
+            </fieldset>
+          </div>
+          <label for="config-field">Config:</label><br>
+          <textarea id="config-field" placeholder="{
+    &quot;option1&quot;: &quot;value&quot;,
+  }"></textarea>
+        </form>
+      </div>
     </div>
   </body>
 </html>
