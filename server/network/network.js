@@ -40,14 +40,6 @@ const logClientError = clientError(Debug('wall:client_error'));
 const debug = Debug('wall:network');
 var network = new EventEmitter;
 
-function installAlwaysAvailableHandlers(socket) {
-  // We listen for the time message and respond with the server's version of
-  // that time.
-  socket.on('time', function() {
-    socket.emit('time', now());
-  });
-}
-
 class ClientInfo {
   constructor(rect, socket) {
     this.rect = rect;
@@ -55,55 +47,52 @@ class ClientInfo {
   }
 }
 
-function installDisplayClientHandlers(socket) {
-  // When the client disconnects, we tell OUR listeners that we lost the client.
-  socket.on('disconnect', function() {
-    debug('Lost a client!', socket.id);
-    network.emit('lost-client', socket.id);
-  });
-
-  // When clients initialize, they tell us their display rect. We deserialize
-  // the message and broadcast the result out.
-  socket.once('config-response', function(config) {
-    debug('Client config:', config);
-    var rect = Rectangle.deserialize(config);
-    if (!rect) {
-      console.error('Bad client config! ', config);
-      return;
-    }
-    network.emit('new-client', new ClientInfo(rect, socket));
-  });
-
-  socket.on('record-error', function(e) {
-    logClientError(e);
-  });
-}
-
-// Opens a listening websocket by taking a server instance (from the 'http'
-// package) OR a simple port (for tests).
-network.openWebSocket = function(server) {
+/**
+ * Main entry point for networking.
+ * Initializes the networking layer, given an httpserver instance.
+ */
+network.init = function(server) {
   io = socketio(server);
 
-  io.on('connection', function(socket) {
-    installAlwaysAvailableHandlers(socket);
+  io.on('connection', socket => {
+    // If any client asks for the current time, we tell them.
+    socket.on('time', () => {
+      socket.emit('time', now());
+    });
+    // When the client boots, it sends a start message that includes the rect
+    // of the client. We listen for that message and register that client info.
+    socket.on('client-start', config => {
+      const clientRect = Rectangle.deserialize(config.rect);
+      if (!clientRect) {
+        debug(`Bad client configuration: `, config);
+        // Close the connection with this client.
+        socket.disconnect(true);
+        return;
+      }
+      network.emit('new-client', new ClientInfo(clientRect, socket));
+      socket.emit('time', now());
+    });
 
-    var id = new URL(socket.request.url, 'http://localhost/').searchParams.get('id');
-    if (id) {
-      // Ignore this, as it's not a main connection.
-      return;
-    }
+    // When the client disconnects, we tell our listeners that we lost the client.
+    socket.once('disconnect', function() {
+      debug('Lost a client!', socket.id);
+      network.emit('lost-client', socket.id);
+    });
+
+    // If the client notices an exception, it can send us that information to
+    // the server via this channel. The framework might choose to respond to
+    // this by, say, moving on to the next module.
+    socket.on('record-error', function(e) {
+      logClientError(e);
+    });
 
     debug('New client:', socket.id);
-    installDisplayClientHandlers(socket);
-    // Tell the clients the whole wall geo.
-    socket.emit('config', {});
   });
-};
 
-// Closes all communication.
-network.close = function() {
-  io.close();
-  io = undefined;
+  // Set up a timer to send the current time to clients every 10 seconds.
+  setInterval(() => {
+    io.emit('time', now());
+  }, 10000);
 };
 
 // Sends a message to all clients.

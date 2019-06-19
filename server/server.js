@@ -153,7 +153,7 @@ peerServer.on('disconnect', function(id) {
   debug('peer disconnect!', id);
 });
 
-network.openWebSocket(server);
+network.init(server);
 clients.init();
 
 if (flags.enable_monitoring) {
