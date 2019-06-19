@@ -19,7 +19,7 @@ import * as wallGeometry from '../util/wall_geometry.js';
 import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
 import library from './module_library.js';
-import network from '../network/network.js';
+import * as network from '../network/network.js';
 import {StateManager} from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';

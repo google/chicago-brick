@@ -2,7 +2,7 @@ import * as monitor from '../monitoring/monitor.js';
 import * as time from '../util/time.js';
 import Debug from 'debug';
 import EventEmitter from 'events';
-import network from './network.js';
+import * as network from './network.js';
 
 const debug = Debug('wall:clients');
 
@@ -10,7 +10,7 @@ export const clients = {};
 export const emitter = new EventEmitter();
 
 export function init() {
-  network.on('new-client', function(client) {
+  network.emitter.on('new-client', function(client) {
     if (monitor.isEnabled()) {
       monitor.update({layout: {
         time: time.now(),
@@ -22,7 +22,7 @@ export function init() {
     emitter.emit('new-client', client);
   });
 
-  network.on('lost-client', function(id) {
+  network.emitter.on('lost-client', function(id) {
     if (id in clients) {
       const {rect} = clients[id];
       if (monitor.isEnabled()) {

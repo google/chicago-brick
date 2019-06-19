@@ -38,7 +38,6 @@ let io;
 const logClientError = clientError(Debug('wall:client_error'));
 
 const debug = Debug('wall:network');
-var network = new EventEmitter;
 
 class ClientInfo {
   constructor(rect, socket) {
@@ -47,11 +46,12 @@ class ClientInfo {
   }
 }
 
+export const emitter = new EventEmitter;
 /**
  * Main entry point for networking.
  * Initializes the networking layer, given an httpserver instance.
  */
-network.init = function(server) {
+export function init(server) {
   io = socketio(server);
 
   io.on('connection', socket => {
@@ -69,13 +69,13 @@ network.init = function(server) {
         socket.disconnect(true);
         return;
       }
-      network.emit('new-client', new ClientInfo(clientRect, socket));
+      emitter.emit('new-client', new ClientInfo(clientRect, socket));
       socket.emit('time', now());
     });
 
     // When the client disconnects, we tell our listeners that we lost the client.
     socket.once('disconnect', function() {
-      network.emit('lost-client', socket.id);
+      emitter.emit('lost-client', socket.id);
     });
 
     // If the client notices an exception, it can send us that information to
@@ -90,18 +90,13 @@ network.init = function(server) {
   setInterval(() => {
     io.emit('time', now());
   }, 10000);
-};
+}
 
-// Sends a message to all clients.
-network.broadcast = function(msg, data) {
-  io.emit(msg, data);
-};
-
-network.controlSocket = function() {
+export function controlSocket() {
   return io.of('/control');
 }
 
-network.forModule = function(id) {
+export function forModule(id) {
   var externalNspName = `module${id.replace(/[^0-9]/g, 'X')}`;
   var internalNspName = `/${externalNspName}`;
   var sockets = [];
@@ -155,6 +150,4 @@ network.forModule = function(id) {
       delete io.nsps[internalNspName];
     }
   };
-};
-
-export default network;
+}

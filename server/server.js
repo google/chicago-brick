@@ -18,7 +18,7 @@ limitations under the License.
 import * as credentials from './util/credentials.js';
 import * as game from './game/game.js';
 import * as monitor from './monitoring/monitor.js';
-import network from './network/network.js';
+import * as network from './network/network.js';
 import * as clients from './network/clients.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as webapp from './webapp.js';
