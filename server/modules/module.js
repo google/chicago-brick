@@ -23,7 +23,7 @@ import * as network from '../network/network.js';
 import {StateManager} from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
-import {clients} from '../network/clients.js';
+import {clients} from '../network/network.js';
 
 export function tellClientToPlay(client, name, deadline) {
   client.socket.emit('loadModule', {

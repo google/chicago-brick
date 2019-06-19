@@ -27,6 +27,7 @@ limitations under the License.
 //   future calculations.
 
 import Debug from 'debug';
+import * as monitor from '../monitoring/monitor.js';
 import ioClient from 'socket.io-client';
 import socketio from 'socket.io';
 import {EventEmitter} from 'events';
@@ -46,6 +47,7 @@ class ClientInfo {
   }
 }
 
+export const clients = {};
 export const emitter = new EventEmitter;
 /**
  * Main entry point for networking.
@@ -69,13 +71,42 @@ export function init(server) {
         socket.disconnect(true);
         return;
       }
-      emitter.emit('new-client', new ClientInfo(clientRect, socket));
+      const client = new ClientInfo(clientRect, socket);
+      if (monitor.isEnabled()) {
+        monitor.update({layout: {
+          time: now(),
+          event: `newClient: ${client.rect.serialize()}`,
+        }});
+      }
+      clients[client.socket.id] = client;
+      debug(`New display: ${client.rect.serialize()}`);
+      emitter.emit('new-client', client);
+
       socket.emit('time', now());
     });
 
     // When the client disconnects, we tell our listeners that we lost the client.
     socket.once('disconnect', function() {
-      emitter.emit('lost-client', socket.id);
+      const {id} = socket;
+      if (id in clients) {
+        const {rect} = clients[id];
+        if (monitor.isEnabled()) {
+          monitor.update({layout: {
+            time: now(),
+            event: `dropClient: ${rect.serialize()}`,
+          }});
+        }
+        debug(`Lost display: ${rect.serialize()}`);
+        emitter.emit('lost-client', clients[id]);
+      } else {
+        if (monitor.isEnabled()) {
+          monitor.update({layout: {
+            time: now(),
+            event: `dropClient: id ${id}`,
+          }});
+        }
+      }
+      delete clients[id];
     });
 
     // If the client notices an exception, it can send us that information to
