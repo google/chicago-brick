@@ -15,18 +15,19 @@ limitations under the License.
 
 import RJSON from 'relaxed-json';
 import Debug from 'debug';
-import library from './modules/module_library.js';
-import * as log from './util/log.js';
 import * as wallGeometry from './util/wall_geometry.js';
-const debug = Debug('wall:control');
+import * as time from './util/time.js';
+import {emitter, clients} from './network/clients.js';
+import * as log from './util/log.js';
+import library from './modules/module_library.js';
 
+const debug = Debug('wall:control');
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 export class Control {
-  constructor(playlistDriver, clients, moduleLoader, playlistLoader) {
+  constructor(playlistDriver, moduleLoader, playlistLoader) {
     this.playlistDriver = playlistDriver;
-    this.clients = clients;
     this.playlistLoader = playlistLoader;
     this.moduleLoader = moduleLoader;
 
@@ -34,29 +35,63 @@ export class Control {
     this.currentConfig = this.initialConfig;
   }
 
-  installHandlers(app) {
-    app.get('/api/modules', this.getModules.bind(this));
-    app.get('/api/playlist', this.getPlaylist.bind(this));
-    app.post('/api/playlist', this.setPlaylist.bind(this));
-    app.post('/api/reset-playlist', this.resetPlaylist.bind(this));
-    app.get('/api/config', this.getConfig.bind(this));
-    app.get('/api/errors', this.getErrors.bind(this));
-    app.post('/api/config', this.setConfig.bind(this));
-    app.get('/api/layout', this.getLayout.bind(this));
-    app.get('/api/clients', this.getClientState.bind(this));
-    app.post('/api/skip', this.skip.bind(this));
-    app.post('/api/play', this.playModule.bind(this));
-  }
-
-  getConfig(req, res) {
-    res.json({
-      initial: this.initialConfig,
-      current: this.currentConfig,
+  installHandlers(app, io) {
+    let transitionData = {};
+    this.playlistDriver.on('transition', data => {
+      transitionData = data;
+      io.emit('transition', data);
     });
-  }
+    log.emitter.on('error', e => {
+      io.emit('error', e);
+    })
+    emitter.on('new-client', c => {
+      io.emit('new-client', c.rect.serialize());
+      c.socket.on('takeSnapshotRes', res => {
+        io.emit('takeSnapshotRes', res);
+      });
+    });
+    emitter.on('lost-client', c => {
+      io.emit('lost-client', c.rect.serialize());
+    });
+    io.on('connection', socket => {
+      // When we transition to a new module, let this guy know.
+      socket.emit('time', {time: time.now()});
+      socket.emit('transition', transitionData);
+      socket.emit('clients', Object.values(clients).map(c => c.rect.serialize()));
+      socket.emit('wallGeometry', wallGeometry.getGeo().points);
+      socket.emit('errors', log.recentErrors);
 
-  getErrors(req, res) {
-    res.json(log.getRecentErrors());
+      socket.on('takeSnapshot', req => {
+        const client = Object.values(clients).find(c => c.rect.serialize() == req.client);
+        if (client) {
+          client.socket.emit('takeSnapshot', req);
+        } else {
+          socket.emit('takeSnapshotRes', {
+            ...req,
+            error: `Client ${req.client} not found`
+          });
+        }
+      });
+      socket.on('newPlaylist', data => {
+        const {playlist, moduleConfig} = data;
+        for (const name in moduleConfig) {
+          const cfg = moduleConfig[name];
+          // Only update new modules that extend other ones.
+          if (cfg.extends) {
+            debug(`Loaded new config: ${cfg.name}`);
+            // HACK!
+            library.modules[cfg.name] = library.modules[cfg.extends].extend(
+                cfg.name, cfg.config || {}, cfg.credit || {});
+          }
+        }
+
+        this.playlistDriver.setPlaylist(playlist);
+      });
+    });
+    io.emit('time', {time: time.now()});
+    setInterval(() => {
+      io.emit('time', {time: time.now()});
+    }, 20000);
   }
 
   setConfig(req, res) {
@@ -71,14 +106,6 @@ export class Control {
     this.playlistDriver.start(playlist);
     this.currentConfig = json;
     res.redirect('/status');
-  }
-
-  getModules(req, res) {
-    res.json(Object.values(library.modules));
-  }
-
-  getPlaylist(req, res) {
-    res.json(this.playlistDriver.getPlaylist());
   }
 
   resetPlaylist(req, res) {
@@ -104,28 +131,6 @@ export class Control {
     this.currentConfig = json;
     this.playlistDriver.start(playlist);
     res.redirect('/status');
-  }
-
-  getClientState(req, res) {
-    const clientState = Object.keys(this.clients)
-        .map(k => this.clients[k])
-        .map(c => {
-          return {
-            module: c.getModuleName(),
-            rect: c.getClientInfo().rect,
-            state: c.state.getName()
-          };
-        });
-    res.json(clientState);
-  }
-
-  getLayout(req, res) {
-    const ret = {};
-    ret.state = this.playlistDriver.getNextTransitionType();
-    ret.deadline = this.playlistDriver.getNextDeadline();
-    ret.wall = wallGeometry.getGeo();
-
-    res.json(ret);
   }
 
   skip() {

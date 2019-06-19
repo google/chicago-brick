@@ -35,7 +35,7 @@ import {clientError} from '../util/log.js';
 import {now} from '../util/time.js';
 let io;
 
-clientError(Debug('wall:client_error'));
+const logClientError = clientError(Debug('wall:client_error'));
 
 const debug = Debug('wall:network');
 var network = new EventEmitter;
@@ -75,7 +75,7 @@ function installDisplayClientHandlers(socket) {
   });
 
   socket.on('record-error', function(e) {
-    debug(e);
+    logClientError(e);
   });
 }
 
@@ -110,6 +110,10 @@ network.close = function() {
 network.broadcast = function(msg, data) {
   io.emit(msg, data);
 };
+
+network.controlSocket = function() {
+  return io.of('/control');
+}
 
 network.forModule = function(id) {
   var externalNspName = `module${id.replace(/[^0-9]/g, 'X')}`;

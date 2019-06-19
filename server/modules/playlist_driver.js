@@ -21,12 +21,14 @@ import {now, inFuture, until} from '../util/time.js';
 import {RunningModule, tellClientToPlay} from './module.js';
 import library from './module_library.js';
 import {emitter} from '../network/clients.js';
+import EventEmitter from 'events';
 
 const debug = Debug('wall::playlist_driver');
 const random = new randomjs.Random();
 
-export class PlaylistDriver {
+export class PlaylistDriver extends EventEmitter {
   constructor(modulePlayer) {
+    super();
     // The module player.
     this.modulePlayer = modulePlayer;
     // If non-zero, a handle to the current timer, which when fired, will tell
@@ -53,6 +55,16 @@ export class PlaylistDriver {
       }
     });
   }
+  async setPlaylist(newPlaylist) {
+    if (this.modulePlayer.oldModule.name != '_empty') {
+      // Give the wall 1 second to get ready to fade out.
+      this.lastDeadline_ = now() + 1000;
+      await this.modulePlayer.playModule(RunningModule.empty(this.lastDeadline_));
+    }
+
+    this.start(newPlaylist);
+  }
+
   // Returns the timestamp of the next module change.
   getNextDeadline() {
     return Math.min(this.newLayoutTime, this.newModuleTime);
@@ -147,7 +159,8 @@ export class PlaylistDriver {
     let concurrentWork = [];
     if (this.modulePlayer.oldModule.name != '_empty') {
       // Give the wall 1 second to get ready to fade out.
-      concurrentWork.push(this.modulePlayer.playModule(RunningModule.empty(now() + 1000)));
+      this.lastDeadline_ = now() + 1000;
+      concurrentWork.push(this.modulePlayer.playModule(RunningModule.empty(this.lastDeadline_)));
     }
     // Shuffle the module list:
     this.modules = Array.from(layout.modules);
@@ -190,6 +203,23 @@ export class PlaylistDriver {
         deadline: this.getNextDeadline(),
       }});
     }
+
+    const nextDeadline = Math.min(this.newLayoutTime, this.newModuleTime);
+
+    this.emit('transition', {
+      deadline: this.lastDeadline_,
+      module,
+      nextDeadline,
+      nextLayoutDeadline: this.newLayoutTime,
+      moduleList: this.modules,
+      moduleIndex: this.moduleIndex,
+      layouts: this.playlist,
+      layoutIndex: this.layoutIndex,
+      configMap: Object.keys(library.modules).reduce((ret, m) => {
+        ret[m] = library.modules[m].inspect();
+        return ret;
+      }, {}),
+    });
 
     // Now, in so many seconds, we'll need to switch to another module
     // or another layout. How much time do we have?

@@ -40,13 +40,8 @@ export function create(flags) {
   debug('webapp base dir is ' + base);
   debug('node_modules_dir is ' + flags.node_modules_dir);
 
-  // Sub-app showing the status page.
-  var status = express();
-  status.use('/', express.static('client/status'));
-
   // Sub-app serving the static content (i.e. the modules and client).
   var app = express();
-  app.use('/status', status);
   app.use('/client', express.static(path.join(base, 'client')));
   app.use('/lib', express.static(path.join(base, 'lib')));
   app.use('/sys', express.static(flags.node_modules_dir));

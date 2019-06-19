@@ -1,0 +1,356 @@
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+    <style>
+    html {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+
+      font: 12px 'Roboto', sans-serif;
+    }
+    header {
+      flex: 0 0 auto;
+      padding: 5px;
+      background-color: #EEE;
+    }
+    header > span {
+      font-weight: bolder;
+    }
+    section {
+      flex: 1 1 0;
+      display: flex;
+    }
+    footer {
+      flex: 0 0 auto;
+      overflow-y: scroll;
+      max-height: 200px;
+      min-height: 25px;
+      padding: 5px;
+      border-top: 1px solid black;
+    }
+    footer .count {
+      background-color: #4288b7;
+      color: white;
+      font-weight: bolder;
+      border-radius: 20px;
+      padding: 1px 3px;
+      margin-right: 4px;
+    }
+    footer .clients {
+      color: gray;
+    }
+    footer .module {
+      font-weight: bolder;
+    }
+
+    .diagram {
+      position: relative;
+      flex: 1 1 auto;
+    }
+    .diagram svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      width: 100%;
+      height: 100%;
+      background-color: gray;
+    }
+    .diagram path {
+      fill: white;
+      stroke: black;
+    }
+    .diagram rect {
+      stroke: #DDD;
+      fill: #EEE;
+    }
+
+    .playlist {
+      flex: 0 0 auto;
+      width: 400px;
+      background-color: #EEE;
+
+      display: flex;
+      flex-direction: column;
+    }
+    .playlist-container {
+      position: relative;
+      overflow-y: scroll;
+      flex: 1 1 auto;
+    }
+    .playlist-scroll {
+      position: absolute;
+      width: 100%;
+    }
+    .playlist-scroll::-webkit-scrollbar {
+      width: 6px;
+      background: #CCC;
+    }
+    .playlist-scroll::-webkit-scrollbar-thumb {
+      background: #444;
+      border-radius: 10px;
+    }
+    .playlist-control {
+      flex: 0 0 auto;
+      border-top: 1px solid black;
+      padding: 2px;
+    }
+    .playlist #line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 1px;
+      top: 0;
+      background-color: red;
+    }
+
+    .layout {
+      border: 1px solid #444;
+      margin: 3px;
+      transition: margin-left 0.5s ease-in-out 0.0s;
+      background-color: white;
+    }
+    .layout:last-child {
+      margin-left: 30px;
+    }
+
+    .layout > div {
+      padding: 2px;
+    }
+
+    .layout > div:nth-child(even):not(.header):not(.footer) {
+      background-color: #EEE;
+    }
+
+    .layout .header, .layout .footer {
+      background-color: #444;
+      font-weight: bolder;
+      color: white;
+      text-align: center;
+    }
+
+    .layout .past:not(.current) {
+      font-style: italic;
+    }
+    .layout:not(:last-child) .module:not(.past):not(.current) {
+      color: gray;
+    }
+
+    .layout .current > span:first-child {
+      font-weight: bolder;
+    }
+    .layout .error {
+      color: red;
+    }
+
+    #disconnected-warning {
+      position: absolute;
+      overflow: hidden;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      color: red;
+      font-size: 128;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background-color: rgba(127, 127, 127, 0.5);
+      visibility: hidden;
+      z-index: 10;
+    }
+    #disconnected-warning > * {
+      flex: 1 1 auto;
+      transform: rotate(-35deg);
+    }
+    #playlist-creator {
+      position: absolute;
+      right: -600px;
+      width: 600px;
+      top: 0;
+      bottom: 0;
+      border-left: 3px solid gray;
+      background-color: #EEE;
+      transition: right 0.5s ease-in-out 0.0s;
+
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    #preset-playlists {
+      flex: 0 0 auto;
+    }
+    #current-playlist-container {
+      flex: 1 1 auto;
+      border-top: 1px solid #AAA;
+      border-bottom: 1px solid #AAA;
+      background-color: white;
+      /* So our offsets are relative to this. */
+      position: relative;
+      overflow-y: auto;
+    }
+    #current-playlist {
+    }
+    #all-known-modules {
+      flex: 0 0 auto;
+      height: 200px;
+      overflow-y: scroll;
+    }
+
+    #playlist-creator .module > span {
+      font-weight: bolder;
+    }
+
+    #playlist-creator .layout > div.module {
+      background-color: inherit;
+      padding: 0;
+      transition: margin-top 0.2s ease-out 0.0s, margin-bottom 0.2s ease-out 0.0s;
+    }
+
+    .extend-bottom {
+      margin-bottom: 15px;
+    }
+    .extend-top {
+      margin-top: 15px;
+    }
+
+    .accept-drop {
+      border: 1px solid green;
+    }
+    .reject-drop {
+      border: 1px solid red;
+    }
+
+    #module-maker {
+      position: absolute;
+      width: 100%;
+      right: -600px;
+      top: 0;
+      bottom: 0;
+      border-left: 2px solid gray;
+      background-color: white;
+      transition: right 0.5s ease-out 0.0s;
+    }
+
+    #credits-fields {
+      display: flex;
+      flex-direction: row;
+    }
+
+    fieldset[disabled] {
+      background-color: #DDD;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 200px;
+    }
+    textarea.invalid {
+      border: 3px solid red;
+    }
+    #drive-folder-config {
+      display: none;
+    }
+    #local-image-config {
+      display: none;
+    }
+    </style>
+    <script src="./index.js" type="module"></script>
+  </head>
+  <body>
+    <header>
+      Current Server Time: <span id="time">Time</span>
+      Current Module Playing: <span id="module">Module</span>
+      Prior Deadline: <span id="zero-point">Deadline</span>
+      Next Deadline: <span id="deadline">Deadline</span>
+      Remaining: <span id="remaining">Remaining</span>
+    </header>
+    <section>
+      <article class="diagram"></article>
+      <article class="playlist">
+        <div class="playlist-container">
+          <div class="playlist-scroll"></div>
+        </div>
+        <div class="playlist-control"><button id="open-creator">Creator</button></div>
+      </article>
+    </section>
+    <footer>
+    </footer>
+    <div id="disconnected-warning"><div>Disconnected</div></div>
+    <div id="playlist-creator">
+      <div id="preset-playlists">
+        <button id="close-creator">Discard</button>
+        <button id="apply-playlist">Apply</button>
+        <button id="clear-playlist">Clear</button>
+        <button id="new-layout">New Layout</button>
+        <button id="load-live">Current Playlist</button>
+        <button id="load-all">All Modules</button>
+        <button id="extend-module-maker">Extend Module...</button>
+      </div>
+      <div id="current-playlist-container">
+        <div id="current-playlist"></div>
+      </div>
+      <div id="all-known-modules"></div>
+      <div id="module-maker">
+        <header>
+          <button id="discard-module">Discard</button>
+          <button id="create-module">Create</button>
+          <button id="reset-maker">Reset</button>
+          <button id="set-drive-images">Drive Images</button>
+          <button id="set-single-big-image">Single, big image</button>
+        </header>
+        <form id="module-maker-form">
+          <label for="extend-field">Extend:</label><br>
+          <select id="extend-field">
+          </select><br>
+          <label for="name-field">Name:</label><br>
+          <input type="text" id="name-field" placeholder="Name" required><br>
+          Choose Credits Type:<br>
+          <div id="credits-fields">
+            <fieldset>
+              <div>No attribution.</div>
+            </fieldset>
+            <fieldset disabled>
+              <label for="title-field">Credits - Title:</label><br>
+              <input type="text" id="title-field" placeholder="Title"><br>
+              <label for="author-field">Credits - Author:</label><br>
+              <input type="text" id="author-field" placeholder="Author"><br>
+            </fieldset>
+            <fieldset disabled>
+              <label for="image-field">Credits - Image Path:</label><br>
+              <input type="text" id="image-field" placeholder="Path"><br>
+            </fieldset>
+          </div>
+          <div id="normal-config">
+            <label for="config-field">Config:</label><br>
+            <textarea id="config-field" placeholder="{
+      &quot;option1&quot;: &quot;value&quot;,
+    }"></textarea>
+          </div>
+          <div id="drive-folder-config">
+            <label for="drive-folder-field">Drive Folder ID:</label><br>
+            <input type="text" id="drive-folder-field" placeholder="Drive Folder ID"><br>
+          </div>
+          <div id="local-image-config">
+            <label for="local-image-field">Local Image Name:</label><br>
+            <input type="text" id="local-image-field" placeholder="Name"><br>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

@@ -13,15 +13,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-var recentErrors = [];
-var ERROR_BUFFER_SIZE = 100;
+import * as time from './time.js';
+import EventEmitter from 'events';
 
-var pushError = function(record) {
+export const recentErrors = [];
+const ERROR_BUFFER_SIZE = 100;
+
+function pushError(record) {
   recentErrors.push(record);
-  if (recentErrors.length > ERROR_BUFFER_SIZE) {
+  emitter.emit('error', record);
+  while (recentErrors.length > ERROR_BUFFER_SIZE) {
     recentErrors.shift();
   }
-};
+}
 
 /**
  * Returns an error recording function that wraps a debugger
@@ -31,18 +35,10 @@ var pushError = function(record) {
 export function error(debug) {
   return function(e) {
     debug(e);
-    var record = {
-      origin: 'SERVER',
-      timestamp: new Date(),
-      namespace: debug.namespace,
-    };
-    if (e instanceof Error) {
-      record.stack = e.stack;
-      record.message = e.message;
-    } else if (e instanceof String) {
-      record.message = e;
-    }
-    pushError(record);
+    pushError({
+      timestamp: time.now(),
+      ...e,
+    });
   };
 }
 
@@ -55,18 +51,10 @@ export function clientError(debug) {
   return function(e) {
     debug(e);
     pushError({
-      origin: 'CLIENT',
-      timestamp: new Date(),
-      stack: e.stack,
-      message: e.message,
-      namespace: e.namespace,
+      timestamp: time.now(),
+      ...e,
     });
   };
 }
 
-/**
- * Retrieves a list of recent errors.
- */
-export function getRecentErrors() {
-  return recentErrors;
-}
+export const emitter = new EventEmitter();

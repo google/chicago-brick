@@ -24,7 +24,7 @@ import {configure} from '/lib/module_player.js';
 const debug = Debug('wall:client_state_machine');
 const reportError = error(debug);
 
-function logError(e) {
+function logError(e, data) {
   if (monitor.isEnabled()) {
     monitor.update({client: {
       event: e.toString(),
@@ -32,8 +32,7 @@ function logError(e) {
       color: [255, 0, 0]
     }});
   }
-  reportError(e);
-  debug(e);
+  reportError(e, data);
 }
 
 const clientMonitorWrapper = {

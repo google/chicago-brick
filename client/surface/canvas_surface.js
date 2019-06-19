@@ -50,4 +50,7 @@ export class CanvasSurface extends Surface {
   setOpacity(alpha) {
     this.canvas.style.opacity = alpha;
   }
+  takeSnapshot() {
+    return this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+  }
 }

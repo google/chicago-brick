@@ -23,7 +23,8 @@ else
   INSPECT=''
 fi
 
-DEBUG=wall:* NODE_PATH='.:node_modules' node \
+# Run brick:
+DEBUG=wall:* node \
   $INSPECT \
   --experimental_modules \
   server/server.js \
@@ -32,4 +33,17 @@ DEBUG=wall:* NODE_PATH='.:node_modules' node \
   --module_dir 'demo_modules/*' \
   --use_geometry '[{"right":1},{"down":1},{"left":1},{"up":1}]' \
   --assets_dir demo_assets \
-  "$@"
+  "$@" &
+readonly BRICK_PID="$!"
+
+# Run status server:
+./status/run_status.sh &
+readonly STATUS_PID="$!"
+
+function clean_up {
+  kill "$BRICK_PID" "$STATUS_PID";
+  exit
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM
+wait $BRICK_PID $STATUS_PID;

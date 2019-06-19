@@ -21,7 +21,6 @@
     "clock-skew": "^0.3.0",
     "command-line-args": "^5.0.0",
     "command-line-usage": "^5.0.0",
-    "d3": "^5.9.1",
     "debug": "^4.1.0",
     "express": "^4.17.1",
     "glob": "^7.1.3",

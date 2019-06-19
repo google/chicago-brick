@@ -50,4 +50,13 @@ export class ThreeJsSurface extends Surface {
   render() {
     this.renderer.render(this.scene, this.camera);
   }
+  takeSnapshot() {
+    this.render();
+    const context = this.renderer.context;
+    const data = new Uint8Array(context.drawingBufferWidth * context.drawingBufferHeight * 4);
+    context.readPixels(0, 0, context.drawingBufferWidth, context.drawingBufferHeight,
+        context.RGBA, context.UNSIGNED_BYTE, data);
+    const clampedData = new Uint8ClampedArray(data.buffer);
+    return new ImageData(clampedData, context.drawingBufferWidth, context.drawingBufferHeight);
+  }
 }

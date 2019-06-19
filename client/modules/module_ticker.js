@@ -34,7 +34,9 @@ function draw() {
     try {
       module.draw(n, delta);
     } catch (e) {
-      error(e);
+      error(e, {
+        module: module.name
+      });
     }
   }
 
