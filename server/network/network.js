@@ -75,7 +75,6 @@ network.init = function(server) {
 
     // When the client disconnects, we tell our listeners that we lost the client.
     socket.once('disconnect', function() {
-      debug('Lost a client!', socket.id);
       network.emit('lost-client', socket.id);
     });
 
@@ -85,8 +84,6 @@ network.init = function(server) {
     socket.on('record-error', function(e) {
       logClientError(e);
     });
-
-    debug('New client:', socket.id);
   });
 
   // Set up a timer to send the current time to clients every 10 seconds.
