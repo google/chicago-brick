@@ -17,22 +17,6 @@ import * as sharedState from '/lib/shared_state.js';
 import Debug from '/lib/lame_es6/debug.js';
 const debug = Debug('wall:state_manager');
 
-class ClientSharedState extends sharedState.SharedState {
-  constructor(name, interpolator, network) {
-    super(name, interpolator);
-    this.network_ = network;
-    this.owner_ = network.id;
-  }
-  set(value, time) {
-    if (this.owner_ !== undefined && this.network_.id !== this.owner_) {
-      throw new Error('Attempted to set state for state owned by ' + this.owner_);
-    }
-    super.set(value, time);
-    this.network_.emit('newclientstateset',
-        { name: this.name_, value: value, time: time });
-  }
-}
-
 // Describes something that tracks all sharedstate and provides methods for
 // the communication of that state across the network.
 export class StateManager {
@@ -45,26 +29,14 @@ export class StateManager {
     // own cleanup protocol to stop listening here.
     // TODO(applmak): Vet that this works as expected and that no further
     // disposal is needed.
-    network.on('newstate', (newstate) => {
+    network.on('newstate', newstate => {
       if (newstate.name in this.trackedState_) {
-        var currentState = this.trackedState_[newstate.name];
-        if (currentState.owner_ === newstate.owner) {
-          return;
-        } else if (currentState.owner_ === undefined &&
-            network.id === newstate.owner) {
-          debug('Updating owner of owned state: ' + newstate.name);
-          currentState.owner_ = newstate.owner;
-          return;
-        }
-        throw new Error('Received registration for state already owned by a ' +
-            'different client. This is likely because this client attempted ' +
-            'to create state with the same name as one already registered.');
+        return;
       }
       debug('Received new state registration ' + newstate.name);
       this.trackedState_[newstate.name] = new sharedState.SharedState(
           newstate.name,
-          sharedState.decodeInterpolator(newstate.interpolatorDef),
-          newstate.owner);
+          sharedState.decodeInterpolator(newstate.interpolatorDef));
     });
 
     network.on('state', data => {
@@ -78,18 +50,6 @@ export class StateManager {
         }
       });
     });
-  }
-
-  create(name, interpolatorDef) {
-    debug('Created state ' + name);
-    if (name in this.trackedState_) {
-      throw new Error(
-          'Can\'t create: this state is already owned by a different client.');
-    }
-    this.trackedState_[name] = new ClientSharedState(
-        name, sharedState.decodeInterpolator(interpolatorDef), this.network_);
-    this.network_.emit('newclientstatecreated',
-        { name: name, interpolatorDef: interpolatorDef });
   }
 
   get(name) {

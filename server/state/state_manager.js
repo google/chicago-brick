@@ -16,6 +16,7 @@ limitations under the License.
 import * as sharedState from '../../lib/shared_state.js';
 import Debug from 'debug';
 import {StateSchedule} from './state_schedule.js';
+import assert from '../../lib/assert.js';
 
 const debug = Debug('wall:state_manager');
 
@@ -25,8 +26,6 @@ export class StateManager {
   constructor(network) {
     // A map of tracked state name -> state variable.
     this.trackedState_ = {};
-    // A map of tracked state name -> owner id.
-    this.stateOwners_ = {};
 
     // A map of name -> interpolatordef;
     this.interpolatorDefs_ = {};
@@ -34,50 +33,15 @@ export class StateManager {
     // The network to communicate on.
     this.network_ = network;
 
-    var self = this;
-    this.network_.on('connection', function StateManagerClientHandler(socket) {
-      socket.on('newclientstatecreated', function(data) {
-        if (!(data.name in self.trackedState_) ||
-            self.stateOwners_[data.name] === socket.id) {
-          debug('New client state created: ' + data.name);
-          self.stateOwners_[data.name] = socket.id;
-          self.create(data.name, data.interpolatorDef, socket.id);
-        } else if (!(data.name in self.stateOwners_)) {
-          debug('Registering new owner for state ' + data.name);
-          // TODO(pieps): Make it an error on the new client if interpolatorDef
-          // isn't the same.
-          self.stateOwners_[data.name] = socket.id;
-        } else {
-          debug('Did not create new state ' + data.name + ': ' +
-              self.stateOwners_[data.name] + ' already owns it.');
-        }
-        socket.on('disconnect', function() {
-          if (self.stateOwners_[data.name] === socket.id) {
-            debug('Client disconnected; removing state: ' + data.name);
-            delete self.stateOwners_[data.name];
-          }
-        });
-      });
-      socket.on('newclientstateset', function(data) {
-        if (self.stateOwners_[data.name] === socket.id) {
-          console.assert(data.name in self.trackedState_);
-          self.get(data.name).set(data.value, data.time);
-        } else {
-          debug('State update for ' + data.name + ' not accepted. ' +
-              'State already owned by ' + self.stateOwners_[data.name]);
-        }
-      });
+    this.network_.on('connection', socket => {
       debug('Received late request for new state from ' + socket.id);
-      self.informLateClient_(socket);
+      this.informLateClient_(socket);
     });
   }
-  create(name, interpolatorDef, owner) {
-    console.assert(!(name in this.trackedState_));
-    if (owner === undefined) {
-      owner = 'server';
-    }
+  create(name, interpolatorDef) {
+    assert(!(name in this.trackedState_));
     this.trackedState_[name] = new sharedState.SharedState(
-      name, sharedState.decodeInterpolator(interpolatorDef), owner);
+      name, sharedState.decodeInterpolator(interpolatorDef));
 
     this.interpolatorDefs_[name] = interpolatorDef;
     this.informClient_(name, this.network_);
@@ -86,7 +50,7 @@ export class StateManager {
   // is not sent to clients.
   createPrivate(interpolatorDef) {
     return new sharedState.SharedState(
-      'private', sharedState.decodeInterpolator(interpolatorDef), 'server');
+      'private', sharedState.decodeInterpolator(interpolatorDef));
   }
   createSchedule(interpolatorDef, schedule) {
     return new StateSchedule(this, interpolatorDef, schedule);
@@ -105,7 +69,6 @@ export class StateManager {
     socket.emit('newstate', {
       name: name,
       interpolatorDef: this.interpolatorDefs_[name],
-      owner: this.stateOwners_[name]
     });
   }
   get(name) {
