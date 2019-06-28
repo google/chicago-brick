@@ -31,12 +31,6 @@ export class PlaylistLoader {
     if (this.flags.module) {
       // Copy the module name list.
       names = this.flags.module.slice(0);
-      if (names.length == 1) {
-        // If we have one module, repeat it so transitions happen.
-        // TODO(applmak): Once we support transition-on-reload, we don't need to do this.
-        names = names.concat(names);
-      }
-
       names.forEach(m => assert(m in library.modules, `--module "${m}" can't be found!'`));
     } else if (layout.collection) {
       // Special collection name to run all available modules.
