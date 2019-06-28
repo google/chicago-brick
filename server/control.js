@@ -17,7 +17,7 @@ import RJSON from 'relaxed-json';
 import Debug from 'debug';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
-import {emitter, clients} from './network/clients.js';
+import {emitter, clients} from './network/network.js';
 import * as log from './util/log.js';
 import library from './modules/module_library.js';
 

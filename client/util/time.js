@@ -14,21 +14,13 @@ limitations under the License.
 ==============================================================================*/
 
 import ClockSkew from '/sys/clock-skew/lib/clock_skew.js';
-import * as network from '/client/network/network.js';
 
 const clockSkew = ClockSkew({});
-let timeRequester = null;
 
-export function start() {
-  network.on('time', clockSkew.adjustTimeByReference);
-  network.send('time');
-  timeRequester = setInterval(function() { network.send('time'); }, 10000);
+export function adjustTimeByReference(serverTime) {
+  clockSkew.adjustTimeByReference(serverTime);
 }
-export function stop() {
-  network.removeListener('time', clockSkew.adjustTimeByReference);
-  clearInterval(timeRequester);
-  timeRequester = null;
-}
+
 export function now() {
   return clockSkew.getTime();
 }

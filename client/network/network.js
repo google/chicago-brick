@@ -16,6 +16,7 @@ limitations under the License.
 import io from '/lib/lame_es6/socket.io-client.js';
 import Debug from '/lib/lame_es6/debug.js';
 import * as info from '/client/util/info.js';
+import * as time from '/client/util/time.js';
 
 const debug = Debug('wall:network');
 
@@ -23,16 +24,18 @@ let socket;
 
 let ready, readyPromise = new Promise(r => ready = r);
 
-// Open the connection with the server once the display properties are
-// known.
-export function openConnection(opt_displayRect) {
+/**
+ * Initializes the connection with the server & sets up the network layer.
+ */
+export function init() {
   socket = io(location.host);
-  if (opt_displayRect) {
-    socket.on('config', function() {
-      socket.emit('config-response', opt_displayRect.serialize());
-      ready();
-    });
-  }
+  socket.on('reconnect', () => {
+    socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
+  });
+  socket.on('time', time.adjustTimeByReference);
+
+  socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
+  ready();
 }
 export function on(event, callback) {
   socket.on(event, callback);

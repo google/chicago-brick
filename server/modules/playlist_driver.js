@@ -20,7 +20,7 @@ import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
 import {RunningModule, tellClientToPlay} from './module.js';
 import library from './module_library.js';
-import {emitter} from '../network/clients.js';
+import {emitter} from '../network/network.js';
 import EventEmitter from 'events';
 
 const debug = Debug('wall::playlist_driver');
