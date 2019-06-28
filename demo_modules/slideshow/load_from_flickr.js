@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
+import {delay} from '../../lib/promise.js';
 
 export default function({debug, assert, fetch}) {
   // LOAD FROM FLICKR STRATEGY
@@ -61,7 +62,7 @@ export default function({debug, assert, fetch}) {
         });
       }, () => {
         debug('Failed to download flickr content! Delay a bit...');
-        return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent());
+        return delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent());
       });
     }
     serializeForClient() {
