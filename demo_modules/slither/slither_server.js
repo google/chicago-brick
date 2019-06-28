@@ -49,16 +49,6 @@ export function load(debug, state, wallGeometry) {
           color: COLORS[Math.floor(Math.random() * COLORS.length)]
         };
       });
-
-      state.create('snakes', [{
-        startTime: 'ValueNearestInterpolator',
-        heading: 'NumberLerpInterpolator',
-        position: {
-          x: 'NumberLerpInterpolator',
-          y: 'NumberLerpInterpolator'
-        },
-        color: 'ValueNearestInterpolator'
-      }]);
     }
     tick(time, delta) {
       if (!time) {
@@ -119,7 +109,7 @@ export function load(debug, state, wallGeometry) {
         snake.position.x += Math.cos(snake.heading) * SPEED * delta;
         snake.position.y += Math.sin(snake.heading) * SPEED * delta;
       });
-      state.get('snakes').set(this.snakes, time);
+      state.store('snakes', time, this.snakes);
     }
   }
 

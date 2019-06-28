@@ -19,6 +19,19 @@ export function load(debug, state, wallGeometry) {
 
       // A map of teeth -> Path2D.
       this.gearPaths_ = [];
+
+      this.gearsState = state.define('gears', {
+        x: a => a,
+        y: a => a,
+        z: a => a,
+        radius: a => a,
+        teeth: a => a,
+        speed: a => a,
+        angle: a => a,
+        colorIndex: a => a,
+        holes: a => a,
+        pitch: a => a,
+      });
     }
     finishFadeOut() {
       if (this.surface) {
@@ -211,11 +224,7 @@ export function load(debug, state, wallGeometry) {
       this.c.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
       if (!this.gears_) {
-        const gearsState = state.get('gears');
-        if (!gearsState) {
-          return;
-        }
-        this.gears_ = gearsState.get(0);
+        this.gears_ = this.gearsState.get(0);
 
         if (!this.gears_) {
           return;

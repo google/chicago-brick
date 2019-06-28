@@ -20,7 +20,7 @@ import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
 import library from './module_library.js';
 import * as network from '../network/network.js';
-import {StateManager} from '../state/state_manager.js';
+import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
@@ -53,9 +53,11 @@ export class RunningModule {
       const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
       this.gameManager = game.forModule(INSTANTIATION_ID);
+      this.stateManager = stateManager.forModule(network.getSocket(), INSTANTIATION_ID);
     } else {
       this.network = null;
       this.gameManager = null;
+      this.stateManager = null;
     }
   }
 
@@ -68,15 +70,14 @@ export class RunningModule {
     }
     if (this.network) {
       let openNetwork = this.network.open();
-      this.stateManager = new StateManager(openNetwork);
-      this.instance = this.moduleDef.instantiate(openNetwork, this.gameManager, this.stateManager, this.deadline);
+      let openState = this.stateManager.open();
+      this.instance = this.moduleDef.instantiate(openNetwork, this.gameManager, openState, this.deadline);
     }
   }
 
   tick(now, delta) {
     if (this.instance) {
       this.instance.tick(now, delta);
-      this.stateManager.send();
     }
   }
 
@@ -98,6 +99,8 @@ export class RunningModule {
       this.instance.dispose();
     }
     if (this.network) {
+      this.stateManager.close();
+
       // Clean up game sockets.
       this.gameManager.dispose();
 

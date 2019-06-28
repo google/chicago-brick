@@ -47,6 +47,10 @@ class ClientInfo {
   }
 }
 
+export function getSocket() {
+  return io;
+}
+
 export const clients = {};
 export const emitter = new EventEmitter;
 /**

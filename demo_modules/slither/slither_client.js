@@ -1,4 +1,5 @@
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {NumberLerpInterpolator, ValueNearestInterpolator} from '/lib/shared_state.js';
 
 export function load(debug, state, wallGeometry) {
   // TODO(applmak): Use a real color object/library.
@@ -10,20 +11,24 @@ export function load(debug, state, wallGeometry) {
     async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
+      this.snakeState = state.define('snakes', [{
+        startTime: ValueNearestInterpolator,
+        heading: NumberLerpInterpolator,
+        position: {
+          x: NumberLerpInterpolator,
+          y: NumberLerpInterpolator
+        },
+        color: ValueNearestInterpolator
+      }]);
     }
     draw(time) {
       // Clear the screen.
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-      const snakesTimeline = state.get('snakes');
-      if (!snakesTimeline) {
-        return;
-      }
-
       const snakes = [];
-      for (let i = 100; i < 120*20; i += 120) {
-        let s = snakesTimeline.get(time - i);
+      for (let i = 200; i < 120*20; i += 120) {
+        let s = this.snakeState.get(time - i);
         if (s) {
           snakes.unshift(s);
         }

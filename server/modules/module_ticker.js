@@ -16,6 +16,7 @@ limitations under the License.
 import {now} from '../util/time.js';
 import Debug from 'debug';
 const debug = Debug('wall:module_ticker');
+import * as stateManager from '../state/state_manager.js';
 
 // An array of RunningModule objects (see server_state_machine).
 var modulesToTick = [];
@@ -25,13 +26,16 @@ var lastTime = 0;
 var interval = 1000.0 / 10.0;  // 10 FPS
 
 function tick() {
-  var start = now();
-  modulesToTick.forEach((module) => module.tick(start, start - lastTime));
+  const start = now();
+  if (modulesToTick.length) {
+    stateManager.send();
+  }
+  modulesToTick.forEach(module => module.tick(start, start - lastTime));
   lastTime = start;
 
   // Set timeout for remaining tick time, or immediately if the module went
   // over.
-  var tickTime = now() - start;
+  const tickTime = now() - start;
   if (tickTime > interval) {
     debug('Module tick() took too long: ' + tickTime + 'ms out of ' +
           interval + 'ms.');
