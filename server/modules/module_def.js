@@ -59,12 +59,13 @@ function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
  * instantiate a module, including code location and config parameters.
  */
 export class ModuleDef extends EventEmitter {
-  constructor(name, moduleRoot, pathsOrBaseModule, config, credit) {
+  constructor(name, moduleRoot, pathsOrBaseModule, config, credit, testonly) {
     super();
     this.name = name;
     this.root = moduleRoot;
     this.config = config;
     this.credit = credit;
+    this.testonly = testonly;
 
     // The path to the client main file of the module.
     this.clientPath = '';
@@ -112,13 +113,14 @@ export class ModuleDef extends EventEmitter {
     };
   }
   // Returns a new module def that extends this def with new configuration.
-  extend(name, config, credit) {
+  extend(name, config, credit, testonly) {
     return new ModuleDef(
       name,
       this.root,
       {base: this},
       config,
       credit,
+      testonly,
     );
   }
 

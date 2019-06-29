@@ -5,7 +5,8 @@
     "server_path": "./slideshow_server.js",
     "credit": {
       "title": "Slideshow"
-    }
+    },
+    "testonly": true
   },
   {
     "name": "cta",
@@ -65,6 +66,7 @@
   {
     "name": "test-stretch",
     "extends": "slideshow",
+    "testonly": true,
     "config": {
       "load": {
         "local": {

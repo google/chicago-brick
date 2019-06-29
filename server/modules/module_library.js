@@ -19,7 +19,7 @@ import assert from '../../lib/assert.js';
 
 class EmptyModuleDef extends ModuleDef {
   constructor() {
-    super('_empty', '', {});
+    super('_empty', '', '', {}, {}, true);
     // TODO(applmak): ^ this hacky.
     // However, b/c of the hack, this module will never become valid.
     this.whenLoadedPromise = Promise.resolve(this);

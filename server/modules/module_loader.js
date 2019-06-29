@@ -69,12 +69,12 @@ export class ModuleLoader {
           ' attempting to extend ' + cfg.extends + ' which was not found!');
         debug('Adding module ' + cfg.name + ' extending ' + cfg.extends);
         library.register(library.modules[cfg.extends].extend(
-            cfg.name, cfg.config || {}, cfg.credit || {}));
+            cfg.name, cfg.config || {}, cfg.credit || {}, cfg.testonly));
       } else {
         const paths = {client: cfg.path || cfg.client_path, server: cfg.path || cfg.server_path};
         debug('Adding module ' + cfg.name);
         library.register(new ModuleDef(
-              cfg.name, cfg.root, paths, cfg.config || {}, cfg.credit || {}));
+              cfg.name, cfg.root, paths, cfg.config || {}, cfg.credit || {}, cfg.testonly));
       }
     });
 
