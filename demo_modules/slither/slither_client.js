@@ -27,7 +27,7 @@ export function load(debug, state, wallGeometry) {
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
       const snakes = [];
-      for (let i = 200; i < 120*20; i += 120) {
+      for (let i = 0; i < 120*20; i += 120) {
         let s = this.snakeState.get(time - i);
         if (s) {
           snakes.unshift(s);

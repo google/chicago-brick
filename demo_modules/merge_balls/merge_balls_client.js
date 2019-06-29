@@ -48,7 +48,7 @@ export function load(state, network, wallGeometry) {
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-      var balls = this.ballsState.get(time-200);
+      var balls = this.ballsState.get(time);
 
       if (!balls ) { return; }
 
