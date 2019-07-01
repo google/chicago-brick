@@ -23,7 +23,7 @@ import assert from '/lib/assert.js';
 import asset from '/client/asset/asset.js';
 import conform from '/lib/conform.js';
 import inject from '/lib/inject.js';
-import {StateManager} from '/client/state/state_manager.js';
+import * as stateManager from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
 import * as time from '/client/util/time.js';
 import {delay} from '/lib/promise.js';
@@ -127,17 +127,18 @@ export class ClientModule {
       return;
     }
 
-    this.network = network.forModule(
-      `${this.geo.extents.serialize()}-${this.deadline}`);
+    const INSTANTIATION_ID =
+      `${this.geo.extents.serialize()}-${this.deadline}`;
+    this.network = network.forModule(INSTANTIATION_ID);
     let openNetwork = this.network.open();
-
+    this.stateManager = stateManager.forModule(network, INSTANTIATION_ID);
     const fakeEnv = {
       asset,
       debug: Debug('wall:module:' + this.name),
       game: undefined,
       network: openNetwork,
       titleCard: this.titleCard.getModuleAPI(),
-      state: new StateManager(openNetwork),
+      state: this.stateManager.open(),
       wallGeometry: this.geo,
       peerNetwork,
       assert,
@@ -228,6 +229,8 @@ export class ClientModule {
     moduleTicker.remove(this.instance);
 
     if (this.network) {
+      this.stateManager.close();
+      this.stateManager = null;
       this.network.close();
       this.network = null;
     }

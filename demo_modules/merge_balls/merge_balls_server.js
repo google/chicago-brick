@@ -134,19 +134,6 @@ export function load(state, network, wallGeometry) {
                 randomBallVelocity(Math.random() * 100 + 100)
             ));
         }
-
-        state.create('balls', [{
-            position: {
-              x: 'NumberLerpInterpolator',
-              y: 'NumberLerpInterpolator'
-            },
-            radius: 'NumberLerpInterpolator',
-            color: 'CurrentValueInterpolator',
-            velocity: {
-              x: 'NumberLerpInterpolator',
-              y: 'NumberLerpInterpolator'
-            }
-      }]);
     }
 
     tick(time, delta) {
@@ -191,7 +178,7 @@ export function load(state, network, wallGeometry) {
             }
         }
 
-        state.get('balls').set(this.balls, time);
+        state.store('balls', time, this.balls);
     }
   }
 

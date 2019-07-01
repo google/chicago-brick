@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {NumberLerpInterpolator} from '/lib/shared_state.js';
 
 export function load(state, network, wallGeometry) {
   //
@@ -29,15 +30,25 @@ export function load(state, network, wallGeometry) {
     async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
+      this.ballsState = state.define('balls', [{
+          position: {
+            x: NumberLerpInterpolator,
+            y: NumberLerpInterpolator
+          },
+          radius: NumberLerpInterpolator,
+          color: a => a,
+          velocity: {
+            x: NumberLerpInterpolator,
+            y: NumberLerpInterpolator
+          }
+      }]);
     }
 
     draw(time) {
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-      if (!state.get('balls')) { return; }
-
-      var balls = state.get('balls').get(time-100);
+      var balls = this.ballsState.get(time-200);
 
       if (!balls ) { return; }
 

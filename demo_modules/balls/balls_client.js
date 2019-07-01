@@ -15,6 +15,7 @@ limitations under the License.
 
 import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {NumberLerpInterpolator, ValueNearestInterpolator} from '/lib/shared_state.js';
 
 export function load(state, wallGeometry) {
   class BallsClient {
@@ -27,18 +28,19 @@ export function load(state, wallGeometry) {
     async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
+
+      this.ballsState = state.define('balls', [{
+        x: NumberLerpInterpolator,
+        y: NumberLerpInterpolator,
+        color: ValueNearestInterpolator,
+      }]);
     }
 
     draw(time) {
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-      const ballsState = state.get('balls');
-      if (!ballsState) {
-        return;
-      }
-      const balls = ballsState.get(time - 100);
-
+      const balls = this.ballsState.get(time - 200);
       if (!balls) {
         return;
       }

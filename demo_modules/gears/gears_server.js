@@ -73,19 +73,7 @@ export function load(debug, state, wallGeometry) {
 
       debug('Num gears', this.gears_.length);
 
-      state.create('gears', {
-        x: 'ValueNearestInterpolator',
-        y: 'ValueNearestInterpolator',
-        z: 'ValueNearestInterpolator',
-        radius: 'ValueNearestInterpolator',
-        teeth: 'ValueNearestInterpolator',
-        speed: 'ValueNearestInterpolator',
-        angle: 'ValueNearestInterpolator',
-        colorIndex: 'ValueNearestInterpolator',
-        holes: 'ValueNearestInterpolator',
-        pitch: 'ValueNearestInterpolator',
-      });
-      state.get('gears').set(this.gears_, 0);
+      state.store('gears', 0, this.gears_);
     }
 
     makeNewGear_() {

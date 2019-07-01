@@ -15,6 +15,7 @@ limitations under the License.
 
 import * as monitor from '/client/monitoring/monitor.js';
 import * as network from '/client/network/network.js';
+import * as stateManager from '/client/state/state_manager.js';
 import Debug from '/lib/lame_es6/debug.js';
 import {ClientModulePlayer} from '/client/modules/client_module_player.js';
 import {ClientModule} from '/client/modules/module.js';
@@ -23,6 +24,7 @@ Debug.enable('wall:*');
 
 // Open our socket to the server.
 network.init();
+stateManager.init(network);
 
 if (new URL(window.location.href).searchParams.get('monitor')) {
   monitor.enable();

@@ -153,11 +153,6 @@ export function load(wallGeometry, state) {
           color: random.integer(0, GOOGLE_COLORS.length-1),
         });
       }
-      state.create('balls', [{
-        x: 'NumberLerpInterpolator',
-        y: 'NumberLerpInterpolator',
-        color: 'ValueNearestInterpolator',
-      }]);
     }
 
     tick(time, delta) {
@@ -167,7 +162,7 @@ export function load(wallGeometry, state) {
         doPhysics(ball, delta, wallGeometry);
       });
 
-      state.get('balls').set(this.balls, time);
+      state.store('balls', time, this.balls);
     }
   }
 
