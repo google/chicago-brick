@@ -26,7 +26,7 @@ function pick(arr) {
   return null;
 }
 
-export default function({debug, wallGeometry, network}) {
+export default function({debug, network}) {
   // FULLSCREEN DISPLAY STRATEGY
   // This display strategy shows a single element per screen, updating at a rate
   // specified in the config. We wait for the corresponding element to load
@@ -62,11 +62,9 @@ export default function({debug, wallGeometry, network}) {
       });
 
       // Tell the clients about content when it arrives.
-      network.on('connection', (socket) => {
-        socket.on('display:init', () => {
-          contentHasArrived.then(() => {
-            this.chooseSomeContent(socket);
-          });
+      network.on('display:init', (data, socket) => {
+        contentHasArrived.then(() => {
+          this.chooseSomeContent(socket);
         });
       });
     }
@@ -107,7 +105,7 @@ export default function({debug, wallGeometry, network}) {
         // Otherwise, tell a specific client to show a specific bit of content.
         if (time - this.lastUpdate >= this.config.period) {
           // Pick a random client.
-          let client = pick(network.getClientsInRect(wallGeometry.extents));
+          let client = pick(Object.values(network.clients));
           if (client) {
             this.chooseSomeContent(client.socket);
           }

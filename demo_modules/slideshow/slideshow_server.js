@@ -71,7 +71,7 @@ export function load(debug, network, assert, wallGeometry) {
     }
     async willBeShownSoon() {
       // Start the load strategy initing.
-      let loadingComplete = Promise.all([
+      await Promise.all([
         this.displayStrategy.init(),
         this.loadStrategy.init().then(() => {
           let fetchContent = (opt_paginationToken) => {
@@ -86,24 +86,14 @@ export function load(debug, network, assert, wallGeometry) {
           fetchContent();
         })
       ]);
-      network.on('connection', (socket) => {
-        let initHandler = () => socket.emit('init', {
+
+      // When the clients ask for the init, we tell them.
+      network.on('req_init', (data, socket) => {
+        socket.emit('init', {
           load: this.loadStrategy.serializeForClient(),
           display: this.displayStrategy.serializeForClient()
         });
-        // Depending on when the client loads and we load, the client might send
-        // the req_init before we are listening for it, or we might finish loading
-        // and send our init event before the client is listening for it!
-        // To fix this, we listen for a one-time event from the client, req_init,
-        // which will cause us to send the init event. Then, we might send 1 or 2
-        // init messages, and we leave it up to the client to not process it
-        // twice.
-        loadingComplete.then(initHandler);
-        // If we get a note from the client that requests init, we don't want to
-        // reply until we've inited.
-        socket.once('req_init', () => loadingComplete.then(initHandler));
       });
-      return loadingComplete;
     }
     tick(time, delta) {
       this.displayStrategy.tick(time, delta);
