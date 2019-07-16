@@ -35,7 +35,7 @@ export class PlaylistLoader {
     } else if (layout.collection) {
       // Special collection name to run all available modules.
       if (layout.collection == '__ALL__') {
-        names = Object.keys(library.modules);
+        names = Object.keys(library.modules).filter(m => !library.modules[m].testonly);
       } else {
         assert(
             layout.collection in collections,
