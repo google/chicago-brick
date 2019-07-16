@@ -94,7 +94,9 @@ export function init(network) {
       if (!stateMap[id]) {
         stateMap[id] = new StateRecord;
       }
+      let mostRecentTime = 0;
       for (const name in stateFromServer[id]) {
+        mostRecentTime = Math.max(mostRecentTime, stateFromServer[id][name].time);
         if (stateMap[id].state[name]) {
           // The client has already created this state.
           const {data, time} = stateFromServer[id][name];
