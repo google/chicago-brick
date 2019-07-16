@@ -16,6 +16,7 @@ limitations under the License.
 import Debug from 'debug';
 import bodyParser from 'body-parser';
 import express from 'express';
+import fs from 'fs';
 import glob from 'glob';
 import library from './modules/module_library.js';
 import path from 'path';
@@ -28,14 +29,14 @@ const debug = Debug('wall:webapp');
 export function create(flags) {
   // Force absolute paths.
   // This allows us to execute chicago-brick as a dep from another repo while
-  // still finding the necessary dirs. However, this trick forces webapp.js to
-  // always exist at /server/webapp.js. This will likely be true for a long
-  // time, though. If the file moves, we just need to provide the relative path
-  // between NODE_PATH and this file.
-  // TODO(applmak): Calculate this path dynamically.
-  // TODO(applmak): Figure out a way so that chicago-brick can be require'd, and
-  // used as a normal node dep.
+  // still finding the necessary dirs.
   let base = path.join(process.cwd());
+
+  // If we're running as a node_module, there will be a chicago-brick subdir.
+  // Append that path if it exists.
+  if (fs.existsSync(path.join(base, 'node_modules/chicago-brick'))) {
+    base = path.join(base, 'node_modules/chicago-brick');
+  }
 
   debug('webapp base dir is ' + base);
   debug('node_modules_dir is ' + flags.node_modules_dir);
