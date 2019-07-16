@@ -84,33 +84,30 @@ export function load(debug, network) {
       });
 
       // Handle connections from clients.
-      network.on('connection', (socket) => {
-        socket.on('requestCode', (data) => {
+      network.on('requestCode', (data, socket) => {
+        const key = getClientKey(data.client);
+        debug(`Client(${key}) requested code.`);
+        debug(`Code server connected: ${this.codeServer.connected}`);
 
-          const key = getClientKey(data.client);
-          debug(`Client(${key}) requested code.`);
-          debug(`Code server connected: ${this.codeServer.connected}`);
+        // Track the client
+        this.clients[key] = Object.assign(this.clients[key] || {}, { client: data.client });
+        this.clients[key] = Object.assign({}, this.clients[key], { code: undefined });
 
-          // Track the client
-          this.clients[key] = Object.assign(this.clients[key] || {}, { client: data.client });
-          this.clients[key] = Object.assign({}, this.clients[key], { code: undefined });
+        let response;
 
-          let response;
+        if (this.clients[key].code || !this.codeServer.connected) {
+          debug(`Sending cached code to client(${key}).`);
+          response = Object.assign({}, this.clients[key], {
+            client: data.client,
+            code: defaultClientCode(data.client, "No code server available")
+          });
 
-          if (this.clients[key].code || !this.codeServer.connected) {
-            debug(`Sending cached code to client(${key}).`);
-            response = Object.assign({}, this.clients[key], {
-              client: data.client,
-              code: defaultClientCode(data.client, "No code server available")
-            });
-
-            socket.emit(`code(${key})`, response);
-          } else {
-            // If there isn't any code yet, ask the code server. Any code
-            // it sends back will be forwarded to clients automatically.
-            this.requestCode(data.client);
-          }
-        });
+          socket.emit(`code(${key})`, response);
+        } else {
+          // If there isn't any code yet, ask the code server. Any code
+          // it sends back will be forwarded to clients automatically.
+          this.requestCode(data.client);
+        }
       });
     }
 

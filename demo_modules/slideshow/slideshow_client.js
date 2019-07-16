@@ -65,6 +65,7 @@ export function load(wallGeometry, debug, network, assert, asset) {
         debug('Waiting for network init...');
         network.emit('req_init');
         network.once('init', config => {
+          debug('Init received.');
           this.loadStrategy = parseClientLoadStrategy(config.load);
           this.displayStrategy = parseClientDisplayStrategy(config.display);
           this.loadStrategy.init(this.surface, deadline);

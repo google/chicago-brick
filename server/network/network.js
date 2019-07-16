@@ -34,6 +34,8 @@ import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {clientError} from '../util/log.js';
 import {now} from '../util/time.js';
+import {installMessageHandler, wrapMessageSocket, cleanupMessageHandlers} from '../../lib/socket_wrapper.js';
+
 let io;
 
 const logClientError = clientError(Debug('wall:client_error'));
@@ -53,6 +55,7 @@ export function getSocket() {
 
 export const clients = {};
 export const emitter = new EventEmitter;
+
 /**
  * Main entry point for networking.
  * Initializes the networking layer, given an httpserver instance.
@@ -61,10 +64,6 @@ export function init(server) {
   io = socketio(server);
 
   io.on('connection', socket => {
-    // If any client asks for the current time, we tell them.
-    socket.on('time', () => {
-      socket.emit('time', now());
-    });
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
     socket.on('client-start', config => {
@@ -86,6 +85,7 @@ export function init(server) {
       debug(`New display: ${client.rect.serialize()}`);
       emitter.emit('new-client', client);
 
+      // Tell the client the current time.
       socket.emit('time', now());
     });
 
@@ -119,6 +119,10 @@ export function init(server) {
     socket.on('record-error', function(e) {
       logClientError(e);
     });
+
+    // Install the machinery so that we can receive messages on the per-module
+    // network from this client.
+    installMessageHandler(socket);
   });
 
   // Set up a timer to send the current time to clients every 10 seconds.
@@ -131,58 +135,40 @@ export function controlSocket() {
   return io.of('/control');
 }
 
+// Return an object that can be opened to create an isolated per-module network,
+// and closed to clean up after that module.
 export function forModule(id) {
-  var externalNspName = `module${id.replace(/[^0-9]/g, 'X')}`;
-  var internalNspName = `/${externalNspName}`;
-  var sockets = [];
-  var clients = [];
+  // The list of external sockets opened by this module.
+  const openedSockets = [];
   return {
-    open: function() {
-      debug('Opened per-module socket @ ' + id, internalNspName);
-      console.assert(!io.nsps[internalNspName]);
-      var nsp = io.of(internalNspName);
-
-      // Expose ioClient via network module.
-      nsp.openExternalSocket = function(host) {
-        var socket = ioClient(host, {multiplex: false});
-        sockets.push(socket);
-        return socket;
-      };
-
-      nsp.on('connection', (socket) => {
-        var rect = Rectangle.deserialize(socket.handshake.query.rect);
-        clients.push({socket, rect});
-        debug(`Tracking per-module connection ${socket.handshake.query.id} from ${rect.serialize()}`, clients.length);
-        socket.on('disconnect', () => {
-          clients = clients.filter((client) => {
-            return client.rect.serialize() !== rect.serialize();
-          });
-          debug(`Tracking per-module disconnect ${socket.handshake.query.id} from ${rect.serialize()}`, clients.length);
-        });
+    open() {
+      return wrapMessageSocket(id, io, {
+        openExternalSocket(host) {
+          const socket = ioClient(host, {multiplex: false});
+          openedSockets.push(socket);
+          return socket;
+        },
+        // Here, we provide a per-module list of clients that the module
+        // can inspect and invoke. Because our list contains unwrapped sockets,
+        // we need to wrap them before exposing them to the module.
+        // TODO(applmak): If a module chooses to listen on a per-client wrapped
+        // socket like this, it will remove other any such listener. Fix this
+        // in order to match socket.io behavior, if possible.
+        get clients() {
+          return Object.keys(clients).reduce((agg, clientId) => {
+            agg[clientId] = {
+              ...clients[clientId],
+              socket: wrapMessageSocket(id, clients[clientId].socket),
+            };
+            return agg;
+          }, {});
+        },
       });
-
-      nsp.getClientsInRect = function(rect) {
-        return clients.filter((client) => {
-          return rect.intersects(client.rect);
-        });
-      };
-
-      return nsp;
     },
-    close: function() {
-      debug('Closed per-module socket @ ' + id);
-      console.assert(io.nsps[internalNspName]);
-      io.nsps[internalNspName].removeAllListeners();
-      // Clean up any clients left open.
-      clients.forEach((c) => {
-        c.socket.disconnect();
-      });
-      // Clean up any sockets left open.
-      sockets.forEach((s) => {
-        s.disconnect();
-      });
-      sockets = [];
-      delete io.nsps[internalNspName];
-    }
+    close() {
+      cleanupMessageHandlers(id);
+      openedSockets.forEach(s => s.disconnect(true));
+      openedSockets.length = 0;
+    },
   };
 }

@@ -14,14 +14,11 @@ limitations under the License.
 ==============================================================================*/
 
 import io from '/lib/lame_es6/socket.io-client.js';
-import Debug from '/lib/lame_es6/debug.js';
 import * as info from '/client/util/info.js';
 import * as time from '/client/util/time.js';
-
-const debug = Debug('wall:network');
+import {installMessageHandler, wrapMessageSocket, cleanupMessageHandlers} from '../../lib/socket_wrapper.js';
 
 let socket;
-
 let ready, readyPromise = new Promise(r => ready = r);
 
 /**
@@ -30,18 +27,21 @@ let ready, readyPromise = new Promise(r => ready = r);
 export function init() {
   socket = io(location.host);
   socket.on('reconnect', () => {
+    // When we reconnect after a disconnection, we need to tell the server
+    // about who we are all over again.
     socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
   });
+  // Install our time listener.
   socket.on('time', time.adjustTimeByReference);
+  // Install the machinery for our per-module network.
+  installMessageHandler(socket);
 
+  // Tell the server who we are.
   socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
   ready();
 }
 export function on(event, callback) {
   socket.on(event, callback);
-}
-export function once(event, callback) {
-  socket.once(event, callback);
 }
 export function removeListener(event, callback) {
   socket.removeListener(event, callback);
@@ -52,28 +52,16 @@ export function send(event, data) {
     socket.emit(event, data);
   }
 }
+
+// Return an object that can be opened to create an isolated per-module network,
+// and closed to clean up after that module.
 export function forModule(id) {
-  var moduleSocket;
-  var externalNspName = `module${id.replace(/[^0-9]/g, 'X')}`;
   return {
-    open: function() {
-      var baseAddr = location.protocol + '//' + location.host;
-      var addr = `${baseAddr}/${externalNspName}`;
-      moduleSocket = io(addr, {
-        multiplex: false,
-        query: {
-          id,
-          rect: info.virtualRectNoBezel.serialize()
-        }
-      });
-      debug('Opened per-module socket @ ' + externalNspName);
-      return moduleSocket;
+    open() {
+      return wrapMessageSocket(id, socket);
     },
-    close: function() {
-      debug('Closed per-module socket @ ' + externalNspName);
-      moduleSocket.removeAllListeners();
-      moduleSocket.close();
-      moduleSocket = undefined;
+    close() {
+      cleanupMessageHandlers(id);
     }
   };
 }
