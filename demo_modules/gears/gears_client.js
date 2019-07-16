@@ -21,16 +21,16 @@ export function load(debug, state, wallGeometry) {
       this.gearPaths_ = [];
 
       this.gearsState = state.define('gears', {
-        x: a => a,
-        y: a => a,
-        z: a => a,
-        radius: a => a,
-        teeth: a => a,
-        speed: a => a,
-        angle: a => a,
-        colorIndex: a => a,
-        holes: a => a,
-        pitch: a => a,
+        x: (t, k, v) => v,
+        y: (t, k, v) => v,
+        z: (t, k, v) => v,
+        radius: (t, k, v) => v,
+        teeth: (t, k, v) => v,
+        speed: (t, k, v) => v,
+        angle: (t, k, v) => v,
+        colorIndex: (t, k, v) => v,
+        holes: (t, k, v) => v,
+        pitch: (t, k, v) => v,
       });
     }
     finishFadeOut() {
