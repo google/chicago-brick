@@ -16,7 +16,7 @@ limitations under the License.
 import io from '/lib/lame_es6/socket.io-client.js';
 import * as info from '/client/util/info.js';
 import * as time from '/client/util/time.js';
-import {installMessageHandler, wrapMessageSocket, cleanupMessageHandlers} from '../../lib/socket_wrapper.js';
+import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
 
 let socket;
 let ready, readyPromise = new Promise(r => ready = r);
@@ -26,18 +26,22 @@ let ready, readyPromise = new Promise(r => ready = r);
  */
 export function init() {
   socket = io(location.host);
-  socket.on('reconnect', () => {
-    // When we reconnect after a disconnection, we need to tell the server
-    // about who we are all over again.
+
+  function sendHello() {
     socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
-  });
+  }
+
+  // When we reconnect after a disconnection, we need to tell the server
+  // about who we are all over again.
+  socket.on('reconnect', sendHello);
+
   // Install our time listener.
   socket.on('time', time.adjustTimeByReference);
   // Install the machinery for our per-module network.
-  installMessageHandler(socket);
+  installModuleOverlayHandler(socket);
 
   // Tell the server who we are.
-  socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
+  sendHello();
   ready();
 }
 export function on(event, callback) {
@@ -58,10 +62,10 @@ export function send(event, data) {
 export function forModule(id) {
   return {
     open() {
-      return wrapMessageSocket(id, socket);
+      return makeModuleOverlaySocket(id, socket);
     },
     close() {
-      cleanupMessageHandlers(id);
+      cleanupModuleOverlayHandler(id);
     }
   };
 }

@@ -34,7 +34,7 @@ import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {clientError} from '../util/log.js';
 import {now} from '../util/time.js';
-import {installMessageHandler, wrapMessageSocket, cleanupMessageHandlers} from '../../lib/socket_wrapper.js';
+import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
 
 let io;
 
@@ -122,7 +122,7 @@ export function init(server) {
 
     // Install the machinery so that we can receive messages on the per-module
     // network from this client.
-    installMessageHandler(socket);
+    installModuleOverlayHandler(socket);
   });
 
   // Set up a timer to send the current time to clients every 10 seconds.
@@ -142,7 +142,7 @@ export function forModule(id) {
   const openedSockets = [];
   return {
     open() {
-      return wrapMessageSocket(id, io, {
+      return makeModuleOverlaySocket(id, io, {
         openExternalSocket(host) {
           const socket = ioClient(host, {multiplex: false});
           openedSockets.push(socket);
@@ -158,7 +158,7 @@ export function forModule(id) {
           return Object.keys(clients).reduce((agg, clientId) => {
             agg[clientId] = {
               ...clients[clientId],
-              socket: wrapMessageSocket(id, clients[clientId].socket),
+              socket: makeModuleOverlaySocket(id, clients[clientId].socket),
             };
             return agg;
           }, {});
@@ -166,7 +166,7 @@ export function forModule(id) {
       });
     },
     close() {
-      cleanupMessageHandlers(id);
+      cleanupModuleOverlayHandler(id);
       openedSockets.forEach(s => s.disconnect(true));
       openedSockets.length = 0;
     },
