@@ -15,10 +15,10 @@ limitations under the License.
 
 // A handy wrapper around peer.js that makes it easy for client modules to
 // connect to one another.
-import '/lib/promise.js';
 import * as info from '/client/util/info.js';
 import Debug from '/lib/lame_es6/debug.js';
 import {Peer} from '/lib/lame_es6/peerjs.js';
+import {delay} from '/lib/promise.js';
 const debug = Debug('wall:peer');
 
 function sanitizeName(name) {
@@ -104,7 +104,7 @@ PeerWrapper.prototype.connect = function(x, y, relative, onOpen, onClose) {
       } else {
         debug('Failed reconnecting to peer ' + otherPeerName + ' retry in ' + retryDelay, err);
       }
-      Promise.delay(retryDelay).then(connectFunc);
+      delay(retryDelay).then(connectFunc);
     });
   };
   connectFunc();
