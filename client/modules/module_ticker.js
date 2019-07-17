@@ -40,7 +40,7 @@ function draw() {
     }
   }
 
-  lastTime = now;
+  lastTime = n;
   window.requestAnimationFrame(draw);
 }
 window.requestAnimationFrame(draw);
