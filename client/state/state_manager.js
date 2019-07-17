@@ -56,10 +56,10 @@ export function forModule(network, id) {
         stateMap[id] = new StateRecord;
       }
       return {
-        define(stateName, def) {
+        define(stateName, def, size = 25) {
           assert(!(stateName in stateMap[id].state), `State ${stateName} was already defined!`);
           stateMap[id].state[stateName] =
-              new SharedState(stateName, decodeInterpolator(def));
+              new SharedState(stateName, decodeInterpolator(def), size);
           if (stateMap[id].priorData[stateName]) {
             // We have some data that the server sent before we were ready.
             // Add it to the shared state now.
