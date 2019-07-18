@@ -154,7 +154,7 @@ export function forModule(id) {
         // TODO(applmak): If a module chooses to listen on a per-client wrapped
         // socket like this, it will remove other any such listener. Fix this
         // in order to match socket.io behavior, if possible.
-        get clients() {
+        clients() {
           return Object.keys(clients).reduce((agg, clientId) => {
             agg[clientId] = {
               ...clients[clientId],

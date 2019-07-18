@@ -105,7 +105,7 @@ export default function({debug, network}) {
         // Otherwise, tell a specific client to show a specific bit of content.
         if (time - this.lastUpdate >= this.config.period) {
           // Pick a random client.
-          let client = pick(Object.values(network.clients));
+          let client = pick(Object.values(network.clients()));
           if (client) {
             this.chooseSomeContent(client.socket);
           }
