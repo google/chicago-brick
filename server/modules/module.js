@@ -110,9 +110,9 @@ export class RunningModule {
     }
   }
 
-  async willBeShownSoon(deadline) {
+  async willBeShownSoon() {
     if (this.instance) {
-      await this.instance.willBeShownSoon(deadline);
+      await this.instance.willBeShownSoon(this.deadline);
     }
   }
 }
