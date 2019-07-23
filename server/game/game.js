@@ -118,7 +118,7 @@ class Game extends EventEmitter {
       socket.emit('gameState', {
         // Sending controls back makes no sense.
         players: game.players.map(p => {
-          const {controls, ...newP} = p;
+          const {controls, ...newP} = p || {};
           return newP;
         }),
       });
