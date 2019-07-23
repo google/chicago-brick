@@ -74,7 +74,7 @@ export class ClientController {
   newClient(d, render = true) {
     this.clients.push({
       id: d,
-      rect: d.split(','),
+      rect: d.split(',').map(n => Number(n)),
       element: this.makeEl(),
     });
 
