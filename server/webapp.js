@@ -46,6 +46,7 @@ export function create(flags) {
   app.use('/client', express.static(path.join(base, 'client')));
   app.use('/lib', express.static(path.join(base, 'lib')));
   app.use('/sys', express.static(flags.node_modules_dir));
+  app.use('/node_modules', express.static(flags.node_modules_dir));
   for (let assets_dir of flags.assets_dir) {
     app.use('/asset', express.static(assets_dir));
   }
