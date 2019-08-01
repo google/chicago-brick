@@ -19,6 +19,7 @@ html, body, #containers {
     height: 100%;
     background-color: black;
     cursor: none !important;
+    overflow: hidden;
 }
 .container {
     margin: 0;
