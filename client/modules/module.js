@@ -44,9 +44,16 @@ export const FadeTransition = {
     }
   },
   async perform(oldModule, newModule, deadline) {
-    newModule.container.style.transition =
-        'opacity ' + time.until(deadline).toFixed(0) + 'ms';
-    newModule.container.style.opacity = 1.0;
+    if (newModule.name == '_empty') {
+      // Fading out.. so fade *out* the *old* container.
+      oldModule.container.style.transition =
+          'opacity ' + time.until(deadline).toFixed(0) + 'ms';
+      oldModule.container.style.opacity = 0.0;
+    } else {
+      newModule.container.style.transition =
+          'opacity ' + time.until(deadline).toFixed(0) + 'ms';
+      newModule.container.style.opacity = 1.0;
+    }
     // TODO(applmak): Maybe wait until css says that the transition is done?
     await delay(time.until(deadline));
   }
@@ -105,7 +112,7 @@ export class ClientModule {
 
   static newEmptyModule(deadline = 0, transition = FadeTransition) {
     return new ClientModule(
-      'empty-module',
+      '_empty',
       '',
       {},
       new TitleCard({}),

@@ -78,7 +78,7 @@ describe('client module player', () => {
       await player.playModule(badModule);
       expect(disposeSpy).to.have.been.called;
       expect(player.oldModule).not.to.equal(badModule);
-      expect(player.nextModule.name).to.equal('empty-module');
+      expect(player.nextModule.name).to.equal('_empty');
     });
     it('the old module throwing in finishFadeOut', async () => {
       const badModule = fakes.makeClientModule(fakes.THROWS_ON_FINISH_FADE_OUT);
