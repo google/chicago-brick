@@ -15,6 +15,23 @@ export class PlaylistController {
     // layout will begin.
     this.layouts = [];
   }
+  calculateLocalReadableDate(deadline) {
+    const localNow = Date.now();
+    const serverNow = this.getTime();
+    const deltaMs = deadline - serverNow;
+    const localDeadline = localNow + deltaMs;
+
+    const date = new Date(localDeadline);
+
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    const second = date.getSeconds();
+
+    return `${hour == 0 ? '12' : String(hour > 12 ? hour - 12 : hour)
+        }:${String(minute).padStart(2, '0')
+        }:${String(second).padStart(2, '0')
+        } ${hour >= 12 ? 'PM' : 'AM'}`;
+  }
   addToLayouts(data) {
     // First, determine if this is a new layout, or a change to an existing
     // layout.
@@ -91,7 +108,7 @@ export class PlaylistController {
         const tEl = document.createElement('span');
         tEl.classList.add('timestamp');
         if (m.deadline >= 0) {
-          tEl.textContent = ` until ${m.deadline}`;
+          tEl.textContent = ` until ${this.calculateLocalReadableDate(m.deadline)}`;
         }
         mEl.appendChild(tEl);
 
@@ -100,7 +117,8 @@ export class PlaylistController {
 
       const footer = document.createElement('div');
       footer.className = 'footer';
-      footer.textContent = this.layouts[0].nextLayoutDeadline.toFixed(1);
+      footer.textContent = this.calculateLocalReadableDate(this.layouts[0].nextLayoutDeadline);
+      footer.title = this.layouts[0].nextLayoutDeadline.toFixed(1);
       e.appendChild(footer);
     }
 
