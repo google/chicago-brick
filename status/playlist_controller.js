@@ -1,6 +1,26 @@
 export class PlaylistController {
   constructor(container, getTime) {
     this.container = container;
+    this.playlistContainer = container.firstElementChild;
+
+    this.container.addEventListener('click', e => {
+      const moduleEl = e.target.closest('.module');
+      if (moduleEl) {
+        // Note: we probably shouldn't be parsing the view to find the module
+        // name.
+        const moduleName = moduleEl.querySelector('span').textContent;
+        const config = this.configMap[moduleName];
+        if (config) {
+          this.showModuleConfig(JSON.stringify(config, undefined, 2));
+        } else {
+          this.showModuleConfig('Module does not exist!');
+        }
+      } else {
+        // Hide module def.
+        this.showModuleConfig('');
+      }
+    });
+
     this.getTime = getTime;
 
     // A list of layouts. A layout is uniquely determined by its nextLayoutDeadline.
@@ -14,8 +34,34 @@ export class PlaylistController {
     // its modules are loaded, which makes it harder to predict exactly when a
     // layout will begin.
     this.layouts = [];
+
+    this.configMap = {};
+  }
+  showModuleConfig(config) {
+    // Wandering outside of this.container is a no-no.
+    // TODO(applmak): Fix this.
+    const configEl = this.container.parentElement.querySelector('.playlist-config');
+    configEl.textContent = config;
+  }
+  calculateLocalReadableDate(deadline) {
+    const localNow = Date.now();
+    const serverNow = this.getTime();
+    const deltaMs = deadline - serverNow;
+    const localDeadline = localNow + deltaMs;
+
+    const date = new Date(localDeadline);
+
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    const second = date.getSeconds();
+
+    return `${hour == 0 ? '12' : String(hour > 12 ? hour - 12 : hour)
+        }:${String(minute).padStart(2, '0')
+        }:${String(second).padStart(2, '0')
+        } ${hour >= 12 ? 'PM' : 'AM'}`;
   }
   addToLayouts(data) {
+    this.configMap = data.configMap;
     // First, determine if this is a new layout, or a change to an existing
     // layout.
     if (this.layouts.length && this.layouts[0].nextLayoutDeadline == data.nextLayoutDeadline) {
@@ -91,7 +137,7 @@ export class PlaylistController {
         const tEl = document.createElement('span');
         tEl.classList.add('timestamp');
         if (m.deadline >= 0) {
-          tEl.textContent = ` until ${m.deadline}`;
+          tEl.textContent = ` until ${this.calculateLocalReadableDate(m.deadline)}`;
         }
         mEl.appendChild(tEl);
 
@@ -100,7 +146,8 @@ export class PlaylistController {
 
       const footer = document.createElement('div');
       footer.className = 'footer';
-      footer.textContent = this.layouts[0].nextLayoutDeadline.toFixed(1);
+      footer.textContent = this.calculateLocalReadableDate(this.layouts[0].nextLayoutDeadline);
+      footer.title = this.layouts[0].nextLayoutDeadline.toFixed(1);
       e.appendChild(footer);
     }
 
@@ -122,14 +169,14 @@ export class PlaylistController {
     // First, off, let's just list the modules as they exist today.
     // We'll highlight the bold one.
 
-    const {container} = this;
-    const oldScrollPos = container.scrollTop;
-    const scrollToEnd = container.scrollHeight - oldScrollPos === container.clientHeight;
+    const {playlistContainer} = this;
+    const oldScrollPos = playlistContainer.scrollTop;
+    const scrollToEnd = playlistContainer.scrollHeight - oldScrollPos === playlistContainer.clientHeight;
     [...this.layouts].reverse()
         .filter(l => !l.element.parentNode)
-        .forEach(l => container.appendChild(l.element));
+        .forEach(l => playlistContainer.appendChild(l.element));
     if (scrollToEnd) {
-      container.scrollTop = container.scrollHeight;
+      playlistContainer.scrollTop = playlistContainer.scrollHeight;
     }
   }
   render() {
@@ -138,14 +185,14 @@ export class PlaylistController {
       this.lineEl.id = 'line';
     }
     if (!this.lineEl.parentNode) {
-      this.container.appendChild(this.lineEl);
+      this.playlistContainer.appendChild(this.lineEl);
     }
     const now = this.getTime();
     // Figure out which layout we are playing.
     const l = this.layouts.find(l => l.nextLayoutDeadline > now);
     if (!l) {
       // At end.
-      this.lineEl.style.top = this.container.scrollHeight;
+      this.lineEl.style.top = this.playlistContainer.scrollHeight;
       return;
     }
 
@@ -171,6 +218,6 @@ export class PlaylistController {
   }
   disconnect() {
     this.layouts = [];
-    Array.from(this.container.children).forEach(e => e.remove());
+    Array.from(this.playlistContainer.children).forEach(e => e.remove());
   }
 }

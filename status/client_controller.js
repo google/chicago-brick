@@ -2,9 +2,11 @@
 let snapshotReqId = 1;
 
 export class ClientController {
-  constructor(container, takeSnapshotFn) {
+  constructor(container, takeSnapshotFn, errorController, time) {
     this.container = container;
     this.takeSnapshotFn = takeSnapshotFn;
+    this.errorController = errorController;
+    this.time = time;
     this.width = this.container.offsetWidth;
     this.height = this.container.offsetHeight;
 
@@ -13,6 +15,7 @@ export class ClientController {
     this.svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     this.container.appendChild(this.svg);
     this.clients = [];
+    this.pendingSnapshots = new Set();
   }
   makeEl() {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -100,7 +103,29 @@ export class ClientController {
         text.setAttribute('y', this.ty(c.rect[1] + c.rect[3] / 2));
 
         c.element.addEventListener('click', () => {
-          this.takeSnapshotFn({client: c.id, id: snapshotReqId++});
+          if (c.element.getAttribute('class') != 'loading') {
+            c.element.setAttribute('class', 'loading');
+            const id = snapshotReqId++;
+            this.pendingSnapshots.add({
+              id,
+              timeout: setTimeout(() => {
+                // Remove pending snapshot after the timeout.
+                const s = [...this.pendingSnapshots].find(s => s.id == id);
+                if (s) {
+                  this.errorController.error({
+                    client: 'status',
+                    message: `Snapshot id: ${id} timed out!`,
+                    module: 'snapshot',
+                    timestampSinceModuleStart: 0,
+                    timestamp: this.time(),
+                  });
+                  this.pendingSnapshots.delete(s);
+                  c.element.setAttribute('class', 'failed');
+                }
+              }, 5000),
+            });
+            this.takeSnapshotFn({client: c.id, id});
+          }
         });
 
         this.svg.appendChild(c.element);
@@ -108,27 +133,69 @@ export class ClientController {
     }
   }
   takeSnapshotRes(res) {
+    // Is this a valid snapshot request?
+    const validRequest = [...this.pendingSnapshots].find(s => s.id == res.id);
+    if (validRequest) {
+      this.pendingSnapshots.delete(validRequest);
+    } else {
+      this.errorController.error({
+        client: 'status',
+        message: `Snapshot received unknown res (id: ${res.id})!`,
+        module: 'snapshot',
+        timestampSinceModuleStart: 0,
+        timestamp: this.time(),
+      });
+      return;
+    }
+    const c = this.clients.find(c => c.id == res.client);
+    const groupEl = c.element;
+    // Is there any data in this response?
     if (res.data) {
-      const c = this.clients.find(c => c.id == res.client);
-      const groupEl = c.element;
       // We got a snapshot! Make an image.
       const buffer = new Uint8ClampedArray(res.data);
-      const data = new ImageData(buffer, res.width, buffer.length / 4 / res.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = data.width;
-      canvas.height = data.height;
-      const context = canvas.getContext('2d');
-      context.putImageData(data, 0, 0);
-      const url = canvas.toDataURL('image/png');
 
-      Array.from(groupEl.querySelectorAll('image')).forEach(e => e.remove());
-      const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
-      image.setAttribute('href', url);
-      image.setAttribute('x', this.tx(c.rect[0]));
-      image.setAttribute('y', this.ty(c.rect[1]));
-      image.setAttribute('width', this.tx(c.rect[2]) - this.tx(c.rect[0]));
-      image.setAttribute('height', this.ty(c.rect[3]) - this.ty(c.rect[1]));
-      groupEl.appendChild(image);
+      // Check if the buffer is totally transparent! This is an error condition.
+      const allEmpty = buffer.every(b => !b);
+      if (allEmpty) {
+        // We asked for an image... we got an empty array!
+        // TODO(applmak): Update text or something.
+        groupEl.setAttribute('class', 'failed');
+        this.errorController.error({
+          client: 'status',
+          message: 'Snapshot failed: All pixels are empty!',
+          module: 'snapshot',
+          timestampSinceModuleStart: 0,
+          timestamp: this.time(),
+        });
+      } else {
+        const data = new ImageData(buffer, res.width, buffer.length / 4 / res.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = data.width;
+        canvas.height = data.height;
+        const context = canvas.getContext('2d');
+        context.putImageData(data, 0, 0);
+        const url = canvas.toDataURL('image/png');
+
+        Array.from(groupEl.querySelectorAll('image')).forEach(e => e.remove());
+        const image = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+        image.setAttribute('href', url);
+        image.setAttribute('x', this.tx(c.rect[0]));
+        image.setAttribute('y', this.ty(c.rect[1]));
+        image.setAttribute('width', this.tx(c.rect[2]) - this.tx(c.rect[0]));
+        image.setAttribute('height', this.ty(c.rect[3]) - this.ty(c.rect[1]));
+        groupEl.appendChild(image);
+
+        groupEl.setAttribute('class', null);
+      }
+    } else {
+      groupEl.setAttribute('class', 'failed');
+      this.errorController.error({
+        client: 'status',
+        message: `Snapshot contained no data! Perhaps the module doesn't support snapshots?`,
+        module: 'snapshot',
+        timestampSinceModuleStart: 0,
+        timestamp: this.time(),
+      });
     }
   }
   lostClient(c) {

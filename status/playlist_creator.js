@@ -39,6 +39,8 @@ export class PlaylistCreator {
     this.applyPlaylistFn = applyPlaylistFn;
     container.querySelector('#close-creator')
         .addEventListener('click', () => this.close());
+    container.querySelector('#reset-playlist')
+        .addEventListener('click', () => this.resetPlaylist());
     container.querySelector('#apply-playlist')
         .addEventListener('click', () => this.applyPlaylist());
     container.querySelector('#clear-playlist')
@@ -268,6 +270,10 @@ export class PlaylistCreator {
   applyPlaylist() {
     this.close();
     this.applyPlaylistFn(this.playlist, this.moduleConfig);
+  }
+  resetPlaylist() {
+    this.close();
+    this.applyPlaylistFn('reset');
   }
   chooseCredits(e) {
     const fieldsetEl = e.target.closest('fieldset');

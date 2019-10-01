@@ -23,7 +23,8 @@
     header {
       flex: 0 0 auto;
       padding: 5px;
-      background-color: #EEE;
+      background-color: #111;
+      color: #FFF;
     }
     header > span {
       font-weight: bolder;
@@ -70,12 +71,24 @@
       background-color: gray;
     }
     .diagram path {
-      fill: white;
+      fill: #CCC;
       stroke: black;
     }
     .diagram rect {
       stroke: #DDD;
-      fill: #EEE;
+      strokeWidth: 1px;
+      fill: white;
+    }
+    .diagram g {
+      cursor: pointer;
+    }
+    .diagram g.loading rect {
+      strokeWidth: 50px;
+      stroke: yellow;
+    }
+    .diagram g.failed rect {
+      strokeWidth: 50px;
+      fill: #FFEEEE;
     }
 
     .playlist {
@@ -102,6 +115,14 @@
     .playlist-scroll::-webkit-scrollbar-thumb {
       background: #444;
       border-radius: 10px;
+    }
+    .playlist-config {
+      flex: 0 0 auto;
+      max-height: 150px;
+      overflow-y: auto;
+      border-top: 1px solid black;
+      padding: 2px;
+      white-space: pre;
     }
     .playlist-control {
       flex: 0 0 auto;
@@ -275,8 +296,7 @@
     <header>
       Current Server Time: <span id="time">Time</span>
       Current Module Playing: <span id="module">Module</span>
-      Prior Deadline: <span id="zero-point">Deadline</span>
-      Next Deadline: <span id="deadline">Deadline</span>
+      Duration: <span id="duration">Duration</span>
       Remaining: <span id="remaining">Remaining</span>
     </header>
     <section>
@@ -285,6 +305,7 @@
         <div class="playlist-container">
           <div class="playlist-scroll"></div>
         </div>
+        <div class="playlist-config"></div>
         <div class="playlist-control"><button id="open-creator">Creator</button></div>
       </article>
     </section>
@@ -295,10 +316,13 @@
       <div id="preset-playlists">
         <button id="close-creator">Discard</button>
         <button id="apply-playlist">Apply</button>
-        <button id="clear-playlist">Clear</button>
+        <button id="reset-playlist">Reset</button>
+        |
         <button id="new-layout">New Layout</button>
+        <button id="clear-playlist">Clear</button>
         <button id="load-live">Current Playlist</button>
         <button id="load-all">All Modules</button>
+        |
         <button id="extend-module-maker">Extend Module...</button>
       </div>
       <div id="current-playlist-container">
