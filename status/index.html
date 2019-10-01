@@ -70,12 +70,24 @@
       background-color: gray;
     }
     .diagram path {
-      fill: white;
+      fill: #CCC;
       stroke: black;
     }
     .diagram rect {
       stroke: #DDD;
-      fill: #EEE;
+      strokeWidth: 1px;
+      fill: white;
+    }
+    .diagram g {
+      cursor: pointer;
+    }
+    .diagram g.loading rect {
+      strokeWidth: 50px;
+      stroke: yellow;
+    }
+    .diagram g.failed rect {
+      strokeWidth: 50px;
+      fill: #FFEEEE;
     }
 
     .playlist {

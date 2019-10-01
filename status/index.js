@@ -42,6 +42,8 @@ const errorController = new ErrorController(document.querySelector('footer'));
 const clientController = new ClientController(
   document.querySelector('.diagram'),
   req => control.emit('takeSnapshot', req),
+  errorController,
+  getTime,
 );
 
 let transitionData = {};
