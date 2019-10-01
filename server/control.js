@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import RJSON from 'relaxed-json';
 import Debug from 'debug';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
@@ -87,71 +86,14 @@ export class Control {
 
         this.playlistDriver.setPlaylist(playlist);
       });
+      socket.on('resetPlaylist', () => {
+        const playlist = this.playlistLoader.parsePlaylist(this.initialConfig);
+        this.playlistDriver.start(playlist);
+      });
     });
     io.emit('time', {time: time.now()});
     setInterval(() => {
       io.emit('time', {time: time.now()});
     }, 20000);
-  }
-
-  setConfig(req, res) {
-    try {
-      var json = RJSON.parse(req.body.config);
-      this.moduleLoader.loadModules(json);
-      var playlist = this.playlistLoader.parsePlaylist(json);
-    } catch (e) {
-      res.status(400).send('Bad request: ' + e);
-      return;
-    }
-    this.playlistDriver.start(playlist);
-    this.currentConfig = json;
-    res.redirect('/status');
-  }
-
-  resetPlaylist(req, res) {
-    this.moduleLoader.loadModules(this.initialConfig);
-    this.playlistDriver.start(this.playlistLoader.parsePlaylist(this.initialConfig));
-    this.currentConfig = this.initialConfig;
-    res.redirect('/status');
-  }
-
-  setPlaylist(req, res) {
-    let infinitePlaylist = JSON.stringify({ modules: [req.body], playlist: [{collection: '__ALL__', duration: 86400}] });
-    let playlist = {};
-    let json = '';
-    try {
-      json = RJSON.parse(infinitePlaylist);
-      this.moduleLoader.loadModules(json);
-      playlist = this.playlistLoader.parsePlaylist(json);
-    } catch (e) {
-      console.log(`Error in setPlaylist: ${e}`);
-      res.status(400).send('Bad request: ' + e);
-      return;
-    }
-    this.currentConfig = json;
-    this.playlistDriver.start(playlist);
-    res.redirect('/status');
-  }
-
-  skip() {
-    this.playlistDriver.skipAhead();
-  }
-
-  playModule(req, res) {
-    var moduleName = req.query.module;
-    if (!moduleName) {
-      res.status(400).send('Expected module parameter');
-      return;
-    }
-    try {
-      this.playlistDriver.playModule(moduleName);
-    } catch (e) {
-      debug(e.message);
-      debug(e.stack);
-      // TODO: distinguish between "module not found" and "unable to enqueue".
-      res.status(400).send('Unable to play module');
-      return;
-    }
-    res.send('Enqueued');
   }
 }
