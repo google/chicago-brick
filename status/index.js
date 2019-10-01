@@ -46,15 +46,22 @@ const clientController = new ClientController(
   getTime,
 );
 
+function convertMsDurationToText(ms) {
+  const secs = Math.floor(ms / 1000);
+  const mins = Math.floor(secs / 60);
+
+  return mins ? `${mins} minutes` : secs ? `${secs} seconds` : String(ms);
+}
+
 let transitionData = {};
 control.on('transition', data => {
   transitionData = data;
+
+  const duration = data.nextDeadline - data.deadline;
   const moduleNameEl = document.querySelector('#module');
   moduleNameEl.textContent = data.module;
-  const zeroPointEl = document.querySelector('#zero-point');
-  zeroPointEl.textContent = data.deadline.toFixed(0);
-  const deadlineEl = document.querySelector('#deadline');
-  deadlineEl.textContent = data.nextDeadline.toFixed(0);
+  const durationEl = document.querySelector('#duration');
+  durationEl.textContent = convertMsDurationToText(duration);
 
   playlistController.updateTransitionData(data);
   playlistCreator.setLivePlaylist(data.layouts);
@@ -109,7 +116,15 @@ const timeEl = document.querySelector('#time');
 const remainingEl = document.querySelector('#remaining');
 function render() {
   timeEl.textContent = getTime().toFixed(0);
-  remainingEl.textContent = (transitionData.nextDeadline - getTime()).toFixed(0);
+  const remainingMs = transitionData.nextDeadline - getTime();
+  if (remainingMs < 0) {
+    remainingEl.textContent = `Fading (${-remainingMs})`;
+    remainingEl.classList.add('transitioning');
+  } else {
+    remainingEl.classList.remove('transitioning');
+    remainingEl.textContent = convertMsDurationToText(remainingMs);
+  }
+
 
   playlistController.render();
 
