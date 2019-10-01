@@ -37,7 +37,7 @@ function applyNewPlaylist(playlist, moduleConfig) {
 }
 
 const playlistCreator = new PlaylistCreator(creatorEl, applyNewPlaylist);
-const playlistController = new PlaylistController(document.querySelector('.playlist-scroll'), getTime);
+const playlistController = new PlaylistController(document.querySelector('.playlist-container'), getTime);
 const errorController = new ErrorController(document.querySelector('footer'));
 const clientController = new ClientController(
   document.querySelector('.diagram'),

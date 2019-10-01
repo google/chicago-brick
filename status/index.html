@@ -116,6 +116,14 @@
       background: #444;
       border-radius: 10px;
     }
+    .playlist-config {
+      flex: 0 0 auto;
+      max-height: 150px;
+      overflow-y: auto;
+      border-top: 1px solid black;
+      padding: 2px;
+      white-space: pre;
+    }
     .playlist-control {
       flex: 0 0 auto;
       border-top: 1px solid black;
@@ -297,6 +305,7 @@
         <div class="playlist-container">
           <div class="playlist-scroll"></div>
         </div>
+        <div class="playlist-config"></div>
         <div class="playlist-control"><button id="open-creator">Creator</button></div>
       </article>
     </section>
