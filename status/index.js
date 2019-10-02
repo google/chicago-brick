@@ -33,7 +33,12 @@ const control = io('http://localhost:3000/control');
 const creatorEl = document.querySelector('#playlist-creator');
 
 function applyNewPlaylist(playlist, moduleConfig) {
-  control.emit('newPlaylist', {playlist, moduleConfig});
+  // TODO(applmak): Passing a string here is a bit hacky.
+  if (playlist == 'reset') {
+    control.emit('resetPlaylist');
+  } else {
+    control.emit('newPlaylist', {playlist, moduleConfig});
+  }
 }
 
 const playlistCreator = new PlaylistCreator(creatorEl, applyNewPlaylist);
