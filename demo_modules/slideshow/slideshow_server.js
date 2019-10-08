@@ -24,7 +24,7 @@ limitations under the License.
  * the time this module was created.
  */
 
-import LoadFromDriveStrategy from './load_from_drive.js';
+import LoadFromDriveStrategy from './load_from_drive_server.js';
 import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
 import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
