@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
+import {delay} from '../../lib/promise.js';
 
 export default function({debug}) {
 
@@ -28,6 +29,8 @@ export default function({debug}) {
   // every time.
   // Config:
   //   folderId: string - Drive folder ID from which to retrieve files.
+  //   fileId: string - Drive file ID that is the file to download.
+  //       Can't be specified with folderId.
   class LoadFromDriveServerStrategy extends ServerLoadStrategy {
     constructor(config) {
       super();
@@ -41,32 +44,41 @@ export default function({debug}) {
       // Get an authenticated API. When init's promise is resolved, we succeeded.
       const client = await getAuthenticatedClient();
       debug('Initialized Drive Client.');
+      // TODO(applmak): Don't assign credentials to the config, which is
+      // readable on the status page!
       this.config.credentials = client.credentials;
       this.driveClient = client.googleapis.drive('v2');
     }
-    loadMoreContent(opt_paginationToken) {
-      return new Promise((resolve, reject) =>
-        this.driveClient.children.list({
-          folderId: this.config.folderId,
-          maxResults: 1000,
-          pageToken: opt_paginationToken
-        }, (err, response) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(response);
-        })
-      ).then((response) => {
+    async loadMoreContent(opt_paginationToken) {
+      let response;
+      if (this.config.folderId) {
+        try {
+          response = await this.driveClient.children.list({
+            folderId: this.config.folderId,
+            maxResults: 1000,
+            pageToken: opt_paginationToken
+          });
+        } catch (e) {
+          debug('Failed to download more drive content! Delay a bit...');
+          await Promise.delay(Math.random() * 4000 + 1000);
+          return this.loadMoreContent(opt_paginationToken);
+        }
+
         debug('Downloaded ' + response.data.items.length + ' more content ids.');
         return {
           content: response.data.items.map((i) => i.id),
           hasMoreContent: !!response.data.nextPageToken,
           paginationToken: response.data.nextPageToken
         };
-      }, () => {
-        debug('Failed to download more drive content! Delay a bit...');
-        return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
-      });
+      } else if (this.config.fileId) {
+        return {
+          content: [this.config.fileId],
+          hasMoreContent: false,
+          paginationToken: undefined,
+        };
+      } else {
+        throw new Error('Module does not specify how to load the items');
+      }
     }
     serializeForClient() {
       return {drive: this.config};
@@ -78,67 +90,66 @@ export default function({debug}) {
       super();
       this.config = config;
     }
-    loadContent(fileId) {
+    async loadContent(fileId) {
       const API_BASE_URL = 'https://www.googleapis.com/drive/v2';
 
-      let numTriesLeft = 5;
+      let res;
       let timeout = Math.floor(1000 + Math.random() * 1000);
-      let fetchImage = () => {
-        return fetch(`${API_BASE_URL}/files/${fileId}?alt=media`, {
+      for (let numTriesLeft = 5; numTriesLeft > 0; numTriesLeft--) {
+        res = await fetch(`${API_BASE_URL}/files/${fileId}?alt=media`, {
           headers: new Headers({
             'Authorization': 'Bearer ' + this.config.credentials.access_token
           })
-        }).then(res => {
-          if (res.status == 403) {
-            // Probably rate-limited. To fix this, we'll attempt to download
-            // again after a random, expotentially increasing time.
-            if (!numTriesLeft) {
-              throw new Error(`Failed to download ${fileId}! ${res.status} ${res.statusTxt}`);
-            }
-            return new Promise(resolve => {
-              debug(`Retrying after ${timeout} ms and ${numTriesLeft} tries left...`);
-              setTimeout(() => resolve(), timeout);
-              timeout *= 2.0;
-              timeout += Math.floor(Math.random * 1000);
-              numTriesLeft--;
-            }).then(fetchImage);
-          }
-          if (res.ok) {
-            return res;
-          }
-          debug(`Failed to load! ${fileId} ${res.status} ${res.statusText}`);
         });
-      };
+        if (res.ok) {
+          break;
+        }
+        debug(`Failed to load! ${fileId} ${res.status} ${res.statusText}`);
+        if (res.status == 403) {
+          // Probably rate-limited. To fix this, we'll attempt to download
+          // again after a random, exponentially increasing time.
+          debug(`Retrying after ${timeout} ms and ${numTriesLeft} tries left...`);
+          await delay(timeout);
+          timeout *= 2.0;
+          timeout += Math.floor(Math.random * 1000);
+        } else {
+          break;
+        }
+      }
+      if (!res.ok) {
+        throw new Error(`Failed to download ${fileId}! ${res.status} ${res.statusTxt}`);
+      }
 
-      return fetchImage()
-        .then(resp => resp.blob()
-            .then(blob => ({blob, type: resp.headers.get('content-type')})))
-        .then(({blob, type}) => ({url: URL.createObjectURL(blob), type}))
-        .then(({url, type}) => {
-          return new Promise((resolve, reject) => {
-            if (type.indexOf('image') != -1) {
-              var img = document.createElement('img');
-              img.src = url;
-              // Don't report that we've loaded the image until onload fires.
-              img.addEventListener('load', () => {
-                URL.revokeObjectURL(url);
-                resolve(img);
-              });
-              img.addEventListener('error', () => reject(new Error(`${type}, ${url}`)));
-            } else if (type.indexOf('video') != -1) {
-              var video = document.createElement('video');
-              video.src = url;
-              video.autoplay = true;
-              video.addEventListener('load', () => {
-                URL.revokeObjectURL(url);
-                resolve(video);
-              });
-              video.addEventListener('error', () => reject(new Error));
-            } else {
-              throw new Error('Unknown MIME type for drive file: ' + type);
-            }
+      const type = res.headers.get('content-type');
+      const size = res.headers.get('content-length');
+      debug(`Downloading image (${type} size:${size})`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      if (type.indexOf('image') != -1) {
+        return await new Promise((resolve, reject) => {
+          const img = document.createElement('img');
+          img.src = url;
+          // Don't report that we've loaded the image until onload fires.
+          img.addEventListener('load', () => {
+            URL.revokeObjectURL(url);
+            resolve(img);
           });
+          img.addEventListener('error', () => reject(new Error(`${type}, ${url}`)));
         });
+      } else if (type.indexOf('video') != -1) {
+        return await new Promise((resolve, reject) => {
+          const video = document.createElement('video');
+          video.src = url;
+          video.autoplay = true;
+          video.addEventListener('load', () => {
+            URL.revokeObjectURL(url);
+            resolve(video);
+          });
+          video.addEventListener('error', () => reject(new Error));
+        });
+      } else {
+        throw new Error('Unknown MIME type for drive file: ' + type);
+      }
     }
   }
 
