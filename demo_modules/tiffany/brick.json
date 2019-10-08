@@ -1,0 +1,9 @@
+{
+  "name": "tiffany",
+  "client_path": "./tiffany_client.js",
+  "server_path": "./tiffany_server.js",
+  "credit": {
+    "title": "Tiffany Stained Glass",
+    "author": "John Otto"
+  }
+}
