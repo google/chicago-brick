@@ -174,7 +174,7 @@ export default function({debug}) {
           };
         }
 
-        return video;
+        return {element: video};
       });
     }
   }

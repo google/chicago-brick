@@ -61,6 +61,7 @@ export default function({network}) {
 
         loadStrategy.loadContent(c).then(content => {
           // One piece of content per client.
+          content = content.element;
           this.content = content;
           let s = this.config_.image && this.config_.image.scale || 'stretch';
           this.surface.container.style.display = 'flex';
