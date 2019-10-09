@@ -171,11 +171,11 @@ export default function({debug, asset}) {
 
             video.play();
 
-            resolve(video);
+            resolve({element: video});
           });
         } else {
           let img = document.createElement('img');
-          img.addEventListener('load', () => resolve(img));
+          img.addEventListener('load', () => resolve({element: img}));
           img.addEventListener('error', err => reject(err));
           img.src = finalUrl;
         }

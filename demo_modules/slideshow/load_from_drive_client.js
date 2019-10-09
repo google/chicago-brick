@@ -64,7 +64,7 @@ export default function({debug}) {
             img.src = url;
             // Don't report that we've loaded the image until onload fires.
             img.addEventListener('load', () => {
-              resolve(img);
+              resolve({element: img});
             });
             img.addEventListener('error', () => reject(new Error(`${type}, ${url}`)));
           });
@@ -74,7 +74,7 @@ export default function({debug}) {
             video.src = url;
             video.autoplay = true;
             video.addEventListener('load', () => {
-              resolve(video);
+              resolve({element: video});
             });
             video.addEventListener('error', () => reject(new Error));
           });
