@@ -65,13 +65,13 @@ export default function({debug}) {
 
         debug('Downloaded ' + response.data.items.length + ' more content ids.');
         return {
-          content: response.data.items.map((i) => i.id),
+          content: response.data.items.map(i => ({fileId: i.id})),
           hasMoreContent: !!response.data.nextPageToken,
           paginationToken: response.data.nextPageToken
         };
       } else if (this.config.fileId) {
         return {
-          content: [this.config.fileId],
+          content: [{fileId: this.config.fileId}],
           hasMoreContent: false,
           paginationToken: undefined,
         };

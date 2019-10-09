@@ -24,7 +24,7 @@ export default function({debug}) {
       super();
       this.config = config;
     }
-    async loadContent(fileId) {
+    async loadContent({fileId}) {
       let res;
       let timeout = Math.floor(1000 + Math.random() * 1000);
       for (let numTriesLeft = 5; numTriesLeft > 0; numTriesLeft--) {
@@ -57,30 +57,32 @@ export default function({debug}) {
       debug(`Downloading image (${type} size:${size})`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      if (type.indexOf('image') != -1) {
-        return await new Promise((resolve, reject) => {
-          const img = document.createElement('img');
-          img.src = url;
-          // Don't report that we've loaded the image until onload fires.
-          img.addEventListener('load', () => {
-            URL.revokeObjectURL(url);
-            resolve(img);
+      try {
+        if (type.indexOf('image') != -1) {
+          return await new Promise((resolve, reject) => {
+            const img = document.createElement('img');
+            img.src = url;
+            // Don't report that we've loaded the image until onload fires.
+            img.addEventListener('load', () => {
+              resolve(img);
+            });
+            img.addEventListener('error', () => reject(new Error(`${type}, ${url}`)));
           });
-          img.addEventListener('error', () => reject(new Error(`${type}, ${url}`)));
-        });
-      } else if (type.indexOf('video') != -1) {
-        return await new Promise((resolve, reject) => {
-          const video = document.createElement('video');
-          video.src = url;
-          video.autoplay = true;
-          video.addEventListener('load', () => {
-            URL.revokeObjectURL(url);
-            resolve(video);
+        } else if (type.indexOf('video') != -1) {
+          return await new Promise((resolve, reject) => {
+            const video = document.createElement('video');
+            video.src = url;
+            video.autoplay = true;
+            video.addEventListener('load', () => {
+              resolve(video);
+            });
+            video.addEventListener('error', () => reject(new Error));
           });
-          video.addEventListener('error', () => reject(new Error));
-        });
-      } else {
-        throw new Error('Unknown MIME type for drive file: ' + type);
+        } else {
+          throw new Error('Unknown MIME type for drive file: ' + type);
+        }
+      } finally {
+        URL.revokeObjectURL(url);
       }
     }
   }
