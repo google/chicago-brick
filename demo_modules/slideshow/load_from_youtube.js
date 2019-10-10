@@ -17,6 +17,7 @@ limitations under the License.
 
 import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
 import {loadYoutubeApi} from './load_youtube_api.js';
+import {delay} from '../../lib/promise.js';
 
 export default function({debug}) {
   // LOAD YOUTUBE PLAYLIST STRATEGY
@@ -44,36 +45,49 @@ export default function({debug}) {
       debug('Initialized YouTube Client.');
       this.config.credentials = client.credentials;
       this.api = client.googleapis.youtube('v3');
+
+      this.content = await this.loadContent();
     }
-    loadMoreContent(opt_paginationToken) {
-      return new Promise((resolve, reject) =>
-        this.api.playlistItems.list({
+    async contentForClient(client) {
+      return this.content.filter(c => {
+        // Either there's no limitation on the content, or it matches exactly.
+        return !c.client || c.client.x == client.x && c.client.y == client.y;
+      });
+    }
+    async loadContent() {
+      const content = [];
+      let response = {};
+      do {
+        response = await this.loadMoreContent(response.paginationToken);
+        content.push(...response.content);
+      } while (response.hasMoreContent);
+      return content;
+    }
+    async loadMoreContent(opt_paginationToken) {
+      let response;
+      try {
+        response = await this.api.playlistItems.list({
           playlistId: this.config.playlistId,
           pageToken: opt_paginationToken,
           maxResults: 50,
-          part: 'snippet'
-        }, (err, response) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(response);
-        })
-      ).then((response) => {
+          part: 'snippet',
+        });
         debug('Downloaded ' + response.data.items.length + ' more content ids.');
         return {
           content: response.data.items.map((item, index) => {
             return {
               videoId: item.snippet.resourceId.videoId,
-              index: index
+              index,
             };
           }),
           hasMoreContent: !!response.nextPageToken,
           paginationToken: response.nextPageToken
         };
-      }, () => {
+      } catch (e) {
         debug('Failed to download more youtube content! Delay a bit...');
-        return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
-      });
+        await delay(Math.random() * 4000 + 1000);
+        return await this.loadMoreContent(opt_paginationToken);
+      }
     }
     serializeForClient() {
       return {youtube: this.config};

@@ -68,21 +68,8 @@ export function load(debug, network, assert, wallGeometry) {
     }
     async willBeShownSoon() {
       // Start the load strategy initing.
-      await Promise.all([
-        this.displayStrategy.init(),
-        this.loadStrategy.init().then(() => {
-          let fetchContent = (opt_paginationToken) => {
-            this.loadStrategy.loadMoreContent(opt_paginationToken).then((result) => {
-              this.displayStrategy.newContent(result.content);
-
-              if (result.hasMoreContent) {
-                fetchContent(result.paginationToken);
-              }
-            });
-          };
-          fetchContent();
-        })
-      ]);
+      await this.loadStrategy.init();
+      await this.displayStrategy.init(this.loadStrategy);
 
       // When the clients ask for the init, we tell them.
       network.on('req_init', (data, socket) => {

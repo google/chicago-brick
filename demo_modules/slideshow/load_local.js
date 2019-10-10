@@ -59,11 +59,39 @@ export default function({debug, asset}) {
         }
       }
     }
-    loadMoreContent() {
-      return Promise.resolve({
-        content: this.paths
-      });
+    async contentForClient(client) {
+      // If the config denotes pre-split, we'll modify the paths here.
+      const sharedConfig = this.config.image || this.config.video;
+      if (sharedConfig.presplit) {
+        return this.paths.map(p => {
+          const path = p.image || p.video;
+          let extIndex = path.lastIndexOf('.');
+          let finalUrl = path;
+
+          // Remove extension.
+          if (extIndex != -1) {
+            finalUrl = path.substring(0, extIndex);
+          }
+
+          // If we are talking about pre-split content, then we are reading files
+          // with a specific pattern. Generate the appropriate name for this client.
+          finalUrl += `/r${client.y}c${client.x}`;
+
+          // Add extension back.
+          if (extIndex != -1) {
+            finalUrl += path.substr(extIndex);
+          }
+          if (p.image) {
+            p.image = finalUrl;
+          } else if (p.video) {
+            p.video = finalUrl;
+          }
+        });
+      } else {
+        return [...this.paths];
+      }
     }
+
     serializeForClient() {
       return {local: this.config};
     }
@@ -80,30 +108,7 @@ export default function({debug, asset}) {
     }
     loadContent(desc) {
       return new Promise((resolve, reject) => {
-        let url = desc.image || desc.video;
-        let sharedConfig = this.config.image || this.config.video;
-
-
-        // PREPARE THE URL:
-        let extIndex = url.lastIndexOf('.');
-        let finalUrl = url;
-        // Remove extension.
-        if (extIndex != -1) {
-          finalUrl = url.substring(0, extIndex);
-        }
-
-        // If we are talking about pre-split content, then we are reading files
-        // with a specific pattern. Generate the appropriate name for this client.
-        if (sharedConfig.presplit) {
-          finalUrl += `/r${this.surface.virtualOffset.y}c${this.surface.virtualOffset.x}`;
-        }
-
-        // Add extension back.
-        if (extIndex != -1) {
-          finalUrl += url.substr(extIndex);
-        }
-
-        finalUrl = asset(`${finalUrl}`);
+        let finalUrl = asset(desc.image || desc.video);
 
         if (desc.video) {
           let video = document.createElement('video');

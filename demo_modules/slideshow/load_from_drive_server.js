@@ -47,10 +47,28 @@ export default function({debug}) {
       // readable on the status page!
       this.config.credentials = client.credentials;
       this.driveClient = client.googleapis.drive('v2');
+
+      // Wait until content is downloaded.
+      this.content = await this.loadContent();
+    }
+    async contentForClient(client) {
+      return this.content.filter(c => {
+        // Either there's no limitation on the content, or it matches exactly.
+        return !c.client || c.client.x == client.x && c.client.y == client.y;
+      });
+    }
+    async loadContent() {
+      const content = [];
+      let response = {};
+      do {
+        response = await this.loadMoreContent(response.paginationToken);
+        content.push(...response.content);
+      } while (response.hasMoreContent);
+      return content;
     }
     async loadMoreContent(opt_paginationToken) {
-      let response;
       if (this.config.folderId) {
+        let response;
         try {
           response = await this.driveClient.children.list({
             folderId: this.config.folderId,

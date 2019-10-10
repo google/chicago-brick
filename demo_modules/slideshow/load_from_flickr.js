@@ -31,8 +31,17 @@ export default function({debug, assert, fetch}) {
     async init() {
       const credentials = await import('../../server/util/credentials.js');
       this.apiKey = credentials.get('flickr');
+
+      // Wait until content is downloaded.
+      this.content = await this.loadMoreContent();
     }
-    loadMoreContent() {
+    async contentForClient(client) {
+      return this.content.filter(c => {
+        // Either there's no limitation on the content, or it matches exactly.
+        return !c.client || c.client.x == client.x && c.client.y == client.y;
+      });
+    }
+    async loadMoreContent() {
       assert(this.apiKey, 'Missing Flickr API key!');
       let query = new URLSearchParams({
         method: 'flickr.photos.search',
@@ -45,25 +54,30 @@ export default function({debug, assert, fetch}) {
         extras: 'url_l',
       });
       let url = `https://api.flickr.com/services/rest/?${query}`;
-      return fetch(url).then(response => {
-        if (!response.ok) {
-          throw new Error('Flickr query failed with status: ' + response.status + ': ' + response.statusText);
-        }
-
-        return response.json().then(json => {
-          if (!(json.photos && json.photos.photo && json.photos.photo.length > 0)) {
-            debug('Invalid flickr query response!', json);
-            throw new Error('Invalid flickr query response!');
-          }
-
-          let content = json.photos.photo.map(p => p.url_l).filter(u => u);
-          debug('Downloaded ' + content.length + ' more content ids.');
-          return {content};
-        });
-      }, () => {
+      let response;
+      try {
+        response = await fetch(url);
+      } catch (e) {
         debug('Failed to download flickr content! Delay a bit...');
-        return delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent());
-      });
+        await delay(Math.random() * 4000 + 1000);
+        return this.loadMoreContent();
+      }
+
+      if (!response.ok) {
+        throw new Error('Flickr query failed with status: ' + response.status + ': ' + response.statusText);
+      }
+
+      const json = await response.json();
+      if (!(json.photos && json.photos.photo && json.photos.photo.length > 0)) {
+        debug('Invalid flickr query response!', json);
+        throw new Error('Invalid flickr query response!');
+      }
+
+      const content = json.photos.photo.map(p => p.url_l)
+          .filter(u => u)
+          .map(u => ({url: u}));
+      debug('Downloaded ' + content.length + ' more content ids.');
+      return content;
     }
     serializeForClient() {
       return {flickr: this.config};
@@ -75,7 +89,8 @@ export default function({debug, assert, fetch}) {
       super();
       this.config = config;
     }
-    loadContent(url) {
+    loadContent(content) {
+      const {url} = content;
       return new Promise((resolve, reject) => {
         var img = document.createElement('img');
         img.src = url;

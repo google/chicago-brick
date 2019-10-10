@@ -17,22 +17,19 @@ limitations under the License.
 // Here, we specify the interfaces for the load and display strategies. There is
 // a separate interface for the server and the client.
 export class ServerLoadStrategy {
-  init() {
-    // Return a promise when initialization is complete.
-    return Promise.resolve();
-  }
-  loadMoreContent(opt_paginationToken) {
-    // Return a promise of a result with the following properties:
-    //  - hasMoreContent: True, if the loader has more content to download.
-    //  - paginationToken: An opaque token that will be passed to the next
-    //    invocation of loadMoreContent is hasMoreContent is true.
-    //  - content: An array of content, suitable for transmission to the client.
-    return Promise.resolve([]);
+  async init() {
+    // Return a promise when initialization is complete. More items might
+    // become available over time, but the promise should only resolve when
+    // there is at least one item to show.
   }
   serializeForClient() {
     // Return JSON that can be transmitted to the client and can instantiate
     // the strategy there.
     return {};
+  }
+  async contentForClient(client) {
+    // Returns an array of all content loaded so far that could be displayed
+    // on the specified client.
   }
 }
 
@@ -41,25 +38,24 @@ export class ClientLoadStrategy {
     // Init the load strategy with the surface information and a timestamp that
     // is guaranteed to be shared among all clients.
   }
-  loadContent(content) {
+  async loadContent(content) {
     // Loads content specified by the content id. The first parameter comes
     // from the  server version of this strategy by way of the display
-    // strategy. The promise is expected to resolve to an Element.
-    return Promise.resolve();
+    // strategy. The promise is expected to resolve to an object:
+    // {
+    //   element: Some element, ready to be attached to the DOM and displayed.
+    //   client: A x,y pair that indicates that this content should be
+    //   restricted to a single client.
+    // }
   }
 }
 
 export class ServerDisplayStrategy {
-  init() {
+  async init(loadStrategy) {
     // Return a promise when initialization is complete.
-    return Promise.resolve();
   }
   tick(time, delta) {
     // Coordinate with the clients about what should be shown.
-  }
-  newContent(content) {
-    // A notification from the load strategy that new content has been
-    // discovered. The parameter is an array of content identifiers.
   }
   serializeForClient() {
     // Return JSON that can be transmitted to the client and can instantiate
