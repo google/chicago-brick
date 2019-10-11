@@ -29,7 +29,6 @@ import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
 import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display_client.js';
-import FallingDisplayStrategy from './falling_display_client.js';
 import {Surface} from '/client/surface/surface.js';
 
 export function load(wallGeometry, debug, network, assert, asset) {
@@ -52,8 +51,6 @@ export function load(wallGeometry, debug, network, assert, asset) {
   let parseClientDisplayStrategy = (displayConfig) => {
     if (displayConfig.fullscreen) {
       return new (FullscreenDisplayStrategy({debug, wallGeometry, network}).Client)(displayConfig.fullscreen);
-    } else if (displayConfig.falling) {
-      return new (FallingDisplayStrategy({debug, wallGeometry, network}).Client)(displayConfig.falling);
     }
     throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
   };
