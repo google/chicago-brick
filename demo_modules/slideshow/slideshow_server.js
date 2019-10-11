@@ -38,7 +38,7 @@ export function load(debug, network, assert, wallGeometry) {
   // strategies. New strategies should be added to these methods.
   let parseServerLoadStrategy = (loadConfig) => {
     if (loadConfig.drive) {
-      return new (LoadFromDriveStrategy({debug, assert}).Server)(loadConfig.drive);
+      return new (LoadFromDriveStrategy({debug, assert, network, wallGeometry}).Server)(loadConfig.drive);
     } else if (loadConfig.youtube) {
       return new (LoadFromYouTubePlaylistStrategy({debug, assert}).Server)(loadConfig.youtube);
     } else if (loadConfig.local) {

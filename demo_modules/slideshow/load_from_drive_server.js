@@ -15,7 +15,12 @@ limitations under the License.
 
 import {ServerLoadStrategy} from './interfaces.js';
 
-export default function({debug}) {
+const API_BASE_URL = 'https://www.googleapis.com/drive/v2';
+
+import fetch from 'node-fetch';
+import sharp from 'sharp';
+
+export default function({debug, wallGeometry, network}) {
 
   // LOAD FROM DRIVE STRATEGY
   // Here, we specify the server & client strategies that can load images from a
@@ -37,6 +42,9 @@ export default function({debug}) {
 
       // Drive client API v2.
       this.driveClient = null;
+
+      // Map of x,y => cached image buffer, used for splitting.
+      this.cachedSplits = new Map;
     }
     async init() {
       const {getAuthenticatedClient} = await import('../../server/util/googleapis.js');
@@ -52,6 +60,34 @@ export default function({debug}) {
       this.content = await this.loadContent();
     }
     async contentForClient(client) {
+      if (this.config.fileId) {
+        // Are we splitting?
+        const content = this.content[0];
+        if (content.sharp) {
+          // Splitting!
+          const key = `${client.x} ${client.y}`;
+          const cachedImage = this.cachedSplits.get(key);
+          if (cachedImage) {
+            debug(`Using cached image for ${key}`);
+            return [{data: cachedImage}];
+          }
+
+          const info = [...Object.values(network.clients())].find(c => c.rect.x === client.x && c.rect.y === client.y);
+          if (!info) {
+            throw new Error(`Can't find client ${client}`);
+          }
+          const {rect} = info;
+          debug(`New image for ${key}`);
+
+          const newImage = await content.sharp
+              .extract({left: rect.x, top: rect.y, width: rect.w, height: rect.h})
+              .png()
+              .toBuffer();
+          this.cachedSplits.set(key, newImage);
+          return [{data: newImage}];
+        }
+      }
+      // No splitting... just do the normal thing.
       return this.content.filter(c => {
         // Either there's no limitation on the content, or it matches exactly.
         return !c.client || c.client.x == client.x && c.client.y == client.y;
@@ -88,6 +124,29 @@ export default function({debug}) {
           paginationToken: response.data.nextPageToken
         };
       } else if (this.config.fileId) {
+        // Check to see if this file is ≈ size of the wall.
+        const res = await fetch(`${API_BASE_URL}/files/${this.config.fileId}?alt=media`, {
+          headers: new fetch.Headers({
+            'Authorization': 'Bearer ' + this.config.credentials.access_token
+          })
+        });
+        const buffer = await res.buffer();
+        const img = sharp(buffer);
+        const metadata = await img.metadata();
+
+        console.log(Math.abs(metadata.width - wallGeometry.extents.w)/wallGeometry.extents.w,
+            Math.abs(metadata.height - wallGeometry.extents.h)/wallGeometry.extents.h);
+        // If the image is within 10% of the size of the wall...
+        if (Math.abs(metadata.width - wallGeometry.extents.w)/wallGeometry.extents.w < 0.1 ||
+            Math.abs(metadata.height - wallGeometry.extents.h)/wallGeometry.extents.h < 0.1) {
+          debug('Will split image!');
+          return {
+            content: [{sharp: img}],
+            hasMoreContent: false,
+            paginationToken: undefined,
+          }
+        }
+
         return {
           content: [{fileId: this.config.fileId}],
           hasMoreContent: false,
