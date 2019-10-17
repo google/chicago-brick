@@ -23,9 +23,8 @@ export class ServerLoadStrategy {
   }
   loadMoreContent(opt_paginationToken) {
     // Return a promise of a result with the following properties:
-    //  - hasMoreContent: True, if the loader has more content to download.
     //  - paginationToken: An opaque token that will be passed to the next
-    //    invocation of loadMoreContent is hasMoreContent is true.
+    //    invocation of loadMoreContent if there is more content to download.
     //  - content: An array of content, suitable for transmission to the client.
     return Promise.resolve([]);
   }

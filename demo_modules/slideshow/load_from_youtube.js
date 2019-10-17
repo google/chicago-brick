@@ -68,7 +68,6 @@ export default function({debug}) {
             index: index
           };
         }),
-        hasMoreContent: !!response.nextPageToken,
         paginationToken: response.nextPageToken
       };
     }

@@ -66,14 +66,11 @@ export default function({debug}) {
         debug('Downloaded ' + response.data.items.length + ' more content ids.');
         return {
           content: response.data.items.map(i => ({fileId: i.id})),
-          hasMoreContent: !!response.data.nextPageToken,
           paginationToken: response.data.nextPageToken
         };
       } else if (this.config.fileId) {
         return {
           content: [{fileId: this.config.fileId}],
-          hasMoreContent: false,
-          paginationToken: undefined,
         };
       } else {
         throw new Error('Module does not specify how to load the items');

@@ -66,22 +66,39 @@ export function load(debug, network, assert, wallGeometry) {
       // The display strategy for this run of the module.
       this.displayStrategy = parseServerDisplayStrategy(config.display);
     }
+    /**
+     * What to do when new content is downloaded.
+     */
+    handleNewContent(content) {
+      this.displayStrategy.newContent(content);
+    }
+    /**
+     * Asks the load strategy to load some content and also starts a loop to
+     * load the rest of the content.
+     */
+    async startLoadingContent() {
+      await this.loadStrategy.init();
+      const firstResponse = await this.loadStrategy.loadMoreContent();
+      this.handleNewContent(firstResponse.content);
+      // Don't wait for any more content to download, but start downloading it.
+      this.loadRemainingContent(firstResponse.paginationToken);
+    }
+    /**
+     * Loads any remaining content starting with the specified paginationToken.
+     */
+    async loadRemainingContent(token) {
+      while(token) {
+        const response = await this.loadStrategy.loadMoreContent(token);
+        this.handleNewContent(response.content);
+        token = response.paginationToken;
+      }
+    }
+
     async willBeShownSoon() {
-      // Start the load strategy initing.
+      // Start the strategies initing.
       await Promise.all([
         this.displayStrategy.init(),
-        this.loadStrategy.init().then(() => {
-          let fetchContent = (opt_paginationToken) => {
-            this.loadStrategy.loadMoreContent(opt_paginationToken).then((result) => {
-              this.displayStrategy.newContent(result.content);
-
-              if (result.hasMoreContent) {
-                fetchContent(result.paginationToken);
-              }
-            });
-          };
-          fetchContent();
-        })
+        this.startLoadingContent(),
       ]);
 
       // When the clients ask for the init, we tell them.
