@@ -59,10 +59,10 @@ export default function({debug, asset}) {
         }
       }
     }
-    loadMoreContent() {
-      return Promise.resolve({
+    async loadMoreContent() {
+      return {
         content: this.paths
-      });
+      };
     }
     serializeForClient() {
       return {local: this.config};
