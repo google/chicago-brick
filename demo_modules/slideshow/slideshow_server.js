@@ -31,46 +31,53 @@ import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display_server.js';
 
 import fetch from 'node-fetch';
+import randomjs from 'random-js';
+const random = new randomjs.Random();
 
 export function load(debug, network, assert, wallGeometry) {
   // DISPATCH TABLES
   // These methods convert a load or display config to specific server or client
   // strategies. New strategies should be added to these methods.
-  let parseServerLoadStrategy = (loadConfig) => {
+
+  const deps = {debug, network, assert, wallGeometry};
+
+  function parseServerLoadStrategy(loadConfig) {
     if (loadConfig.drive) {
-      return new (LoadFromDriveStrategy({debug, assert}).Server)(loadConfig.drive);
+      return new (LoadFromDriveStrategy(deps).Server)(loadConfig.drive);
     } else if (loadConfig.youtube) {
-      return new (LoadFromYouTubePlaylistStrategy({debug, assert}).Server)(loadConfig.youtube);
+      return new (LoadFromYouTubePlaylistStrategy(deps).Server)(loadConfig.youtube);
     } else if (loadConfig.local) {
-      return new (LoadLocalStrategy({debug, assert}).Server)(loadConfig.local);
+      return new (LoadLocalStrategy(deps).Server)(loadConfig.local);
     } else if (loadConfig.flickr) {
-      return new (LoadFromFlickrStrategy({debug, assert, fetch}).Server)(loadConfig.flickr);
+      return new (LoadFromFlickrStrategy({...deps, fetch}).Server)(loadConfig.flickr);
     }
 
     throw new Error('Could not parse load config: ' + Object.keys(loadConfig).join(', '));
-  };
+  }
 
-  let parseServerDisplayStrategy = (displayConfig) => {
+  function parseServerDisplayStrategy(displayConfig, contentFetcher) {
     if (displayConfig.fullscreen) {
-      return new (FullscreenDisplayStrategy({debug, wallGeometry, network}).Server)(displayConfig.fullscreen);
+      return new (FullscreenDisplayStrategy(deps).Server)(displayConfig.fullscreen, contentFetcher);
     }
     throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
-  };
+  }
 
   // MODULE DEFINTIONS
   class ImageServer {
     constructor(config) {
+      this.content = [];
+
       // The load strategy for this run of the module.
       this.loadStrategy = parseServerLoadStrategy(config.load);
 
       // The display strategy for this run of the module.
-      this.displayStrategy = parseServerDisplayStrategy(config.display);
+      this.displayStrategy = parseServerDisplayStrategy(config.display, this);
     }
     /**
      * What to do when new content is downloaded.
      */
     handleNewContent(content) {
-      this.displayStrategy.newContent(content);
+      this.content.push(...random.shuffle(content));
     }
     /**
      * Asks the load strategy to load some content and also starts a loop to
@@ -94,12 +101,16 @@ export function load(debug, network, assert, wallGeometry) {
       }
     }
 
+    async chooseContent() {
+      const ret = this.content.shift();
+      debug('Selected', ret);
+      this.content.push(ret);
+      return ret;
+    }
+
     async willBeShownSoon() {
       // Start the strategies initing.
-      await Promise.all([
-        this.displayStrategy.init(),
-        this.startLoadingContent(),
-      ]);
+      await this.startLoadingContent();
 
       // When the clients ask for the init, we tell them.
       network.on('req_init', (data, socket) => {

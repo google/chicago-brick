@@ -14,6 +14,14 @@ limitations under the License.
 ==============================================================================*/
 
 // INTERFACES
+
+export class ContentFetcher {
+  async chooseContent() {
+    // Returns 1 unit of opaque content loaded by the server-side loading
+    // strategy.
+  }
+}
+
 // Here, we specify the interfaces for the load and display strategies. There is
 // a separate interface for the server and the client.
 export class ServerLoadStrategy {
@@ -49,16 +57,8 @@ export class ClientLoadStrategy {
 }
 
 export class ServerDisplayStrategy {
-  init() {
-    // Return a promise when initialization is complete.
-    return Promise.resolve();
-  }
   tick(time, delta) {
     // Coordinate with the clients about what should be shown.
-  }
-  newContent(content) {
-    // A notification from the load strategy that new content has been
-    // discovered. The parameter is an array of content identifiers.
   }
   serializeForClient() {
     // Return JSON that can be transmitted to the client and can instantiate
