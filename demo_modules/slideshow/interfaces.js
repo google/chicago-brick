@@ -16,7 +16,7 @@ limitations under the License.
 // INTERFACES
 
 export class ContentFetcher {
-  async chooseContent() {
+  async chooseContent(client) {
     // Returns 1 unit of opaque content loaded by the server-side loading
     // strategy.
   }

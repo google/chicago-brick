@@ -101,9 +101,9 @@ export function load(debug, network, assert, wallGeometry) {
       }
     }
 
-    async chooseContent() {
+    async chooseContent(client) {
       const ret = this.content.shift();
-      debug('Selected', ret);
+      debug('Selected', ret, 'for client', client.offset);
       this.content.push(ret);
       return ret;
     }

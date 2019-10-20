@@ -40,7 +40,10 @@ export default function({network}) {
       let logError = (...args) => console.error(...args);
       //const logErrorPromise = import('../../client/util/log.js').then(e => logError = e.error(debug));
       this.content = null;
-      network.emit('display:init');
+      network.emit('display:init', {
+        offset: surface.virtualOffset,
+        rect: surface.virtualRect,
+      });
       this.surface = surface;
       network.on('display:content', c => {
         let container = this.surface.container;

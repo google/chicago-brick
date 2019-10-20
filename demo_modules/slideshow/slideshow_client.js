@@ -35,22 +35,24 @@ export function load(wallGeometry, debug, network, assert, asset) {
   // DISPATCH TABLES
   // These methods convert a load or display config to specific server or client
   // strategies. New strategies should be added to these methods.
+  const deps = {wallGeometry, debug, network, assert, asset};
+
   let parseClientLoadStrategy = (loadConfig) => {
     if (loadConfig.drive) {
-      return new (LoadFromDriveStrategy({debug, assert}).Client)(loadConfig.drive);
+      return new (LoadFromDriveStrategy(deps).Client)(loadConfig.drive);
     } else if (loadConfig.youtube) {
-      return new (LoadFromYouTubePlaylistStrategy({debug, assert}).Client)(loadConfig.youtube);
+      return new (LoadFromYouTubePlaylistStrategy(deps).Client)(loadConfig.youtube);
     } else if (loadConfig.local) {
-      return new (LoadLocalStrategy({debug, assert, asset}).Client)(loadConfig.local);
+      return new (LoadLocalStrategy(deps).Client)(loadConfig.local);
     } else if (loadConfig.flickr) {
-      return new (LoadFromFlickrStrategy({debug, assert}).Client)(loadConfig.flickr);
+      return new (LoadFromFlickrStrategy(deps).Client)(loadConfig.flickr);
     }
     throw new Error('Could not parse display config: ' + Object.keys(loadConfig).join(', '));
   };
 
   let parseClientDisplayStrategy = (displayConfig) => {
     if (displayConfig.fullscreen) {
-      return new (FullscreenDisplayStrategy({debug, wallGeometry, network}).Client)(displayConfig.fullscreen);
+      return new (FullscreenDisplayStrategy(deps).Client)(displayConfig.fullscreen);
     }
     throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
   };

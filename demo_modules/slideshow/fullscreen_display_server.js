@@ -53,10 +53,10 @@ export default function({network}) {
 
       // Tell the clients about content when it arrives.
       network.on(
-          'display:init', (data, socket) => this.sendContent(socket));
+          'display:init', (client, socket) => this.sendContent(client, socket));
     }
-    async sendContent(socket) {
-      const content = await this.contentFetcher.chooseContent();
+    async sendContent(client, socket) {
+      const content = await this.contentFetcher.chooseContent(client);
       // Send it to the specified client.
       socket.emit('display:content', content);
     }
@@ -67,7 +67,7 @@ export default function({network}) {
           // Pick a random client.
           let client = pick(Object.values(network.clients()));
           if (client) {
-            this.sendContent(client.socket);
+            this.sendContent(client, client.socket);
           }
           this.lastUpdate = time;
         }

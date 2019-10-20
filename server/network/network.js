@@ -43,7 +43,8 @@ const logClientError = clientError(Debug('wall:client_error'));
 const debug = Debug('wall:network');
 
 class ClientInfo {
-  constructor(rect, socket) {
+  constructor(offset, rect, socket) {
+    this.offset = offset;
     this.rect = rect;
     this.socket = socket;
   }
@@ -74,7 +75,7 @@ export function init(server) {
         socket.disconnect(true);
         return;
       }
-      const client = new ClientInfo(clientRect, socket);
+      const client = new ClientInfo(config.offset, clientRect, socket);
       if (monitor.isEnabled()) {
         monitor.update({layout: {
           time: now(),
