@@ -29,6 +29,7 @@ import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
 import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display_server.js';
+import {SizeLimitedCache} from '../../lib/size_limited_cache.js';
 
 import fetch from 'node-fetch';
 import randomjs from 'random-js';
@@ -65,6 +66,7 @@ export function load(debug, network, assert, wallGeometry) {
   // MODULE DEFINTIONS
   class ImageServer {
     constructor(config) {
+      // The client loaded so far by the loading strategy.
       this.content = [];
 
       // The load strategy for this run of the module.
@@ -72,6 +74,14 @@ export function load(debug, network, assert, wallGeometry) {
 
       // The display strategy for this run of the module.
       this.displayStrategy = parseServerDisplayStrategy(config.display, this);
+
+      // Caches used by the loading strategy when clipping images.
+      // The first is for whole content, which is typically looked-up by
+      // URL or other such unique identifier.
+      // The second is for the clipped content, which the loading strategy can
+      // use in any custom way.
+      this.contentCache = new SizeLimitedCache(500 * 2**20);
+      this.clippedContentCache = new SizeLimitedCache(500 * 2**20);
     }
     /**
      * What to do when new content is downloaded.
@@ -105,6 +115,25 @@ export function load(debug, network, assert, wallGeometry) {
       const ret = this.content.shift();
       debug('Selected', ret, 'for client', client.offset);
       this.content.push(ret);
+      // Ask the loading strategy to nab some metadata for this content item.
+      const metadata = await this.loadStrategy.metadataForContent(ret);
+      if (metadata) {
+        debug(`Metadata: ${metadata.width} x ${metadata.height}`);
+        // If it chooses to response with some, we then ask the display
+        // strategy if it wants to clip this content.
+        const clippingRect = this.displayStrategy.clipRectForMetadata(metadata, client);
+        if (clippingRect) {
+          debug(`Clipping rect for client ${client.offset}: ${clippingRect.serialize()}`);
+          // If it returns a clipping rect, we download the content, and then
+          // crop it.
+          const clippedContent = await this.loadStrategy.downloadFullContent(ret, clippingRect, this.clippedContentCache);
+          debug(`Clipping complete`);
+          return {
+            ...ret,
+            clippedContent
+          };
+        }
+      }
       return ret;
     }
 
