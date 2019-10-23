@@ -16,7 +16,7 @@ limitations under the License.
 import {ClientLoadStrategy} from './interfaces.js';
 import {delay} from '../../lib/promise.js';
 
-const API_BASE_URL = 'https://www.googleapis.com/drive/v2';
+const API_BASE_URL = 'https://www.googleapis.com/drive/v3';
 
 export default function({debug}) {
   class LoadFromDriveClientStrategy extends ClientLoadStrategy {

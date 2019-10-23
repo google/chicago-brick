@@ -35,7 +35,7 @@ export default function({debug}) {
       super();
       this.config = config;
 
-      // Drive client API v2.
+      // Drive client API.
       this.driveClient = null;
     }
     async init() {
@@ -46,14 +46,14 @@ export default function({debug}) {
       // TODO(applmak): Don't assign credentials to the config, which is
       // readable on the status page!
       this.config.credentials = client.credentials;
-      this.driveClient = client.googleapis.drive('v2');
+      this.driveClient = client.googleapis.drive('v3');
     }
     async loadMoreContent(opt_paginationToken) {
       let response;
       if (this.config.folderId) {
         try {
-          response = await this.driveClient.children.list({
-            folderId: this.config.folderId,
+          response = await this.driveClient.files.get({
+            q: `"${this.config.folderId} in parents"`,
             maxResults: 1000,
             pageToken: opt_paginationToken
           });
