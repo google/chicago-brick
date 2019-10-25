@@ -45,16 +45,18 @@ export class ServerLoadStrategy {
     //    invocation of loadMoreContent if there is more content to download.
     //  - content: An array of content, suitable for transmission to the client.
   }
-  async downloadFullContent(content, clippingRect, cache) {
+  async downloadContent(content, clippingRect, cache) {
     // Allows the load strategy to optimize the content for a specific
     // client. The strategy should return the content in the clipping rect. It
     // should also make use of the provided cache (a Map) to avoid duplicating
-    // work, such as downloading or clipping.
+    // work, such as downloading or clipping. If the clippingRect is null, the
+    // load strategy should return the whole content.
     return null;
   }
-  async metadataForContent(content) {
+  async metadataForContent(content, cache) {
     // Returns a ContentMetadata associated with this content, or null if
-    // there isn't any.
+    // there isn't any. The strategy can use the provided cache (a Map) to
+    // store any data for future lookup.
     return null;
   }
   serializeForClient() {

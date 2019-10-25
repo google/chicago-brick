@@ -75,13 +75,9 @@ export function load(debug, network, assert, wallGeometry) {
       // The display strategy for this run of the module.
       this.displayStrategy = parseServerDisplayStrategy(config.display, this);
 
-      // Caches used by the loading strategy when clipping images.
-      // The first is for whole content, which is typically looked-up by
-      // URL or other such unique identifier.
-      // The second is for the clipped content, which the loading strategy can
-      // use in any custom way.
-      this.contentCache = new SizeLimitedCache(500 * 2**20);
-      this.clippedContentCache = new SizeLimitedCache(500 * 2**20);
+      // Caches used by the loading strategy when clipping images. The exact
+      // format of keys is determined by the loading strategy.
+      this.contentCache = new SizeLimitedCache(2**30);
     }
     /**
      * What to do when new content is downloaded.
@@ -116,17 +112,17 @@ export function load(debug, network, assert, wallGeometry) {
       debug('Selected', ret, 'for client', client.offset);
       this.content.push(ret);
       // Ask the loading strategy to nab some metadata for this content item.
-      const metadata = await this.loadStrategy.metadataForContent(ret);
+      const metadata = await this.loadStrategy.metadataForContent(ret, this.contentCache);
       if (metadata) {
         debug(`Metadata: ${metadata.width} x ${metadata.height}`);
         // If it chooses to response with some, we then ask the display
         // strategy if it wants to clip this content.
         const clippingRect = this.displayStrategy.clipRectForMetadata(metadata, client);
         if (clippingRect) {
-          debug(`Clipping rect for client ${client.offset}: ${clippingRect.serialize()}`);
+          debug(`Clipping rect for client ${JSON.stringify(client.offset)}: ${clippingRect.serialize()}`);
           // If it returns a clipping rect, we download the content, and then
           // crop it.
-          const clippedContent = await this.loadStrategy.downloadFullContent(ret, clippingRect, this.clippedContentCache);
+          const clippedContent = await this.loadStrategy.downloadContent(ret, clippingRect, this.contentCache);
           debug(`Clipping complete`);
           return {
             ...ret,
