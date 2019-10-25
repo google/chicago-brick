@@ -24,38 +24,44 @@ export default function({debug}) {
       super();
       this.config = config;
     }
-    async loadContent({fileId}) {
-      let res;
-      let timeout = Math.floor(1000 + Math.random() * 1000);
-      for (let numTriesLeft = 5; numTriesLeft > 0; numTriesLeft--) {
-        res = await fetch(`${API_BASE_URL}/files/${fileId}?alt=media`, {
-          headers: new Headers({
-            'Authorization': 'Bearer ' + this.config.credentials.access_token
-          })
-        });
-        if (res.ok) {
-          break;
+    async loadContent({fileId, clippedContent}) {
+      let blob, type;
+      if (clippedContent) {
+        type = 'image/png';
+        blob = new Blob([clippedContent], {type});
+      } else if (fileId) {
+        let res;
+        let timeout = Math.floor(1000 + Math.random() * 1000);
+        for (let numTriesLeft = 5; numTriesLeft > 0; numTriesLeft--) {
+          res = await fetch(`${API_BASE_URL}/files/${fileId}?alt=media`, {
+            headers: new Headers({
+              'Authorization': 'Bearer ' + this.config.credentials.access_token
+            })
+          });
+          if (res.ok) {
+            break;
+          }
+          debug(`Failed to load! ${fileId} ${res.status} ${res.statusText}`);
+          if (res.status == 403) {
+            // Probably rate-limited. To fix this, we'll attempt to download
+            // again after a random, exponentially increasing time.
+            debug(`Retrying after ${timeout} ms and ${numTriesLeft} tries left...`);
+            await delay(timeout);
+            timeout *= 2.0;
+            timeout += Math.floor(Math.random * 1000);
+          } else {
+            break;
+          }
         }
-        debug(`Failed to load! ${fileId} ${res.status} ${res.statusText}`);
-        if (res.status == 403) {
-          // Probably rate-limited. To fix this, we'll attempt to download
-          // again after a random, exponentially increasing time.
-          debug(`Retrying after ${timeout} ms and ${numTriesLeft} tries left...`);
-          await delay(timeout);
-          timeout *= 2.0;
-          timeout += Math.floor(Math.random * 1000);
-        } else {
-          break;
+        if (!res.ok) {
+          throw new Error(`Failed to download ${fileId}! ${res.status} ${res.statusTxt}`);
         }
-      }
-      if (!res.ok) {
-        throw new Error(`Failed to download ${fileId}! ${res.status} ${res.statusTxt}`);
-      }
 
-      const type = res.headers.get('content-type');
-      const size = res.headers.get('content-length');
-      debug(`Downloading image (${type} size:${size})`);
-      const blob = await res.blob();
+        type = res.headers.get('content-type');
+        const size = res.headers.get('content-length');
+        debug(`Downloading image (${type} size:${size})`);
+        blob = await res.blob();
+      }
       const url = URL.createObjectURL(blob);
       try {
         if (type.indexOf('image') != -1) {

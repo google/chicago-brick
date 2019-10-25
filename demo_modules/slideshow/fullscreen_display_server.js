@@ -18,6 +18,8 @@ import {ServerDisplayStrategy} from './interfaces.js';
 import randomjs from 'random-js';
 const random = new randomjs.Random();
 
+import {Rectangle} from '../../lib/math/rectangle.js';
+
 function pick(arr) {
   if (arr.length) {
     return random.pick(arr);
@@ -25,7 +27,7 @@ function pick(arr) {
   return null;
 }
 
-export default function({network}) {
+export default function({network, wallGeometry}) {
   // FULLSCREEN DISPLAY STRATEGY
   // This display strategy shows a single element per screen, updating at a rate
   // specified in the config. We wait for the corresponding element to load
@@ -75,6 +77,30 @@ export default function({network}) {
     }
     serializeForClient() {
       return {'fullscreen': this.config};
+    }
+    clipRectForMetadata(metadata, client) {
+      // We'll presume that the content is centered in the space of the wall.
+      // TODO(applmak): Choose some fancier display strategies.
+      let imageInWallSpace = new Rectangle(0, 0, metadata.width, metadata.height);
+      // Shrink the image to fit.
+      if (imageInWallSpace.w > wallGeometry.extents.w) {
+        const scale = wallGeometry.extents.w / imageInWallSpace.w;
+        imageInWallSpace  = imageInWallSpace.scale(scale, scale);
+      }
+      if (imageInWallSpace.h > wallGeometry.extents.h) {
+        const scale = wallGeometry.extents.h / imageInWallSpace.h;
+        imageInWallSpace  = imageInWallSpace.scale(scale, scale);
+      }
+      // Center the image in the wall.
+      imageInWallSpace = imageInWallSpace.translate({
+        x: wallGeometry.extents.w / 2 - imageInWallSpace.w / 2,
+        y: wallGeometry.extents.h / 2 - imageInWallSpace.h / 2,
+      });
+      // Now, for this particular client, what is its clip rect?
+      const clippedRectInWallSpace = imageInWallSpace.intersection(client.rect);
+
+      // Now, convert to image space by subtracting the origin of the image in wall space.
+      return clippedRectInWallSpace.translate({x: imageInWallSpace.x, y: imageInWallSpace.y});
     }
   }
 

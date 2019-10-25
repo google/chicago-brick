@@ -123,7 +123,7 @@ export function load(debug, network, assert, wallGeometry) {
           // If it returns a clipping rect, we download the content, and then
           // crop it.
           const clippedContent = await this.loadStrategy.downloadContent(ret, clippingRect, this.contentCache);
-          debug(`Clipping complete`);
+          debug(`Clipping complete for client ${JSON.stringify(client.offset)} on ${JSON.stringify(ret)}`);
           return {
             ...ret,
             clippedContent
