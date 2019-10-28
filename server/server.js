@@ -52,7 +52,7 @@ const FLAG_DEFS = [
       defaultValue: ['demo_modules', 'modules'], multiple: true,
       description: 'List of directories of modules and assets.  Everything ' +
           'under these dirs will be available under ' +
-          '/asset/{whatever is under your directories}.'},
+          '/asset/(whatever is under your directories).'},
   {name: 'module_dir', type: String,
       defaultValue: ['demo_modules/*', 'node_modules/*'], multiple: true,
       description: 'A glob pattern matching directories that contain module ' +
