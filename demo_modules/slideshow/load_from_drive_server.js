@@ -163,6 +163,11 @@ export default function({debug}) {
       return await sharp(image).metadata();
     }
     async metadataForContent(content, cache) {
+      if (!this.config.split) {
+        // If we aren't set to split, we don't do any metadata fetching.
+        return null;
+      }
+
       const {inflightCache} = this;
       const {fileId} = content;
       // Maybe the caches have this?
