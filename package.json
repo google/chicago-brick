@@ -33,6 +33,7 @@
     "peerjs": "^1.1.0",
     "random-js": "^2.1.0",
     "relaxed-json": "^1.0.0",
+    "sharp": "^0.23.1",
     "socket.io": "^2.3.0",
     "socket.io-client": "^2.3.0",
     "three-full": "^11.3.2"
