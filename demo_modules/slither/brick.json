@@ -6,7 +6,4 @@
     "title": "Slither",
     "author": "Matt Handley",
   },
-  "config": {
-    "numSnakes": 100
-  }
 }
