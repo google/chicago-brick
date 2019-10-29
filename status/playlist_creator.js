@@ -188,17 +188,25 @@ export class PlaylistCreator {
         }
       }
     } else if (this.container.querySelector('#drive-folder-config').style.display != 'none') {
+      const splitEl = this.container.querySelector('#drive-split');
       // TODO(applmak): Add fancy validation that actually queries that the
       // folder is accessible.
       const folderEl = this.container.querySelector('#drive-folder-field');
-      if (folderEl.value) {
+      const fileEl = this.container.querySelector('#drive-file-field');
+
+      if ((folderEl.value || fileEl.value) && !(folderEl.value && fileEl.value)) {
+        fileEl.classList.remove('invalid');
         folderEl.classList.remove('invalid');
+
+        const drive = {split: splitEl.checked};
+        if (fileEl.value) {
+          drive.fileId = fileEl.value;
+        } else {
+          drive.folderId = folderEl.value;
+        }
+
         config = {
-          load: {
-            drive: {
-              folderId: folderEl.value
-            }
-          },
+          load: {drive},
           display: {
             fullscreen: {
               period: 8000,
@@ -209,6 +217,7 @@ export class PlaylistCreator {
           }
         };
       } else {
+        fileEl.classList.add('invalid');
         folderEl.classList.add('invalid');
         invalid = true;
       }
