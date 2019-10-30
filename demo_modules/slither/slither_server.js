@@ -1,3 +1,5 @@
+import {sub} from '../../lib/math/vector2d.js';
+
 export function load(debug, state, wallGeometry) {
   const COLORS = [
     '#ff0000',
@@ -64,14 +66,8 @@ export function load(debug, state, wallGeometry) {
       this.snakes.forEach((snake, index) => {
         // First check OOB:
         if (!wallGeometry.extents.isInside(snake.position)) {
-          const wallCenter = {
-            x: wallGeometry.extents.x + wallGeometry.extents.w / 2,
-            y: wallGeometry.extents.y + wallGeometry.extents.h/2
-          };
-          const delta = {
-            x: wallCenter.x - snake.position.x,
-            y: wallCenter.y - snake.position.y
-          };
+          const wallCenter = wallGeometry.extents.center();
+          const delta = sub(wallCenter, snake.position);
           // Is heading to left or right of the angle of the delta?
           const deltaAngle = Math.atan2(delta.y, delta.x);
           const normalizedHeading = (snake.heading % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);

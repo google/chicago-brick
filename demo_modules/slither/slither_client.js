@@ -1,6 +1,8 @@
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 import {NumberLerpInterpolator, ValueNearestInterpolator} from '/lib/shared_state.js';
 
+import {rotCCW, scale, add} from '/lib/math/vector2d.js';
+
 export function load(debug, state, wallGeometry) {
   // TODO(applmak): Use a real color object/library.
   const darken = (color, i) => {
@@ -26,56 +28,85 @@ export function load(debug, state, wallGeometry) {
       this.canvas.fillStyle = 'black';
       this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
 
-      const snakes = [];
+      const snakeSeries = [];
       for (let i = 0; i < 120*20; i += 120) {
         let s = this.snakeState.get(time - i);
         if (s) {
-          snakes.unshift(s);
+          snakeSeries.unshift(s);
         }
       }
 
-      if (!snakes.length) {
+      if (!snakeSeries.length) {
         return;
       }
+
+      // Transport the snakes to be per-snake.
+      const snakes = snakeSeries[0].map((col, i) => snakeSeries.map(row => row[i]));
 
       // Push a transform.
       this.surface.pushOffset();
 
-      this.canvas.strokeStyle = 'gray';
-      this.canvas.lineWidth = 8.0;
-      snakes[0].forEach((_, index) => {
+      // Draw each snake. This is probably faster than drawing all of the layers
+      // individually, because these layers take up roughly the whole screen, so
+      // no paths can be trivially eliminated. However, each snake is bounded
+      // into a small area of the screen, so each can be trivially clipped.
+      const OUTLINE_WIDTH = 5;
+      const SEGMENT_RADIUS = 50;
+      for (const snake of snakes) {
+        // Outline:
+        this.canvas.fillStyle = 'gray';
         this.canvas.beginPath();
-        snakes.forEach(snake => {
-          this.canvas.ellipse(snake[index].position.x, snake[index].position.y, 50, 50, 0, 0, 2*Math.PI, false);
-        });
-        this.canvas.stroke();
-        snakes.forEach((snake, i) => {
-          this.canvas.fillStyle = darken(snakes[0][index].color, snakes.length - 1 - i);
+        for (const segment of snake) {
+          this.canvas.moveTo(segment.position.x, segment.position.y);
+          this.canvas.ellipse(segment.position.x, segment.position.y,
+              SEGMENT_RADIUS + OUTLINE_WIDTH,
+              SEGMENT_RADIUS + OUTLINE_WIDTH,
+              0, 0, 2*Math.PI, false);
+        }
+        this.canvas.fill();
+
+        // Body:
+        for (const [i, segment] of snake.entries()) {
+          this.canvas.fillStyle = darken(segment.color, snake.length - 1 - i);
           this.canvas.beginPath();
-          this.canvas.ellipse(snake[index].position.x, snake[index].position.y, 50, 50, 0, 0, 2*Math.PI, false);
+          this.canvas.ellipse(segment.position.x, segment.position.y,
+              SEGMENT_RADIUS, SEGMENT_RADIUS,
+              0, 0, 2*Math.PI, false);
           this.canvas.fill();
-        });
-        let s = snakes[snakes.length - 1][index];
+        }
+
+        // Eyes:
+        const DISTANCE_FROM_HEAD_CENTER_TO_EYE = 25;
+        const EYE_RADIUS = 10;
+        const EYE_VEC = scale({x: 1, y: 0}, DISTANCE_FROM_HEAD_CENTER_TO_EYE);
+        const headSegment = snake[snake.length - 1];
+        const leftEyePos = add(headSegment.position, rotCCW(EYE_VEC, headSegment.heading + Math.PI / 4));
+        const rightEyePos = add(headSegment.position, rotCCW(EYE_VEC, headSegment.heading - Math.PI / 4));
         this.canvas.fillStyle = 'white';
         this.canvas.beginPath();
-        let x = s.position.x + Math.cos(s.heading - Math.PI/4) * 25;
-        let y = s.position.y + Math.sin(s.heading - Math.PI/4) * 25;
-        this.canvas.ellipse(x, y, 10, 10, 0, 0, 2*Math.PI, false);
-        x = s.position.x + Math.cos(s.heading + Math.PI/4) * 25;
-        y = s.position.y + Math.sin(s.heading + Math.PI/4) * 25;
-        this.canvas.ellipse(x, y, 10, 10, 0, 0, 2*Math.PI, false);
+        this.canvas.ellipse(leftEyePos.x, leftEyePos.y, EYE_RADIUS, EYE_RADIUS, 0, 0, 2*Math.PI, false);
+        this.canvas.moveTo(rightEyePos.x, rightEyePos.y);
+        this.canvas.ellipse(rightEyePos.x, rightEyePos.y, EYE_RADIUS, EYE_RADIUS, 0, 0, 2*Math.PI, false);
         this.canvas.fill();
+
+        // Pupils:
+        const leftPupilPos = add(headSegment.position, rotCCW(EYE_VEC, headSegment.heading + Math.PI / 4));
+        const rightPupilPos = add(headSegment.position, rotCCW(EYE_VEC, headSegment.heading - Math.PI / 4));
+
+        const pupilHeadingAdjustment = snake.length > 1 ? headSegment.heading - snake[snake.length - 2].heading : 0;
+        const pupilHeading = headSegment.heading + 10 * pupilHeadingAdjustment;
+        const PUPIL_DIR = {x: 3, y: 0};
+        const leftPupilWithHeading = add(leftPupilPos, rotCCW(PUPIL_DIR, pupilHeading));
+        const rightPupilWithHeading = add(rightPupilPos, rotCCW(PUPIL_DIR, pupilHeading));
 
         this.canvas.fillStyle = 'black';
         this.canvas.beginPath();
-        x = s.position.x + Math.cos(s.heading - Math.PI/4) * 26;
-        y = s.position.y + Math.sin(s.heading - Math.PI/4) * 26;
-        this.canvas.ellipse(x, y, 5, 5, 0, 0, 2*Math.PI, false);
-        x = s.position.x + Math.cos(s.heading + Math.PI/4) * 26;
-        y = s.position.y + Math.sin(s.heading + Math.PI/4) * 26;
-        this.canvas.ellipse(x, y, 5, 5, 0, 0, 2*Math.PI, false);
+        this.canvas.ellipse(leftPupilWithHeading.x, leftPupilWithHeading.y, EYE_RADIUS/2, EYE_RADIUS/2, 0, 0, 2*Math.PI, false);
+        this.canvas.moveTo(rightPupilWithHeading.x, rightPupilWithHeading.y);
+        this.canvas.ellipse(rightPupilWithHeading.x, rightPupilWithHeading.y, EYE_RADIUS/2, EYE_RADIUS/2, 0, 0, 2*Math.PI, false);
         this.canvas.fill();
-      });
+      }
+
 
       this.surface.popOffset();
     }
