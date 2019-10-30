@@ -17,6 +17,7 @@ limitations under the License.
 
 import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
 import {loadYoutubeApi} from './load_youtube_api.js';
+import {delay} from '../../lib/promise.js';
 
 export default function({debug}) {
   // LOAD YOUTUBE PLAYLIST STRATEGY
@@ -45,35 +46,30 @@ export default function({debug}) {
       this.config.credentials = client.credentials;
       this.api = client.googleapis.youtube('v3');
     }
-    loadMoreContent(opt_paginationToken) {
-      return new Promise((resolve, reject) =>
-        this.api.playlistItems.list({
+    async loadMoreContent(opt_paginationToken) {
+      let response;
+      try {
+        response = await this.api.playlistItems.list({
           playlistId: this.config.playlistId,
           pageToken: opt_paginationToken,
           maxResults: 50,
           part: 'snippet'
-        }, (err, response) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(response);
-        })
-      ).then((response) => {
-        debug('Downloaded ' + response.data.items.length + ' more content ids.');
-        return {
-          content: response.data.items.map((item, index) => {
-            return {
-              videoId: item.snippet.resourceId.videoId,
-              index: index
-            };
-          }),
-          hasMoreContent: !!response.nextPageToken,
-          paginationToken: response.nextPageToken
-        };
-      }, () => {
+        });
+      } catch (e) {
         debug('Failed to download more youtube content! Delay a bit...');
-        return Promise.delay(Math.random() * 4000 + 1000).then(() => this.loadMoreContent(opt_paginationToken));
-      });
+        await delay(Math.random() * 4000 + 1000);
+        return this.loadMoreContent(opt_paginationToken);
+      }
+      debug('Downloaded ' + response.data.items.length + ' more content ids.');
+      return {
+        content: response.data.items.map((item, index) => {
+          return {
+            videoId: item.snippet.resourceId.videoId,
+            index: index
+          };
+        }),
+        paginationToken: response.nextPageToken
+      };
     }
     serializeForClient() {
       return {youtube: this.config};
@@ -174,7 +170,7 @@ export default function({debug}) {
           };
         }
 
-        return video;
+        return {element: video};
       });
     }
   }

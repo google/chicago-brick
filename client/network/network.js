@@ -28,7 +28,10 @@ export function init() {
   socket = io(location.host);
 
   function sendHello() {
-    socket.emit('client-start', {rect: info.virtualRectNoBezel.serialize()});
+    socket.emit('client-start', {
+      offset: info.virtualOffset,
+      rect: info.virtualRectNoBezel.serialize()
+    });
   }
 
   // When we reconnect after a disconnection, we need to tell the server

@@ -14,20 +14,50 @@ limitations under the License.
 ==============================================================================*/
 
 // INTERFACES
+
+export class ContentFetcher {
+  async chooseContent(client) {
+    // Returns 1 unit of opaque content loaded by the server-side loading
+    // strategy.
+  }
+}
+
+export class ContentMetadata {
+  get width() {
+    // Returns the width of the content.
+    return 0;
+  }
+  get height() {
+    // returns the height of the content.
+    return 0;
+  }
+}
+
 // Here, we specify the interfaces for the load and display strategies. There is
 // a separate interface for the server and the client.
 export class ServerLoadStrategy {
-  init() {
+  async init() {
     // Return a promise when initialization is complete.
-    return Promise.resolve();
   }
-  loadMoreContent(opt_paginationToken) {
+  async loadMoreContent(opt_paginationToken) {
     // Return a promise of a result with the following properties:
-    //  - hasMoreContent: True, if the loader has more content to download.
     //  - paginationToken: An opaque token that will be passed to the next
-    //    invocation of loadMoreContent is hasMoreContent is true.
+    //    invocation of loadMoreContent if there is more content to download.
     //  - content: An array of content, suitable for transmission to the client.
-    return Promise.resolve([]);
+  }
+  async downloadContent(content, clippingRect, cache) {
+    // Allows the load strategy to optimize the content for a specific
+    // client. The strategy should return the content in the clipping rect. It
+    // should also make use of the provided cache (a Map) to avoid duplicating
+    // work, such as downloading or clipping. If the clippingRect is null, the
+    // load strategy should return the whole content.
+    return null;
+  }
+  async metadataForContent(content, cache) {
+    // Returns a ContentMetadata associated with this content, or null if
+    // there isn't any. The strategy can use the provided cache (a Map) to
+    // store any data for future lookup.
+    return null;
   }
   serializeForClient() {
     // Return JSON that can be transmitted to the client and can instantiate
@@ -50,16 +80,15 @@ export class ClientLoadStrategy {
 }
 
 export class ServerDisplayStrategy {
-  init() {
-    // Return a promise when initialization is complete.
-    return Promise.resolve();
-  }
   tick(time, delta) {
     // Coordinate with the clients about what should be shown.
   }
-  newContent(content) {
-    // A notification from the load strategy that new content has been
-    // discovered. The parameter is an array of content identifiers.
+  clipRectForMetadata(metadata, client) {
+    // Returns a clipping rect for the content specified by the metadata for
+    // the specified client. The returned Rectangle should be in the unit-space
+    // of the content (0,0) contentWidth x contentHeight. The strategy can
+    // instead return null to denote that no clipping should occur.
+    return null;
   }
   serializeForClient() {
     // Return JSON that can be transmitted to the client and can instantiate

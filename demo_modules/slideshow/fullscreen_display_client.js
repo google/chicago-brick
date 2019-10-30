@@ -40,7 +40,10 @@ export default function({network}) {
       let logError = (...args) => console.error(...args);
       //const logErrorPromise = import('../../client/util/log.js').then(e => logError = e.error(debug));
       this.content = null;
-      network.emit('display:init');
+      network.emit('display:init', {
+        offset: surface.virtualOffset,
+        rect: surface.virtualRect,
+      });
       this.surface = surface;
       network.on('display:content', c => {
         let container = this.surface.container;
@@ -61,6 +64,7 @@ export default function({network}) {
 
         loadStrategy.loadContent(c).then(content => {
           // One piece of content per client.
+          content = content.element;
           this.content = content;
           let s = this.config_.image && this.config_.image.scale || 'stretch';
           this.surface.container.style.display = 'flex';
