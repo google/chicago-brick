@@ -1,3 +1,5 @@
+import {sub} from '../../lib/math/vector2d.js';
+
 export function load(debug, state, wallGeometry) {
   const COLORS = [
     '#ff0000',
@@ -25,16 +27,17 @@ export function load(debug, state, wallGeometry) {
   ];
   const SPEED = 0.2;
 
-  const isOutOfBounds = ({x, y}, rect) => {
-    return x < rect.x || y < rect.y || x > rect.x + rect.w || y > rect.y + rect.h;
-  };
+  function chooseDefaultSnakeCount() {
+    // We want about 1 snake every 1000 pixels in each direction.
+    return Math.ceil(wallGeometry.extents.w * wallGeometry.extents.h / 1000 / 1000);
+  }
 
   class SlitherServer {
     constructor(config) {
       // Last position and heading and color of each snake.
       this.snakes = [];
 
-      this.numSnakes = config.numSnakes || 10;
+      this.numSnakes = config.numSnakes || chooseDefaultSnakeCount();
     }
     async willBeShownSoon(deadline) {
       // Initialize the snakes.
@@ -62,15 +65,9 @@ export function load(debug, state, wallGeometry) {
       // We want to switch strategies about once every second or so.
       this.snakes.forEach((snake, index) => {
         // First check OOB:
-        if (isOutOfBounds(snake.position, wallGeometry.extents)) {
-          const wallCenter = {
-            x: wallGeometry.extents.x + wallGeometry.extents.w / 2,
-            y: wallGeometry.extents.y + wallGeometry.extents.h/2
-          };
-          const delta = {
-            x: wallCenter.x - snake.position.x,
-            y: wallCenter.y - snake.position.y
-          };
+        if (!wallGeometry.extents.isInside(snake.position)) {
+          const wallCenter = wallGeometry.extents.center();
+          const delta = sub(wallCenter, snake.position);
           // Is heading to left or right of the angle of the delta?
           const deltaAngle = Math.atan2(delta.y, delta.x);
           const normalizedHeading = (snake.heading % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
