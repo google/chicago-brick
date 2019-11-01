@@ -21,7 +21,7 @@ import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as webapp from './webapp.js';
-import Debug from 'debug';
+import library from './modules/module_library.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
@@ -33,9 +33,18 @@ import {ServerModulePlayer} from './modules/server_module_player.js';
 import peer from 'peer';
 import {PlaylistDriver} from './modules/playlist_driver.js';
 import {PlaylistLoader} from './modules/playlist_loader.js';
+import {makeConsoleLogger} from '../lib/console_logger.js';
+import {captureLog} from './util/last_n_errors_logger.js';
+import {addLogger, easyLog} from '../lib/log.js';
+import chalk from 'chalk';
+import {now} from './util/time.js';
+
+addLogger(makeConsoleLogger(c => chalk.keyword(c), now));
+addLogger(captureLog, 'wall');
+
+const log = easyLog('wall:server');
 
 const {PeerServer} = peer;
-const debug = Debug('wall:server');
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
@@ -80,7 +89,8 @@ if (flags.help) {
   console.log('Available flags: ' + commandLineUsage({optionList: FLAG_DEFS}));
   process.exit();
 }
-debug('flags', flags);
+log('flags')
+log(flags);
 if (flags.use_geometry) {
   wallGeometry.useGeo(flags.use_geometry);
 } else if (flags.geometry_file) {
@@ -97,8 +107,8 @@ if (flags.screen_width) {
 }
 
 process.on('unhandledRejection', (reason, p) => {
-  debug('Unhandled rejection: ', p);
-  debug(reason);
+  log.error('Unhandled rejection: ', p);
+  log.error(reason);
 });
 
 const moduleLoader = new ModuleLoader(flags);
@@ -128,7 +138,7 @@ var listener = function() {
   var host = server.address().address;
   var port = server.address().port;
 
-  debug('Server listening at http://%s:%s', host, port);
+  log(`Server listening at http://${host}:${port}`);
 };
 
 if (flags.use_https) {
@@ -146,10 +156,10 @@ if (flags.use_https) {
 
 var peerServer = new PeerServer({port: flags.port + 6000, path: '/peerjs'});
 peerServer.on('connection', function(id) {
-  debug('peer connection!', id);
+  log.debugAt(1, 'peer connection!', id);
 });
 peerServer.on('disconnect', function(id) {
-  debug('peer disconnect!', id);
+  log.debugAt(1, 'peer disconnect!', id);
 });
 
 network.init(server);
@@ -161,5 +171,6 @@ if (flags.enable_monitoring) {
 const control = new Control(driver, moduleLoader, playlistLoader);
 control.installHandlers(app, network.controlSocket());
 
-debug('Running playlist of ' + playlist.length + ' items');
+log(`Loaded ${Object.keys(library.modules).length} modules`);
+log('Running playlist of ' + playlist.length + ' layouts');
 driver.start(playlist);

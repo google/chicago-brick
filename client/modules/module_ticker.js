@@ -13,13 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as log from '/client/util/log.js';
 import * as monitor from '/client/monitoring/monitor.js';
-import Debug from '/lib/lame_es6/debug.js';
+import {easyLog} from '/lib/log.js';
 import {now} from '/client/util/time.js';
 
-const debug = Debug('wall:module_ticker');
-const error = log.error(debug);
+const log = easyLog('wall:module_ticker');
 
 // An array of modules.
 let modulesToDraw = [];
@@ -34,7 +32,7 @@ function draw() {
     try {
       module.draw(n, delta);
     } catch (e) {
-      error(e, {
+      log.error(e, {
         module: module.name
       });
     }
@@ -47,11 +45,11 @@ window.requestAnimationFrame(draw);
 
 export function add(name, module) {
   modulesToDraw.push({name, module});
-  debug(`Add: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
+  log.debugAt(1, `Add: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
   monitor.markDrawnModules(modulesToDraw.map(m => m.name));
 }
 export function remove(module) {
   modulesToDraw = modulesToDraw.filter(pair => pair.module !== module);
-  debug(`Remove: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
+  log.debugAt(1, `Remove: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
   monitor.markDrawnModules(modulesToDraw.map(m => m.name));
 }

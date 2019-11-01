@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from '../monitoring/monitor.js';
-import Debug from 'debug';
+import {easyLog} from '../../lib/log.js';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
@@ -23,7 +23,7 @@ import library from './module_library.js';
 import {emitter} from '../network/network.js';
 import EventEmitter from 'events';
 
-const debug = Debug('wall::playlist_driver');
+const log = easyLog('wall:playlist_driver');
 const random = new randomjs.Random();
 
 export class PlaylistDriver extends EventEmitter {
@@ -153,7 +153,7 @@ export class PlaylistDriver extends EventEmitter {
       }});
     }
 
-    debug(`Next Layout: ${this.layoutIndex}`);
+    log(`Next Layout: ${this.layoutIndex}`);
 
     // If the wall isn't already faded out, fade it out:
     let concurrentWork = [];
@@ -178,7 +178,7 @@ export class PlaylistDriver extends EventEmitter {
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
 
-    debug(`Next module: ${this.modules[this.moduleIndex]} (${library.modules[this.modules[this.moduleIndex]].valid ? 'valid' : 'invalid'})`);
+    log(`Next module: ${this.modules[this.moduleIndex]} (${library.modules[this.modules[this.moduleIndex]].valid ? 'valid' : 'invalid'})`);
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];

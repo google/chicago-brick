@@ -16,11 +16,30 @@ limitations under the License.
 import * as monitor from '/client/monitoring/monitor.js';
 import * as network from '/client/network/network.js';
 import * as stateManager from '/client/state/state_manager.js';
-import Debug from '/lib/lame_es6/debug.js';
+import {makeConsoleLogger} from '/lib/console_logger.js';
+import {addLogger} from '/lib/log.js';
+import {now} from './util/time.js';
+import {errorLogger} from './util/error_logger.js';
 import {ClientModulePlayer} from '/client/modules/client_module_player.js';
 import {ClientModule} from '/client/modules/module.js';
 
-Debug.enable('wall:*');
+function makeConsoleColorFn(css) {
+  const ret = str => {
+    return `%c${str}%c`;
+  }
+  ret.desc = css;
+  return ret;
+}
+
+addLogger(makeConsoleLogger(c => {
+  const ret = makeConsoleColorFn([`color: ${c}`]);
+  ret.bold = {
+    bgRed: makeConsoleColorFn(['font-weight: bolder', 'background-color: red', `color: ${c}`]),
+  };
+  ret.bgBlue = makeConsoleColorFn(['background-color: blue', `color: ${c}`]);
+  return ret;
+}, now));
+addLogger(errorLogger);
 
 // Open our socket to the server.
 network.init();

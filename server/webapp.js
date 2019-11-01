@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import Debug from 'debug';
+import {easyLog} from '../lib/log.js';
 import bodyParser from 'body-parser';
 import express from 'express';
 import fs from 'fs';
@@ -21,7 +21,7 @@ import glob from 'glob';
 import library from './modules/module_library.js';
 import path from 'path';
 
-const debug = Debug('wall:webapp');
+const log = easyLog('wall:webapp');
 
 /**
  * Creates the main ExpressJS web app.
@@ -38,8 +38,8 @@ export function create(flags) {
     base = path.join(base, 'node_modules/chicago-brick');
   }
 
-  debug('webapp base dir is ' + base);
-  debug('node_modules_dir is ' + flags.node_modules_dir);
+  log('webapp base dir is ' + base);
+  log('node_modules_dir is ' + flags.node_modules_dir);
 
   // Sub-app serving the static content (i.e. the modules and client).
   var app = express();
@@ -71,12 +71,12 @@ export function create(flags) {
   app.use('/module/:name', function(req, res, next){
     const module = library.modules[req.params.name];
     if (!module) {
-      debug(`No module found by name: ${req.params.name}`);
+      log.error(`No module found by name: ${req.params.name}`);
       return res.sendStatus(404);
     }
     const handler = moduleStaticFileHandlers[module.root];
     if (!handler) {
-      debug(`No static file handler for module root: ${module.root}`);
+      log.error(`No static file handler for module root: ${module.root}`);
       return res.sendStatus(404);
     }
     // Disable caching of module code.

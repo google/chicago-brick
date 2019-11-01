@@ -24,7 +24,7 @@ else
 fi
 
 # Run brick:
-DEBUG=wall:* node \
+node \
   $INSPECT \
   --experimental_modules \
   server/server.js \

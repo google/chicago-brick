@@ -13,15 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import Debug from 'debug';
 import RJSON from 'relaxed-json';
 import assert from '../../lib/assert.js';
+import {easyLog} from '../../lib/log.js';
 import fs from 'fs';
 import glob from 'glob';
 import library from './module_library.js';
 import path from 'path';
 import {ModuleDef} from './module_def.js';
-const debug = Debug('wall:module_loader');
+const log = easyLog('wall:module_loader');
 
 export class ModuleLoader {
   constructor(flags) {
@@ -33,7 +33,7 @@ export class ModuleLoader {
    */
   loadModules(playlistConfig) {
     library.reset();
-    debug(this.flags.module_dir);
+    log.debugAt(1, 'module_dir', this.flags.module_dir);
     const configPaths = this.flags.module_dir.flatMap(p => {
       return glob.sync(path.join(p, 'brick.json'));
     });
@@ -44,7 +44,7 @@ export class ModuleLoader {
     const configs = configPaths.flatMap(cfgPath => this.loadModule(cfgPath))
         .filter(cfg => {
       if (!cfg.name) {
-        debug('Skipping invalid configuration:', cfg);
+        log.warn('Skipping invalid configuration:', cfg);
         return false;
       }
       return true;
@@ -67,12 +67,12 @@ export class ModuleLoader {
       if (cfg.extends) {
         assert(cfg.extends in library.modules, 'Module ' + cfg.name +
           ' attempting to extend ' + cfg.extends + ' which was not found!');
-        debug('Adding module ' + cfg.name + ' extending ' + cfg.extends);
+        log.debugAt(1, 'Adding module ' + cfg.name + ' extending ' + cfg.extends);
         library.register(library.modules[cfg.extends].extend(
             cfg.name, cfg.config || {}, cfg.credit || {}, cfg.testonly));
       } else {
         const paths = {client: cfg.path || cfg.client_path, server: cfg.path || cfg.server_path};
-        debug('Adding module ' + cfg.name);
+        log.debugAt(1, 'Adding module ' + cfg.name);
         library.register(new ModuleDef(
               cfg.name, cfg.root, paths, cfg.config || {}, cfg.credit || {}, cfg.testonly));
       }
@@ -83,10 +83,10 @@ export class ModuleLoader {
       return !library.modules[cfg.name];
     });
     badPlaylistConfigs.forEach(cfg => {
-      debug(`Skipping new module ${cfg.name} in playlist.`);
+      log.warn(`Skipping new module ${cfg.name} in playlist.`);
     });
     if (badPlaylistConfigs.length) {
-      debug('Only overrides and extensions are supported in the playlist. ' +
+      log.warn('Only overrides and extensions are supported in the playlist. ' +
             'For new modules add a brick.json file in the module directory.');
     }
   }
@@ -100,8 +100,8 @@ export class ModuleLoader {
       cfgs.forEach((c) => c.root = root);
       return cfgs;
     } catch (e) {
-      debug(e);
-      debug(`Skipping invalid config in: ${root}/brick.json`);
+      log.error(e);
+      log.error(`Skipping invalid config in: ${root}/brick.json`);
       return [];
     }
   }

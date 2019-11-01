@@ -15,25 +15,11 @@ limitations under the License.
 
 import * as monitor from '/client/monitoring/monitor.js';
 import * as time from '/client/util/time.js';
-import Debug from '/lib/lame_es6/debug.js';
 import {ClientModule} from '/client/modules/module.js';
-import {error} from '/client/util/log.js';
-
+import {easyLog} from '/lib/log.js';
 import {configure} from '/lib/module_player.js';
 
-const debug = Debug('wall:client_state_machine');
-const reportError = error(debug);
-
-function logError(e, data) {
-  if (monitor.isEnabled()) {
-    monitor.update({client: {
-      event: e.toString(),
-      time: time.now(),
-      color: [255, 0, 0]
-    }});
-  }
-  reportError(e, data);
-}
+const log = easyLog('wall:client_state_machine');
 
 const clientMonitorWrapper = {
   isEnabled() { return monitor.isEnabled(); },
@@ -43,7 +29,6 @@ const clientMonitorWrapper = {
 export const ClientModulePlayer = configure({
   makeEmptyModule: ClientModule.newEmptyModule,
   monitor: clientMonitorWrapper,
-  debug,
+  log,
   time,
-  logError
 });

@@ -26,21 +26,20 @@ limitations under the License.
 //   client fails to do this, the client is considered invalid and omitted from
 //   future calculations.
 
-import Debug from 'debug';
+import {easyLog} from '../../lib/log.js';
 import * as monitor from '../monitoring/monitor.js';
 import ioClient from 'socket.io-client';
 import socketio from 'socket.io';
 import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
-import {clientError} from '../util/log.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
 
 let io;
 
-const logClientError = clientError(Debug('wall:client_error'));
+const logClientError = () => {};
 
-const debug = Debug('wall:network');
+const log = easyLog('wall:network');
 
 class ClientInfo {
   constructor(offset, rect, socket) {
@@ -72,7 +71,7 @@ export function init(server) {
     socket.on('client-start', config => {
       const clientRect = Rectangle.deserialize(config.rect);
       if (!clientRect) {
-        debug(`Bad client configuration: `, config);
+        log.error(`Bad client configuration: `, config);
         // Close the connection with this client.
         socket.disconnect(true);
         return;
@@ -85,7 +84,7 @@ export function init(server) {
         }});
       }
       clients[client.socket.id] = client;
-      debug(`New display: ${client.rect.serialize()}`);
+      log(`New client: ${client.rect.serialize()}`);
       emitter.emit('new-client', client);
 
       // Tell the client the current time.
@@ -103,7 +102,7 @@ export function init(server) {
             event: `dropClient: ${rect.serialize()}`,
           }});
         }
-        debug(`Lost display: ${rect.serialize()}`);
+        log(`Lost client: ${rect.serialize()}`);
         emitter.emit('lost-client', clients[id]);
       } else {
         if (monitor.isEnabled()) {
