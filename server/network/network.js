@@ -62,7 +62,9 @@ export const emitter = new EventEmitter;
  * Initializes the networking layer, given an httpserver instance.
  */
 export function init(server) {
-  io = socketio(server);
+  // Disable per-message compression, because it causes big issues on linux.
+  // https://github.com/websockets/ws#websocket-compression
+  io = socketio(server, {perMessageDeflate: false});
 
   io.on('connection', socket => {
     // When the client boots, it sends a start message that includes the rect
