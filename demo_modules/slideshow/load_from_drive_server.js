@@ -140,16 +140,20 @@ export default function({debug}) {
 
       // Check if we already have it cached.
       if (cache.has(key)) {
+        debug(`Clipping region ${clippingRect.serialize()} for ${fileId} was cached`);
         return cache.get(key);
       }
       // Check if we are already creating a cropped form of this.
       if (this.inflightContent.has(key)) {
+        debug(`Clipping region ${clippingRect.serialize()} for ${fileId} is being computed now`);
         return await this.inflightContent.get(key);
       }
 
+      debug(`Clipping region ${clippingRect.serialize()} for ${fileId}`);
       const promise = this.clipImage(content, clippingRect, cache);
       this.inflightContent.set(key, promise);
       const clippedImage = await promise;
+      debug(`Clipping region ${clippingRect.serialize()} for ${fileId} complete`);
 
       // Cache the cropped image into the cache so we don't have to look this up again.
       cache.set(key, clippedImage);
