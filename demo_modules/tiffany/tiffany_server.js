@@ -394,9 +394,8 @@ export function load(debug, wallGeometry, network) {
       // Greedy algorithm: starting from each start index, add as many edges as
       // possible while maintaining a convex polygon
       // TODO(applmak): What is edge offset here?
+      randomRotate(edges);
       for (let edgeOffset = 0; edgeOffset < edges.length; edgeOffset++) {
-        // Start at a random edge each time, rather than always the same edge.
-        randomRotate(edges);
         const generatedPolygons = [];
         let error = null;
         let points = [shatterPoint];
@@ -404,12 +403,13 @@ export function load(debug, wallGeometry, network) {
           const [p0, p1] = edges[edgeIndex];
           // try to add an edge and test if it's convex
           // override key=true on points adjacent to the shatter point.
-          points.push({...p0, key: points.length == 1, newPt: false});
+          if (points.length == 1) {
+            points.push({...p0, key: points.length == 1, newPt: false});
+          }
           points.push(p1);
           if (!(new Polygon(points).isConvex())) {
-            points.pop(); // final edge pt 1
-            points.pop(); // final edge pt 2
-            if (points.length == 1) {
+            points.pop(); // errant point.
+            if (points.length <= 2) {
               // this means the starting polygon must not be convex
               error = "failed to add polygon to point";
               debug("shatter", error, "edgeOffset", edgeOffset, "edgeIndex",
