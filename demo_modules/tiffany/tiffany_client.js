@@ -34,6 +34,7 @@ export function load(wallGeometry, debug, network) {
         return;
       }
       this.running = true;
+      this.p5.strokeJoin(this.p5.BEVEL);
       this.p5.stroke(this.p5.color(0, 0, 0));
       this.p5.strokeWeight(3);
       for (const polygon of polygons) {
