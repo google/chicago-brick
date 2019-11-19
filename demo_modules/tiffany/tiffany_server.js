@@ -85,7 +85,7 @@ const SEGMENTS_PER_EDGE = 3;
 // "shatterable"; this doesn't prevent but is good insurance against
 // cells that end up having no pixels in the source image actually
 // contained within the polygon -- which turns the cell black.
-const MIN_SHATTER_PIXEL_COUNT = 9;
+const MIN_SHATTER_PIXEL_COUNT = 100;
 
 // These images will be shown on the wall, tiled horizontally from left to right
 // repeating the pattern.
@@ -216,8 +216,6 @@ export function load(debug, wallGeometry, network) {
     constructor(config = {}) {
       debug('Tiffany Stained Glass Server!', config);
 
-      // Set while polygons are being generated/sent, to avoid reentry to `tick`
-      this.running = false;
       // Contains all polygons created but not yet deleted
       this.polygons = [];
       // Map from url to loaded image data
@@ -255,18 +253,12 @@ export function load(debug, wallGeometry, network) {
 
     /* Computes some stats about the image data within the given polygon. */
     processPolygon(polygon) {
-      const {url, scale, x, y} = this.instances[polygon.attrs.imageIndex];
-      const image = this.images[url];
-      const inverseScale = 1.0 / scale;
+      const instance = this.instances[polygon.attrs.imageIndex];
+      const image = this.images[instance.url];
+      const inverseScale = 1.0 / instance.scale;
       const resized = polygon
-          .translate({x: -x, y: -y})
+          .translate({x: -instance.x, y: -instance.y})
           .scale(inverseScale, inverseScale);
-      const baseX = Math.floor(resized.extents.x);
-      const baseY = Math.floor(resized.extents.y);
-      const width = Math.floor(resized.extents.w);
-      const height = Math.floor(resized.extents.h);
-      const maxY = baseY + height;
-      const maxX = baseX + width;
 
       let n = 0;
       // for color averaging
@@ -277,27 +269,36 @@ export function load(debug, wallGeometry, network) {
       let sum = 0;
       let sumSq = 0;
       let k = null; // reference point
-      for (let row = Math.max(baseY, 0); row < maxY; row++) {
-        for (let col = Math.max(baseX, 0); col < maxX; col++) {
-          const p = {x: col, y: row};
-          if (resized.isInside(p) && !resized.isOn(p)) {
-            n += 1;
 
-            // average colors
-            let offset = (image.width * row + col) * 4;
-            rSum += image.original_u8c4.data[offset];
-            gSum += image.original_u8c4.data[offset + 1];
-            bSum += image.original_u8c4.data[offset + 2];
+      // Find the index range of the points of lowest y in the resized polygon.
+      // Because the poly is convex, the range always exists and is contiguous.
+      // Now, we consider the points on the image lattice that are on the
+      // inside of the poly, and to do that, we solve the line equation for the
+      // edges that are adjacent to our index range at the floor(lowest y).
+      // This gives us two numbers, and then we find the inner lattice points
+      // on this row. These are the points we sample from the image.
+      // This algorithm give us two line equations per row to solve, or fewer
+      // if we use bresenham's line equation.
+      // This is significantly better than the O(E*R*C) naive algorithm.
 
-            // compute stddev of grayscale image
-            offset = image.width * row + col;
-            const x = image.norm_u8.data[offset];
-            if (k === null) {
-              k = x;
-            }
-            sum += x - k;
-            sumSq += (x - k) * (x - k);
+      for (const [y, leftX, rightX] of resized.iterateLatticePoints()) {
+        for (let x = leftX; x < rightX; x++) {
+          n += 1;
+
+          // average colors
+          let offset = (image.width * y + x) * 4;
+          rSum += image.original_u8c4.data[offset];
+          gSum += image.original_u8c4.data[offset + 1];
+          bSum += image.original_u8c4.data[offset + 2];
+
+          // compute stddev of grayscale image
+          offset = image.width * y + x;
+          const value = image.norm_u8.data[offset];
+          if (k === null) {
+            k = value;
           }
+          sum += value - k;
+          sumSq += (value - k) * (value - k);
         }
       }
 
@@ -560,10 +561,9 @@ export function load(debug, wallGeometry, network) {
     }
 
     tick(time) {
-      if (!this.initDone || this.running) {
+      if (!this.initDone) {
         return;
       }
-      this.running = true;
 
       this.shatterUntil(time + PRECOMPUTE_MS);
 
@@ -600,8 +600,6 @@ export function load(debug, wallGeometry, network) {
           polygons: polygonsToSend,
         });
       }
-
-      this.running = false;
     }
   }
 

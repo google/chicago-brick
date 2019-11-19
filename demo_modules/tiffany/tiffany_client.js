@@ -56,7 +56,7 @@ export function load(wallGeometry, debug, network) {
 
         // Don't re-draw completed polygons.
         const alreadyComplete = this.lastFrame !== null &&
-            Math.abs(calculateProgress(polygon, this.lastFrame) - 1.0) < 0.00001;
+            calculateProgress(polygon, this.lastFrame) === 1;
         if (alreadyComplete) {
           continue;
         }
