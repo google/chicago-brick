@@ -183,11 +183,6 @@ export function load(debug, wallGeometry, network) {
    * gives the shatter algorithm more vertices to work with.
    */
   function segmentPolygon(polygon) {
-    for (const p of polygon.points) {
-      p.key = true;
-      p.newPt = false;
-    }
-
     const newPoints = [];
     for (const [p0, p1] of polygon.pairs()) {
       const delta = sub(p1, p0);
@@ -198,7 +193,7 @@ export function load(debug, wallGeometry, network) {
         newP.newPt = false;
         newPoints.push(newP);
       }
-      newPoints.push(p1);
+      newPoints.push({...p1, key: true, newPt: false});
     }
     return copyAttrs(polygon, new Polygon(newPoints));
   }
@@ -462,6 +457,7 @@ export function load(debug, wallGeometry, network) {
         // Rotate the edges...
         edges.push(edges.shift());
       }
+
       return bestPolygons;
     }
 
@@ -472,6 +468,10 @@ export function load(debug, wallGeometry, network) {
 
       for (const polygon of this.polygons) {
         if (polygon.attrs.replacedAt) {
+          continue;
+        }
+        // Don't shatter polygons that are still trying to appear.
+        if (time < polygon.attrs.completedAt) {
           continue;
         }
         if (polygon.attrs.stddev.n <= MIN_SHATTER_PIXEL_COUNT) {

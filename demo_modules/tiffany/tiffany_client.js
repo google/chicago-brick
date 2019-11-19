@@ -20,7 +20,6 @@ export function load(wallGeometry, debug, network) {
     constructor(p5, surface) {
       this.p5 = p5;
       this.surface = surface;
-      this.lastFrame = null;
     }
 
     preload() {
@@ -30,10 +29,10 @@ export function load(wallGeometry, debug, network) {
     }
 
     draw(t, polygons) {
-      if (!polygons || this.running) {
+      if (!polygons) {
         return;
       }
-      this.running = true;
+
       this.p5.strokeJoin(this.p5.BEVEL);
       this.p5.stroke(this.p5.color(0, 0, 0));
       this.p5.strokeWeight(3);
@@ -55,9 +54,7 @@ export function load(wallGeometry, debug, network) {
         }
 
         // Don't re-draw completed polygons.
-        const alreadyComplete = this.lastFrame !== null &&
-            calculateProgress(polygon, this.lastFrame) === 1;
-        if (alreadyComplete) {
+        if (t > end) {
           continue;
         }
 
@@ -92,6 +89,7 @@ export function load(wallGeometry, debug, network) {
           this.p5.stroke(this.p5.color(0, 0, 0));
           this.p5.strokeWeight(weight);
           const poly = new Polygon(polygon.points);
+
           for (const [p1, p2] of poly.pairs()) {
             if (!p1.newPt && !p2.newPt) {
               this.p5.line(p1.x, p1.y, p2.x, p2.y);
@@ -114,8 +112,6 @@ export function load(wallGeometry, debug, network) {
           }
         }
       }
-      this.lastFrame = t;
-      this.running = false;
     }
   }
 
@@ -124,8 +120,6 @@ export function load(wallGeometry, debug, network) {
       debug('Tiffany Stained Glass Client!', config);
       // Polygons that have been received from the server
       this.polygons = null;
-      // Whether the draw function is running, to avoid reentry to `tick`
-      this.running = false;
 
       network.on('polygons', data => {
         this.polygons = data.polygons;
