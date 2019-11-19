@@ -15,7 +15,7 @@ limitations under the License.
 
 import {ClientDisplayStrategy} from './interfaces.js';
 
-export default function({network}) {
+export default function({debug, network}) {
   // FULLSCREEN DISPLAY STRATEGY
   // This display strategy shows a single element per screen, updating at a rate
   // specified in the config. We wait for the corresponding element to load
@@ -37,8 +37,6 @@ export default function({network}) {
       this.config_ = config;
     }
     init(surface, loadStrategy) {
-      let logError = (...args) => console.error(...args);
-      //const logErrorPromise = import('../../client/util/log.js').then(e => logError = e.error(debug));
       this.content = null;
       network.emit('display:init', {
         offset: surface.virtualOffset,
@@ -97,9 +95,7 @@ export default function({network}) {
         }).catch(err => {
           info.innerHTML += '<br>';
           info.innerHTML += `<span style="color:red">Error! ${err}</span>`;
-          if (logError) {
-            logError(err);
-          }
+          debug(err);
         });
       });
     }

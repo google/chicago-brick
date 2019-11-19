@@ -63,11 +63,11 @@ limitations under the License.
  * a wall somewhere.
  */
 
-import Debug from 'debug';
+import {easyLog} from '../../lib/log.js';
 import EventEmitter from 'events';
 import ioClient from 'socket.io-client';
 import os from 'os';
-const debug = Debug('wall:game');
+const log = easyLog('wall:game');
 
 /**
  * An individual player.
@@ -125,21 +125,21 @@ class Game extends EventEmitter {
     }
 
     function onConnect() {
-      debug('Connected to game server.');
+      log('Connected to game server.');
       // TODO: rename this to gameReady.
       socket.emit('serverReady', {host: host, name: name});
       gameStateInterval = setInterval(sendGameState, 1000);
     }
 
     function onDisconnect() {
-      debug('Disconnected from game server.');
+      log('Disconnected from game server.');
       clearInterval(gameStateInterval);
     }
 
     function provisionPlayer(playerId) {
       var slot = players.findIndex(s => !s);
       if (slot == -1) {
-        debug('Too many players: ', playerId);
+        log.error('Too many players: ', playerId);
         socket.emit('errorMsg', 'Too many players.', playerId);
       } else {
         var color = colors[slot];
@@ -147,14 +147,14 @@ class Game extends EventEmitter {
         players[slot] = player;
         playerMap[playerId] = player;
 
-        debug('Player ready: ', playerId);
+        log.info('Player ready: ', playerId);
         socket.emit('playerReady', player);
         game.emit('playerJoin', player);
       }
     }
 
     function removePlayer(playerId) {
-      debug('Removing player: ' + playerId);
+      log.info('Removing player: ' + playerId);
       var player = playerMap[playerId];
       delete playerMap[playerId];
       delete players[player.index];
@@ -170,7 +170,7 @@ class Game extends EventEmitter {
 
     function setPlayerName(playerId, name) {
       if (playerMap[playerId]) {
-        debug("Setting Name.");
+        log.info("Setting Name.");
         playerMap[playerId].name = name;
       }
     }
@@ -198,7 +198,7 @@ export function forModule() {
   return {
     // Called by module code to add a game. Returns a new Game.
     create: function(gameName, options) {
-      debug('Connecting to game server.');
+      log.info('Connecting to game server.');
       var client = ioClient('http://' + host + '/servers', {multiplex: false});
       connections.push(client);
 

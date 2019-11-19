@@ -18,7 +18,7 @@ import * as moduleInterface from '/lib/module_interface.js';
 import * as moduleTicker from '/client/modules/module_ticker.js';
 import * as network from '/client/network/network.js';
 import * as peerNetwork from '/client/network/peer.js';
-import Debug from '/lib/lame_es6/debug.js';
+import {easyLog} from '/lib/log.js';
 import assert from '/lib/assert.js';
 import asset from '/client/asset/asset.js';
 import conform from '/lib/conform.js';
@@ -141,7 +141,7 @@ export class ClientModule {
     this.stateManager = stateManager.forModule(network, INSTANTIATION_ID);
     const fakeEnv = {
       asset,
-      debug: Debug('wall:module:' + this.name),
+      debug: easyLog('wall:module:' + this.name),
       game: undefined,
       network: openNetwork,
       titleCard: this.titleCard.getModuleAPI(),

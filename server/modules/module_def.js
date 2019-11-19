@@ -17,8 +17,8 @@ import EventEmitter from 'events';
 import path from 'path';
 
 import assert from '../../lib/assert.js';
-import debugFactory from 'debug';
-const debug = debugFactory('wall:module_def');
+import {easyLog} from '../../lib/log.js';
+const log = easyLog('wall:module_def');
 import conform from '../../lib/conform.js';
 import inject from '../../lib/inject.js';
 import {Server} from '../../lib/module_interface.js';
@@ -45,7 +45,7 @@ function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
     game,
     state,
     wallGeometry: geo,
-    debug: debugFactory('wall:module:' + name),
+    debug: easyLog('wall:module:' + name),
     assert,
   };
 
@@ -131,9 +131,9 @@ export class ModuleDef extends EventEmitter {
     if (this.serverPath) {
       await importIntoCache(this.root, this.serverPath);
       extractFromImport(this.name, this.root, this.serverPath, {}, {}, {});
-      debug('Verified ' + path.join(this.root,this.serverPath));
+      log.debugAt(1, 'Verified ' + path.join(this.root,this.serverPath));
     } else {
-      debug('No server path specified. Using default server module.');
+      log.debugAt(1, 'No server path specified. Using default server module.');
     }
     this.valid = true;
   }

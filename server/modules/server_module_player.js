@@ -15,13 +15,11 @@ limitations under the License.
 
 import * as monitor from '../monitoring/monitor.js';
 import * as time from '../util/time.js';
-import Debug from 'debug';
 import {configure} from '../../lib/module_player.js';
 import {RunningModule} from './module.js';
-import {error} from '../util/log.js';
+import {easyLog} from '../../lib/log.js';
 
-const debug = Debug('wall:module_state_machine');
-const logError = error(debug);
+const log = easyLog('wall:module_state_machine');
 
 export const ServerModulePlayer = configure({
   makeEmptyModule: () => {
@@ -35,14 +33,6 @@ export const ServerModulePlayer = configure({
       monitor.update({server: obj});
     }
   },
-  debug,
+  log,
   time,
-  logError: (e, data) => {
-    logError({
-      message: e.message || e,
-      stack: e.stack,
-      timestamp: time.now(),
-      ...data,
-    });
-  }
 });

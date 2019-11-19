@@ -56,8 +56,11 @@ export class ErrorController {
         e.element = newErrorEl.firstElementChild;
       }
 
-      e.element.querySelector('.timestamp').textContent =
-          `${e.timestamp.toFixed(1)} (+${e.timestampSinceModuleStart.toFixed(2)})`;
+      let timestampStr = `${e.timestamp.toFixed(1)}`;
+      if (e[1] && e[1].timestampSinceModuleStart) {
+        timestampStr += ` (${e[1].timestampSinceModuleStart.toFixed(2)})`;
+      }
+      e.element.querySelector('.timestamp').textContent = timestampStr;
       const clientsEl = e.element.querySelector('.clients');
       if (e.affectedClients) {
         clientsEl.textContent = '<multiple>';

@@ -16,10 +16,10 @@ limitations under the License.
 // A handy wrapper around peer.js that makes it easy for client modules to
 // connect to one another.
 import * as info from '/client/util/info.js';
-import Debug from '/lib/lame_es6/debug.js';
+import {easyLog} from '/lib/log.js';
 import {Peer} from '/lib/lame_es6/peerjs.js';
 import {delay} from '/lib/promise.js';
-const debug = Debug('wall:peer');
+const log = easyLog('wall:peer');
 
 function sanitizeName(name) {
   return name.replace(/[^a-zA-Z0-9]/g, '-');
@@ -60,9 +60,9 @@ PeerWrapper.prototype.connect = function(x, y, relative, onOpen, onClose) {
   var connectFunc = () => {
     if (!this.peer_) {
       if (connectionAttempts > 0) {
-        debug('Aborted connection retry due to external close!');
+        log.error('Aborted connection retry due to external close!');
       } else {
-        debug('Aborted initial retry due to external close!');
+        log.error('Aborted initial retry due to external close!');
       }
       return;
     }
@@ -83,14 +83,14 @@ PeerWrapper.prototype.connect = function(x, y, relative, onOpen, onClose) {
           return;
         }
         // WHOA! We unexpected closed!
-        debug('Connection to peer ' + otherPeerName + ' dropped!');
+        log.warn('Connection to peer ' + otherPeerName + ' dropped!');
         if (onClose(conn)) {
           // Retry!
           connectFunc();
         }
       });
 
-      debug('Established connection to peer ' + otherPeerName);
+      log('Established connection to peer ' + otherPeerName);
       onOpen(conn);
     });
     conn.on('error', (err) => {
@@ -100,9 +100,9 @@ PeerWrapper.prototype.connect = function(x, y, relative, onOpen, onClose) {
       }
       retryDelay = Math.min(retryDelay * 2, 10000);
       if (connectionAttempts == 1) {
-        debug('Failed connecting to initial peer ' + otherPeerName + ' retry in ' + retryDelay, err);
+        log.warn('Failed connecting to initial peer ' + otherPeerName + ' retry in ' + retryDelay, err);
       } else {
-        debug('Failed reconnecting to peer ' + otherPeerName + ' retry in ' + retryDelay, err);
+        log.warn('Failed reconnecting to peer ' + otherPeerName + ' retry in ' + retryDelay, err);
       }
       delay(retryDelay).then(connectFunc);
     });
@@ -152,20 +152,20 @@ PeerWrapper.prototype.connectToNeighbors = function(onData) {
       // have an id, so we'll drop the one with the bigger id, and keep the
       // once with the smaller.
       if (existingClient.conn.id > conn.id) {
-        debug('Already connected to client ' + x + ',' + y + '. Will drop existing.');
+        log.debugAt(1, 'Already connected to client ' + x + ',' + y + '. Will drop existing.');
         // Close old connection, keep new one.
         existingClient.conn.close();
         existingClient.conn = conn;
         installDataHandler(conn);
       } else {
-        debug('Already connected to client ' + x + ',' + y + '. Will drop new.');
+        log.debugAt(1, 'Already connected to client ' + x + ',' + y + '. Will drop new.');
         // Close this connection, keep old one.
         conn.close();
       }
     } else {
       // New connection!
       clients.push({x: x, y: y, conn});
-      debug('Connected to ' + x + ',' + y);
+      log('Connected to ' + x + ',' + y);
       installDataHandler(conn);
     }
   };
@@ -173,11 +173,11 @@ PeerWrapper.prototype.connectToNeighbors = function(onData) {
   // Before connecting to neighbors. Install a listener that handles new
   // connection attempts.
   this.listen((conn, x, y) => {
-    debug('Connection request from ' + x + ',' + y);
+    log('Connection request from ' + x + ',' + y);
     handleNewConnection(conn, x, y);
   });
 
-  debug('Connecting to neighbors.');
+  log('Connecting to neighbors.');
   [-1, 0, 1].forEach((x) => {
     [-1, 0, 1].forEach((y) => {
       if (x == 0 && y == 0) {
@@ -189,10 +189,10 @@ PeerWrapper.prototype.connectToNeighbors = function(onData) {
       let ny = y + info.virtualOffset.y;
 
       this.connect(nx, ny, false, (conn) => {
-        debug('Connection established to ' + nx + ',' + ny);
+        log('Connection established to ' + nx + ',' + ny);
         handleNewConnection(conn, nx, ny);
       }, (conn) => {
-        debug('Disconnected from ' + nx + ',' + ny);
+        log('Disconnected from ' + nx + ',' + ny);
         var index = clients.findIndex((client) => {
           return client.conn.id == conn.id;
         });
@@ -220,7 +220,7 @@ export function open(moduleId) {
       path: '/peerjs'
     });
     peer.on('open', function(id) {
-      debug('Opened peer connection with id ' + id);
+      log('Opened peer connection with id ' + id);
       resolve(new PeerWrapper(moduleId, peer));
     });
     peer.on('error', function(e) {

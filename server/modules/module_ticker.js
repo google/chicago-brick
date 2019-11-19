@@ -14,8 +14,8 @@ limitations under the License.
 ==============================================================================*/
 
 import {now} from '../util/time.js';
-import Debug from 'debug';
-const debug = Debug('wall:module_ticker');
+import {easyLog} from '../../lib/log.js';
+const log = easyLog('wall:module_ticker');
 import * as stateManager from '../state/state_manager.js';
 
 // An array of RunningModule objects (see server_state_machine).
@@ -37,8 +37,7 @@ function tick() {
   // over.
   const tickTime = now() - start;
   if (tickTime > interval) {
-    debug('Module tick() took too long: ' + tickTime + 'ms out of ' +
-          interval + 'ms.');
+    log.warn(`Module tick() took too long: ${tickTime} ms out of ${interval} ms.`);
   }
   setTimeout(tick, Math.max(interval - tickTime, 0));
 }
@@ -47,11 +46,11 @@ tick();
 export function add(module) {
   if (module.instance) {
     modulesToTick.push(module);
-    debug(
+    log.debugAt(1,
         'Add: We are now ticking ' + modulesToTick.length + ' modules:',
         modulesToTick.map((m) => m.moduleDef.name).join(', '));
     if (modulesToTick.length > 2) {
-      debug('FAILED!');
+      log.error('Ticking more than 2 modules!');
     }
   }
 }
@@ -63,6 +62,6 @@ export function remove(module) {
     }
     return true;
   });
-  debug('Remove: We are now ticking ' + modulesToTick.length + ' modules',
+  log.debugAt('Remove: We are now ticking ' + modulesToTick.length + ' modules',
       modulesToTick.map((m) => m.moduleDef.name).join(', '));
 }

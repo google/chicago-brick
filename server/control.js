@@ -13,14 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import Debug from 'debug';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
 import {emitter, clients} from './network/network.js';
-import * as log from './util/log.js';
+import {easyLog} from '../lib/log.js';
+import {getErrors} from './util/last_n_errors_logger.js';
 import library from './modules/module_library.js';
 
-const debug = Debug('wall:control');
+const log = easyLog('wall:control');
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
@@ -40,13 +40,13 @@ export class Control {
       transitionData = data;
       io.emit('transition', data);
     });
-    log.emitter.on('error', e => {
-      io.emit('error', e);
-    })
     emitter.on('new-client', c => {
       io.emit('new-client', c.rect.serialize());
       c.socket.on('takeSnapshotRes', res => {
         io.emit('takeSnapshotRes', res);
+      });
+      c.socket.on('record-error', err => {
+        io.emit('error', err);
       });
     });
     emitter.on('lost-client', c => {
@@ -58,7 +58,7 @@ export class Control {
       socket.emit('transition', transitionData);
       socket.emit('clients', Object.values(clients).map(c => c.rect.serialize()));
       socket.emit('wallGeometry', wallGeometry.getGeo().points);
-      socket.emit('errors', log.recentErrors);
+      socket.emit('errors', getErrors());
 
       socket.on('takeSnapshot', req => {
         const client = Object.values(clients).find(c => c.rect.serialize() == req.client);
@@ -77,7 +77,7 @@ export class Control {
           const cfg = moduleConfig[name];
           // Only update new modules that extend other ones.
           if (cfg.extends) {
-            debug(`Loaded new config: ${cfg.name}`);
+            log(`Loaded new config: ${cfg.name}`);
             // HACK!
             library.modules[cfg.name] = library.modules[cfg.extends].extend(
                 cfg.name, cfg.config || {}, cfg.credit || {});

@@ -23,7 +23,7 @@ else
   INSPECT=''
 fi
 
-DEBUG=wall:* node \
+node \
   $INSPECT \
   --experimental_modules \
   server/server.js \
