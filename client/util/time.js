@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import ClockSkew from '/sys/clock-skew/lib/clock_skew.js';
+import ClockSkew from '/node_modules/clock-skew/lib/clock_skew.js';
 
 const clockSkew = ClockSkew({});
 

@@ -31,7 +31,6 @@ module.exports = function(config) {
       '/lib/': '/base/lib/',
       '/client/': '/base/client/',
       '/server/': '/base/server/',
-      '/sys/': '/base/node_modules/',
     },
 
     // list of files / patterns to exclude

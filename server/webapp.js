@@ -21,39 +21,59 @@ import glob from 'glob';
 import library from './modules/module_library.js';
 import path from 'path';
 
+const fsp = fs.promises;
+
 const log = easyLog('wall:webapp');
+
+function serveFile(path) {
+  return async (req, res) => {
+    try {
+      const contents = await fsp.readFile(path, {encoding: 'utf-8'});
+      res.statusCode = 200;
+      res.end(contents, 'utf-8');
+    } catch (e) {
+      res.statusCode = 404;
+      res.end('Not Found', 'utf-8');
+    }
+  };
+}
 
 /**
  * Creates the main ExpressJS web app.
  */
 export function create(flags) {
-  // Force absolute paths.
-  // This allows us to execute chicago-brick as a dep from another repo while
-  // still finding the necessary dirs.
-  let base = path.join(process.cwd());
+  // The location we are running from.
+  const cwd = process.cwd();
 
-  // If we're running as a node_module, there will be a chicago-brick subdir.
-  // Append that path if it exists.
-  if (fs.existsSync(path.join(base, 'node_modules/chicago-brick'))) {
-    base = path.join(base, 'node_modules/chicago-brick');
-  }
+  // But we really want to get the path to the brick folder.
+  const brickPath =
+      fs.existsSync(path.join(cwd, 'node_modules/chicago-brick')) ?
+      path.join(cwd, 'node_modules/chicago-brick') :
+      cwd;
 
-  log('webapp base dir is ' + base);
-  log('node_modules_dir is ' + flags.node_modules_dir);
+  log(`CWD: ${cwd}`);
+  log(`Brick directory: ${brickPath}`);
 
-  // Sub-app serving the static content (i.e. the modules and client).
-  var app = express();
-  app.use('/client', express.static(path.join(base, 'client')));
-  app.use('/lib', express.static(path.join(base, 'lib')));
-  app.use('/sys', express.static(flags.node_modules_dir));
-  app.use('/node_modules', express.static(flags.node_modules_dir));
+  // Create a router just for the brick files that could be served to the client.
+  // These are:
+  //   /client => node_modules/brick/client
+  //   /lib => node_modules/brick/lib
+  //   /node_modules => node_modules
+  const brickRouter = express.Router();
+  brickRouter.use('/client', express.static(path.join(brickPath, 'client')));
+  brickRouter.use('/lib', express.static(path.join(brickPath, 'lib')));
+  brickRouter.use('/node_modules', express.static(path.join(cwd, 'node_modules')));
+
+  // We support a global set of asset directories.
+  const assetRouter = express.Router();
   for (let assets_dir of flags.assets_dir) {
-    app.use('/asset', express.static(assets_dir));
+    assetRouter.use('/asset', express.static(assets_dir));
   }
 
-  /**
-   * A map from path to static file handlers for module-relative imports.
-   */
+  // We also support per-module routing.
+  // TODO(applmak): Make this work dynamically, installing and removing these
+  // as needed.
+  const moduleRouter = express.Router();
   const moduleStaticFileHandlers = {};
   for (let pattern of flags.module_dir) {
     // Make sure the pattern ends with a "/" so we match only directories.
@@ -67,8 +87,7 @@ export function create(flags) {
       }
     }
   }
-
-  app.use('/module/:name', function(req, res, next){
+  moduleRouter.use('/module/:name', function(req, res, next){
     const module = library.modules[req.params.name];
     if (!module) {
       log.error(`No module found by name: ${req.params.name}`);
@@ -87,10 +106,18 @@ export function create(flags) {
     return handler(req, res, next);
   });
 
-  app.use(express.static(path.join(base, 'client')));
+  // The express app.
+  const app = express();
+  app.use(brickRouter);
+  app.use(assetRouter);
+  app.use(moduleRouter);
 
   // Needed by control.js for POST requests.
+  // TODO(applmak): Install this only on the needed router.
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({extended: false}));
+
+  app.get('/', serveFile(path.join(brickPath, 'client/index.html')));
+
   return app;
 }
