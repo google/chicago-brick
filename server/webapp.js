@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 import {easyLog} from '../lib/log.js';
-import bodyParser from 'body-parser';
 import express from 'express';
 import fs from 'fs';
 import glob from 'glob';
@@ -111,11 +110,6 @@ export function create(flags) {
   app.use(brickRouter);
   app.use(assetRouter);
   app.use(moduleRouter);
-
-  // Needed by control.js for POST requests.
-  // TODO(applmak): Install this only on the needed router.
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({extended: false}));
 
   app.get('/', serveFile(path.join(brickPath, 'client/index.html')));
 
