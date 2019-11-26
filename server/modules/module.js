@@ -24,6 +24,7 @@ import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
+import {registerRoute, unregisterRoute} from './serving.js';
 
 export function tellClientToPlay(client, name, deadline) {
   client.socket.emit('loadModule', {
@@ -69,6 +70,7 @@ export class RunningModule {
       tellClientToPlay(clients[id], this.name, this.deadline);
     }
     if (this.network) {
+      registerRoute(this.name, this.moduleDef.root);
       let openNetwork = this.network.open();
       let openState = this.stateManager.open();
       this.instance = this.moduleDef.instantiate(openNetwork, this.gameManager, openState, this.deadline);
@@ -107,6 +109,8 @@ export class RunningModule {
       // This also cleans up stateManager.
       this.network.close();
       this.network = null;
+
+      unregisterRoute(this.name);
     }
   }
 

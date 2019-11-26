@@ -16,8 +16,6 @@ limitations under the License.
 import {easyLog} from '../../lib/log.js';
 import express from 'express';
 import fs from 'fs';
-import glob from 'glob';
-import library from './module_library.js';
 import path from 'path';
 
 const fsp = fs.promises;
@@ -35,6 +33,32 @@ function serveFile(path) {
       res.end('Not Found', 'utf-8');
     }
   };
+}
+
+const moduleRoutes = new Map;
+// Register a route. We need to refcount because we could have two copies of
+// the same module playing.
+export function registerRoute(name, dir) {
+  if (moduleRoutes.has(name)) {
+    const route = moduleRoutes.get(name);
+    route.count++;
+  } else {
+    moduleRoutes.set(name, {
+      count: 1,
+      static: express.static(path.join(process.cwd(), dir)),
+    });
+  }
+}
+export function unregisterRoute(name) {
+  if (!moduleRoutes.has(name)) {
+    throw new Error('Unregistering module without registering it!');
+  }
+  const route = moduleRoutes.get(name);
+  if (route.count > 1) {
+    route.count--;
+  } else {
+    moduleRoutes.delete(name);
+  }
 }
 
 /**
@@ -70,39 +94,18 @@ export function create(flags) {
   }
 
   // We also support per-module routing.
-  // TODO(applmak): Make this work dynamically, installing and removing these
-  // as needed.
   const moduleRouter = express.Router();
-  const moduleStaticFileHandlers = {};
-  for (let pattern of flags.module_dir) {
-    // Make sure the pattern ends with a "/" so we match only directories.
-    const dirpattern = pattern.substring(-1) === '/' ? pattern : pattern + '/';
-    for (let dir of glob.sync(dirpattern)) {
-      // Remove the ending slash that was added just to force glob to only
-      // return directories.
-      const path = dir.substring(0, dir.length - 1);
-      if (!moduleStaticFileHandlers[path]) {
-        moduleStaticFileHandlers[path] = express.static(path);
-      }
+  moduleRouter.use('/module/:name', (req, res, next) => {
+    if (moduleRoutes.has(req.params.name)) {
+      const route = moduleRoutes.get(req.params.name);
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      route.static(req, res, next);
+    } else {
+      res.statusCode = 404;
+      res.end('Not Found', 'utf-8');
     }
-  }
-  moduleRouter.use('/module/:name', function(req, res, next){
-    const module = library.modules[req.params.name];
-    if (!module) {
-      log.error(`No module found by name: ${req.params.name}`);
-      return res.sendStatus(404);
-    }
-    const handler = moduleStaticFileHandlers[module.root];
-    if (!handler) {
-      log.error(`No static file handler for module root: ${module.root}`);
-      return res.sendStatus(404);
-    }
-    // Disable caching of module code.
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-
-    return handler(req, res, next);
   });
 
   // The express app.
