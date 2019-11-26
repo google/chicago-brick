@@ -16,8 +16,8 @@ limitations under the License.
 import RJSON from 'relaxed-json';
 import assert from '../../lib/assert.js';
 import fs from 'fs';
-import library from './module_library.js';
-import {Layout} from './layout.js';
+import library from '../modules/module_library.js';
+import {Layout} from '../modules/layout.js';
 
 export class PlaylistLoader {
 

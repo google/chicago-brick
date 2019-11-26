@@ -18,8 +18,8 @@ import {easyLog} from '../../lib/log.js';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
-import {RunningModule, tellClientToPlay} from './module.js';
-import library from './module_library.js';
+import {RunningModule, tellClientToPlay} from '../modules/module.js';
+import library from '../modules/module_library.js';
 import {emitter} from '../network/network.js';
 import EventEmitter from 'events';
 
