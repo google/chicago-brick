@@ -13,16 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {easyLog} from '../lib/log.js';
+import {easyLog} from '../../lib/log.js';
 import express from 'express';
 import fs from 'fs';
 import glob from 'glob';
-import library from './modules/module_library.js';
+import library from './module_library.js';
 import path from 'path';
 
 const fsp = fs.promises;
 
-const log = easyLog('wall:webapp');
+const log = easyLog('wall:serving');
 
 function serveFile(path) {
   return async (req, res) => {
