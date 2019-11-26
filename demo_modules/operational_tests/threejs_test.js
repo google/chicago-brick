@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as Three from '/sys/three-full/builds/Three.es.js';
+import * as Three from '/node_modules/three-full/builds/Three.es.js';
 import {ThreeJsSurface} from '/client/surface/threejs_surface.js';
 
 export function load(wallGeometry) {

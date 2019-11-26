@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {Surface} from '/client/surface/surface.js';
-import * as Three from '/sys/three-full/builds/Three.es.js';
+import * as Three from '/node_modules/three-full/builds/Three.es.js';
 
 export class ThreeJsSurface extends Surface {
   constructor(container, wallGeometry, properties) {

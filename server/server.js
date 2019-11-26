@@ -20,7 +20,7 @@ import * as game from './game/game.js';
 import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as wallGeometry from './util/wall_geometry.js';
-import * as webapp from './webapp.js';
+import * as moduleServing from './modules/serving.js';
 import library from './modules/module_library.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
@@ -122,7 +122,7 @@ if (playlist.length === 0) {
   throw new Error('Nothing to play!');
 }
 
-var app = webapp.create(flags);
+const app = moduleServing.create(flags);
 
 const modulePlayer = new ServerModulePlayer();
 const driver = new PlaylistDriver(modulePlayer);
