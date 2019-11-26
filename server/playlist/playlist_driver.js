@@ -18,9 +18,8 @@ import {easyLog} from '../../lib/log.js';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
-import {RunningModule, tellClientToPlay} from '../modules/module.js';
+import {RunningModule} from '../modules/module.js';
 import library from '../modules/module_library.js';
-import {emitter} from '../network/network.js';
 import EventEmitter from 'events';
 
 const log = easyLog('wall:playlist_driver');
@@ -48,12 +47,6 @@ export class PlaylistDriver extends EventEmitter {
     this.newModuleTime = Infinity;
     // Timestamp of the last deadline we used to play a module.
     this.lastDeadline_ = 0;
-
-    emitter.on('new-client', client => {
-      if (this.modules[this.moduleIndex]) {
-        tellClientToPlay(client, this.modules[this.moduleIndex], this.lastDeadline_);
-      }
-    });
   }
   async setPlaylist(newPlaylist) {
     if (this.modulePlayer.oldModule.name != '_empty') {

@@ -21,6 +21,7 @@ import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as moduleServing from './modules/serving.js';
+import {tellClientToPlay} from './modules/module.js';
 import library from './modules/module_library.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
@@ -163,6 +164,13 @@ peerServer.on('disconnect', function(id) {
 });
 
 network.init(server);
+network.emitter.on('new-client', client => {
+  const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
+  if (nextModule.name != '_empty') {
+    // Tell the client to immediately go to the current module.
+    tellClientToPlay(client, nextModule.name, nextModule.deadline);
+  }
+});
 
 if (flags.enable_monitoring) {
   monitor.enable();
