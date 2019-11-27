@@ -24,19 +24,9 @@ import inject from '../../lib/inject.js';
 import {Server} from '../../lib/module_interface.js';
 import * as wallGeometry from '../util/wall_geometry.js';
 
-const importCache = {};
-async function importIntoCache(moduleRoot, modulePath) {
+async function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
   const fullPath = path.join(process.cwd(), moduleRoot, modulePath);
   const {load} = await import(fullPath);
-  importCache[fullPath] = load;
-  return load;
-}
-
-function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
-  const fullPath = path.join(process.cwd(), moduleRoot, modulePath);
-  // TODO(applmak): When https://github.com/nodejs/node/issues/27492 is fixed,
-  // rm the cache, and just import here.
-  const load = importCache[fullPath];
 
   // Inject our deps into node's require environment.
   const geo = wallGeometry.getGeo();
@@ -129,8 +119,7 @@ export class ModuleDef extends EventEmitter {
     this.valid = false;
     assert(this.clientPath, `No client_path found in '${this.name}'`);
     if (this.serverPath) {
-      await importIntoCache(this.root, this.serverPath);
-      extractFromImport(this.name, this.root, this.serverPath, {}, {}, {});
+      await extractFromImport(this.name, this.root, this.serverPath, {}, {}, {});
       log.debugAt(1, 'Verified ' + path.join(this.root,this.serverPath));
     } else {
       log.debugAt(1, 'No server path specified. Using default server module.');
@@ -140,16 +129,11 @@ export class ModuleDef extends EventEmitter {
 
   // Instantiates this server-side version of this module, with any additional
   // globals being passed along.
-  // TODO(applmak): Once automatic globals are removed, cache the constructor
-  // after the eval (do it on load), then change the require to construct the
-  // per-module globals (like network, which required 'deadline') to occur
-  // dynamically. Basically, make this module's 'require' somehow delegate to
-  // this particular instantiation.
-  instantiate(network, game, state, deadline) {
+  async instantiate(network, game, state, deadline) {
     // Only instantiate valid modules.
     assert(this.valid, 'Attempt to instantiate invalid module!');
     if (this.serverPath) {
-      const {server} = extractFromImport(this.name, this.root, this.serverPath, network, game, state);
+      const {server} = await extractFromImport(this.name, this.root, this.serverPath, network, game, state);
       return new server(this.config, deadline);
     } else {
       return new Server;

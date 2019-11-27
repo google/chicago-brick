@@ -64,7 +64,7 @@ export class RunningModule {
 
   // This is a separate method in order to guard against exceptions in
   // instantiate.
-  instantiate() {
+  async instantiate() {
     // Tell clients to get ready to play this module at the deadline.
     for (const id in clients) {
       tellClientToPlay(clients[id], this.name, this.deadline);
@@ -73,7 +73,7 @@ export class RunningModule {
       registerRoute(this.name, this.moduleDef.root);
       let openNetwork = this.network.open();
       let openState = this.stateManager.open();
-      this.instance = this.moduleDef.instantiate(openNetwork, this.gameManager, openState, this.deadline);
+      this.instance = await this.moduleDef.instantiate(openNetwork, this.gameManager, openState, this.deadline);
     }
   }
 
