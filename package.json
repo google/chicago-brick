@@ -4,13 +4,13 @@
   "description": "Code which can manage a large video wall with multiple nodes.",
   "main": "server/server.js",
   "scripts": {
-    "test": "node_modules/karma/bin/karma start karma.conf.cjs --single-run",
+    "test": "node_modules/karma/bin/karma start config/karma.conf.js --single-run",
     "jshint": "node_modules/eslint/bin/eslint.js .",
     "lint": "node_modules/eslint/bin/eslint.js .",
     "release": "node_modules/.bin/release-it -n"
   },
   "engines": {
-    "node": ">=12.0.0"
+    "node": ">=12.7.0"
   },
   "type": "module",
   "repository": "github:google/chicago-brick",
