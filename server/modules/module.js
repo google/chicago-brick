@@ -55,10 +55,14 @@ export class RunningModule {
     this.deadline = deadline;
 
     this.name = this.moduleDef.name;
+  }
 
+  // This is a separate method in order to guard against exceptions in
+  // instantiate.
+  async instantiate() {
     if (this.moduleDef.valid) {
       // Only instantiate support objects for valid module defs.
-      const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${deadline}`;
+      const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
       this.gameManager = game.forModule(INSTANTIATION_ID);
       this.stateManager = stateManager.forModule(network.getSocket(), INSTANTIATION_ID);
@@ -67,11 +71,6 @@ export class RunningModule {
       this.gameManager = null;
       this.stateManager = null;
     }
-  }
-
-  // This is a separate method in order to guard against exceptions in
-  // instantiate.
-  async instantiate() {
     // Tell clients to get ready to play this module at the deadline.
     for (const id in clients) {
       tellClientToPlay(clients[id], this.name, this.deadline);
