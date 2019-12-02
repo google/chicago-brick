@@ -25,10 +25,17 @@ import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
 import {registerRoute, unregisterRoute} from './serving.js';
+import path from 'path';
 
 export function tellClientToPlay(client, name, deadline) {
+  const def = library.modules[name];
   client.socket.emit('loadModule', {
-    module: library.modules[name].serializeForClient(),
+    module: {
+      name,
+      path: path.join('/module/', name, def.clientPath),
+      config: def.config,
+      credit: def.credit,
+    },
     time: deadline,
     geo: wallGeometry.getGeo().points
   });

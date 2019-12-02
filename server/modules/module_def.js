@@ -139,14 +139,4 @@ export class ModuleDef extends EventEmitter {
       return new Server;
     }
   }
-
-  // Returns a JSON-serializable form of this for transmission to the client.
-  serializeForClient() {
-    return {
-      name: this.name,
-      path: path.join('/module/', this.name, this.clientPath),
-      config: this.config,
-      credit: this.credit,
-    };
-  }
 }
