@@ -30,7 +30,13 @@ function tick() {
   if (modulesToTick.length) {
     stateManager.send();
   }
-  modulesToTick.forEach(module => module.tick(start, start - lastTime));
+  for (const module of modulesToTick) {
+    try {
+      module.tick(start, start - lastTime);
+    } catch (e) {
+      log.error(e);
+    }
+  }
   lastTime = start;
 
   // Set timeout for remaining tick time, or immediately if the module went
