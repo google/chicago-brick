@@ -16,13 +16,15 @@ limitations under the License.
 import EventEmitter from 'events';
 import {ModuleDef} from './module_def.js';
 import assert from '../../lib/assert.js';
+import {easyLog} from '../../lib/log.js';
+import path from 'path';
+
+const log = easyLog('wall:module_library');
 
 class EmptyModuleDef extends ModuleDef {
   constructor() {
     super('_empty', '', '', {}, {}, true);
     // TODO(applmak): ^ this hacky.
-    // However, b/c of the hack, this module will never become valid.
-    this.whenLoadedPromise = Promise.resolve(this);
   }
 }
 
@@ -34,10 +36,31 @@ class ModuleLibrary extends EventEmitter {
   }
   register(def) {
     assert(!(def.name in this.modules), 'Def ' + def.name + ' already exists!');
+    log.info('Registered', def.name);
     this.modules[def.name] = def;
+    if (def.serverPath) {
+      // Validate the server path.
+      this.loaded.set(def.name, def.extractFromImport({}, {}, {}).then(() => {
+        log.debugAt(1, 'Verified ' + path.join(def.root, def.serverPath));
+        this.valid.set(def.name, true);
+      }, err => {
+        log.error(err);
+      }));
+    } else {
+      this.valid.set(def.name, true);
+      this.loaded.set(def.name, Promise.resolve());
+    }
   }
   reset() {
     this.modules = {'_empty': new EmptyModuleDef};
+    this.loaded = new Map;
+    this.valid = new Map;
+  }
+  whenLoaded(name) {
+    return this.loaded.get(name) || Promise.reject(new Error(`Unknown module ${name}`));
+  }
+  isValid(name) {
+    return this.valid.get(name) || false;
   }
 }
 

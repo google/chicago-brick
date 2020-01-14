@@ -159,7 +159,7 @@ export class PlaylistDriver extends EventEmitter {
     this.modules = Array.from(layout.modules);
     random.shuffle(this.modules);
 
-    concurrentWork.push(...layout.modules.map(m => library.modules[m].whenLoadedPromise));
+    concurrentWork.push(...layout.modules.map(m => library.whenLoaded(m)));
 
     // Wait until all of the modules are loaded.
     await Promise.all(concurrentWork);
@@ -171,7 +171,7 @@ export class PlaylistDriver extends EventEmitter {
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
 
-    log(`Next module: ${this.modules[this.moduleIndex]} (${library.modules[this.modules[this.moduleIndex]].valid ? 'valid' : 'invalid'})`);
+    log(`Next module: ${this.modules[this.moduleIndex]} (${library.isValid(this.modules[this.moduleIndex]) ? 'valid' : 'invalid'})`);
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];

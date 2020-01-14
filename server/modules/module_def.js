@@ -18,31 +18,10 @@ import path from 'path';
 
 import assert from '../../lib/assert.js';
 import {easyLog} from '../../lib/log.js';
-const log = easyLog('wall:module_def');
 import conform from '../../lib/conform.js';
 import inject from '../../lib/inject.js';
 import {Server} from '../../lib/module_interface.js';
 import * as wallGeometry from '../util/wall_geometry.js';
-
-async function extractFromImport(name, moduleRoot, modulePath, network, game, state) {
-  const fullPath = path.join(process.cwd(), moduleRoot, modulePath);
-  const {load} = await import(fullPath);
-
-  // Inject our deps into node's require environment.
-  const geo = wallGeometry.getGeo();
-  const fakeEnv = {
-    network,
-    game,
-    state,
-    wallGeometry: geo,
-    debug: easyLog('wall:module:' + name),
-    assert,
-  };
-
-  const {server} = inject(load, fakeEnv);
-  conform(server, Server);
-  return {server};
-}
 
 /**
  * The ModuleDef class contains all the information necessary to load &
@@ -63,30 +42,35 @@ export class ModuleDef extends EventEmitter {
     // The path to the server main file of the module.
     this.serverPath = '';
 
-    // If true, the module has no parse errors in its source.
-    this.valid = false;
-
 
     if (pathsOrBaseModule.base) {
       this.base = pathsOrBaseModule.base;
       this.clientPath = this.base.clientPath;
       this.serverPath = this.base.serverPath;
-
-      let updateValidity = () => {
-        this.valid = this.base.valid;
-      };
-
-      // When the base is loaded, check its valid status.
-      this.base.whenLoadedPromise.then(updateValidity);
-
-      // I'm loaded when my base is loaded.
-      this.whenLoadedPromise = this.base.whenLoadedPromise;
     } else if (name != '_empty') {
       // TODO(applmak): ^ this hacky.
       this.clientPath = pathsOrBaseModule.client;
       this.serverPath = pathsOrBaseModule.server;
-      this.whenLoadedPromise = this.checkValidity_();
     }
+  }
+
+  async extractFromImport(network, game, state) {
+    const fullPath = path.join(process.cwd(), this.root, this.serverPath);
+    const {load} = await import(fullPath);
+
+    // Inject our deps into node's require environment.
+    const fakeEnv = {
+      network,
+      game,
+      state,
+      wallGeometry: wallGeometry.getGeo(),
+      debug: easyLog('wall:module:' + this.name),
+      assert,
+    };
+
+    const {server} = inject(load, fakeEnv);
+    conform(server, Server);
+    return {server};
   }
 
   // Returns a custom object for serializing in debug logs.
@@ -99,7 +83,6 @@ export class ModuleDef extends EventEmitter {
       serverPath: this.serverPath,
       config: this.config,
       credit: this.credit,
-      valid: this.valid,
     };
   }
   // Returns a new module def that extends this def with new configuration.
@@ -114,26 +97,11 @@ export class ModuleDef extends EventEmitter {
     );
   }
 
-  // Loads a module from disk asynchronously, assigning def when complete.
-  async checkValidity_() {
-    this.valid = false;
-    assert(this.clientPath, `No client_path found in '${this.name}'`);
-    if (this.serverPath) {
-      await extractFromImport(this.name, this.root, this.serverPath, {}, {}, {});
-      log.debugAt(1, 'Verified ' + path.join(this.root,this.serverPath));
-    } else {
-      log.debugAt(1, 'No server path specified. Using default server module.');
-    }
-    this.valid = true;
-  }
-
   // Instantiates this server-side version of this module, with any additional
   // globals being passed along.
   async instantiate(network, game, state, deadline) {
-    // Only instantiate valid modules.
-    assert(this.valid, 'Attempt to instantiate invalid module!');
     if (this.serverPath) {
-      const {server} = await extractFromImport(this.name, this.root, this.serverPath, network, game, state);
+      const {server} = await this.extractFromImport(network, game, state);
       return new server(this.config, deadline);
     } else {
       return new Server;

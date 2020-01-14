@@ -60,7 +60,7 @@ export class RunningModule {
   // This is a separate method in order to guard against exceptions in
   // instantiate.
   async instantiate() {
-    if (this.moduleDef.valid) {
+    if (library.isValid(this.moduleDef.name)) {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
