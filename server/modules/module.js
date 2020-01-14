@@ -53,7 +53,6 @@ export class RunningModule {
     assert(moduleDef, 'Empty def passed to running module!');
     this.moduleDef = moduleDef;
     this.deadline = deadline;
-
     this.name = this.moduleDef.name;
   }
 

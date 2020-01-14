@@ -65,16 +65,21 @@ export class ModuleLoader {
           ...overrides.filter(o => o.name == defaultConfig.name));
 
       if (cfg.extends) {
-        assert(cfg.extends in library.modules, 'Module ' + cfg.name +
-          ' attempting to extend ' + cfg.extends + ' which was not found!');
-        log.debugAt(1, 'Adding module ' + cfg.name + ' extending ' + cfg.extends);
-        library.register(library.modules[cfg.extends].extend(
-            cfg.name, cfg.config || {}, cfg.credit || {}, cfg.testonly));
+        log.debugAt(1, `Adding module ${cfg.name} extending ${cfg.extends}`);
+        assert(cfg.extends in library.modules,
+            `Module ${cfg.name} attempted to extend ${cfg.extends} which was not found!`);
+        const base = library.modules[cfg.extends];
+
+        library.register(new ModuleDef(cfg.name, base.root, {
+          server: base.serverPath,
+          client: base.clientPath,
+        }, base.name, cfg.config || {}, cfg.credit || {}, cfg.testonly));
       } else {
-        const paths = {client: cfg.path || cfg.client_path, server: cfg.path || cfg.server_path};
         log.debugAt(1, 'Adding module ' + cfg.name);
-        library.register(new ModuleDef(
-              cfg.name, cfg.root, paths, cfg.config || {}, cfg.credit || {}, cfg.testonly));
+        library.register(new ModuleDef(cfg.name, cfg.root, {
+          server: cfg.path || cfg.server_path,
+          client: cfg.path || cfg.client_path,
+        }, '', cfg.config || {}, cfg.credit || {}, cfg.testonly));
       }
     });
 

@@ -23,7 +23,7 @@ const log = easyLog('wall:module_library');
 
 class EmptyModuleDef extends ModuleDef {
   constructor() {
-    super('_empty', '', '', {}, {}, true);
+    super('_empty', '', {}, '', {}, {}, true);
     // TODO(applmak): ^ this hacky.
   }
 }
@@ -39,7 +39,7 @@ class ModuleLibrary extends EventEmitter {
     log.info('Registered', def.name);
     this.modules[def.name] = def;
     if (def.serverPath) {
-      // Validate the server path.
+      // Validate the module at the server path.
       this.loaded.set(def.name, def.extractFromImport({}, {}, {}).then(() => {
         log.debugAt(1, 'Verified ' + path.join(def.root, def.serverPath));
         this.valid.set(def.name, true);

@@ -28,7 +28,7 @@ import * as wallGeometry from '../util/wall_geometry.js';
  * instantiate a module, including code location and config parameters.
  */
 export class ModuleDef extends EventEmitter {
-  constructor(name, moduleRoot, pathsOrBaseModule, config, credit, testonly) {
+  constructor(name, moduleRoot, paths, baseName, config, credit, testonly) {
     super();
     this.name = name;
     this.root = moduleRoot;
@@ -37,21 +37,13 @@ export class ModuleDef extends EventEmitter {
     this.testonly = testonly;
 
     // The path to the client main file of the module.
-    this.clientPath = '';
+    this.clientPath = paths.client;
 
     // The path to the server main file of the module.
-    this.serverPath = '';
+    this.serverPath = paths.server;
 
-
-    if (pathsOrBaseModule.base) {
-      this.base = pathsOrBaseModule.base;
-      this.clientPath = this.base.clientPath;
-      this.serverPath = this.base.serverPath;
-    } else if (name != '_empty') {
-      // TODO(applmak): ^ this hacky.
-      this.clientPath = pathsOrBaseModule.client;
-      this.serverPath = pathsOrBaseModule.server;
-    }
+    // The name of the base module, or falsey otherwise.
+    this.baseName = baseName;
   }
 
   async extractFromImport(network, game, state) {
@@ -78,23 +70,12 @@ export class ModuleDef extends EventEmitter {
     return {
       name: this.name,
       root: this.root,
-      extends: this.base ? this.base.name : '',
+      extends: this.baseName,
       clientPath: this.clientPath,
       serverPath: this.serverPath,
       config: this.config,
       credit: this.credit,
     };
-  }
-  // Returns a new module def that extends this def with new configuration.
-  extend(name, config, credit, testonly) {
-    return new ModuleDef(
-      name,
-      this.root,
-      {base: this},
-      config,
-      credit,
-      testonly,
-    );
   }
 
   // Instantiates this server-side version of this module, with any additional
