@@ -209,7 +209,16 @@ export class PlaylistDriver extends EventEmitter {
       layouts: this.playlist,
       layoutIndex: this.layoutIndex,
       configMap: Object.keys(library.modules).reduce((ret, m) => {
-        ret[m] = library.modules[m].inspect();
+        const def = library.modules[m];
+        ret[m] = {
+          name: def.name,
+          root: def.root,
+          extends: def.baseName,
+          clientPath: def.clientPath,
+          serverPath: def.serverPath,
+          config: def.config,
+          credit: def.credit,
+        };
         return ret;
       }, {}),
     });

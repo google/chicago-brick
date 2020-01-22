@@ -26,6 +26,7 @@ import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
 import {registerRoute, unregisterRoute} from './serving.js';
 import path from 'path';
+import {Server} from '../../lib/module_interface.js';
 
 export function tellClientToPlay(client, name, deadline) {
   const def = library.modules[name];
@@ -76,9 +77,16 @@ export class RunningModule {
     }
     if (this.network) {
       registerRoute(this.name, this.moduleDef.root);
-      let openNetwork = this.network.open();
-      let openState = this.stateManager.open();
-      this.instance = await this.moduleDef.instantiate(openNetwork, this.gameManager, openState, this.deadline);
+
+      if (this.moduleDef.serverPath) {
+        const {server} = await this.moduleDef.extractFromImport(
+            this.network.open(),
+            this.gameManager,
+            this.stateManager.open());
+        this.instance = new server(this.moduleDef.config, this.deadline);
+      } else {
+        this.instance = new Server;
+      }
     }
   }
 

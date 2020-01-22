@@ -20,8 +20,8 @@ import assert from '../../lib/assert.js';
 import {easyLog} from '../../lib/log.js';
 import conform from '../../lib/conform.js';
 import inject from '../../lib/inject.js';
-import {Server} from '../../lib/module_interface.js';
 import * as wallGeometry from '../util/wall_geometry.js';
+import {Server} from '../../lib/module_interface.js';
 
 /**
  * The ModuleDef class contains all the information necessary to load &
@@ -63,29 +63,5 @@ export class ModuleDef extends EventEmitter {
     const {server} = inject(load, fakeEnv);
     conform(server, Server);
     return {server};
-  }
-
-  // Returns a custom object for serializing in debug logs.
-  inspect() {
-    return {
-      name: this.name,
-      root: this.root,
-      extends: this.baseName,
-      clientPath: this.clientPath,
-      serverPath: this.serverPath,
-      config: this.config,
-      credit: this.credit,
-    };
-  }
-
-  // Instantiates this server-side version of this module, with any additional
-  // globals being passed along.
-  async instantiate(network, game, state, deadline) {
-    if (this.serverPath) {
-      const {server} = await this.extractFromImport(network, game, state);
-      return new server(this.config, deadline);
-    } else {
-      return new Server;
-    }
   }
 }
