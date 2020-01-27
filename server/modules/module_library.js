@@ -40,7 +40,11 @@ class ModuleLibrary extends EventEmitter {
     this.modules[def.name] = def;
     if (def.serverPath) {
       // Validate the module at the server path.
-      this.loaded.set(def.name, def.extractFromImport({}, {}, {}).then(() => {
+      this.loaded.set(def.name, def.extractFromImport({
+        network: {},
+        game: {},
+        state: {},
+      }).then(() => {
         log.debugAt(1, 'Verified ' + path.join(def.root, def.serverPath));
         this.valid.set(def.name, true);
       }, err => {

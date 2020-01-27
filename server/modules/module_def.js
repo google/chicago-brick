@@ -46,15 +46,13 @@ export class ModuleDef extends EventEmitter {
     this.baseName = baseName;
   }
 
-  async extractFromImport(network, game, state) {
+  async extractFromImport(deps) {
     const fullPath = path.join(process.cwd(), this.root, this.serverPath);
     const {load} = await import(fullPath);
 
     // Inject our deps into node's require environment.
     const fakeEnv = {
-      network,
-      game,
-      state,
+      ...deps,
       wallGeometry: wallGeometry.getGeo(),
       debug: easyLog('wall:module:' + this.name),
       assert,

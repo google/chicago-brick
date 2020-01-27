@@ -79,10 +79,11 @@ export class RunningModule {
       registerRoute(this.name, this.moduleDef.root);
 
       if (this.moduleDef.serverPath) {
-        const {server} = await this.moduleDef.extractFromImport(
-            this.network.open(),
-            this.gameManager,
-            this.stateManager.open());
+        const {server} = await this.moduleDef.extractFromImport({
+          network: this.network.open(),
+          game: this.gameManager,
+          state: this.stateManager.open()
+        });
         this.instance = new server(this.moduleDef.config, this.deadline);
       } else {
         this.instance = new Server;
