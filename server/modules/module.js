@@ -79,7 +79,7 @@ export class RunningModule {
       registerRoute(this.name, this.moduleDef.root);
 
       if (this.moduleDef.serverPath) {
-        const {server} = await this.moduleDef.extractFromImport({
+        const {server} = await library.extractServerClass(this.name, {
           network: this.network.open(),
           game: this.gameManager,
           state: this.stateManager.open()

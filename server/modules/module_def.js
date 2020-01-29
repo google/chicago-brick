@@ -13,28 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import EventEmitter from 'events';
-import path from 'path';
-
-import assert from '../../lib/assert.js';
-import {easyLog} from '../../lib/log.js';
-import conform from '../../lib/conform.js';
-import inject from '../../lib/inject.js';
-import * as wallGeometry from '../util/wall_geometry.js';
-import {Server} from '../../lib/module_interface.js';
-
 /**
  * The ModuleDef class contains all the information necessary to load &
  * instantiate a module, including code location and config parameters.
  */
-export class ModuleDef extends EventEmitter {
+export class ModuleDef {
   constructor(name, moduleRoot, paths, baseName, config, credit, testonly) {
-    super();
     this.name = name;
     this.root = moduleRoot;
-    this.config = config;
-    this.credit = credit;
-    this.testonly = testonly;
 
     // The path to the client main file of the module.
     this.clientPath = paths.client;
@@ -44,22 +30,15 @@ export class ModuleDef extends EventEmitter {
 
     // The name of the base module, or falsey otherwise.
     this.baseName = baseName;
-  }
 
-  async extractFromImport(deps) {
-    const fullPath = path.join(process.cwd(), this.root, this.serverPath);
-    const {load} = await import(fullPath);
+    // The config object.
+    this.config = config;
 
-    // Inject our deps into node's require environment.
-    const fakeEnv = {
-      ...deps,
-      wallGeometry: wallGeometry.getGeo(),
-      debug: easyLog('wall:module:' + this.name),
-      assert,
-    };
+    // The credits object.
+    this.credit = credit;
 
-    const {server} = inject(load, fakeEnv);
-    conform(server, Server);
-    return {server};
+    // True if this module should be excluded from all auto-generated
+    // collections.
+    this.testonly = testonly;
   }
 }
