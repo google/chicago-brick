@@ -33,7 +33,7 @@ export function tellClientToPlay(client, name, deadline) {
   client.socket.emit('loadModule', {
     module: {
       name,
-      path: path.join('/module/', name, def.clientPath),
+      path: name == '_empty' ? '' : path.join('/module/', name, def.clientPath),
       config: def.config,
       credit: def.credit,
     },

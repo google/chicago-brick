@@ -29,11 +29,10 @@ import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import {Control} from './control.js';
-import {ModuleLoader} from './modules/module_loader.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
 import peer from 'peer';
 import {PlaylistDriver} from './playlist/playlist_driver.js';
-import {PlaylistLoader} from './playlist/playlist_loader.js';
+import {loadAllBrickJson, loadPlaylistFromFile} from './playlist/playlist_loader.js';
 import {makeConsoleLogger} from '../lib/console_logger.js';
 import {captureLog} from './util/last_n_errors_logger.js';
 import {addLogger, easyLog} from '../lib/log.js';
@@ -112,12 +111,23 @@ process.on('unhandledRejection', (reason, p) => {
   log.error(reason);
 });
 
-const moduleLoader = new ModuleLoader(flags);
-const playlistLoader = new PlaylistLoader(flags);
-const playlistConfig = playlistLoader.getInitialPlaylistConfig();
+const moduleDefsByName = loadAllBrickJson(flags.module_dir);
+const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName);
+if (flags.layout_duration) {
+  for (const layout of playlist) {
+    layout.duration = flags.layout_duration;
+  }
+}
+if (flags.module_duration) {
+  for (const layout of playlist) {
+    layout.moduleDuration = flags.module_duration;
+  }
+}
 
-moduleLoader.loadModules(playlistConfig);
-const playlist = playlistLoader.parsePlaylist(playlistConfig);
+// Register the defs.
+for (const def of moduleDefsByName.values()) {
+  library.register(def);
+}
 
 if (playlist.length === 0) {
   throw new Error('Nothing to play!');
@@ -176,7 +186,7 @@ if (flags.enable_monitoring) {
   monitor.enable();
 }
 
-const control = new Control(driver, moduleLoader, playlistLoader);
+const control = new Control(driver, playlist, moduleDefsByName);
 control.installHandlers(app, network.controlSocket());
 
 log(`Loaded ${Object.keys(library.modules).length} modules`);

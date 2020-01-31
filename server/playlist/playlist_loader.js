@@ -16,58 +16,112 @@ limitations under the License.
 import RJSON from 'relaxed-json';
 import assert from '../../lib/assert.js';
 import fs from 'fs';
-import library from '../modules/module_library.js';
 import {Layout} from '../modules/layout.js';
+import {easyLog} from '../../lib/log.js';
+import glob from 'glob';
+import path from 'path';
+import {ModuleDef} from '../modules/module_def.js';
 
-export class PlaylistLoader {
+const log = easyLog('wall:playlist_loader');
 
-  constructor(flags) {
-    this.flags = flags;
-  }
-
-  /** Returns the list of module names for a layout specification. */
-  getModulesForLayout_(layout, collections) {
-    let names = [];
-    if (this.flags.module) {
-      // Copy the module name list.
-      names = this.flags.module.slice(0);
-      names.forEach(m => assert(m in library.modules, `--module "${m}" can't be found!'`));
-    } else if (layout.collection) {
-      // Special collection name to run all available modules.
-      if (layout.collection == '__ALL__') {
-        names = Object.keys(library.modules).filter(m => !library.modules[m].testonly);
+/**
+ * Looks through the moduleDirs for brick.json files.
+ * Returns a map of module name => module def.
+ */
+export function loadAllBrickJson(moduleDirs) {
+  // Try to find all of the modules on disk. We scan them all in order to
+  // figure out the whole universe of modules. We have to do this, because
+  // if we are told to play a module by name, we don't know which path to
+  // load or whatever config to use.
+  const bricks = moduleDirs.flatMap(p => glob.sync(path.join(p, 'brick.json')));
+  const allConfigs = bricks.flatMap(b => {
+    const def = fs.readFileSync(b, {encoding: 'utf8'});
+    const root = path.dirname(b);
+    try {
+      const config = RJSON.parse(def);
+      if (Array.isArray(config)) {
+        for (const c of config) {
+          c.root = root;
+        }
+        return config;
       } else {
-        assert(
-            layout.collection in collections,
-            'Unknown collection name: ' + layout.collection);
-        names = collections[layout.collection];
+        config.root = root;
+        return [config];
       }
-      names.forEach(m => assert(m in library.modules, `Module "${m}" referenced by collection "${layout.collection}" can't be found!'`));
-    } else {
-      assert('modules' in layout, 'Missing modules list in layout def!');
-      names = layout.modules;
-      names.forEach(m => assert(m in library.modules, `Module "${m}" can't be found!'`));
+    } catch (e) {
+      log.error(e);
+      log.error(`Skipping invalid config in: ${b}`);
+      return [];
     }
-    return names;
-  }
+  });
 
-  /** Creates a playlist JSON object from command-line flags. */
-  getInitialPlaylistConfig() {
-    // TODO(applmak): Verify this encoding.
-    // TODO(applmak): Does this API need to exist?
-    var playlistConfig = fs.readFileSync(this.flags.playlist, 'utf8');
-    return RJSON.parse(playlistConfig);
-  }
+  return loadAllModules(allConfigs);
+}
 
-  /** Parses a playlist JSON object into a list of Layouts. */
-  parsePlaylist(config) {
-    // TODO(applmak): If module is specified on the command-line, ignore whatever is set in the playlist.
-    return config.playlist.map((layout) => {
-      return new Layout({
-        modules: this.getModulesForLayout_(layout, config.collections),
-        moduleDuration: this.flags.module_duration || layout.moduleDuration,
-        duration: this.flags.layout_duration || layout.duration,
-      });
+/**
+ * Turns module configs into module defs. Returns a map of name => def.
+ */
+export function loadAllModules(configs, defsByName = new Map) {
+  // Sort the base before the extends so that we process them in this order.
+  const sortedConfigs = [
+    ...configs.filter(c => !c.extends),
+    ...configs.filter(c => c.extends),
+  ];
+
+  return sortedConfigs.reduce((map, config) => {
+    let def;
+    if (config.extends) {
+      const base = map.get(config.extends);
+      if (!base) {
+        log.error(`Module ${config.name} attempted to extend module ${config.extends}, which cannot be found.`);
+        return map;
+      }
+      // Augment the base config with the extended config.
+      const extendedConfig = {...base.config, ...config.config || {}};
+      def = new ModuleDef(config.name, base.root, {
+        server: base.serverPath,
+        client: base.clientPath,
+      }, base.name, extendedConfig, config.credit || {}, config.testonly);
+    } else {
+      def = new ModuleDef(config.name, config.root, {
+        server: config.path || config.serverPath || config.server_path,
+        client: config.path || config.clientPath || config.client_path,
+      }, null, config.config || {}, config.credit || {}, config.testonly);
+    }
+    map.set(config.name, def);
+    return map;
+  }, defsByName);
+}
+
+/**
+ * Loads a playlist from a file and turns it into a list of Layout objects.
+ */
+export function loadPlaylistFromFile(path, defsByName) {
+  const contents = fs.readFileSync(path, {encoding: 'utf-8'});
+  const parsedPlaylist = RJSON.parse(contents);
+  const {collections, playlist, modules} = parsedPlaylist;
+  loadAllModules(modules || [], defsByName);
+
+  return playlist.map(layout => {
+    const {collection, modules} = layout;
+
+    let moduleNames
+    if (collection) {
+      if (collection == '__ALL__') {
+        moduleNames = [...defsByName.values()].map(d => d.name);
+      } else {
+        assert(collections[collection], `Unknown collection name: ${collection}`);
+        moduleNames = [...collections[collection]];
+      }
+    } else {
+      assert(modules, 'Missing modules list in layout def!');
+      moduleNames = [...modules];
+    }
+
+    return new Layout({
+      modules: moduleNames,
+      moduleDuration: layout.moduleDuration,
+      duration: layout.duration,
     });
-  }
+  });
 }

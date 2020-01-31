@@ -16,21 +16,19 @@ limitations under the License.
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
 import {emitter, clients} from './network/network.js';
-import {easyLog} from '../lib/log.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import library from './modules/module_library.js';
+import {loadAllModules} from './playlist/playlist_loader.js';
 
-const log = easyLog('wall:control');
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 export class Control {
-  constructor(playlistDriver, moduleLoader, playlistLoader) {
+  constructor(playlistDriver, initialPlaylist, defsByName) {
     this.playlistDriver = playlistDriver;
-    this.playlistLoader = playlistLoader;
-    this.moduleLoader = moduleLoader;
 
-    this.initialConfig = playlistLoader.getInitialPlaylistConfig();
+    this.initialPlaylist = initialPlaylist;
+    this.defsByName = defsByName;
     this.currentConfig = this.initialConfig;
   }
 
@@ -73,22 +71,14 @@ export class Control {
       });
       socket.on('newPlaylist', data => {
         const {playlist, moduleConfig} = data;
-        for (const name in moduleConfig) {
-          const cfg = moduleConfig[name];
-          // Only update new modules that extend other ones.
-          if (cfg.extends) {
-            log(`Loaded new config: ${cfg.name}`);
-            // HACK!
-            library.modules[cfg.name] = library.modules[cfg.extends].extend(
-                cfg.name, cfg.config || {}, cfg.credit || {});
-          }
+        loadAllModules(Object.values(moduleConfig), this.defsByName);
+        for (const def of this.defsByName.values()) {
+          library.register(def);
         }
-
         this.playlistDriver.setPlaylist(playlist);
       });
       socket.on('resetPlaylist', () => {
-        const playlist = this.playlistLoader.parsePlaylist(this.initialConfig);
-        this.playlistDriver.start(playlist);
+        this.playlistDriver.setPlaylist(this.initialPlaylist);
       });
     });
     io.emit('time', {time: time.now()});

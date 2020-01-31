@@ -27,7 +27,10 @@ const log = easyLog('wall:module_library');
 
 class EmptyModuleDef extends ModuleDef {
   constructor() {
-    super('_empty', '', {}, '', {}, {}, true);
+    super('_empty', '', {
+      client: '',
+      server: '',
+    }, '', {}, {}, true);
     // TODO(applmak): ^ this hacky.
   }
 }
@@ -39,7 +42,6 @@ class ModuleLibrary extends EventEmitter {
     this.reset();
   }
   register(def) {
-    assert(!(def.name in this.modules), 'Def ' + def.name + ' already exists!');
     log.info('Registered', def.name);
     this.modules[def.name] = def;
     if (def.serverPath) {
