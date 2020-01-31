@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import EventEmitter from 'events';
-import {ModuleDef} from './module_def.js';
+import {EmptyModuleDef} from './module_def.js';
 import assert from '../../lib/assert.js';
 import {easyLog} from '../../lib/log.js';
 import path from 'path';
@@ -24,16 +24,6 @@ import inject from '../../lib/inject.js';
 import * as wallGeometry from '../util/wall_geometry.js';
 
 const log = easyLog('wall:module_library');
-
-class EmptyModuleDef extends ModuleDef {
-  constructor() {
-    super('_empty', '', {
-      client: '',
-      server: '',
-    }, '', {}, {}, true);
-    // TODO(applmak): ^ this hacky.
-  }
-}
 
 class ModuleLibrary extends EventEmitter {
   constructor() {

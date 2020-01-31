@@ -27,13 +27,13 @@ import {clients} from '../network/network.js';
 import {registerRoute, unregisterRoute} from './serving.js';
 import path from 'path';
 import {Server} from '../../lib/module_interface.js';
+import {EmptyModuleDef} from './module_def.js';
 
-export function tellClientToPlay(client, name, deadline) {
-  const def = library.modules[name];
+export function tellClientToPlay(client, def, deadline) {
   client.socket.emit('loadModule', {
     module: {
-      name,
-      path: name == '_empty' ? '' : path.join('/module/', name, def.clientPath),
+      name: def.name,
+      path: def.name == '_empty' ? '' : path.join('/module/', def.name, def.clientPath),
       config: def.config,
       credit: def.credit,
     },
@@ -44,7 +44,7 @@ export function tellClientToPlay(client, name, deadline) {
 
 export class RunningModule {
   static empty(deadline = 0) {
-    return new RunningModule(library.modules['_empty'], deadline);
+    return new RunningModule(new EmptyModuleDef(), deadline);
   }
   /**
    * Constructs a running module.
@@ -73,7 +73,7 @@ export class RunningModule {
     }
     // Tell clients to get ready to play this module at the deadline.
     for (const id in clients) {
-      tellClientToPlay(clients[id], this.name, this.deadline);
+      tellClientToPlay(clients[id], this.moduleDef, this.deadline);
     }
     if (this.network) {
       registerRoute(this.name, this.moduleDef.root);

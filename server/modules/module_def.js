@@ -42,3 +42,13 @@ export class ModuleDef {
     this.testonly = testonly;
   }
 }
+
+export class EmptyModuleDef extends ModuleDef {
+  constructor() {
+    super('_empty', '', {
+      client: '',
+      server: '',
+    }, '', {}, {}, true);
+    // TODO(applmak): ^ this hacky.
+  }
+}

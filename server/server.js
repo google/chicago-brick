@@ -178,7 +178,7 @@ network.emitter.on('new-client', client => {
   const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
   if (nextModule.name != '_empty') {
     // Tell the client to immediately go to the current module.
-    tellClientToPlay(client, nextModule.name, nextModule.deadline);
+    tellClientToPlay(client, nextModule.moduleDef, nextModule.deadline);
   }
 });
 
