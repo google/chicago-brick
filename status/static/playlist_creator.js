@@ -1,4 +1,4 @@
-import Sortable from './node_modules/sortablejs/modular/sortable.esm.js';
+import Sortable from '/node_modules/sortablejs/modular/sortable.esm.js';
 
 function makeEditableText(el, getFn, setFn) {
   el.textContent = getFn();
