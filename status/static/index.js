@@ -13,11 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ClientController} from '/js/client_controller.js';
-import {PlaylistController} from '/js/playlist_controller.js';
-import {ErrorController} from '/js/error_controller.js';
-import {PlaylistCreator} from '/js/playlist_creator.js';
-import io from '/js/socket.io-client.js';
+import {ClientController} from './client_controller.js';
+import {PlaylistController} from './playlist_controller.js';
+import {ErrorController} from './error_controller.js';
+import {PlaylistCreator} from './playlist_creator.js';
+import io from './socket.io-client.js';
 
 let lastUpdateFromServer = 0;
 let timeOfLastUpdateFromServer = window.performance.now();
