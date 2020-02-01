@@ -19,7 +19,6 @@ import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
 import {RunningModule} from '../modules/module.js';
-import library from '../modules/module_library.js';
 import EventEmitter from 'events';
 
 const log = easyLog('wall:playlist_driver');
@@ -207,9 +206,8 @@ export class PlaylistDriver extends EventEmitter {
       moduleIndex: this.moduleIndex,
       layouts: this.playlist,
       layoutIndex: this.layoutIndex,
-      configMap: Object.keys(library.modules).reduce((ret, m) => {
-        const def = library.modules[m];
-        ret[m] = {
+      configMap: [...this.defByName.values()].reduce((ret, def) => {
+        ret[def.name] = {
           name: def.name,
           root: def.root,
           extends: def.baseName,
