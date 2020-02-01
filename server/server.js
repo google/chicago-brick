@@ -22,7 +22,6 @@ import * as network from './network/network.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as moduleServing from './modules/serving.js';
 import {tellClientToPlay} from './modules/module.js';
-import library from './modules/module_library.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
@@ -124,11 +123,6 @@ if (flags.module_duration) {
   }
 }
 
-// Register the defs.
-for (const def of moduleDefsByName.values()) {
-  library.register(def);
-}
-
 if (playlist.length === 0) {
   throw new Error('Nothing to play!');
 }
@@ -189,6 +183,6 @@ if (flags.enable_monitoring) {
 const control = new Control(driver, playlist, moduleDefsByName);
 control.installHandlers(app, network.controlSocket());
 
-log(`Loaded ${Object.keys(library.modules).length} modules`);
+log(`Loaded ${moduleDefsByName.size} modules`);
 log('Running playlist of ' + playlist.length + ' layouts');
 driver.start(playlist);

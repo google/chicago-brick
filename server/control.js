@@ -17,7 +17,6 @@ import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
 import {emitter, clients} from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
-import library from './modules/module_library.js';
 import {loadAllModules} from './playlist/playlist_loader.js';
 
 // Basic server management hooks.
@@ -72,9 +71,6 @@ export class Control {
       socket.on('newPlaylist', data => {
         const {playlist, moduleConfig} = data;
         loadAllModules(Object.values(moduleConfig), this.defsByName);
-        for (const def of this.defsByName.values()) {
-          library.register(def);
-        }
         this.playlistDriver.setPlaylist(playlist);
       });
       socket.on('resetPlaylist', () => {
