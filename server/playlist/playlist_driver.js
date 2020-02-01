@@ -26,10 +26,12 @@ const log = easyLog('wall:playlist_driver');
 const random = new randomjs.Random();
 
 export class PlaylistDriver extends EventEmitter {
-  constructor(modulePlayer) {
+  constructor(modulePlayer, defByName) {
     super();
     // The module player.
     this.modulePlayer = modulePlayer;
+    // A map of name -> module def.
+    this.defByName = defByName;
     // If non-zero, a handle to the current timer, which when fired, will tell
     // the wall to play a new module.
     this.timer = 0;
@@ -158,11 +160,6 @@ export class PlaylistDriver extends EventEmitter {
     // Shuffle the module list:
     this.modules = Array.from(layout.modules);
     random.shuffle(this.modules);
-
-    concurrentWork.push(...layout.modules.map(m => library.whenLoaded(m)));
-
-    // Wait until all of the modules are loaded.
-    await Promise.all(concurrentWork);
     this.nextModule();
   }
   // Advances to the next module in the current layout. If there is only 1
@@ -171,7 +168,7 @@ export class PlaylistDriver extends EventEmitter {
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
 
-    log(`Next module: ${this.modules[this.moduleIndex]} (${library.isValid(this.modules[this.moduleIndex]) ? 'valid' : 'invalid'})`);
+    log(`Next module: ${this.modules[this.moduleIndex]}`);
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];
@@ -187,7 +184,9 @@ export class PlaylistDriver extends EventEmitter {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
     this.lastDeadline_ = now() + 5000;
-    this.modulePlayer.playModule(new RunningModule(library.modules[module], this.lastDeadline_));
+    const moduleName = this.modules[this.moduleIndex];
+    const def = this.defByName.get(moduleName);
+    this.modulePlayer.playModule(new RunningModule(def, this.lastDeadline_));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {

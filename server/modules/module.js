@@ -18,7 +18,6 @@ import * as time from '../util/time.js';
 import * as wallGeometry from '../util/wall_geometry.js';
 import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
-import library from './module_library.js';
 import * as network from '../network/network.js';
 import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
@@ -28,6 +27,11 @@ import {registerRoute, unregisterRoute} from './serving.js';
 import path from 'path';
 import {Server} from '../../lib/module_interface.js';
 import {EmptyModuleDef} from './module_def.js';
+import {easyLog} from '../../lib/log.js';
+import conform from '../../lib/conform.js';
+import inject from '../../lib/inject.js';
+
+const log = easyLog('wall:module');
 
 export function tellClientToPlay(client, def, deadline) {
   client.socket.emit('loadModule', {
@@ -55,12 +59,49 @@ export class RunningModule {
     this.moduleDef = moduleDef;
     this.deadline = deadline;
     this.name = this.moduleDef.name;
+
+    if (this.moduleDef.serverPath) {
+      // Begin asynchronously validating the module at the server path.
+      this.loaded = this.extractServerClass(this.name, {
+        network: {},
+        game: {},
+        state: {},
+      }).then(() => {
+        log.debugAt(1, 'Verified ' + path.join(this.moduleDef.root, this.moduleDef.serverPath));
+        this.valid = true;
+      }, err => {
+        log.error(err);
+      });
+    } else {
+      this.valid = true;
+      this.loaded = Promise.resolve();
+    }
+  }
+
+  async extractServerClass(deps) {
+    const fullPath = path.join(process.cwd(), this.moduleDef.root, this.moduleDef.serverPath);
+    const {load} = await import(fullPath);
+
+    // Inject our deps into node's require environment.
+    const fakeEnv = {
+      ...deps,
+      wallGeometry: wallGeometry.getGeo(),
+      debug: easyLog('wall:module:' + this.name),
+      assert,
+    };
+
+    const {server} = inject(load, fakeEnv);
+    conform(server, Server);
+    return {server};
   }
 
   // This is a separate method in order to guard against exceptions in
   // instantiate.
   async instantiate() {
-    if (library.isValid(this.moduleDef.name)) {
+    // Wait for loading to complete.
+    await this.loaded;
+    // Check for validity.
+    if (this.valid) {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
@@ -79,7 +120,7 @@ export class RunningModule {
       registerRoute(this.name, this.moduleDef.root);
 
       if (this.moduleDef.serverPath) {
-        const {server} = await library.extractServerClass(this.name, {
+        const {server} = await this.extractServerClass({
           network: this.network.open(),
           game: this.gameManager,
           state: this.stateManager.open()

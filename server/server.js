@@ -136,7 +136,7 @@ if (playlist.length === 0) {
 const app = moduleServing.create(flags);
 
 const modulePlayer = new ServerModulePlayer();
-const driver = new PlaylistDriver(modulePlayer);
+const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
 
 game.init(flags);
 
