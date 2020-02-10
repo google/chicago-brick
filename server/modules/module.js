@@ -18,17 +18,29 @@ import * as time from '../util/time.js';
 import * as wallGeometry from '../util/wall_geometry.js';
 import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
-import library from './module_library.js';
 import * as network from '../network/network.js';
 import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
 import {registerRoute, unregisterRoute} from './serving.js';
+import path from 'path';
+import {Server} from '../../lib/module_interface.js';
+import {EmptyModuleDef} from './module_def.js';
+import {easyLog} from '../../lib/log.js';
+import conform from '../../lib/conform.js';
+import inject from '../../lib/inject.js';
 
-export function tellClientToPlay(client, name, deadline) {
+const log = easyLog('wall:module');
+
+export function tellClientToPlay(client, def, deadline) {
   client.socket.emit('loadModule', {
-    module: library.modules[name].serializeForClient(),
+    module: {
+      name: def.name,
+      path: def.name == '_empty' ? '' : path.join('/module/', def.name, def.clientPath),
+      config: def.config,
+      credit: def.credit,
+    },
     time: deadline,
     geo: wallGeometry.getGeo().points
   });
@@ -36,7 +48,7 @@ export function tellClientToPlay(client, name, deadline) {
 
 export class RunningModule {
   static empty(deadline = 0) {
-    return new RunningModule(library.modules['_empty'], deadline);
+    return new RunningModule(new EmptyModuleDef(), deadline);
   }
   /**
    * Constructs a running module.
@@ -46,12 +58,52 @@ export class RunningModule {
     assert(moduleDef, 'Empty def passed to running module!');
     this.moduleDef = moduleDef;
     this.deadline = deadline;
-
     this.name = this.moduleDef.name;
 
-    if (this.moduleDef.valid) {
+    if (this.moduleDef.serverPath) {
+      // Begin asynchronously validating the module at the server path.
+      this.loaded = this.extractServerClass(this.name, {
+        network: {},
+        game: {},
+        state: {},
+      }).then(() => {
+        log.debugAt(1, 'Verified ' + path.join(this.moduleDef.root, this.moduleDef.serverPath));
+        this.valid = true;
+      }, err => {
+        log.error(err);
+      });
+    } else {
+      this.valid = true;
+      this.loaded = Promise.resolve();
+    }
+  }
+
+  async extractServerClass(deps) {
+    const fullPath = path.join(process.cwd(), this.moduleDef.root, this.moduleDef.serverPath);
+    const {load} = await import(fullPath);
+
+    // Inject our deps into node's require environment.
+    const fakeEnv = {
+      ...deps,
+      wallGeometry: wallGeometry.getGeo(),
+      debug: easyLog('wall:module:' + this.name),
+      assert,
+    };
+
+    const {server} = inject(load, fakeEnv);
+    conform(server, Server);
+    return {server};
+  }
+
+  // This is a separate method in order to guard against exceptions in
+  // instantiate.
+  async instantiate() {
+    // Wait for loading to complete.
+    await this.loaded;
+    // Check for validity.
+    if (this.valid) {
       // Only instantiate support objects for valid module defs.
-      const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${deadline}`;
+      const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
       this.gameManager = game.forModule(INSTANTIATION_ID);
       this.stateManager = stateManager.forModule(network.getSocket(), INSTANTIATION_ID);
@@ -60,20 +112,23 @@ export class RunningModule {
       this.gameManager = null;
       this.stateManager = null;
     }
-  }
-
-  // This is a separate method in order to guard against exceptions in
-  // instantiate.
-  instantiate() {
     // Tell clients to get ready to play this module at the deadline.
     for (const id in clients) {
-      tellClientToPlay(clients[id], this.name, this.deadline);
+      tellClientToPlay(clients[id], this.moduleDef, this.deadline);
     }
     if (this.network) {
       registerRoute(this.name, this.moduleDef.root);
-      let openNetwork = this.network.open();
-      let openState = this.stateManager.open();
-      this.instance = this.moduleDef.instantiate(openNetwork, this.gameManager, openState, this.deadline);
+
+      if (this.moduleDef.serverPath) {
+        const {server} = await this.extractServerClass({
+          network: this.network.open(),
+          game: this.gameManager,
+          state: this.stateManager.open()
+        });
+        this.instance = new server(this.moduleDef.config, this.deadline);
+      } else {
+        this.instance = new Server;
+      }
     }
   }
 

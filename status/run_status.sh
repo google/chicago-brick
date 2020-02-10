@@ -1,6 +1,4 @@
 #!/bin/bash
 
-status/node_modules/http-server/bin/http-server \
-  -p 3001  \
-  -c-1     \
-  status/
+node status/index.js \
+  --port 3001

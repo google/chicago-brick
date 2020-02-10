@@ -18,19 +18,19 @@ import {easyLog} from '../../lib/log.js';
 import randomjs from 'random-js';
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
-import {RunningModule, tellClientToPlay} from './module.js';
-import library from './module_library.js';
-import {emitter} from '../network/network.js';
+import {RunningModule} from '../modules/module.js';
 import EventEmitter from 'events';
 
 const log = easyLog('wall:playlist_driver');
 const random = new randomjs.Random();
 
 export class PlaylistDriver extends EventEmitter {
-  constructor(modulePlayer) {
+  constructor(modulePlayer, defByName) {
     super();
     // The module player.
     this.modulePlayer = modulePlayer;
+    // A map of name -> module def.
+    this.defByName = defByName;
     // If non-zero, a handle to the current timer, which when fired, will tell
     // the wall to play a new module.
     this.timer = 0;
@@ -48,12 +48,6 @@ export class PlaylistDriver extends EventEmitter {
     this.newModuleTime = Infinity;
     // Timestamp of the last deadline we used to play a module.
     this.lastDeadline_ = 0;
-
-    emitter.on('new-client', client => {
-      if (this.modules[this.moduleIndex]) {
-        tellClientToPlay(client, this.modules[this.moduleIndex], this.lastDeadline_);
-      }
-    });
   }
   async setPlaylist(newPlaylist) {
     if (this.modulePlayer.oldModule.name != '_empty') {
@@ -165,11 +159,6 @@ export class PlaylistDriver extends EventEmitter {
     // Shuffle the module list:
     this.modules = Array.from(layout.modules);
     random.shuffle(this.modules);
-
-    concurrentWork.push(...layout.modules.map(m => library.modules[m].whenLoadedPromise));
-
-    // Wait until all of the modules are loaded.
-    await Promise.all(concurrentWork);
     this.nextModule();
   }
   // Advances to the next module in the current layout. If there is only 1
@@ -178,7 +167,7 @@ export class PlaylistDriver extends EventEmitter {
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
 
-    log(`Next module: ${this.modules[this.moduleIndex]} (${library.modules[this.modules[this.moduleIndex]].valid ? 'valid' : 'invalid'})`);
+    log(`Next module: ${this.modules[this.moduleIndex]}`);
 
     // The current layout.
     let layout = this.playlist[this.layoutIndex];
@@ -194,7 +183,9 @@ export class PlaylistDriver extends EventEmitter {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
     this.lastDeadline_ = now() + 5000;
-    this.modulePlayer.playModule(new RunningModule(library.modules[module], this.lastDeadline_));
+    const moduleName = this.modules[this.moduleIndex];
+    const def = this.defByName.get(moduleName);
+    this.modulePlayer.playModule(new RunningModule(def, this.lastDeadline_));
 
     if (monitor.isEnabled()) {
       monitor.update({playlist: {
@@ -215,8 +206,16 @@ export class PlaylistDriver extends EventEmitter {
       moduleIndex: this.moduleIndex,
       layouts: this.playlist,
       layoutIndex: this.layoutIndex,
-      configMap: Object.keys(library.modules).reduce((ret, m) => {
-        ret[m] = library.modules[m].inspect();
+      configMap: [...this.defByName.values()].reduce((ret, def) => {
+        ret[def.name] = {
+          name: def.name,
+          root: def.root,
+          extends: def.baseName,
+          clientPath: def.clientPath,
+          serverPath: def.serverPath,
+          config: def.config,
+          credit: def.credit,
+        };
         return ret;
       }, {}),
     });

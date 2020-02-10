@@ -21,18 +21,17 @@ import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as moduleServing from './modules/serving.js';
-import library from './modules/module_library.js';
+import {tellClientToPlay} from './modules/module.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import {Control} from './control.js';
-import {ModuleLoader} from './modules/module_loader.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
 import peer from 'peer';
-import {PlaylistDriver} from './modules/playlist_driver.js';
-import {PlaylistLoader} from './modules/playlist_loader.js';
+import {PlaylistDriver} from './playlist/playlist_driver.js';
+import {loadAllBrickJson, loadPlaylistFromFile} from './playlist/playlist_loader.js';
 import {makeConsoleLogger} from '../lib/console_logger.js';
 import {captureLog} from './util/last_n_errors_logger.js';
 import {addLogger, easyLog} from '../lib/log.js';
@@ -111,12 +110,18 @@ process.on('unhandledRejection', (reason, p) => {
   log.error(reason);
 });
 
-const moduleLoader = new ModuleLoader(flags);
-const playlistLoader = new PlaylistLoader(flags);
-const playlistConfig = playlistLoader.getInitialPlaylistConfig();
-
-moduleLoader.loadModules(playlistConfig);
-const playlist = playlistLoader.parsePlaylist(playlistConfig);
+const moduleDefsByName = loadAllBrickJson(flags.module_dir);
+const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName);
+if (flags.layout_duration) {
+  for (const layout of playlist) {
+    layout.duration = flags.layout_duration;
+  }
+}
+if (flags.module_duration) {
+  for (const layout of playlist) {
+    layout.moduleDuration = flags.module_duration;
+  }
+}
 
 if (playlist.length === 0) {
   throw new Error('Nothing to play!');
@@ -125,7 +130,7 @@ if (playlist.length === 0) {
 const app = moduleServing.create(flags);
 
 const modulePlayer = new ServerModulePlayer();
-const driver = new PlaylistDriver(modulePlayer);
+const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
 
 game.init(flags);
 
@@ -163,14 +168,21 @@ peerServer.on('disconnect', function(id) {
 });
 
 network.init(server);
+network.emitter.on('new-client', client => {
+  const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
+  if (nextModule.name != '_empty') {
+    // Tell the client to immediately go to the current module.
+    tellClientToPlay(client, nextModule.moduleDef, nextModule.deadline);
+  }
+});
 
 if (flags.enable_monitoring) {
   monitor.enable();
 }
 
-const control = new Control(driver, moduleLoader, playlistLoader);
+const control = new Control(driver, playlist, moduleDefsByName);
 control.installHandlers(app, network.controlSocket());
 
-log(`Loaded ${Object.keys(library.modules).length} modules`);
+log(`Loaded ${moduleDefsByName.size} modules`);
 log('Running playlist of ' + playlist.length + ' layouts');
 driver.start(playlist);
