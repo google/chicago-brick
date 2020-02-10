@@ -27,10 +27,9 @@ import fs from 'fs';
 import https from 'https';
 import path from 'path';
 import {Control} from './control.js';
+import {RunningModule} from './modules/module.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
 import peer from 'peer';
-import {PlaylistDriver} from './playlist/playlist_driver.js';
-import {loadAllBrickJson, loadPlaylistFromFile} from './playlist/playlist_loader.js';
 import {makeConsoleLogger} from '../lib/console_logger.js';
 import {captureLog} from './util/last_n_errors_logger.js';
 import {addLogger, easyLog} from '../lib/log.js';
@@ -51,8 +50,6 @@ const FLAG_DEFS = [
           'chicago-brick is a dep and lives in node_modules, you must set ' +
           'this to your project\'s node_modules dir or the /sys path will ' +
           'be set to a nonexistent directory.'},
-  {name: 'playlist', type: String, alias: 'p',
-      defaultValue: 'config/demo-playlist.json'},
   {name: 'assets_dir', type: String, alias: 'd',
       // demo_modules contains the platform demos.
       // The modules dir should contain your own modules.
@@ -60,19 +57,10 @@ const FLAG_DEFS = [
       description: 'List of directories of modules and assets.  Everything ' +
           'under these dirs will be available under ' +
           '/asset/(whatever is under your directories).'},
-  {name: 'module_dir', type: String,
-      defaultValue: ['demo_modules/*', 'node_modules/*'], multiple: true,
-      description: 'A glob pattern matching directories that contain module ' +
-          'code may be specified multiple times.'},
-  {name: 'module', type: String, alias: 'm', multiple: true,
-      description: 'Runs only the selected module or modules.'},
   {name: 'help', type: Boolean},
   {name: 'port', type: Number, defaultValue: 3000},
   {name: 'use_geometry', type: JSON.parse, defaultValue: null},
   {name: 'screen_width', type: Number, defaultValue: 1920},
-  {name: 'layout_duration', type: Number},
-  {name: 'module_duration', type: Number},
-  {name: 'max_partitions', type: Number},
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
@@ -81,7 +69,7 @@ const FLAG_DEFS = [
   {name: 'require_client_cert', type: Boolean, defaultValue: false,
     description: 'Whether to require HTTPS certs from clients.'}
 ];
-let flags = commandLineArgs(FLAG_DEFS);
+const flags = commandLineArgs(FLAG_DEFS);
 if (flags.help) {
   console.log('Available flags: ' + commandLineUsage({optionList: FLAG_DEFS}));
   process.exit();
@@ -98,8 +86,8 @@ if (flags.use_geometry) {
 }
 
 if (flags.screen_width) {
-  var xscale = flags.screen_width;
-  var yscale = xscale * 1080 / 1920;
+  const xscale = flags.screen_width;
+  const yscale = xscale * 1080 / 1920;
   wallGeometry.setScale(xscale, yscale);
 }
 
@@ -108,27 +96,9 @@ process.on('unhandledRejection', (reason, p) => {
   log.error(reason);
 });
 
-const moduleDefsByName = loadAllBrickJson(flags.module_dir);
-const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName);
-if (flags.layout_duration) {
-  for (const layout of playlist) {
-    layout.duration = flags.layout_duration;
-  }
-}
-if (flags.module_duration) {
-  for (const layout of playlist) {
-    layout.moduleDuration = flags.module_duration;
-  }
-}
-
-if (playlist.length === 0) {
-  throw new Error('Nothing to play!');
-}
-
 const app = moduleServing.create(flags);
 
 const modulePlayer = new ServerModulePlayer();
-const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
 
 game.init(flags);
 
@@ -174,9 +144,8 @@ network.emitter.on('new-client', client => {
   }
 });
 
-const control = new Control(driver, playlist, moduleDefsByName);
+const control = new Control(modulePlayer);
 control.installHandlers(app, network.controlSocket());
 
-log(`Loaded ${moduleDefsByName.size} modules`);
-log('Running playlist of ' + playlist.length + ' layouts');
-driver.start(playlist);
+// Reset back to an empty module on boot (to clean up any clients).
+modulePlayer.playModule(RunningModule.empty());

@@ -14,13 +14,13 @@ limitations under the License.
 ==============================================================================*/
 
 import RJSON from 'relaxed-json';
-import assert from '../../lib/assert.js';
+import assert from '../lib/assert.js';
 import fs from 'fs';
-import {Layout} from '../modules/layout.js';
-import {easyLog} from '../../lib/log.js';
+import {Layout} from './layout.js';
+import {easyLog} from '../lib/log.js';
 import glob from 'glob';
 import path from 'path';
-import {ModuleDef} from '../modules/module_def.js';
+import {ModuleDef} from '../server/modules/module_def.js';
 
 const log = easyLog('wall:playlist_loader');
 
@@ -108,7 +108,9 @@ export function loadPlaylistFromFile(path, defsByName) {
     let moduleNames
     if (collection) {
       if (collection == '__ALL__') {
-        moduleNames = [...defsByName.values()].map(d => d.name);
+        moduleNames = [...defsByName.values()]
+            .filter(d => !d.testonly)
+            .map(d => d.name);
       } else {
         assert(collections[collection], `Unknown collection name: ${collection}`);
         moduleNames = [...collections[collection]];

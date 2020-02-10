@@ -29,15 +29,16 @@ function getTime() {
   return lastUpdateFromServer + window.performance.now() - timeOfLastUpdateFromServer;
 }
 const host = new URL(location).searchParams.get('host') || 'localhost:3000';
+const serverIo = io('/');
 const control = io(`http://${host}/control`);
 const creatorEl = document.querySelector('#playlist-creator');
 
 function applyNewPlaylist(playlist, moduleConfig) {
   // TODO(applmak): Passing a string here is a bit hacky.
   if (playlist == 'reset') {
-    control.emit('resetPlaylist');
+    serverIo.emit('resetPlaylist');
   } else {
-    control.emit('newPlaylist', {playlist, moduleConfig});
+    serverIo.emit('newPlaylist', {playlist, moduleConfig});
   }
 }
 
@@ -59,7 +60,7 @@ function convertMsDurationToText(ms) {
 }
 
 let transitionData = {};
-control.on('transition', data => {
+serverIo.on('transition', data => {
   transitionData = data;
 
   const duration = data.nextDeadline - data.deadline;

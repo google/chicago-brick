@@ -13,24 +13,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from '../monitoring/monitor.js';
-import {easyLog} from '../../lib/log.js';
+import {easyLog} from '../lib/log.js';
 import randomjs from 'random-js';
-import assert from '../../lib/assert.js';
-import {now, inFuture, until} from '../util/time.js';
-import {RunningModule} from '../modules/module.js';
+import assert from '../lib/assert.js';
+import {now, inFuture, until} from '../server/util/time.js';
 import EventEmitter from 'events';
 
 const log = easyLog('wall:playlist_driver');
 const random = new randomjs.Random();
 
 export class PlaylistDriver extends EventEmitter {
-  constructor(modulePlayer, defByName) {
+  constructor(modulePlayer, defByName, io) {
     super();
     // The module player.
     this.modulePlayer = modulePlayer;
     // A map of name -> module def.
     this.defByName = defByName;
+    // io for communication with client page.
+    this.io = io;
+    io.on('connection', socket => {
+      this.sendTransitionInfo(socket);
+    });
     // If non-zero, a handle to the current timer, which when fired, will tell
     // the wall to play a new module.
     this.timer = 0;
@@ -53,7 +56,7 @@ export class PlaylistDriver extends EventEmitter {
     if (this.modulePlayer.oldModule.name != '_empty') {
       // Give the wall 1 second to get ready to fade out.
       this.lastDeadline_ = now() + 1000;
-      await this.modulePlayer.playModule(RunningModule.empty(this.lastDeadline_));
+      await this.modulePlayer.playModule('_empty', this.lastDeadline_);
     }
 
     this.start(newPlaylist);
@@ -139,14 +142,6 @@ export class PlaylistDriver extends EventEmitter {
     // The time that we'll switch to a new layout.
     this.newLayoutTime = inFuture(layout.duration * 1000);
 
-    if (monitor.isEnabled()) {
-      monitor.update({playlist: {
-        time: now(),
-        event: `change layout`,
-        deadline: this.newLayoutTime
-      }});
-    }
-
     log(`Next Layout: ${this.layoutIndex}`);
 
     // If the wall isn't already faded out, fade it out:
@@ -154,7 +149,7 @@ export class PlaylistDriver extends EventEmitter {
     if (this.modulePlayer.oldModule.name != '_empty') {
       // Give the wall 1 second to get ready to fade out.
       this.lastDeadline_ = now() + 1000;
-      concurrentWork.push(this.modulePlayer.playModule(RunningModule.empty(this.lastDeadline_)));
+      concurrentWork.push(this.modulePlayer.playModule('_empty', this.lastDeadline_));
     }
     // Shuffle the module list:
     this.modules = Array.from(layout.modules);
@@ -179,28 +174,34 @@ export class PlaylistDriver extends EventEmitter {
   }
   // Private helper function that does the work of going to a module by name
   // and scheduling the next module to play after a certain duration.
-  playModule_(module) {
+  playModule_(moduleName) {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
     this.lastDeadline_ = now() + 5000;
-    const moduleName = this.modules[this.moduleIndex];
     const def = this.defByName.get(moduleName);
-    this.modulePlayer.playModule(new RunningModule(def, this.lastDeadline_));
+    this.modulePlayer.playModule(def, this.lastDeadline_);
 
-    if (monitor.isEnabled()) {
-      monitor.update({playlist: {
-        time: now(),
-        event: `change module ${module}`,
-        deadline: this.getNextDeadline(),
-      }});
+    this.nextDeadline = Math.min(this.newLayoutTime, this.newModuleTime);
+
+    this.sendTransitionInfo(this.io);
+
+    // Now, in so many seconds, we'll need to switch to another module
+    // or another layout. How much time do we have?
+    if (this.newLayoutTime < this.newModuleTime) {
+      this.timer = setTimeout(() => this.nextLayout(), until(this.newLayoutTime));
+    } else {
+      // Only schedule the next module to play if:
+      // a) There are multiple modules in the current layout, or
+      // b) The module we are now playing is not in the current layout, and so
+      //    we wish to return to that layout.
+      this.timer = setTimeout(() => this.nextModule(), until(this.newModuleTime));
     }
-
-    const nextDeadline = Math.min(this.newLayoutTime, this.newModuleTime);
-
-    this.emit('transition', {
+  }
+  sendTransitionInfo(socket) {
+    socket.emit('transition', {
       deadline: this.lastDeadline_,
-      module,
-      nextDeadline,
+      module: this.modulePlayer.oldModule.name,
+      nextDeadline: this.nextDeadline,
       nextLayoutDeadline: this.newLayoutTime,
       moduleList: this.modules,
       moduleIndex: this.moduleIndex,
@@ -219,17 +220,5 @@ export class PlaylistDriver extends EventEmitter {
         return ret;
       }, {}),
     });
-
-    // Now, in so many seconds, we'll need to switch to another module
-    // or another layout. How much time do we have?
-    if (this.newLayoutTime < this.newModuleTime) {
-      this.timer = setTimeout(() => this.nextLayout(), until(this.newLayoutTime));
-    } else {
-      // Only schedule the next module to play if:
-      // a) There are multiple modules in the current layout, or
-      // b) The module we are now playing is not in the current layout, and so
-      //    we wish to return to that layout.
-      this.timer = setTimeout(() => this.nextModule(), until(this.newModuleTime));
-    }
   }
 }
