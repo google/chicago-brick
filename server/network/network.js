@@ -27,7 +27,6 @@ limitations under the License.
 //   future calculations.
 
 import {easyLog} from '../../lib/log.js';
-import * as monitor from '../monitoring/monitor.js';
 import ioClient from 'socket.io-client';
 import socketio from 'socket.io';
 import {EventEmitter} from 'events';
@@ -77,12 +76,6 @@ export function init(server) {
         return;
       }
       const client = new ClientInfo(config.offset, clientRect, socket);
-      if (monitor.isEnabled()) {
-        monitor.update({layout: {
-          time: now(),
-          event: `newClient: ${client.rect.serialize()}`,
-        }});
-      }
       clients[client.socket.id] = client;
       log(`New client: ${client.rect.serialize()}`);
       emitter.emit('new-client', client);
@@ -96,21 +89,8 @@ export function init(server) {
       const {id} = socket;
       if (id in clients) {
         const {rect} = clients[id];
-        if (monitor.isEnabled()) {
-          monitor.update({layout: {
-            time: now(),
-            event: `dropClient: ${rect.serialize()}`,
-          }});
-        }
         log(`Lost client: ${rect.serialize()}`);
         emitter.emit('lost-client', clients[id]);
-      } else {
-        if (monitor.isEnabled()) {
-          monitor.update({layout: {
-            time: now(),
-            event: `dropClient: id ${id}`,
-          }});
-        }
       }
       delete clients[id];
     });

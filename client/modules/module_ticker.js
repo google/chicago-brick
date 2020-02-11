@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from '/client/monitoring/monitor.js';
 import {easyLog} from '/lib/log.js';
 import {now} from '/client/util/time.js';
 
@@ -46,10 +45,8 @@ window.requestAnimationFrame(draw);
 export function add(name, module) {
   modulesToDraw.push({name, module});
   log.debugAt(1, `Add: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
-  monitor.markDrawnModules(modulesToDraw.map(m => m.name));
 }
 export function remove(module) {
   modulesToDraw = modulesToDraw.filter(pair => pair.module !== module);
   log.debugAt(1, `Remove: We are now drawing ${modulesToDraw.length} modules: ${modulesToDraw.map(({name}) => name).join(', ')}`);
-  monitor.markDrawnModules(modulesToDraw.map(m => m.name));
 }

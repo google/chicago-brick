@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from '/client/monitoring/monitor.js';
 import * as network from '/client/network/network.js';
 import * as stateManager from '/client/state/state_manager.js';
 import {makeConsoleLogger} from '/lib/console_logger.js';
@@ -44,10 +43,6 @@ addLogger(errorLogger);
 // Open our socket to the server.
 network.init();
 stateManager.init(network);
-
-if (new URL(window.location.href).searchParams.get('monitor')) {
-  monitor.enable();
-}
 
 const modulePlayer = new ClientModulePlayer;
 

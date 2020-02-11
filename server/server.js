@@ -17,7 +17,6 @@ limitations under the License.
 
 import * as credentials from './util/credentials.js';
 import * as game from './game/game.js';
-import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as wallGeometry from './util/wall_geometry.js';
 import * as moduleServing from './modules/serving.js';
@@ -77,7 +76,6 @@ const FLAG_DEFS = [
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
-  {name: 'enable_monitoring', type: Boolean},
   {name: 'use_https', type: Boolean, defaultValue: false,
     description: 'Enables HTTPS. Certificates must exist in certs/.'},
   {name: 'require_client_cert', type: Boolean, defaultValue: false,
@@ -175,10 +173,6 @@ network.emitter.on('new-client', client => {
     tellClientToPlay(client, nextModule.moduleDef, nextModule.deadline);
   }
 });
-
-if (flags.enable_monitoring) {
-  monitor.enable();
-}
 
 const control = new Control(driver, playlist, moduleDefsByName);
 control.installHandlers(app, network.controlSocket());

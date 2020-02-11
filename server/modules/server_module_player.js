@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from '../monitoring/monitor.js';
 import * as time from '../util/time.js';
 import {configure} from '../../lib/module_player.js';
 import {RunningModule} from './module.js';
@@ -24,14 +23,6 @@ const log = easyLog('wall:module_state_machine');
 export const ServerModulePlayer = configure({
   makeEmptyModule: () => {
     return RunningModule.empty();
-  },
-  monitor: {
-    isEnabled() {
-      return monitor.isEnabled();
-    },
-    update(obj) {
-      monitor.update({server: obj});
-    }
   },
   log,
   time,
