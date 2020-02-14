@@ -28,8 +28,8 @@ function getTime() {
   }
   return lastUpdateFromServer + window.performance.now() - timeOfLastUpdateFromServer;
 }
-
-const control = io('http://localhost:3000/control');
+const host = new URL(location).searchParams.get('host') || 'localhost:3000';
+const control = io(`http://${host}/control`);
 const creatorEl = document.querySelector('#playlist-creator');
 
 function applyNewPlaylist(playlist, moduleConfig) {
