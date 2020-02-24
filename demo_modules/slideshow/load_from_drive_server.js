@@ -62,20 +62,21 @@ export default function({debug}) {
       let response;
       if (this.config.folderId) {
         try {
-          response = await this.driveClient.files.get({
-            q: `"${this.config.folderId} in parents"`,
+          response = await this.driveClient.files.list({
+            q: `'${this.config.folderId}' in parents`,
             maxResults: 1000,
             pageToken: opt_paginationToken
           });
         } catch (e) {
           debug('Failed to download more drive content! Delay a bit...');
+          debug.error(e);
           await delay(Math.random() * 4000 + 1000);
           return this.loadMoreContent(opt_paginationToken);
         }
 
-        debug('Downloaded ' + response.data.items.length + ' more content ids.');
+        debug('Downloaded ' + response.data.files.length + ' more content ids.');
         return {
-          content: response.data.items.map(i => ({fileId: i.id})),
+          content: response.data.files.map(i => ({fileId: i.id})),
           paginationToken: response.data.nextPageToken
         };
       } else if (this.config.fileId) {
