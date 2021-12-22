@@ -17,10 +17,11 @@ limitations under the License.
 
 import * as credentials from './util/credentials.js';
 import * as game from './game/game.js';
+import * as moduleServing from './modules/serving.js';
 import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
+import * as peer from './network/peer.js';
 import * as wallGeometry from './util/wall_geometry.js';
-import * as moduleServing from './modules/serving.js';
 import {tellClientToPlay} from './modules/module.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
@@ -29,7 +30,6 @@ import https from 'https';
 import path from 'path';
 import {Control} from './control.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
-import peer from 'peer';
 import {PlaylistDriver} from './playlist/playlist_driver.js';
 import {loadAllBrickJson, loadPlaylistFromFile} from './playlist/playlist_loader.js';
 import {makeConsoleLogger} from '../lib/console_logger.js';
@@ -42,8 +42,6 @@ addLogger(makeConsoleLogger(c => chalk.keyword(c), now));
 addLogger(captureLog, 'wall');
 
 const log = easyLog('wall:server');
-
-const {PeerServer} = peer;
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
@@ -144,13 +142,7 @@ if (flags.use_https) {
   server = app.listen(flags.port, listener);
 }
 
-const peerServer = new PeerServer({port: flags.port + 6000, path: '/peerjs'});
-peerServer.on('connection', function(id) {
-  log.debugAt(1, 'peer connection!', id);
-});
-peerServer.on('disconnect', function(id) {
-  log.debugAt(1, 'peer disconnect!', id);
-});
+peer.init(flags.port);
 
 network.init(server);
 network.emitter.on('new-client', client => {
