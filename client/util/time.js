@@ -13,17 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import ClockSkew from '/node_modules/clock-skew/lib/clock_skew.js';
-
-const clockSkew = ClockSkew({});
+let lastServerTimeAtUpdate, lastClientTimeAtUpdate;
 
 export function adjustTimeByReference(serverTime) {
-  clockSkew.adjustTimeByReference(serverTime);
+  lastServerTimeAtUpdate = serverTime;
+  lastClientTimeAtUpdate = performance.now();
 }
 
 export function now() {
-  return clockSkew.getTime();
+  return performance.now() - lastClientTimeAtUpdate + lastServerTimeAtUpdate;
 }
 export function until(serverDeadline) {
-  return Math.max(0, serverDeadline - clockSkew.getTime());
+  return Math.max(0, serverDeadline - now());
 }
