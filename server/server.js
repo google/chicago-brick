@@ -65,15 +65,12 @@ const FLAG_DEFS = [
       defaultValue: ['demo_modules/*', 'node_modules/*'], multiple: true,
       description: 'A glob pattern matching directories that contain module ' +
           'code may be specified multiple times.'},
-  {name: 'module', type: String, alias: 'm', multiple: true,
-      description: 'Runs only the selected module or modules.'},
   {name: 'help', type: Boolean},
   {name: 'port', type: Number, defaultValue: 3000},
   {name: 'use_geometry', type: JSON.parse, defaultValue: null},
   {name: 'screen_width', type: Number, defaultValue: 1920},
   {name: 'layout_duration', type: Number},
   {name: 'module_duration', type: Number},
-  {name: 'max_partitions', type: Number},
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
@@ -83,7 +80,7 @@ const FLAG_DEFS = [
   {name: 'require_client_cert', type: Boolean, defaultValue: false,
     description: 'Whether to require HTTPS certs from clients.'}
 ];
-let flags = commandLineArgs(FLAG_DEFS);
+const flags = commandLineArgs(FLAG_DEFS);
 if (flags.help) {
   console.log('Available flags: ' + commandLineUsage({optionList: FLAG_DEFS}));
   process.exit();
@@ -100,8 +97,8 @@ if (flags.use_geometry) {
 }
 
 if (flags.screen_width) {
-  var xscale = flags.screen_width;
-  var yscale = xscale * 1080 / 1920;
+  const xscale = flags.screen_width;
+  const yscale = xscale * 1080 / 1920;
   wallGeometry.setScale(xscale, yscale);
 }
 
@@ -138,10 +135,10 @@ if (flags.credential_dir) {
   credentials.loadFromDir(flags.credential_dir);
 }
 
-var server;
-var listener = function() {
-  var host = server.address().address;
-  var port = server.address().port;
+let server;
+const listener = function() {
+  const host = server.address().address;
+  const port = server.address().port;
 
   log(`Server listening at http://${host}:${port}`);
 };
@@ -159,7 +156,7 @@ if (flags.use_https) {
   server = app.listen(flags.port, listener);
 }
 
-var peerServer = new PeerServer({port: flags.port + 6000, path: '/peerjs'});
+const peerServer = new PeerServer({port: flags.port + 6000, path: '/peerjs'});
 peerServer.on('connection', function(id) {
   log.debugAt(1, 'peer connection!', id);
 });
