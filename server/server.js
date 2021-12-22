@@ -87,20 +87,8 @@ if (flags.help) {
 }
 log('flags')
 log(flags);
-if (flags.use_geometry) {
-  wallGeometry.useGeo(flags.use_geometry);
-} else if (flags.geometry_file) {
-  wallGeometry.useGeo(wallGeometry.loadGeometry(flags.geometry_file));
-} else {
-  console.log('No wall geometry specified... assuming 1x1.');
-  wallGeometry.useGeo([{"right":1},{"down":1},{"left":1},{"up":1}]);
-}
 
-if (flags.screen_width) {
-  const xscale = flags.screen_width;
-  const yscale = xscale * 1080 / 1920;
-  wallGeometry.setScale(xscale, yscale);
-}
+wallGeometry.init(flags);
 
 process.on('unhandledRejection', (reason, p) => {
   log.error('Unhandled rejection: ', p);
