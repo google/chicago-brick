@@ -166,7 +166,7 @@ if (flags.enable_monitoring) {
 }
 
 const control = new Control(driver, playlist, moduleDefsByName);
-control.installHandlers(app, network.controlSocket());
+control.installHandlers(network.controlSocket());
 
 log(`Loaded ${moduleDefsByName.size} modules`);
 log('Running playlist of ' + playlist.length + ' layouts');
