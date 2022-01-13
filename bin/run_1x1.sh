@@ -39,10 +39,32 @@ readonly BRICK_PID="$!"
 ./status/run_status.sh &
 readonly STATUS_PID="$!"
 
+# Figure out the Chrome path
+(uname -a | grep "Darwin" > /dev/null) \
+&& readonly CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+|| readonly CHROME="google-chrome"
+
+# Boot two chromes:
+"$CHROME" \
+  --window-position=0,0 \
+  --window-size=960,540 \
+  --user-data-dir="/tmp/brick-client" \
+  --no-first-run \
+  http://localhost:3000/ &
+readonly CLIENT_PID="$!"
+
+"$CHROME" \
+  --window-position=960,0 \
+  --window-size=960,540 \
+  --user-data-dir="/tmp/brick-status" \
+  --no-first-run \
+  http://localhost:3001/ &
+readonly STATUS_CLIENT_PID="$!"
+
 function clean_up {
-  kill "$BRICK_PID" "$STATUS_PID";
+  kill "$BRICK_PID" "$STATUS_PID" "$CLIENT_PID" "$STATUS_CLIENT_PID";
   exit
 }
 
 trap clean_up SIGHUP SIGINT SIGTERM
-wait $BRICK_PID $STATUS_PID;
+wait $BRICK_PID $STATUS_PID $CLIENT_PID $STATUS_CLIENT_PID;
