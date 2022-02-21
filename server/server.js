@@ -22,7 +22,6 @@ import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as peer from './network/peer.js';
 import * as wallGeometry from './util/wall_geometry.js';
-import {tellClientToPlay} from './modules/module.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
@@ -135,12 +134,6 @@ const moduleDefsByName = loadAllBrickJson(flags.module_dir);
 // Load the playlist. If the playlist is malformed, we throw and abort.
 const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName, flags.layout_duration, flags.module_duration);
 
-// Create a module player, which is the master control for telling the wall to do anything.
-const modulePlayer = new ServerModulePlayer();
-
-// Create a driver, which walks through a playlist one step at a time.
-const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
-
 // Create an expressjs that can describes the routes that serve the files the client
 // needs to run.
 const app = moduleServing.create(flags);
@@ -155,16 +148,11 @@ const server = makeServer(app, {
 // Initialize the server side of our communications layer with the clients.
 network.init(server);
 
-// Install a handler that listens for new clients, and tells them to catch up with
-// what the wall is currently going.
-// TODO(applmak): Move this somewhere that isn't here.
-network.emitter.on('new-client', client => {
-  const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
-  if (nextModule.name != '_empty') {
-    // Tell the client to immediately go to the current module.
-    tellClientToPlay(client, nextModule.moduleDef, nextModule.deadline);
-  }
-});
+// Create a module player, which is the master control for telling the wall to do anything.
+const modulePlayer = new ServerModulePlayer();
+
+// Create a driver, which walks through a playlist one step at a time.
+const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
 
 // Optionally enable the monitoring mode, which shows debug and performance
 // information on the client screens.

@@ -20,6 +20,7 @@ import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
 import {RunningModule} from '../modules/module.js';
 import EventEmitter from 'events';
+import * as network from '../network/network.js';
 
 const log = easyLog('wall:playlist_driver');
 const random = new randomjs.Random();
@@ -48,6 +49,16 @@ export class PlaylistDriver extends EventEmitter {
     this.newModuleTime = Infinity;
     // Timestamp of the last deadline we used to play a module.
     this.lastDeadline_ = 0;
+
+    // Install a handler that listens for new clients, and tells them to catch up with
+    // what the wall is currently going.
+    network.emitter.on('new-client', client => {
+      const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
+      if (nextModule.name != '_empty') {
+        // Tell the client to immediately go to the current module.
+        nextModule.tellClientToPlay(client);
+      }
+    });
   }
   async setPlaylist(newPlaylist) {
     if (this.modulePlayer.oldModule.name != '_empty') {
