@@ -162,7 +162,7 @@ if (flags.enable_monitoring) {
 
 // Initialize a set of routes that communicate with the control server.
 const control = new Control(driver, playlist, moduleDefsByName);
-control.installHandlers(network.controlSocket());
+control.installHandlers();
 
 // We are good to go: start the playlist!
 log(`Loaded ${moduleDefsByName.size} modules`);
