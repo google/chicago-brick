@@ -101,7 +101,7 @@ export class RunningModule {
     // Wait for loading to complete.
     await this.loaded;
     // Check for validity.
-    if (this.valid) {
+    if (this.valid && this.name != '_empty') {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);

@@ -17,26 +17,17 @@ import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
 import {emitter, clients} from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
-import {loadAllModules} from './playlist/playlist_loader.js';
+import {RunningModule} from './modules/module.js';
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 export class Control {
-  constructor(playlistDriver, initialPlaylist, defsByName) {
-    this.playlistDriver = playlistDriver;
-
-    this.initialPlaylist = initialPlaylist;
-    this.defsByName = defsByName;
-    this.currentConfig = this.initialConfig;
+  constructor(modulePlayer) {
+    this.modulePlayer = modulePlayer;
   }
 
   installHandlers(app, io) {
-    let transitionData = {};
-    this.playlistDriver.on('transition', data => {
-      transitionData = data;
-      io.emit('transition', data);
-    });
     emitter.on('new-client', c => {
       io.emit('new-client', c.rect.serialize());
       c.socket.on('takeSnapshotRes', res => {
@@ -52,7 +43,6 @@ export class Control {
     io.on('connection', socket => {
       // When we transition to a new module, let this guy know.
       socket.emit('time', {time: time.now()});
-      socket.emit('transition', transitionData);
       socket.emit('clients', Object.values(clients).map(c => c.rect.serialize()));
       socket.emit('wallGeometry', wallGeometry.getGeo().points);
       socket.emit('errors', getErrors());
@@ -68,13 +58,10 @@ export class Control {
           });
         }
       });
-      socket.on('newPlaylist', data => {
-        const {playlist, moduleConfig} = data;
-        loadAllModules(Object.values(moduleConfig), this.defsByName);
-        this.playlistDriver.setPlaylist(playlist);
-      });
-      socket.on('resetPlaylist', () => {
-        this.playlistDriver.setPlaylist(this.initialPlaylist);
+      socket.on('playModule', data => {
+        const {def, deadline} = data;
+        const parsedDef = JSON.parse(def);
+        this.modulePlayer.playModule(new RunningModule(parsedDef, deadline));
       });
     });
     io.emit('time', {time: time.now()});
