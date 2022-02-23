@@ -28,10 +28,9 @@ export class Control {
 
     this.initialPlaylist = initialPlaylist;
     this.defsByName = defsByName;
-    this.currentConfig = this.initialConfig;
   }
 
-  installHandlers(app, io) {
+  installHandlers(io) {
     let transitionData = {};
     this.playlistDriver.on('transition', data => {
       transitionData = data;

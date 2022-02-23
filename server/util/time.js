@@ -13,11 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const time = process.hrtime();
-
 export function now() {
-  var timeBits = process.hrtime(time);
-  return timeBits[0] * 1000 + timeBits[1] / 1e6;
+  return performance.now();
 }
 
 export function inFuture(msDuration) {
@@ -25,6 +22,6 @@ export function inFuture(msDuration) {
 }
 
 export function until(msDeadline) {
-  var d = msDeadline - now();
+  const d = msDeadline - now();
   return Math.max(0, d);
 }

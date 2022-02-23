@@ -17,10 +17,11 @@ limitations under the License.
 
 import * as credentials from './util/credentials.js';
 import * as game from './game/game.js';
+import * as moduleServing from './modules/serving.js';
 import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
+import * as peer from './network/peer.js';
 import * as wallGeometry from './util/wall_geometry.js';
-import * as moduleServing from './modules/serving.js';
 import {tellClientToPlay} from './modules/module.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
@@ -29,7 +30,6 @@ import https from 'https';
 import path from 'path';
 import {Control} from './control.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
-import peer from 'peer';
 import {PlaylistDriver} from './playlist/playlist_driver.js';
 import {loadAllBrickJson, loadPlaylistFromFile} from './playlist/playlist_loader.js';
 import {makeConsoleLogger} from '../lib/console_logger.js';
@@ -42,8 +42,6 @@ addLogger(makeConsoleLogger(c => chalk.keyword(c), now));
 addLogger(captureLog, 'wall');
 
 const log = easyLog('wall:server');
-
-const {PeerServer} = peer;
 
 const FLAG_DEFS = [
   {name: 'node_modules_dir', type: String,
@@ -65,15 +63,12 @@ const FLAG_DEFS = [
       defaultValue: ['demo_modules/*', 'node_modules/*'], multiple: true,
       description: 'A glob pattern matching directories that contain module ' +
           'code may be specified multiple times.'},
-  {name: 'module', type: String, alias: 'm', multiple: true,
-      description: 'Runs only the selected module or modules.'},
   {name: 'help', type: Boolean},
   {name: 'port', type: Number, defaultValue: 3000},
   {name: 'use_geometry', type: JSON.parse, defaultValue: null},
   {name: 'screen_width', type: Number, defaultValue: 1920},
   {name: 'layout_duration', type: Number},
   {name: 'module_duration', type: Number},
-  {name: 'max_partitions', type: Number},
   {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
@@ -83,27 +78,15 @@ const FLAG_DEFS = [
   {name: 'require_client_cert', type: Boolean, defaultValue: false,
     description: 'Whether to require HTTPS certs from clients.'}
 ];
-let flags = commandLineArgs(FLAG_DEFS);
+const flags = commandLineArgs(FLAG_DEFS);
 if (flags.help) {
   console.log('Available flags: ' + commandLineUsage({optionList: FLAG_DEFS}));
   process.exit();
 }
 log('flags')
 log(flags);
-if (flags.use_geometry) {
-  wallGeometry.useGeo(flags.use_geometry);
-} else if (flags.geometry_file) {
-  wallGeometry.useGeo(wallGeometry.loadGeometry(flags.geometry_file));
-} else {
-  console.log('No wall geometry specified... assuming 1x1.');
-  wallGeometry.useGeo([{"right":1},{"down":1},{"left":1},{"up":1}]);
-}
 
-if (flags.screen_width) {
-  var xscale = flags.screen_width;
-  var yscale = xscale * 1080 / 1920;
-  wallGeometry.setScale(xscale, yscale);
-}
+wallGeometry.init(flags);
 
 process.on('unhandledRejection', (reason, p) => {
   log.error('Unhandled rejection: ', p);
@@ -138,10 +121,10 @@ if (flags.credential_dir) {
   credentials.loadFromDir(flags.credential_dir);
 }
 
-var server;
-var listener = function() {
-  var host = server.address().address;
-  var port = server.address().port;
+let server;
+const listener = function() {
+  const host = server.address().address;
+  const port = server.address().port;
 
   log(`Server listening at http://${host}:${port}`);
 };
@@ -159,13 +142,7 @@ if (flags.use_https) {
   server = app.listen(flags.port, listener);
 }
 
-var peerServer = new PeerServer({port: flags.port + 6000, path: '/peerjs'});
-peerServer.on('connection', function(id) {
-  log.debugAt(1, 'peer connection!', id);
-});
-peerServer.on('disconnect', function(id) {
-  log.debugAt(1, 'peer disconnect!', id);
-});
+peer.init(flags.port);
 
 network.init(server);
 network.emitter.on('new-client', client => {
@@ -181,7 +158,7 @@ if (flags.enable_monitoring) {
 }
 
 const control = new Control(driver, playlist, moduleDefsByName);
-control.installHandlers(app, network.controlSocket());
+control.installHandlers(network.controlSocket());
 
 log(`Loaded ${moduleDefsByName.size} modules`);
 log('Running playlist of ' + playlist.length + ' layouts');

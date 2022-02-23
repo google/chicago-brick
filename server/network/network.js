@@ -35,7 +35,7 @@ import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
 
-let io;
+let io, controlIo;
 
 const logClientError = () => {};
 
@@ -53,6 +53,10 @@ export function getSocket() {
   return io;
 }
 
+export function controlSocket() {
+  return controlIo;
+}
+
 export const clients = {};
 export const emitter = new EventEmitter;
 
@@ -64,6 +68,9 @@ export function init(server) {
   // Disable per-message compression, because it causes big issues on linux.
   // https://github.com/websockets/ws#websocket-compression
   io = socketio(server, {perMessageDeflate: false});
+
+  // Set up control io namespace.
+  controlIo = io.of('/control');
 
   io.on('connection', socket => {
     // When the client boots, it sends a start message that includes the rect
@@ -131,10 +138,6 @@ export function init(server) {
   setInterval(() => {
     io.emit('time', now());
   }, 10000);
-}
-
-export function controlSocket() {
-  return io.of('/control');
 }
 
 // Return an object that can be opened to create an isolated per-module network,

@@ -15,14 +15,17 @@ limitations under the License.
 
 import {Polygon} from '../../lib/math/polygon2d.js';
 import fs from 'fs';
+import {easyLog} from '../../lib/log.js';
+
+const log = easyLog('wall:wall_geometry');
 
 // Returns a polygon that entirely contains the wall geometry. NOTE: any point
 // to the left of the polygon is outside of it, because we assume that points
 // are addressed from the top-left pixel.
 function parseGeometry(polygonPoints) {
-  var points = polygonPoints.reduce(function(agg, point) {
-    var last = agg[agg.length - 1];
-    var next;
+  const points = polygonPoints.reduce(function(agg, point) {
+    const last = agg[agg.length - 1];
+    let next;
     if (point.right) {
       next = {x: last.x + point.right, y: last.y};
     } else if (point.down) {
@@ -41,24 +44,34 @@ function parseGeometry(polygonPoints) {
 
 export function loadGeometry(path) {
   // Convert from config description to actual polygon.
-  var config = JSON.parse(fs.readFileSync(path));
+  const config = JSON.parse(fs.readFileSync(path));
   return config.polygon;
 }
 
-var xscale = 1920;
-var yscale = 1080;
-var unscaledGeo;
-var geo;
+let geo;
 
 export function getGeo() {
   return geo;
 }
-export function useGeo(polygon) {
-  unscaledGeo = parseGeometry(polygon);
-  geo = unscaledGeo.scale(xscale, yscale);
-}
-export function setScale(newXScale, newYScale) {
-  xscale = newXScale;
-  yscale = newYScale;
-  geo = unscaledGeo.scale(xscale, yscale);
+
+// TODO(applmak): Geometry specified as a single polygon doesn't really accurately reflect what's going on
+// on an actual wall, which has a bunch of rectangles slightly offset from one another. Instead of a poly,
+// switch the model generating a concave hull of the screens as they load in, which becomes the poly.
+export function init(flags) {
+  let xscale = 1920;
+  let yscale = 1080;
+  if (flags.screen_width) {
+    xscale = flags.screen_width;
+    yscale = xscale * 1080 / 1920;
+  } 
+
+  if (!flags.use_geometry && !flags.geometry_file) {
+    log.warn('No wall geometry specified... assuming 1x1.');
+    geo = parseGeometry([{"right":1},{"down":1},{"left":1},{"up":1}]).scale(xscale, yscale);
+  } else if (flags.use_geometry) {
+    geo = parseGeometry(flags.use_geometry).scale(xscale, yscale);
+  } else if (flags.geometry_file) {
+    // Note that the geometry loaded from a file isn't scaled.
+    geo = parseGeometry(loadGeometry(flags.geometry_file));
+  }
 }
