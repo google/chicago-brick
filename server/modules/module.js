@@ -33,19 +33,6 @@ import inject from '../../lib/inject.js';
 
 const log = easyLog('wall:module');
 
-export function tellClientToPlay(client, def, deadline) {
-  client.socket.emit('loadModule', {
-    module: {
-      name: def.name,
-      path: def.name == '_empty' ? '' : path.join('/module/', def.name, def.clientPath),
-      config: def.config,
-      credit: def.credit,
-    },
-    time: deadline,
-    geo: wallGeometry.getGeo().points
-  });
-}
-
 export class RunningModule {
   static empty(deadline = 0) {
     return new RunningModule(new EmptyModuleDef(), deadline);
@@ -114,7 +101,7 @@ export class RunningModule {
     }
     // Tell clients to get ready to play this module at the deadline.
     for (const id in clients) {
-      tellClientToPlay(clients[id], this.moduleDef, this.deadline);
+      this.tellClientToPlay(clients[id]);
     }
     if (this.network) {
       registerRoute(this.name, this.moduleDef.root);
@@ -130,6 +117,19 @@ export class RunningModule {
         this.instance = new Server;
       }
     }
+  }
+
+  tellClientToPlay(client) {
+    client.socket.emit('loadModule', {
+      module: {
+        name: this.moduleDef.name,
+        path: this.moduleDef.name == '_empty' ? '' : path.join('/module/', this.moduleDef.name, this.moduleDef.clientPath),
+        config: this.moduleDef.config,
+        credit: this.moduleDef.credit,
+      },
+      time: this.deadline,
+      geo: wallGeometry.getGeo().points
+    });
   }
 
   tick(now, delta) {

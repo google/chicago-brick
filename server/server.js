@@ -22,7 +22,6 @@ import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
 import * as peer from './network/peer.js';
 import * as wallGeometry from './util/wall_geometry.js';
-import {tellClientToPlay} from './modules/module.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
@@ -37,6 +36,28 @@ import {captureLog} from './util/last_n_errors_logger.js';
 import {addLogger, easyLog} from '../lib/log.js';
 import chalk from 'chalk';
 import {now} from './util/time.js';
+
+function makeServer(app, options = {port: 3000, useHttps: false, requireClientCert: false}) {
+  const listener = function() {
+    const host = server.address().address;
+    const port = server.address().port;
+
+    log(`Server listening at http://${host}:${port}`);
+  };
+
+  if (options.useHttps) {
+    const opts = {
+      key: fs.readFileSync('certs/server_key.pem'),
+      cert: fs.readFileSync('certs/server_cert.pem'),
+      requestCert: options.requireClientCert,
+      ca: [fs.readFileSync('certs/server_cert.pem')]
+    };
+
+    return https.createServer(opts, app).listen(options.port, listener);
+  } else {
+    return app.listen(options.port, listener);
+  }
+}
 
 addLogger(makeConsoleLogger(c => chalk.keyword(c), now));
 addLogger(captureLog, 'wall');
@@ -86,80 +107,64 @@ if (flags.help) {
 log('flags')
 log(flags);
 
-wallGeometry.init(flags);
-
+// Install a top-level rejection handler so that such rejections will not cause the
+// server to abort.
 process.on('unhandledRejection', (reason, p) => {
   log.error('Unhandled rejection: ', p);
   log.error(reason);
 });
 
-const moduleDefsByName = loadAllBrickJson(flags.module_dir);
-const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName);
-if (flags.layout_duration) {
-  for (const layout of playlist) {
-    layout.duration = flags.layout_duration;
-  }
-}
-if (flags.module_duration) {
-  for (const layout of playlist) {
-    layout.moduleDuration = flags.module_duration;
-  }
-}
-
-if (playlist.length === 0) {
-  throw new Error('Nothing to play!');
-}
-
-const app = moduleServing.create(flags);
-
-const modulePlayer = new ServerModulePlayer();
-const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
-
-game.init(flags);
-
+// Load credentials.
 if (flags.credential_dir) {
   credentials.loadFromDir(flags.credential_dir);
 }
 
-let server;
-const listener = function() {
-  const host = server.address().address;
-  const port = server.address().port;
+// Initialize the wall geometry.
+wallGeometry.init(flags);
 
-  log(`Server listening at http://${host}:${port}`);
-};
+// Initialize our game library.
+game.init(flags);
 
-if (flags.use_https) {
-  const opts = {
-    key: fs.readFileSync('certs/server_key.pem'),
-    cert: fs.readFileSync('certs/server_cert.pem'),
-    requestCert: flags.require_client_cert,
-    ca: [fs.readFileSync('certs/server_cert.pem')]
-  };
+// Initialize peerjs. We pick a different port for the peerjs server.
+peer.init(flags.port + 6000);
 
-  server = https.createServer(opts, app).listen(flags.port, listener);
-} else {
-  server = app.listen(flags.port, listener);
-}
+// Load all of the module information we know about.
+const moduleDefsByName = loadAllBrickJson(flags.module_dir);
 
-peer.init(flags.port);
+// Load the playlist. If the playlist is malformed, we throw and abort.
+const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName, flags.layout_duration, flags.module_duration);
 
-network.init(server);
-network.emitter.on('new-client', client => {
-  const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
-  if (nextModule.name != '_empty') {
-    // Tell the client to immediately go to the current module.
-    tellClientToPlay(client, nextModule.moduleDef, nextModule.deadline);
-  }
+// Create an expressjs that can describes the routes that serve the files the client
+// needs to run.
+const app = moduleServing.create(flags);
+
+// Create a server that handles those routes.
+const server = makeServer(app, {
+  port: flags.port,
+  useHttps: flags.use_https,
+  requireClientCert: flags.require_client_cert,
 });
 
+// Initialize the server side of our communications layer with the clients.
+network.init(server);
+
+// Create a module player, which is the master control for telling the wall to do anything.
+const modulePlayer = new ServerModulePlayer();
+
+// Create a driver, which walks through a playlist one step at a time.
+const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
+
+// Optionally enable the monitoring mode, which shows debug and performance
+// information on the client screens.
 if (flags.enable_monitoring) {
   monitor.enable();
 }
 
+// Initialize a set of routes that communicate with the control server.
 const control = new Control(driver, playlist, moduleDefsByName);
-control.installHandlers(network.controlSocket());
+control.installHandlers();
 
+// We are good to go: start the playlist!
 log(`Loaded ${moduleDefsByName.size} modules`);
 log('Running playlist of ' + playlist.length + ' layouts');
 driver.start(playlist);

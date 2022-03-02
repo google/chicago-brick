@@ -35,7 +35,7 @@ import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
 
-let io, controlIo;
+let io;
 
 const logClientError = () => {};
 
@@ -53,10 +53,6 @@ export function getSocket() {
   return io;
 }
 
-export function controlSocket() {
-  return controlIo;
-}
-
 export const clients = {};
 export const emitter = new EventEmitter;
 
@@ -70,8 +66,6 @@ export function init(server) {
   io = socketio(server, {perMessageDeflate: false});
 
   // Set up control io namespace.
-  controlIo = io.of('/control');
-
   io.on('connection', socket => {
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.

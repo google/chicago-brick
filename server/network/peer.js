@@ -4,7 +4,6 @@ import peer from 'peer';
 const log = easyLog('wall:peer');
 
 export function init(port) {
-  port += 6000;
   const peerServer = new peer.PeerServer({port, path: '/peerjs'});
   peerServer.on('connection', function(id) {
     log.debugAt(1, 'peer connection!', id);

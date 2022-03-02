@@ -96,12 +96,16 @@ export function loadAllModules(configs, defsByName = new Map) {
 /**
  * Loads a playlist from a file and turns it into a list of Layout objects.
  */
-export function loadPlaylistFromFile(path, defsByName) {
+export function loadPlaylistFromFile(path, defsByName, overrideLayoutDuration, overrideModuleDuration) {
   const contents = fs.readFileSync(path, {encoding: 'utf-8'});
   const parsedPlaylist = RJSON.parse(contents);
   const {collections, playlist, modules} = parsedPlaylist;
-  loadAllModules(modules || [], defsByName);
+  if (playlist.length === 0) {
+    throw new Error('Nothing to play!');
+  }  
 
+  loadAllModules(modules || [], defsByName);
+  
   return playlist.map(layout => {
     const {collection, modules} = layout;
 
@@ -120,8 +124,8 @@ export function loadPlaylistFromFile(path, defsByName) {
 
     return new Layout({
       modules: moduleNames,
-      moduleDuration: layout.moduleDuration,
-      duration: layout.duration,
+      moduleDuration: overrideModuleDuration || layout.moduleDuration,
+      duration: overrideLayoutDuration || layout.duration,
     });
   });
 }

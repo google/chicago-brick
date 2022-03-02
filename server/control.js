@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
-import {emitter, clients} from './network/network.js';
+import {emitter, clients, getSocket} from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import {loadAllModules} from './playlist/playlist_loader.js';
 
@@ -30,7 +30,8 @@ export class Control {
     this.defsByName = defsByName;
   }
 
-  installHandlers(io) {
+  installHandlers() {
+    const io = getSocket().of('/control');
     let transitionData = {};
     this.playlistDriver.on('transition', data => {
       transitionData = data;
