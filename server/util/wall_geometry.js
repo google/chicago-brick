@@ -72,6 +72,6 @@ export function init(flags) {
     geo = parseGeometry(flags.use_geometry).scale(xscale, yscale);
   } else if (flags.geometry_file) {
     // Note that the geometry loaded from a file isn't scaled.
-    geo = parseGeometry(loadGeometry(flags.geometry_file));
+    geo = parseGeometry(loadGeometry(flags.geometry_file)).scale(xscale, yscale);
   }
 }
