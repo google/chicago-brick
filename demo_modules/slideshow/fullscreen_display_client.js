@@ -58,7 +58,7 @@ export default function({debug, network}) {
           info.style.font = 'bolder 18px monospace';
           container.appendChild(info);
         }
-        info.textContent = `Loading "${c}..."`;
+        info.textContent = `Loading ${JSON.stringify(c)}...`;
 
         loadStrategy.loadContent(c).then(content => {
           // One piece of content per client.
@@ -94,7 +94,7 @@ export default function({debug, network}) {
           this.surface.container.appendChild(content);
         }).catch(err => {
           info.innerHTML += '<br>';
-          info.innerHTML += `<span style="color:red">Error! ${err}</span>`;
+          info.innerHTML += `<span style="color:red">Error! ${err.message}</span>`;
           debug(err);
         });
       });
