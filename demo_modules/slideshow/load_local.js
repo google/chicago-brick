@@ -106,7 +106,7 @@ export default function({debug, asset}) {
         finalUrl = asset(`${finalUrl}`);
 
         if (desc.video) {
-          let video = document.createElement('video');
+          const video = document.createElement('video');
           video.setAttribute('loop', 'loop');
           video.setAttribute('width', this.surface.virtualRect.w);
           video.setAttribute('height', this.surface.virtualRect.h);
@@ -148,8 +148,10 @@ export default function({debug, asset}) {
           }
 
           video.src = finalUrl;
-          video.load();
-          video.addEventListener('error', err => reject(err));
+          video.addEventListener('error', () => {
+            // <video> elements don't report the error in the event; rather, it's stored on the element.
+            reject(new Error(video.error.message));
+          });
           video.addEventListener('loadedmetadata', () => {
             // Scale the video so it's actually the size the element suggests. This
             // is trickier than it should be because the <video> element
@@ -173,6 +175,7 @@ export default function({debug, asset}) {
 
             resolve({element: video});
           });
+          video.load();
         } else {
           let img = document.createElement('img');
           img.addEventListener('load', () => resolve({element: img}));

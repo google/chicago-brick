@@ -17,7 +17,26 @@ import {ClientController} from './client_controller.js';
 import {PlaylistController} from './playlist_controller.js';
 import {ErrorController} from './error_controller.js';
 import {PlaylistCreator} from './playlist_creator.js';
-import io from './socket.io-client.js';
+import {WS} from '/lib/websocket.js';
+import {addLogger} from '/lib/log.js';
+import {makeConsoleLogger} from '/lib/console_logger.js';
+
+function makeConsoleColorFn(css) {
+  const ret = str => {
+    return `%c${str}%c`;
+  }
+  ret.desc = css;
+  return ret;
+}
+
+addLogger(makeConsoleLogger(c => {
+  const ret = makeConsoleColorFn([`color: ${c}`]);
+  ret.bold = {
+    bgRed: makeConsoleColorFn(['font-weight: bolder', 'background-color: red', `color: ${c}`]),
+  };
+  ret.bgBlue = makeConsoleColorFn(['background-color: blue', `color: ${c}`]);
+  return ret;
+}, () => performance.now()));
 
 let lastUpdateFromServer = 0;
 let timeOfLastUpdateFromServer = window.performance.now();
@@ -28,8 +47,8 @@ function getTime() {
   }
   return lastUpdateFromServer + window.performance.now() - timeOfLastUpdateFromServer;
 }
-const host = new URL(location).searchParams.get('host') || 'localhost:3000';
-const control = io(`http://${host}/control`);
+const host = new URL(location).searchParams.get('host') || 'localhost:6001';
+const control = WS.clientWrapper(`ws://${host}/`);
 const creatorEl = document.querySelector('#playlist-creator');
 
 function applyNewPlaylist(playlist, moduleConfig) {

@@ -24,7 +24,6 @@ module.exports = function(config) {
       {pattern: 'node_modules/chai/chai.js'},
       {pattern: 'node_modules/sinon/pkg/sinon.js'},
       {pattern: 'node_modules/sinon-chai/lib/sinon-chai.js'},
-      {pattern: 'node_modules/clock-skew/lib/clock_skew.js', type: 'module', included: false},
     ],
 
     proxies: {
@@ -49,6 +48,7 @@ module.exports = function(config) {
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter
     reporters: ['progress'],
 
+    listenAddress: '::',
 
     // web server port
     port: 9876,
