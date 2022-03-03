@@ -17,7 +17,7 @@ import * as network from '../network/network.js';
 
 let currentStatus = {};
 let sendCurrentState = socket => {
-  socket.emit('monitor', currentStatus);
+  socket.send('monitor', currentStatus);
 };
 
 let monitoringSockets = [];
@@ -46,6 +46,6 @@ export function enable() {
 export function update(change) {
   if (enabled) {
     Object.assign(currentStatus, change);
-    monitoringSockets.forEach(socket => socket.emit('monitor', change));
+    monitoringSockets.forEach(socket => socket.send('monitor', change));
   }
 }

@@ -18,38 +18,7 @@ import * as time from './util/time.js';
 import {emitter, clients} from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import {loadAllModules} from './playlist/playlist_loader.js';
-import {WebSocketServer} from 'ws';
-import {EventEmitter} from 'events';
-import {easyLog} from '../lib/log.js';
-import {WS} from '../lib/websocket.js';
-
-const log = easyLog('wall:control');
-
-class WSS extends EventEmitter {
-  constructor(options) {
-    super();
-    this.webSocketServer = new WebSocketServer(options);
-    this.clientSockets = new Set();
-    this.webSocketServer.on('listening', () => {
-      log('Control server listening on', this.webSocketServer.address());
-    });
-    this.webSocketServer.on('connection', websocket => {
-      const ws = WS.serverWrapper(websocket);
-      this.clientSockets.add(ws);
-      ws.on('disconnect', (code, reason) => {
-        log.error(`Lost control client: ${code} Reason: ${reason}`);
-        this.clientSockets.delete(ws);
-        this.emit('disconnect', ws);
-      });
-      this.emit('connection', ws);
-    });
-  }
-  sendToAllClients(msg, payload) {
-    for (const websocket of this.clientSockets) {
-      websocket.send(msg, payload);
-    }
-  }
-}
+import {WSS} from './network/websocket.js';
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server

@@ -26,6 +26,7 @@ import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
 import https from 'https';
+import http from 'http';
 import path from 'path';
 import {Control} from './control.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
@@ -37,25 +38,17 @@ import {addLogger, easyLog} from '../lib/log.js';
 import chalk from 'chalk';
 import {now} from './util/time.js';
 
-function makeServer(app, options = {port: 3000, useHttps: false, requireClientCert: false}) {
-  const listener = function() {
-    const host = server.address().address;
-    const port = server.address().port;
-
-    log(`Server listening at http://${host}:${port}`);
-  };
-
-  if (options.useHttps) {
+function makeServer(app, options = {cert: '', key: '', requireClientCert: false}) {
+  if (options.cert) {
     const opts = {
-      key: fs.readFileSync('certs/server_key.pem'),
-      cert: fs.readFileSync('certs/server_cert.pem'),
+      key: fs.readFileSync(options.key),
+      cert: fs.readFileSync(options.cert),
       requestCert: options.requireClientCert,
-      ca: [fs.readFileSync('certs/server_cert.pem')]
     };
 
-    return https.createServer(opts, app).listen(options.port, listener);
+    return https.createServer(opts, app);
   } else {
-    return app.listen(options.port, listener);
+    return http.createServer({}, app);
   }
 }
 
@@ -94,8 +87,10 @@ const FLAG_DEFS = [
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
   {name: 'enable_monitoring', type: Boolean},
-  {name: 'use_https', type: Boolean, defaultValue: false,
-    description: 'Enables HTTPS. Certificates must exist in certs/.'},
+  {name: 'https_cert', type: String, defaultValue: '',
+    description: 'Path to a SSL certification file. Often has extension crt.'},
+  {name: 'https_key', type: String, defaultValue: '',
+    description: 'Path to a SSL key file. Often has extension key.'},
   {name: 'require_client_cert', type: Boolean, defaultValue: false,
     description: 'Whether to require HTTPS certs from clients.'}
 ];
@@ -140,10 +135,19 @@ const app = moduleServing.create(flags);
 
 // Create a server that handles those routes.
 const server = makeServer(app, {
-  port: flags.port,
-  useHttps: flags.use_https,
+  cert: flags.https_cert,
+  key: flags.https_key,
   requireClientCert: flags.require_client_cert,
 });
+
+server.listen(flags.port, () => {
+  const host = server.address().address;
+  const port = server.address().port;
+
+  const protocol = server instanceof https.Server ? 'https' : 'http';
+  log(`Server listening at ${protocol}://${host}:${port}`);
+});
+
 
 // Initialize the server side of our communications layer with the clients.
 network.init(server);

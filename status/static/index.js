@@ -54,9 +54,9 @@ const creatorEl = document.querySelector('#playlist-creator');
 function applyNewPlaylist(playlist, moduleConfig) {
   // TODO(applmak): Passing a string here is a bit hacky.
   if (playlist == 'reset') {
-    control.emit('resetPlaylist');
+    control.send('resetPlaylist');
   } else {
-    control.emit('newPlaylist', {playlist, moduleConfig});
+    control.send('newPlaylist', {playlist, moduleConfig});
   }
 }
 
@@ -65,7 +65,7 @@ const playlistController = new PlaylistController(document.querySelector('.playl
 const errorController = new ErrorController(document.querySelector('footer'));
 const clientController = new ClientController(
   document.querySelector('.diagram'),
-  req => control.emit('takeSnapshot', req),
+  req => control.send('takeSnapshot', req),
   errorController,
   getTime,
 );
