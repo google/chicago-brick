@@ -34,8 +34,9 @@
     "sharp": "^0.29.3",
     "socket.io": "^2.3.0",
     "socket.io-client": "^2.3.0",
-    "sortablejs": "^1.10.0",
-    "three-full": "^11.3.2"
+    "sortablejs": "^1.14.0",
+    "three-full": "^11.3.2",
+    "ws": "^8.5.0"
   },
   "husky": {
     "hooks": {

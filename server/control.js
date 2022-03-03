@@ -15,9 +15,41 @@ limitations under the License.
 
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
-import {emitter, clients, getSocket} from './network/network.js';
+import {emitter, clients} from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import {loadAllModules} from './playlist/playlist_loader.js';
+import {WebSocketServer} from 'ws';
+import {EventEmitter} from 'events';
+import {easyLog} from '../lib/log.js';
+import {WS} from '../lib/websocket.js';
+
+const log = easyLog('wall:control');
+
+class WSS extends EventEmitter {
+  constructor(options) {
+    super();
+    this.webSocketServer = new WebSocketServer(options);
+    this.clientSockets = new Set();
+    this.webSocketServer.on('listening', () => {
+      log('Control server listening on', this.webSocketServer.address());
+    });
+    this.webSocketServer.on('connection', websocket => {
+      const ws = WS.serverWrapper(websocket);
+      this.clientSockets.add(ws);
+      ws.on('disconnect', (code, reason) => {
+        log.error(`Lost control client: ${code} Reason: ${reason}`);
+        this.clientSockets.delete(ws);
+        this.emit('disconnect', ws);
+      });
+      this.emit('connection', ws);
+    });
+  }
+  sendToAllClients(msg, payload) {
+    for (const websocket of this.clientSockets) {
+      websocket.send(msg, payload);
+    }
+  }
+}
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
@@ -31,38 +63,38 @@ export class Control {
   }
 
   installHandlers() {
-    const io = getSocket().of('/control');
+    const wss = new WSS({host: 'localhost', port: 6001});
     let transitionData = {};
     this.playlistDriver.on('transition', data => {
       transitionData = data;
-      io.emit('transition', data);
+      wss.sendToAllClients('transition', data);
     });
     emitter.on('new-client', c => {
-      io.emit('new-client', c.rect.serialize());
+      wss.sendToAllClients('new-client', c.rect.serialize());
       c.socket.on('takeSnapshotRes', res => {
-        io.emit('takeSnapshotRes', res);
+        wss.sendToAllClients('takeSnapshotRes', res);
       });
       c.socket.on('record-error', err => {
-        io.emit('error', err);
+        wss.sendToAllClients('error', err);
       });
     });
     emitter.on('lost-client', c => {
-      io.emit('lost-client', c.rect.serialize());
+      wss.sendToAllClients('lost-client', c.rect.serialize());
     });
-    io.on('connection', socket => {
+    wss.on('connection', socket => {
       // When we transition to a new module, let this guy know.
-      socket.emit('time', {time: time.now()});
-      socket.emit('transition', transitionData);
-      socket.emit('clients', Object.values(clients).map(c => c.rect.serialize()));
-      socket.emit('wallGeometry', wallGeometry.getGeo().points);
-      socket.emit('errors', getErrors());
+      socket.send('time', {time: time.now()});
+      socket.send('transition', transitionData);
+      socket.send('clients', Object.values(clients).map(c => c.rect.serialize()));
+      socket.send('wallGeometry', wallGeometry.getGeo().points);
+      socket.send('errors', getErrors());
 
       socket.on('takeSnapshot', req => {
         const client = Object.values(clients).find(c => c.rect.serialize() == req.client);
         if (client) {
-          client.socket.emit('takeSnapshot', req);
+          client.socket.send('takeSnapshot', req);
         } else {
-          socket.emit('takeSnapshotRes', {
+          socket.send('takeSnapshotRes', {
             ...req,
             error: `Client ${req.client} not found`
           });
@@ -77,9 +109,9 @@ export class Control {
         this.playlistDriver.setPlaylist(this.initialPlaylist);
       });
     });
-    io.emit('time', {time: time.now()});
+    wss.sendToAllClients('time', {time: time.now()});
     setInterval(() => {
-      io.emit('time', {time: time.now()});
+      wss.sendToAllClients('time', {time: time.now()});
     }, 20000);
   }
 }

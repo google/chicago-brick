@@ -25,7 +25,8 @@ console.log(`CWD: ${cwd}`);
 console.log(`Static Dir: ${staticDir}`);
 
 const app = express();
-app.use('/node_modules', express.static(path.join(staticDir, 'node_modules')));
+app.use('/node_modules', express.static(path.join(cwd, 'node_modules')));
+app.use('/lib', express.static(path.join(cwd, 'lib')));
 app.use('/', express.static(path.join(staticDir, 'static')));
 
 const server = app.listen(flags.port, () => {
