@@ -17,7 +17,10 @@ limitations under the License.
 // connect to one another.
 import * as info from '/client/util/info.js';
 import {easyLog} from '/lib/log.js';
-import {Peer} from '/lib/lame_es6/peerjs.js';
+// This fixes a weird build error in the built peerjs npm.
+// See: https://github.com/peers/peerjs/issues/552#issuecomment-791494509
+import './peerjs-fix.js';
+import Peer from 'https://esm.sh/peerjs@1.3.2';
 import {delay} from '/lib/promise.js';
 const log = easyLog('wall:peer');
 
