@@ -33,11 +33,11 @@ export function forModule(network, id) {
     },
     close() {
       delete stateMap[id];
-      network.emit('state-closed', id);
+      network.sendToAllClients('state-closed', id);
     }
   }
 }
 
 export function send() {
-  getSocket().emit('state', stateMap);
+  getSocket().sendToAllClients('state', stateMap);
 }

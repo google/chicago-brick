@@ -120,7 +120,7 @@ export class RunningModule {
   }
 
   tellClientToPlay(client) {
-    client.socket.emit('loadModule', {
+    client.socket.send('loadModule', {
       module: {
         name: this.moduleDef.name,
         path: this.moduleDef.name == '_empty' ? '' : path.join('/module/', this.moduleDef.name, this.moduleDef.clientPath),

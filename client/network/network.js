@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import io from '/lib/lame_es6/socket.io-client.js';
+import {WS} from '/lib/websocket.js';
 import * as info from '/client/util/info.js';
 import * as time from '/client/util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
@@ -25,10 +25,10 @@ let ready, readyPromise = new Promise(r => ready = r);
  * Initializes the connection with the server & sets up the network layer.
  */
 export function init() {
-  socket = io(location.host);
+  socket = WS.clientWrapper(`ws://${location.host}/`);
 
   function sendHello() {
-    socket.emit('client-start', {
+    socket.send('client-start', {
       offset: info.virtualOffset,
       rect: info.virtualRectNoBezel.serialize()
     });
@@ -56,7 +56,7 @@ export function removeListener(event, callback) {
 export const whenReady = readyPromise;
 export function send(event, data) {
   if (socket) {
-    socket.emit(event, data);
+    socket.send(event, data);
   }
 }
 

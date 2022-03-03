@@ -29,11 +29,11 @@ limitations under the License.
 import {easyLog} from '../../lib/log.js';
 import * as monitor from '../monitoring/monitor.js';
 import ioClient from 'socket.io-client';
-import socketio from 'socket.io';
 import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
+import {WSS} from './websocket.js';
 
 let io;
 
@@ -63,7 +63,7 @@ export const emitter = new EventEmitter;
 export function init(server) {
   // Disable per-message compression, because it causes big issues on linux.
   // https://github.com/websockets/ws#websocket-compression
-  io = socketio(server, {perMessageDeflate: false});
+  io = new WSS({server});
 
   // Set up control io namespace.
   io.on('connection', socket => {
@@ -89,7 +89,7 @@ export function init(server) {
       emitter.emit('new-client', client);
 
       // Tell the client the current time.
-      socket.emit('time', now());
+      socket.send('time', now());
     });
 
     // When the client disconnects, we tell our listeners that we lost the client.
@@ -130,7 +130,7 @@ export function init(server) {
 
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {
-    io.emit('time', now());
+    io.sendToAllClients('time', now());
   }, 10000);
 }
 
