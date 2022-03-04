@@ -28,7 +28,6 @@ limitations under the License.
 
 import {easyLog} from '../../lib/log.js';
 import * as monitor from '../monitoring/monitor.js';
-import ioClient from 'socket.io-client';
 import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
@@ -142,11 +141,6 @@ export function forModule(id) {
   return {
     open() {
       return makeModuleOverlaySocket(id, io, {
-        openExternalSocket(host) {
-          const socket = ioClient(host, {multiplex: false});
-          openedSockets.push(socket);
-          return socket;
-        },
         // Here, we provide a per-module list of clients that the module
         // can inspect and invoke. Because our list contains unwrapped sockets,
         // we need to wrap them before exposing them to the module.

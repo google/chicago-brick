@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as game from '../game/game.js';
 import * as time from '../util/time.js';
 import * as wallGeometry from '../util/wall_geometry.js';
 import * as moduleTicker from './module_ticker.js';
@@ -51,7 +50,6 @@ export class RunningModule {
       // Begin asynchronously validating the module at the server path.
       this.loaded = this.extractServerClass(this.name, {
         network: {},
-        game: {},
         state: {},
       }).then(() => {
         log.debugAt(1, 'Verified ' + path.join(this.moduleDef.root, this.moduleDef.serverPath));
@@ -92,11 +90,9 @@ export class RunningModule {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID = `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
-      this.gameManager = game.forModule(INSTANTIATION_ID);
       this.stateManager = stateManager.forModule(network.getSocket(), INSTANTIATION_ID);
     } else {
       this.network = null;
-      this.gameManager = null;
       this.stateManager = null;
     }
     // Tell clients to get ready to play this module at the deadline.
@@ -109,7 +105,6 @@ export class RunningModule {
       if (this.moduleDef.serverPath) {
         const {server} = await this.extractServerClass({
           network: this.network.open(),
-          game: this.gameManager,
           state: this.stateManager.open()
         });
         this.instance = new server(this.moduleDef.config, this.deadline);
@@ -157,9 +152,6 @@ export class RunningModule {
     }
     if (this.network) {
       this.stateManager.close();
-
-      // Clean up game sockets.
-      this.gameManager.dispose();
 
       // This also cleans up stateManager.
       this.network.close();
