@@ -115,9 +115,6 @@ if (flags.credential_dir) {
 // Initialize the wall geometry.
 wallGeometry.init(flags);
 
-// Initialize routes for peer connectivity.
-peer.initPeer();
-
 // Load all of the module information we know about.
 const moduleDefsByName = loadAllBrickJson(flags.module_dir);
 
@@ -138,13 +135,16 @@ const server = makeServer(app, {
 server.listen(flags.port, () => {
   const host = server.address().address;
   const port = server.address().port;
-
+  
   const protocol = server instanceof https.Server ? 'https' : 'http';
   log(`Server listening at ${protocol}://${host}:${port}`);
 });
 
 // Initialize the server side of our communications layer with the clients.
 network.init(server);
+
+// Initialize routes for peer connectivity.
+peer.initPeer();
 
 // Create a module player, which is the master control for telling the wall to do anything.
 const modulePlayer = new ServerModulePlayer();
