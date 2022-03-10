@@ -27,8 +27,6 @@
     "node-fetch": "^2.6.0",
     "noisejs": "^2.1.0",
     "p5": "^0.8.0",
-    "peer": "github:peers/peerjs-server#96fd0d0",
-    "peerjs": "^1.1.0",
     "random-js": "^2.1.0",
     "relaxed-json": "^1.0.0",
     "sharp": "^0.29.3",

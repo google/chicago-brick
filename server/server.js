@@ -115,8 +115,8 @@ if (flags.credential_dir) {
 // Initialize the wall geometry.
 wallGeometry.init(flags);
 
-// Initialize peerjs. We pick a different port for the peerjs server.
-peer.init(flags.port + 6000);
+// Initialize routes for peer connectivity.
+peer.initPeer();
 
 // Load all of the module information we know about.
 const moduleDefsByName = loadAllBrickJson(flags.module_dir);
