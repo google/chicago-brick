@@ -52,11 +52,11 @@ export class PlaylistDriver extends EventEmitter {
 
     // Install a handler that listens for new clients, and tells them to catch up with
     // what the wall is currently going.
-    network.emitter.on('new-client', client => {
+    network.on('connection', socket => {
       const nextModule = modulePlayer.nextModule || modulePlayer.oldModule;
       if (nextModule.name != '_empty') {
         // Tell the client to immediately go to the current module.
-        nextModule.tellClientToPlay(client);
+        nextModule.tellClientToPlay(socket);
       }
     });
   }

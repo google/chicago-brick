@@ -15,20 +15,20 @@ limitations under the License.
 
 import * as network from '../network/network.js';
 
-let currentStatus = {};
-let sendCurrentState = socket => {
+const currentStatus = {};
+const sendCurrentState = socket => {
   socket.send('monitor', currentStatus);
 };
 
-let monitoringSockets = [];
-network.emitter.on('new-client', info => {
+const monitoringSockets = [];
+network.on('connection', socket => {
   // Listen for a msg indicating that it would like some monitoring.
-  info.socket.on('enable-monitoring', () => {
-    monitoringSockets.push(info.socket);
-    sendCurrentState(info.socket);
+  socket.on('enable-monitoring', () => {
+    monitoringSockets.push(socket);
+    sendCurrentState(socket);
   });
-  info.socket.on('disable-monitoring', () => {
-    let i = monitoringSockets.indexOf(info.socket);
+  socket.on('disable-monitoring', () => {
+    let i = monitoringSockets.indexOf(socket);
     if (i != -1) {
       monitoringSockets.splice(i, 1);
     }

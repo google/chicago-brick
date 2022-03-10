@@ -17,7 +17,7 @@ export class WSS extends EventEmitter {
       const ws = WS.serverWrapper(websocket);
       this.clientSockets.add(ws);
       ws.on('disconnect', (code, reason) => {
-        log.error(`Lost control client: ${code} Reason: ${reason}`);
+        log.error(`Lost client: ${code} Reason: ${reason}`);
         this.clientSockets.delete(ws);
         this.emit('disconnect', ws);
       });

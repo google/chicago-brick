@@ -1,15 +1,34 @@
 import {easyLog} from '../../lib/log.js';
-import peer from 'peer';
+import * as network from './network.js';
 
 const log = easyLog('wall:peer');
 
-export function init(port) {
-  const peerServer = new peer.PeerServer({port, path: '/peerjs'});
-  peerServer.on('connection', function(id) {
-    log.debugAt(1, 'peer connection!', id);
+const knownPeers = new Map();
+
+function relayMessage(msg, payload) {
+  const {to} = payload;
+  const toPeer = knownPeers.get(to);
+  if (!toPeer) {
+    log.error(`Unknown peer: ${to}`);
+    return;
+  }
+  // Forward this along to the destination peer so it can connect.
+  toPeer.socket.send(msg, payload);
+}
+
+export function initPeer() {
+  network.on('connection', client => {
+    client.on('peer-register', id => {
+      // What do we need to store about a peer? Anything?
+      knownPeers.set(id, {socket: client});
+
+      client.send('peer-list', {
+        knownPeers: [...knownPeers.keys()],
+      });
+    });
+    client.on('peer-offer', data => relayMessage('peer-offer', data));
+    client.on('peer-icecandidate', data => relayMessage('peer-icecandidate', data));
+    client.on('peer-answer', data => relayMessage('peer-answer', data));
   });
-  peerServer.on('disconnect', function(id) {
-    log.debugAt(1, 'peer disconnect!', id);
-  });
-  log(`Started peer server on localhost:${port}/peerjs`);
+  log('peer relay registered');
 }

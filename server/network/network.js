@@ -28,8 +28,6 @@ limitations under the License.
 
 import {easyLog} from '../../lib/log.js';
 import * as monitor from '../monitoring/monitor.js';
-import ioClient from 'socket.io-client';
-import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
@@ -54,7 +52,44 @@ export function getSocket() {
 }
 
 export const clients = {};
-export const emitter = new EventEmitter;
+
+export function sendToAllClients(msgType, payload) {
+  io.sendToAllClients(msgType, payload);
+}
+
+const specialHandlers = new Map([['new-client', []]]);
+const preinitHandlers = [];
+function addHandler(msgType, handler, once) {
+  if (specialHandlers.has(msgType)) {
+    // No once support...
+    specialHandlers.get(msgType).push(handler);
+  } else if (io) {
+    if (once) {
+      io.once(msgType, handler);
+    } else {
+      io.on(msgType, handler);
+    }
+  } else {
+    preinitHandlers.push({msgType, handler, once});
+  }
+}
+
+export function on(msgType, handler) {
+  addHandler(msgType, handler, false);
+}
+
+export function once(msgType, handler) {
+  addHandler(msgType, handler, true);
+}
+
+export function fireSpecialHandler(msgType, payload) {
+  const handlers = specialHandlers.get(msgType) || [];
+  for (const handler of handlers) {
+    handler(payload);
+  }
+}
+
+let nextClientId = 1;
 
 /**
  * Main entry point for networking.
@@ -64,9 +99,8 @@ export function init(server) {
   // Disable per-message compression, because it causes big issues on linux.
   // https://github.com/websockets/ws#websocket-compression
   io = new WSS({server});
-
-  // Set up control io namespace.
   io.on('connection', socket => {
+    const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
     socket.on('client-start', config => {
@@ -84,19 +118,17 @@ export function init(server) {
           event: `newClient: ${client.rect.serialize()}`,
         }});
       }
-      clients[client.socket.id] = client;
+      clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
-      emitter.emit('new-client', client);
-
+      fireSpecialHandler('new-client', client);
       // Tell the client the current time.
       socket.send('time', now());
     });
 
     // When the client disconnects, we tell our listeners that we lost the client.
     socket.once('disconnect', function() {
-      const {id} = socket;
-      if (id in clients) {
-        const {rect} = clients[id];
+      if (clientId in clients) {
+        const {rect} = clients[clientId];
         if (monitor.isEnabled()) {
           monitor.update({layout: {
             time: now(),
@@ -104,16 +136,15 @@ export function init(server) {
           }});
         }
         log(`Lost client: ${rect.serialize()}`);
-        emitter.emit('lost-client', clients[id]);
       } else {
         if (monitor.isEnabled()) {
           monitor.update({layout: {
             time: now(),
-            event: `dropClient: id ${id}`,
+            event: `dropClient: id ${clientId}`,
           }});
         }
       }
-      delete clients[id];
+      delete clients[clientId];
     });
 
     // If the client notices an exception, it can send us that information to
@@ -127,6 +158,13 @@ export function init(server) {
     // network from this client.
     installModuleOverlayHandler(socket);
   });
+
+  for (const tuple of preinitHandlers) {
+    const {msgType, handler, once} = tuple;
+    // Now that io is defined...
+    addHandler(msgType, handler, once);
+  }
+  preinitHandlers.length = 0;
 
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {
@@ -142,11 +180,6 @@ export function forModule(id) {
   return {
     open() {
       return makeModuleOverlaySocket(id, io, {
-        openExternalSocket(host) {
-          const socket = ioClient(host, {multiplex: false});
-          openedSockets.push(socket);
-          return socket;
-        },
         // Here, we provide a per-module list of clients that the module
         // can inspect and invoke. Because our list contains unwrapped sockets,
         // we need to wrap them before exposing them to the module.

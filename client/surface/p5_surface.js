@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {Surface} from '/client/surface/surface.js';
-import P5 from '/lib/lame_es6/p5.js';
+import P5 from 'https://esm.sh/p5@0.8';
 
 // Sets up the sizes and scaling factors. The P5 library will take care of creating a canvas.
 // sketch is the actual p5.js code that will be executed.  sketch.setup() will be called at

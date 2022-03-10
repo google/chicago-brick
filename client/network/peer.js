@@ -17,214 +17,188 @@ limitations under the License.
 // connect to one another.
 import * as info from '/client/util/info.js';
 import {easyLog} from '/lib/log.js';
-import {Peer} from '/lib/lame_es6/peerjs.js';
-import {delay} from '/lib/promise.js';
+import * as network from './network.js';
+
 const log = easyLog('wall:peer');
 
-function sanitizeName(name) {
-  return name.replace(/[^a-zA-Z0-9]/g, '-');
-}
+const peers = new Map();
+const myPeerid = `${info.virtualOffset.x},${info.virtualOffset.y}`;
+const handlers = new Map();
 
-function makeName(id, x, y) {
-  return sanitizeName(id + '-' + x + '-' + y);
-}
-
-// Wraps a PeerJS peer to provide a better API to connect to wall clients.
-function PeerWrapper(moduleId, peer) {
-  this.moduleId_ = moduleId;
-  this.peer_ = peer;
-}
-// Opens a connection with a different client. Returns a Promise that will
-// be resolved with a peerjs connection object, on which one can listen for
-// and receive messages. If the specified peer isn't found, the peer is
-// assumed to not yet be online, and so we retry periodically with a doubling
-// backoff until we connect (logging each time we retry). We never reject the
-// promise. If relative is true, x,y are added to my offset when referencing
-// the other client.
-PeerWrapper.prototype.connect = function(x, y, relative, onOpen, onClose) {
-  var otherX = relative ? info.virtualOffset.x + x : x;
-  var otherY = relative ? info.virtualOffset.y + y : y;
-  // Generate name of peer we're trying to connect to.
-  var otherPeerName = makeName(this.moduleId_, otherX, otherY);
-
-  // Attempt to connect.
-  // If we fail, go back to start.
-  // If we succeed, add a retry handler installer, with has the following
-  // contract:
-  //   If we close the connection, call the handler.
-  //     If the handler returns true, increase the delay, go back to start.
-  //     If the handler returns false, stop.
-
-  var connectionAttempts = 0;
-  var retryDelay = 500;
-  var connectFunc = () => {
-    if (!this.peer_) {
-      if (connectionAttempts > 0) {
-        log.error('Aborted connection retry due to external close!');
-      } else {
-        log.error('Aborted initial retry due to external close!');
-      }
+function addChannelEventListeners(channel, peerid) {
+  channel.addEventListener('open', () => {
+    log('Open channel with peer:', peerid);
+    const peer = peers.get(peerid);
+    if (!peer) {
+      log.error('Bad peer connection. No record found for peer', peerid);
       return;
     }
-    connectionAttempts++;
-    var conn = this.peer_.connect(otherPeerName, {reliable: true});
-    conn.on('open', () => {
-      if (!this.peer_) {
-        // We're disconnecting.
-        return;
-      }
-
-      // Reset retry delay.
-      retryDelay = 500;
-
-      conn.on('close', () => {
-        if (!this.peer_) {
-          // We're disconnecting.
-          return;
-        }
-        // WHOA! We unexpected closed!
-        log.warn('Connection to peer ' + otherPeerName + ' dropped!');
-        if (onClose(conn)) {
-          // Retry!
-          connectFunc();
-        }
-      });
-
-      log('Established connection to peer ' + otherPeerName);
-      onOpen(conn);
-    });
-    conn.on('error', (err) => {
-      if (!this.peer_) {
-        // We're disconnecting.
-        return;
-      }
-      retryDelay = Math.min(retryDelay * 2, 10000);
-      if (connectionAttempts == 1) {
-        log.warn('Failed connecting to initial peer ' + otherPeerName + ' retry in ' + retryDelay, err);
-      } else {
-        log.warn('Failed reconnecting to peer ' + otherPeerName + ' retry in ' + retryDelay, err);
-      }
-      delay(retryDelay).then(connectFunc);
-    });
-  };
-  connectFunc();
-};
-// Listens for a connection from any other client. Returns a Promise that is
-// resolved with the new connection to that client.
-PeerWrapper.prototype.listen = function(cb) {
-  this.peer_.on('connection', function(conn) {
-    var bits = conn.peer.split('-');
-    cb(conn, parseInt(bits[2]), parseInt(bits[3]));
+    fire('connection', peerid, peerid);
   });
-};
-// Closes any peer connections & disconnects from the server.
-PeerWrapper.prototype.close = function() {
-  this.peer_.disconnect();
-  this.peer_ = null;
-};
-
-// Oh man, this function is useful.
-// Connects to each of our 8 neighbors, provided that they exist, using the
-// same connection semantics as .connect (including retries, restablishment
-// of dropped connections, etc.). We maintain a list of currently-connected
-// clients, which are tuples containing the x,y of the client & a valid
-// connection object, and expose this via our return value. We also
-// require users to pass in a function that describes what to happen when
-// data arrives on a connection.
-PeerWrapper.prototype.connectToNeighbors = function(onData) {
-  // Create a list of clients that we'll track.
-  var clients = [];
-
-  var findExistingClient = (x, y) => {
-    return clients.find((client) => {
-      return client.x == x && client.y == y;
-    });
-  };
-
-  var installDataHandler = (conn) => {
-    conn.on('data', (data) => onData(conn, data));
-  };
-
-  var handleNewConnection = (conn, x, y) => {
-    var existingClient = findExistingClient(x, y);
-    if (existingClient) {
-      // If we already have a connection, we need to pick one. Connections
-      // have an id, so we'll drop the one with the bigger id, and keep the
-      // once with the smaller.
-      if (existingClient.conn.id > conn.id) {
-        log.debugAt(1, 'Already connected to client ' + x + ',' + y + '. Will drop existing.');
-        // Close old connection, keep new one.
-        existingClient.conn.close();
-        existingClient.conn = conn;
-        installDataHandler(conn);
-      } else {
-        log.debugAt(1, 'Already connected to client ' + x + ',' + y + '. Will drop new.');
-        // Close this connection, keep old one.
-        conn.close();
-      }
-    } else {
-      // New connection!
-      clients.push({x: x, y: y, conn});
-      log('Connected to ' + x + ',' + y);
-      installDataHandler(conn);
+  channel.addEventListener('message', event => {
+    log(`Received message from ${peerid}`);
+    const {data} = event;
+    try {
+      const [msgType, payload] = JSON.parse(data);
+      fire(msgType, payload, peerid);
+    } catch (e) {
+      log.error(`Invalid message from peer: ${peerid}`);
     }
+  });
+  channel.addEventListener('close', () => {
+    log(`Closed channel with peer: ${peerid}`);
+    peers.delete(peerid);
+    fire('disconnect', peerid, peerid);
+  });
+  channel.addEventListener('error', event => {
+    log.error(`Error with peer: ${peerid}`, event.error);
+  });
+}
+
+function addIceEventListeners(connection, peerid) {
+  connection.addEventListener('icecandidate', event => {
+    network.send('peer-icecandidate', {
+      from: myPeerid,
+      to: peerid,
+      candidate: event.candidate,
+    });
+  });
+}
+
+async function connect(peerid) {
+  const connection = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+  const channel = connection.createDataChannel(peerid);
+  const peer = {
+    id: peerid,
+    connection,
+    channel,
   };
+  peers.set(peerid, peer);
+  addChannelEventListeners(channel, peerid);
+  addIceEventListeners(connection, peerid);
 
-  // Before connecting to neighbors. Install a listener that handles new
-  // connection attempts.
-  this.listen((conn, x, y) => {
-    log('Connection request from ' + x + ',' + y);
-    handleNewConnection(conn, x, y);
+  const offer = await connection.createOffer();
+  await connection.setLocalDescription(offer);
+
+  network.send('peer-offer', {
+    from: myPeerid,
+    to: peerid,
+    offer,
   });
+}
 
-  log('Connecting to neighbors.');
-  [-1, 0, 1].forEach((x) => {
-    [-1, 0, 1].forEach((y) => {
-      if (x == 0 && y == 0) {
-        return;
+export function init(network) {
+  network.on('peer-list', msg => {
+    const {knownPeers} = msg;
+    log(`peer-list: got ${knownPeers.length}`);
+    for (const peerid of knownPeers) {
+      connect(peerid);
+    }
+  });
+  network.on('peer-icecandidate', async msg => {
+    const {from, candidate} = msg;
+    log(`peer-icecandidate from: ${from}`);
+    const peer = peers.get(from);
+    if (!peer) {
+      log.error(`Unknown ice-candidate from: ${from}`);
+      return;
+    }
+    try {
+      await peer.connection.addIceCandidate(candidate);
+    } catch (e) {
+      log.error(`Error adding ice candidate from: ${from}`);
+    }
+    log(`peer-icecandidate accepted from: ${from}`);
+  });
+  network.on('peer-offer', async msg => {
+    const {from, offer} = msg;
+    log(`peer-offer from: ${from}`);
+    const connection = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+    const peer = {
+      id: from,
+      connection,
+    };
+    peers.set(from, peer);
+    connection.addEventListener('datachannel', e => {
+      log(`Created data channel by: ${from}`);
+      peer.channel = e.channel;
+      addChannelEventListeners(peer.channel, from);
+    });
+    addIceEventListeners(connection, from);
+    connection.setRemoteDescription(new RTCSessionDescription(offer));
+    const answer = await connection.createAnswer();
+    await connection.setLocalDescription(answer);
+    log(`Sending answer to: ${from}`);
+    network.send('peer-answer', {
+      from: myPeerid,
+      to: from,
+      answer,
+    });
+  });
+  network.on('peer-answer', async msg => {
+    const {from, answer} = msg;
+    log(`peer-answer from: ${from}`);
+    const peer = peers.get(from);
+    if (!peer) {
+      log.error(`Answer from unknown peer: ${from}`);
+      return;
+    }
+    await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
+    log(`peer-answer accepted from: ${from}`);
+  });
+  network.send('peer-register', {id: myPeerid});
+}
+
+export function sendToAllPeers(msgType, payload) {
+  for (const [peer] of peers.values()) {
+    peer.channel.send(JSON.stringify([msgType, payload]));
+  }
+}
+
+export function send(peerid, msgType, payload) {
+  const peer = peer.get(peerid);
+  if (!peer) {
+    log.error(`Asked to send data to non-existent peer: ${peerid}`);
+    return;
+  }
+  peer.channel.send(JSON.stringify([msgType, payload]));
+}
+
+export function on(msgType, handler) {
+  const msgHandlers = handlers.get(msgType) || [];
+  msgHandlers.push(handler);
+  handlers.set(msgType, msgHandlers);
+}
+
+function fire(msgType, payload, peerid) {
+  const msgHandlers = handlers.get(msgType);
+  if (!msgHandlers) {
+    return;
+  }
+  for (const handler of msgHandlers) {
+    handler(payload, peerid);
+  }
+}
+
+export function forModule(moduleid) {
+  // Return an object that provides "scoped" versions of the standard api.
+  const handlers = new Set();
+  return {
+    send(peerid, msgType, payload) {
+      send(peerid, `${moduleid}-${msgType}`, payload);
+    },
+    sendToAllPeers(msgType, payload) {
+      sendToAllPeers(`${moduleid}-${msgType}`, payload);
+    },
+    on(msgType, handler) {
+      const handlerName = `${moduleid}-${msgType}`;
+      handlers.add(handlerName);
+      on(handlerName, handler);
+    },
+    cleanup() {
+      for (const name of handlers) {
+        handlers.delete(name);
       }
-
-      // Calculate neighbor coords.
-      let nx = x + info.virtualOffset.x;
-      let ny = y + info.virtualOffset.y;
-
-      this.connect(nx, ny, false, (conn) => {
-        log('Connection established to ' + nx + ',' + ny);
-        handleNewConnection(conn, nx, ny);
-      }, (conn) => {
-        log('Disconnected from ' + nx + ',' + ny);
-        var index = clients.findIndex((client) => {
-          return client.conn.id == conn.id;
-        });
-        if (index > -1) {
-          clients.splice(index, 1);
-        }
-      });
-    });
-  });
-
-  return clients;
-};
-
-// Opens a connection with the server (to find peers). The name passed-in
-// should be unique among all peers that you want to talk with. As peerjs
-// requires alphanumeric names, we'll strip out characters that don't fit
-// that regex. Returns a Promise that is resolved to a PeerWrapper or
-// rejects with an error.
-export function open(moduleId) {
-  var name = makeName(moduleId, info.virtualOffset.x, info.virtualOffset.y);
-  return new Promise(function(resolve, reject) {
-    var peer = new Peer(name, {
-      host: window.location.hostname,
-      port: 9000,
-      path: '/peerjs'
-    });
-    peer.on('open', function(id) {
-      log('Opened peer connection with id ' + id);
-      resolve(new PeerWrapper(moduleId, peer));
-    });
-    peer.on('error', function(e) {
-      reject(e);
-    });
-  });
+    },
+  };
 }

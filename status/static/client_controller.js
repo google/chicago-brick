@@ -181,8 +181,8 @@ export class ClientController {
         image.setAttribute('href', url);
         image.setAttribute('x', this.tx(c.rect[0]));
         image.setAttribute('y', this.ty(c.rect[1]));
-        image.setAttribute('width', this.tx(c.rect[2]) - this.tx(c.rect[0]));
-        image.setAttribute('height', this.ty(c.rect[3]) - this.ty(c.rect[1]));
+        image.setAttribute('width', this.tx(c.rect[0] + c.rect[2]) - this.tx(c.rect[0]));
+        image.setAttribute('height', this.ty(c.rect[1] + c.rect[3]) - this.ty(c.rect[1]));
         groupEl.appendChild(image);
 
         groupEl.setAttribute('class', null);
@@ -206,6 +206,9 @@ export class ClientController {
     }
   }
   disconnect() {
+    for (const client of this.clients) {
+      client.element.remove();
+    }
     this.clients.length = 0;
     this.wallPath = null;
   }

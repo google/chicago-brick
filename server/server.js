@@ -16,7 +16,6 @@ limitations under the License.
 'use strict';
 
 import * as credentials from './util/credentials.js';
-import * as game from './game/game.js';
 import * as moduleServing from './modules/serving.js';
 import * as monitor from './monitoring/monitor.js';
 import * as network from './network/network.js';
@@ -83,7 +82,6 @@ const FLAG_DEFS = [
   {name: 'screen_width', type: Number, defaultValue: 1920},
   {name: 'layout_duration', type: Number},
   {name: 'module_duration', type: Number},
-  {name: 'game_server_host', type: String, defaultValue: ''},
   {name: 'geometry_file', type: String},
   {name: 'credential_dir', type: String},
   {name: 'enable_monitoring', type: Boolean},
@@ -117,11 +115,8 @@ if (flags.credential_dir) {
 // Initialize the wall geometry.
 wallGeometry.init(flags);
 
-// Initialize our game library.
-game.init(flags);
-
-// Initialize peerjs. We pick a different port for the peerjs server.
-peer.init(flags.port + 6000);
+// Initialize routes for peer connectivity.
+peer.initPeer();
 
 // Load all of the module information we know about.
 const moduleDefsByName = loadAllBrickJson(flags.module_dir);
@@ -147,7 +142,6 @@ server.listen(flags.port, () => {
   const protocol = server instanceof https.Server ? 'https' : 'http';
   log(`Server listening at ${protocol}://${host}:${port}`);
 });
-
 
 // Initialize the server side of our communications layer with the clients.
 network.init(server);

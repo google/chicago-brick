@@ -15,10 +15,13 @@ limitations under the License.
 
 import * as wallGeometry from './util/wall_geometry.js';
 import * as time from './util/time.js';
-import {emitter, clients} from './network/network.js';
+import * as network from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import {loadAllModules} from './playlist/playlist_loader.js';
 import {WSS} from './network/websocket.js';
+import {easyLog} from '../lib/log.js';
+
+const log = easyLog('wall:control');
 
 // Basic server management hooks.
 // This is just for demonstration purposes, since the real server
@@ -38,28 +41,29 @@ export class Control {
       transitionData = data;
       wss.sendToAllClients('transition', data);
     });
-    emitter.on('new-client', c => {
-      wss.sendToAllClients('new-client', c.rect.serialize());
-      c.socket.on('takeSnapshotRes', res => {
+    network.on('new-client', client => {
+      wss.sendToAllClients('new-client', client.rect.serialize());
+      client.socket.on('takeSnapshotRes', res => {
+        log('Got snapshot result.');
         wss.sendToAllClients('takeSnapshotRes', res);
       });
-      c.socket.on('record-error', err => {
+      client.socket.on('record-error', err => {
         wss.sendToAllClients('error', err);
       });
-    });
-    emitter.on('lost-client', c => {
-      wss.sendToAllClients('lost-client', c.rect.serialize());
+      client.socket.on('disconnect', () => {
+        wss.sendToAllClients('lost-client', client.rect.serialize());
+      });
     });
     wss.on('connection', socket => {
       // When we transition to a new module, let this guy know.
       socket.send('time', {time: time.now()});
       socket.send('transition', transitionData);
-      socket.send('clients', Object.values(clients).map(c => c.rect.serialize()));
+      socket.send('clients', Object.values(network.clients).map(c => c.rect.serialize()));
       socket.send('wallGeometry', wallGeometry.getGeo().points);
       socket.send('errors', getErrors());
 
       socket.on('takeSnapshot', req => {
-        const client = Object.values(clients).find(c => c.rect.serialize() == req.client);
+        const client = Object.values(network.clients).find(c => c.rect.serialize() == req.client);
         if (client) {
           client.socket.send('takeSnapshot', req);
         } else {
