@@ -89,6 +89,8 @@ export function fireSpecialHandler(msgType, payload) {
   }
 }
 
+let nextClientId = 1;
+
 /**
  * Main entry point for networking.
  * Initializes the networking layer, given an httpserver instance.
@@ -97,9 +99,8 @@ export function init(server) {
   // Disable per-message compression, because it causes big issues on linux.
   // https://github.com/websockets/ws#websocket-compression
   io = new WSS({server});
-  
-  // Set up control io namespace.
   io.on('connection', socket => {
+    const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
     socket.on('client-start', config => {
@@ -117,7 +118,7 @@ export function init(server) {
           event: `newClient: ${client.rect.serialize()}`,
         }});
       }
-      clients[client.socket.id] = client;
+      clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
       fireSpecialHandler('new-client', client);
       // Tell the client the current time.
@@ -126,9 +127,8 @@ export function init(server) {
 
     // When the client disconnects, we tell our listeners that we lost the client.
     socket.once('disconnect', function() {
-      const {id} = socket;
-      if (id in clients) {
-        const {rect} = clients[id];
+      if (clientId in clients) {
+        const {rect} = clients[clientId];
         if (monitor.isEnabled()) {
           monitor.update({layout: {
             time: now(),
@@ -140,11 +140,11 @@ export function init(server) {
         if (monitor.isEnabled()) {
           monitor.update({layout: {
             time: now(),
-            event: `dropClient: id ${id}`,
+            event: `dropClient: id ${clientId}`,
           }});
         }
       }
-      delete clients[id];
+      delete clients[clientId];
     });
 
     // If the client notices an exception, it can send us that information to

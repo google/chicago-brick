@@ -36,7 +36,7 @@ export function init() {
 
   // When we reconnect after a disconnection, we need to tell the server
   // about who we are all over again.
-  socket.on('reconnect', sendHello);
+  socket.on('connect', sendHello);
 
   // Install our time listener.
   socket.on('time', time.adjustTimeByReference);
