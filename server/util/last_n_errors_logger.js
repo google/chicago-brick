@@ -1,6 +1,6 @@
-import {emitter} from '../network/network.js';
+import * as network from '../network/network.js';
 
-emitter.on('new-client', ({socket}) => {
+network.on('connection', socket => {
   socket.on('record-error', err => {
     addToBuffer(err);
   });

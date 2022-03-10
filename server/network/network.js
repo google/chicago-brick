@@ -28,7 +28,6 @@ limitations under the License.
 
 import {easyLog} from '../../lib/log.js';
 import * as monitor from '../monitoring/monitor.js';
-import {EventEmitter} from 'events';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
@@ -53,7 +52,42 @@ export function getSocket() {
 }
 
 export const clients = {};
-export const emitter = new EventEmitter;
+
+export function sendToAllClients(msgType, payload) {
+  io.sendToAllClients(msgType, payload);
+}
+
+const specialHandlers = new Map([['new-client', []]]);
+const preinitHandlers = [];
+function addHandler(msgType, handler, once) {
+  if (specialHandlers.has(msgType)) {
+    // No once support...
+    specialHandlers.get(msgType).push(handler);
+  } else if (io) {
+    if (once) {
+      io.once(msgType, handler);
+    } else {
+      io.on(msgType, handler);
+    }
+  } else {
+    preinitHandlers.push({msgType, handler, once});
+  }
+}
+
+export function on(msgType, handler) {
+  addHandler(msgType, handler, false);
+}
+
+export function once(msgType, handler) {
+  addHandler(msgType, handler, true);
+}
+
+export function fireSpecialHandler(msgType, payload) {
+  const handlers = specialHandlers.get(msgType) || [];
+  for (const handler of handlers) {
+    handler(payload);
+  }
+}
 
 /**
  * Main entry point for networking.
@@ -63,7 +97,7 @@ export function init(server) {
   // Disable per-message compression, because it causes big issues on linux.
   // https://github.com/websockets/ws#websocket-compression
   io = new WSS({server});
-
+  
   // Set up control io namespace.
   io.on('connection', socket => {
     // When the client boots, it sends a start message that includes the rect
@@ -85,8 +119,7 @@ export function init(server) {
       }
       clients[client.socket.id] = client;
       log(`New client: ${client.rect.serialize()}`);
-      emitter.emit('new-client', client);
-
+      fireSpecialHandler('new-client', client);
       // Tell the client the current time.
       socket.send('time', now());
     });
@@ -103,7 +136,6 @@ export function init(server) {
           }});
         }
         log(`Lost client: ${rect.serialize()}`);
-        emitter.emit('lost-client', clients[id]);
       } else {
         if (monitor.isEnabled()) {
           monitor.update({layout: {
@@ -126,6 +158,13 @@ export function init(server) {
     // network from this client.
     installModuleOverlayHandler(socket);
   });
+
+  for (const tuple of preinitHandlers) {
+    const {msgType, handler, once} = tuple;
+    // Now that io is defined...
+    addHandler(msgType, handler, once);
+  }
+  preinitHandlers.length = 0;
 
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {

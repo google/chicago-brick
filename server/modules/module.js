@@ -97,7 +97,7 @@ export class RunningModule {
     }
     // Tell clients to get ready to play this module at the deadline.
     for (const id in clients) {
-      this.tellClientToPlay(clients[id]);
+      this.tellClientToPlay(clients[id].socket);
     }
     if (this.network) {
       registerRoute(this.name, this.moduleDef.root);
@@ -114,8 +114,8 @@ export class RunningModule {
     }
   }
 
-  tellClientToPlay(client) {
-    client.socket.send('loadModule', {
+  tellClientToPlay(socket) {
+    socket.send('loadModule', {
       module: {
         name: this.moduleDef.name,
         path: this.moduleDef.name == '_empty' ? '' : path.join('/module/', this.moduleDef.name, this.moduleDef.clientPath),
