@@ -21,36 +21,10 @@ import {serveDirectory, serveFile, routingMain} from '../util/serving.js';
 
 const log = easyLog('wall:serving');
 
-const moduleRoutes = new Map;
-// Register a route. We need to refcount because we could have two copies of
-// the same module playing.
-export function registerRoute(name, dir) {
-  if (moduleRoutes.has(name)) {
-    const route = moduleRoutes.get(name);
-    route.count++;
-  } else {
-    moduleRoutes.set(name, {
-      count: 1,
-      dir: path.join(process.cwd(), dir),
-    });
-  }
-}
-export function unregisterRoute(name) {
-  if (!moduleRoutes.has(name)) {
-    throw new Error('Unregistering module without registering it!');
-  }
-  const route = moduleRoutes.get(name);
-  if (route.count > 1) {
-    route.count--;
-  } else {
-    moduleRoutes.delete(name);
-  }
-}
-
 /**
  * Creates the main ExpressJS web app.
  */
-export function create(flags) {
+export function create(flags, moduleDefsByName) {
   // The location we are running from.
   const cwd = process.cwd();
 
@@ -82,6 +56,7 @@ export function create(flags) {
   }
 
   // We also support per-module routing.
+  // TODO: Switch this to a route per module def.
   routes.push(async (req, res, next) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const pattern = new URLPattern('/module/:name/*');
@@ -90,12 +65,12 @@ export function create(flags) {
       next();
       return;
     }
-    if (moduleRoutes.has(match.name)) {
-      const route = moduleRoutes.get(match.name);
+    if (moduleDefsByName.has(match.name)) {
+      const def = moduleDefsByName.get(match.name);
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      await serveDirectory(pattern, route.dir)(req, res, next);
+      await serveDirectory(pattern, path.join(process.cwd(), def.root))(req, res, next);
     } else {
       res.statusCode = 404;
       res.end('Not Found', 'utf-8');

@@ -22,7 +22,6 @@ import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
-import {registerRoute, unregisterRoute} from './serving.js';
 import path from 'path';
 import {Server} from '../../lib/module_interface.js';
 import {EmptyModuleDef} from './module_def.js';
@@ -100,8 +99,6 @@ export class RunningModule {
       this.tellClientToPlay(clients[id].socket);
     }
     if (this.network) {
-      registerRoute(this.name, this.moduleDef.root);
-
       if (this.moduleDef.serverPath) {
         const {server} = await this.extractServerClass({
           network: this.network.open(),
@@ -156,8 +153,6 @@ export class RunningModule {
       // This also cleans up stateManager.
       this.network.close();
       this.network = null;
-
-      unregisterRoute(this.name);
     }
   }
 

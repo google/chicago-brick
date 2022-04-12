@@ -123,7 +123,7 @@ const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName, flags.la
 
 // Create an expressjs that can describes the routes that serve the files the client
 // needs to run.
-const app = moduleServing.create(flags);
+const app = moduleServing.create(flags, moduleDefsByName);
 
 // Create a server that handles those routes.
 const server = makeServer(app, {
