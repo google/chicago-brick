@@ -48,7 +48,7 @@ function getTime() {
   return lastUpdateFromServer + window.performance.now() - timeOfLastUpdateFromServer;
 }
 const host = new URL(location).searchParams.get('host') || 'localhost:6001';
-const control = WS.clientWrapper(`ws://${host}/`);
+const control = WS.clientWrapper(`ws://${host}/websocket`);
 const creatorEl = document.querySelector('#playlist-creator');
 
 function applyNewPlaylist(playlist, moduleConfig) {

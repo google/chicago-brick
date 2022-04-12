@@ -8,7 +8,7 @@ const log = easyLog('wall:websocket');
 export class WSS extends EventEmitter {
   constructor(options) {
     super();
-    this.webSocketServer = new WebSocketServer(options);
+    this.webSocketServer = new WebSocketServer({...options, path: '/websocket'});
     this.clientSockets = new Set();
     this.webSocketServer.on('listening', () => {
       log('WSS server listening on', this.webSocketServer.address());

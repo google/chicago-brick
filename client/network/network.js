@@ -25,7 +25,7 @@ let ready, readyPromise = new Promise(r => ready = r);
  * Initializes the connection with the server & sets up the network layer.
  */
 export function init() {
-  socket = WS.clientWrapper(`ws://${location.host}/`);
+  socket = WS.clientWrapper(`ws://${location.host}/websocket`);
 
   function sendHello() {
     socket.send('client-start', {
