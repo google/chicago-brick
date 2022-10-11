@@ -24,8 +24,6 @@ import * as wallGeometry from './util/wall_geometry.js';
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
 import fs from 'fs';
-import https from 'https';
-import http from 'http';
 import path from 'path';
 import {Control} from './control.js';
 import {ServerModulePlayer} from './modules/server_module_player.js';
@@ -36,20 +34,7 @@ import {captureLog} from './util/last_n_errors_logger.js';
 import {addLogger, easyLog} from '../lib/log.js';
 import chalk from 'chalk';
 import {now} from './util/time.js';
-
-function makeServer(app, options = {cert: '', key: '', requireClientCert: false}) {
-  if (options.cert) {
-    const opts = {
-      key: fs.readFileSync(options.key),
-      cert: fs.readFileSync(options.cert),
-      requestCert: options.requireClientCert,
-    };
-
-    return https.createServer(opts, app);
-  } else {
-    return http.createServer({}, app);
-  }
-}
+import { DispatchServer } from "./util/serving.js";
 
 addLogger(makeConsoleLogger(c => chalk.keyword(c), now));
 addLogger(captureLog, 'wall');
@@ -121,27 +106,24 @@ const moduleDefsByName = loadAllBrickJson(flags.module_dir);
 // Load the playlist. If the playlist is malformed, we throw and abort.
 const playlist = loadPlaylistFromFile(flags.playlist, moduleDefsByName, flags.layout_duration, flags.module_duration);
 
-// Create an expressjs that can describes the routes that serve the files the client
-// needs to run.
-const app = moduleServing.create(flags, moduleDefsByName);
-
 // Create a server that handles those routes.
-const server = makeServer(app, {
-  cert: flags.https_cert,
-  key: flags.https_key,
-  requireClientCert: flags.require_client_cert,
-});
+const options = { port: flags.port };
+if (flags.https_cert) {
+  options.ssl = {
+    key: fs.readFileSync(options.key),
+    cert: fs.readFileSync(options.cert),
+  };
+}
+const server = new DispatchServer(options);
 
-server.listen(flags.port, () => {
-  const host = server.address().address;
-  const port = server.address().port;
-  
-  const protocol = server instanceof https.Server ? 'https' : 'http';
-  log(`Server listening at ${protocol}://${host}:${port}`);
-});
+// Add module serving routes to the server.
+moduleServing.addRoutes(server, flags, moduleDefsByName);
+
+// Start the server.
+server.start();
 
 // Initialize the server side of our communications layer with the clients.
-network.init(server);
+network.init(server.server);
 
 // Initialize routes for peer connectivity.
 peer.initPeer();
