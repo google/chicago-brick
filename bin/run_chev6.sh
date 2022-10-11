@@ -24,7 +24,6 @@ else
 fi
 
 NODE_PATH='.:node_modules' node $INSPECT server/server.js \
-  --node_modules_dir './node_modules' \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \
   --use_geometry '[{"right":2},{"down":1},{"right":1},{"down":1},{"left":1},{"down":1},{"left":2},{"up":1},{"right":1},{"up":1},{"left":1},{"up":1}]' \

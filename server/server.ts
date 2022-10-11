@@ -51,15 +51,6 @@ const log = easyLog("wall:server");
 
 const FLAG_DEFS = [
   {
-    name: "node_modules_dir",
-    type: String,
-    defaultValue: path.join(Deno.cwd(), "..", "node_modules"),
-    description: "If you are running a chicago-brick instance where " +
-      "chicago-brick is a dep and lives in node_modules, you must set " +
-      "this to your project's node_modules dir or the /sys path will " +
-      "be set to a nonexistent directory.",
-  },
-  {
     name: "playlist",
     type: String,
     alias: "p",
