@@ -1,8 +1,10 @@
 import commandLineArgs from 'command-line-args';
 import commandLineUsage from 'command-line-usage';
-import express from 'express';
 import path from 'path';
 import fs from 'fs';
+import {serveDirectory, routingMain} from '../server/util/serving.js';
+import URLPattern from 'url-pattern';
+import http from 'http';
 
 const FLAG_DEFS = [
   {name: 'port', type: Number, defaultValue: 3000}
@@ -24,12 +26,13 @@ staticDir = path.join(staticDir, 'status');
 console.log(`CWD: ${cwd}`);
 console.log(`Static Dir: ${staticDir}`);
 
-const app = express();
-app.use('/node_modules', express.static(path.join(cwd, 'node_modules')));
-app.use('/lib', express.static(path.join(cwd, 'lib')));
-app.use('/', express.static(path.join(staticDir, 'static')));
+const routes = [];
+const app = routingMain(routes);
+routes.push(serveDirectory(new URLPattern('/node_modules/*'), path.join(cwd, 'node_modules')));
+routes.push(serveDirectory(new URLPattern('/lib/*'), path.join(cwd, 'lib')));
+routes.push(serveDirectory(new URLPattern('/*'), path.join(staticDir, 'static')));
 
-const server = app.listen(flags.port, () => {
+const server = http.createServer({}, app).listen(flags.port, () => {
   const host = server.address().address;
   const port = server.address().port;
 
