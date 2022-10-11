@@ -13,13 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import RJSON from 'relaxed-json';
+import RJSON from 'https://esm.sh/relaxed-json';
 import assert from '../../lib/assert.js';
-import fs from 'fs';
 import {Layout} from '../modules/layout.js';
 import {easyLog} from '../../lib/log.js';
-import glob from 'glob';
-import path from 'path';
+import * as path from 'https://deno.land/std@0.132.0/path/mod.ts';
+import {walkSync} from 'https://deno.land/std@0.132.0/fs/walk.ts';
 import {ModuleDef} from '../modules/module_def.js';
 
 const log = easyLog('wall:playlist_loader');
@@ -33,9 +32,9 @@ export function loadAllBrickJson(moduleDirs) {
   // figure out the whole universe of modules. We have to do this, because
   // if we are told to play a module by name, we don't know which path to
   // load or whatever config to use.
-  const bricks = moduleDirs.flatMap(p => glob.sync(path.join(p, 'brick.json')));
+  const bricks = moduleDirs.flatMap(p => [...walkSync('.', {match: [path.globToRegExp(path.join(p, 'brick.json'))]})].map(e => e.path));
   const allConfigs = bricks.flatMap(b => {
-    const def = fs.readFileSync(b, {encoding: 'utf8'});
+    const def = Deno.readTextFileSync(b);
     const root = path.dirname(b);
     try {
       const config = RJSON.parse(def);
@@ -97,7 +96,9 @@ export function loadAllModules(configs, defsByName = new Map) {
  * Loads a playlist from a file and turns it into a list of Layout objects.
  */
 export function loadPlaylistFromFile(path, defsByName, overrideLayoutDuration, overrideModuleDuration) {
-  const contents = fs.readFileSync(path, {encoding: 'utf-8'});
+  const decoder = new TextDecoder();
+  const contents = decoder.decode(Deno.readFileSync(path));
+  
   const parsedPlaylist = RJSON.parse(contents);
   const {collections, playlist, modules} = parsedPlaylist;
   if (playlist.length === 0) {

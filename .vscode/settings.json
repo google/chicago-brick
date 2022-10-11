@@ -1,0 +1,9 @@
+{
+    "deno.enable": true,
+    "deno.lint": true,
+    "deno.unstable": true,
+    "deno.suggest.imports.hosts": {
+        "http://deno.land": true,
+        "https://deno.land": true
+    }
+}

@@ -13,21 +13,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import fs from 'fs';
-import path from 'path';
+import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 
-const creds = {};
+const creds: Record<string, string> = {};
 
-export function get(name) {
+export function get(name: string) {
   return creds[name];
 }
 
 // Loads every .json file in the specified dir. Credentials are stored under
 // the key related to the filename.
-export function loadFromDir(dir) {
+export function loadFromDir(dir: string) {
   // list...
-  fs.readdirSync(dir).filter((p) => p.match(/\.json$/)).forEach((p) => {
-    let cred = JSON.parse(fs.readFileSync(path.join(dir, p)));
-    creds[p.replace('.json', '')] = cred;
-  });
+  [...Deno.readDirSync(dir)].filter((p) => p.name.match(/\.json$/)).forEach(
+    (p) => {
+      const contents = Deno.readFileSync(path.join(dir, p.name));
+      const decoder = new TextDecoder();
+      let cred = JSON.parse(decoder.decode(contents));
+      creds[p.name.replace(".json", "")] = cred;
+    },
+  );
 }

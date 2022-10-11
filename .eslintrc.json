@@ -11,7 +11,8 @@
       "SharedArrayBuffer": "readonly",
       "chai": "readonly",
       "sinon": "readonly",
-      "debug": true
+      "debug": true,
+      "Deno": "readonly"
   },
   "parser": "babel-eslint",
   "parserOptions": {

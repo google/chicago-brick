@@ -24,10 +24,10 @@ else
 fi
 
 # Run brick:
-node \
+deno run \
   $INSPECT \
-  --experimental_modules \
-  server/server.js \
+  --allow-read --allow-net --allow-env \
+  server/server.ts \
   --node_modules_dir './node_modules' \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \

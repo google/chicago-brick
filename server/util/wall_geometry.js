@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 import {Polygon} from '../../lib/math/polygon2d.js';
-import fs from 'fs';
 import {easyLog} from '../../lib/log.js';
 
 const log = easyLog('wall:wall_geometry');
@@ -44,7 +43,7 @@ function parseGeometry(polygonPoints) {
 
 export function loadGeometry(path) {
   // Convert from config description to actual polygon.
-  const config = JSON.parse(fs.readFileSync(path));
+  const config = JSON.parse(Deno.readFileSync(path));
   return config.polygon;
 }
 
