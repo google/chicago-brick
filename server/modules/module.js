@@ -22,7 +22,7 @@ import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.js';
 import {clients} from '../network/network.js';
-import path from 'path';
+import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
 import {Server} from '../../lib/module_interface.js';
 import {EmptyModuleDef} from './module_def.js';
 import {easyLog} from '../../lib/log.js';
@@ -63,7 +63,7 @@ export class RunningModule {
   }
 
   async extractServerClass(deps) {
-    const fullPath = path.join(process.cwd(), this.moduleDef.root, this.moduleDef.serverPath);
+    const fullPath = path.join(Deno.cwd(), this.moduleDef.root, this.moduleDef.serverPath);
     const {load} = await import(fullPath);
 
     // Inject our deps into node's require environment.

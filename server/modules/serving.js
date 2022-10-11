@@ -14,22 +14,30 @@ limitations under the License.
 ==============================================================================*/
 
 import {easyLog} from '../../lib/log.js';
-import fs from 'fs';
-import path from 'path';
-import {serveDirectory, serveFile, notFound} from '../util/serving.js';
+import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import {serveDirectory, serveFile, notFound} from '../util/serving.ts';
 
 const log = easyLog('wall:serving');
+
+function exists(str) {
+  try {
+    Deno.statSync(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Creates the main ExpressJS web app.
  */
 export function addRoutes(server, flags, moduleDefsByName) {
   // The location we are running from.
-  const cwd = process.cwd();
+  const cwd = Deno.cwd();
 
   // But we really want to get the path to the brick folder.
   const brickPath =
-      fs.existsSync(path.join(cwd, 'node_modules/chicago-brick')) ?
+      exists(path.join(cwd, 'node_modules/chicago-brick')) ?
       path.join(cwd, 'node_modules/chicago-brick') :
       cwd;
 
@@ -51,7 +59,6 @@ export function addRoutes(server, flags, moduleDefsByName) {
   }
 
   // We also support per-module routing.
-  // TODO: Switch this to a route per module def.
   server.addHandler('/module/:name/:path*', async (req, match) => {
     if (moduleDefsByName.has(match.pathname.groups.name)) {
       const def = moduleDefsByName.get(match.pathname.groups.name);

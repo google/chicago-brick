@@ -31,7 +31,7 @@ import * as monitor from '../monitoring/monitor.js';
 import {Rectangle} from '../../lib/math/rectangle.js';
 import {now} from '../util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
-import {WSS} from './websocket.js';
+import {WSS} from './websocket.ts';
 
 let io;
 

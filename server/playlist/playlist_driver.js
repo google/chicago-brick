@@ -15,15 +15,14 @@ limitations under the License.
 
 import * as monitor from '../monitoring/monitor.js';
 import {easyLog} from '../../lib/log.js';
-import randomjs from 'random-js';
+import shuffle from "https://deno.land/x/shuffle/mod.ts";
 import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.js';
 import {RunningModule} from '../modules/module.js';
-import EventEmitter from 'events';
+import EventEmitter from 'https://deno.land/x/eventemitter/mod.ts';
 import * as network from '../network/network.js';
 
 const log = easyLog('wall:playlist_driver');
-const random = new randomjs.Random();
 
 export class PlaylistDriver extends EventEmitter {
   constructor(modulePlayer, defByName) {
@@ -169,7 +168,7 @@ export class PlaylistDriver extends EventEmitter {
     }
     // Shuffle the module list:
     this.modules = Array.from(layout.modules);
-    random.shuffle(this.modules);
+    shuffle(this.modules);
     this.nextModule();
   }
   // Advances to the next module in the current layout. If there is only 1

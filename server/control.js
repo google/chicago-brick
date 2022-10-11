@@ -18,7 +18,7 @@ import * as time from './util/time.js';
 import * as network from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import {loadAllModules} from './playlist/playlist_loader.js';
-import {WSS} from './network/websocket.js';
+import {WSS} from './network/websocket.ts';
 import {easyLog} from '../lib/log.js';
 
 const log = easyLog('wall:control');
@@ -35,7 +35,7 @@ export class Control {
   }
 
   installHandlers() {
-    const wss = new WSS({host: 'localhost', port: 6001});
+    const wss = new WSS({port: 6001});
     let transitionData = {};
     this.playlistDriver.on('transition', data => {
       transitionData = data;
