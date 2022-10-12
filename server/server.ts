@@ -33,7 +33,6 @@ import { captureLog } from "./util/last_n_errors_logger.js";
 import { addLogger, easyLog } from "../lib/log.js";
 import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
 import { now } from "./util/time.js";
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import commandLineArgs from "https://esm.sh/command-line-args";
 import commandLineUsage from "https://esm.sh/command-line-usage";
 import { DispatchServer, DispatchServerOptions } from "./util/serving.ts";
