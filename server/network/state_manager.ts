@@ -13,31 +13,40 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {getSocket} from '../network/network.js';
+import { getSocket } from "./network.js";
+import { WSS } from "./websocket.ts";
+
+interface StateEntry {
+  time: number;
+  data: unknown;
+}
+type PerModuleState = Record<string, StateEntry>;
 
 // A map of module id -> {state name -> {time, data}};
-const stateMap = {};
-// Takes the global network socket (not a per-module socket).
-export function forModule(network, id) {
+const stateMap: Record<string, PerModuleState> = {};
+
+/** Returns a state-capturing object bound to a specific module id. */
+export function forModule(network: WSS, id: string) {
   // Return a module-appropriate facade that can be used to fill out the state
   // map.
   return {
     open() {
       stateMap[id] = {};
       return {
-        store(stateName, time, data) {
+        store(stateName: string, time: number, data: unknown) {
           // Store this state only, forgetting about the rest of them.
-          stateMap[id][stateName] = {time, data};
-        }
+          stateMap[id][stateName] = { time, data };
+        },
       };
     },
     close() {
       delete stateMap[id];
-      network.sendToAllClients('state-closed', id);
-    }
-  }
+      network.sendToAllClients("state-closed", id);
+    },
+  };
 }
 
+/** Sends the saved state to clients. */
 export function send() {
-  getSocket().sendToAllClients('state', stateMap);
+  getSocket().sendToAllClients("state", stateMap);
 }

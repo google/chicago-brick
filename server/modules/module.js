@@ -18,7 +18,7 @@ import * as wallGeometry from '../util/wall_geometry.ts';
 import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
 import * as network from '../network/network.js';
-import * as stateManager from '../state/state_manager.js';
+import * as stateManager from '../network/state_manager.ts';
 import {delay} from '../../lib/promise.js';
 import {getGeo} from '../util/wall_geometry.ts';
 import {clients} from '../network/network.js';

@@ -16,7 +16,7 @@ limitations under the License.
 import {now} from '../util/time.ts';
 import {easyLog} from '../../lib/log.js';
 const log = easyLog('wall:module_ticker');
-import * as stateManager from '../state/state_manager.js';
+import * as stateManager from '../network/state_manager.ts';
 
 // An array of RunningModule objects (see server_state_machine).
 var modulesToTick = [];
