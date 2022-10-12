@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from '../monitoring/monitor.js';
-import * as time from '../util/time.js';
+import * as time from '../util/time.ts';
 import {configure} from '../../lib/module_player.js';
 import {RunningModule} from './module.js';
 import {easyLog} from '../../lib/log.js';

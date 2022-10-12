@@ -13,15 +13,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export function now() {
+/** Returns the current server time. */
+export function now(): number {
   return performance.now();
 }
 
-export function inFuture(msDuration) {
+/** Returns the time msDuration ms into the future. */
+export function inFuture(msDuration: number): number {
   return now() + msDuration;
 }
 
-export function until(msDeadline) {
+/**
+ * Returns the time between now and some deadline in the future. If the
+ * time is in the past, returns 0.
+ */
+export function until(msDeadline: number): number {
   const d = msDeadline - now();
   return Math.max(0, d);
 }

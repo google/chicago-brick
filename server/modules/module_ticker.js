@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {now} from '../util/time.js';
+import {now} from '../util/time.ts';
 import {easyLog} from '../../lib/log.js';
 const log = easyLog('wall:module_ticker');
 import * as stateManager from '../state/state_manager.js';

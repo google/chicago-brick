@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as wallGeometry from './util/wall_geometry.ts';
-import * as time from './util/time.js';
+import * as time from './util/time.ts';
 import * as network from './network/network.js';
 import {getErrors} from './util/last_n_errors_logger.js';
 import {loadAllModules} from './playlist/playlist_loader.js';

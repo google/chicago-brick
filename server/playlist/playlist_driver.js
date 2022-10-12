@@ -17,7 +17,7 @@ import * as monitor from '../monitoring/monitor.js';
 import {easyLog} from '../../lib/log.js';
 import shuffle from "https://deno.land/x/shuffle/mod.ts";
 import assert from '../../lib/assert.js';
-import {now, inFuture, until} from '../util/time.js';
+import {now, inFuture, until} from '../util/time.ts';
 import {RunningModule} from '../modules/module.js';
 import EventEmitter from 'https://deno.land/x/eventemitter/mod.ts';
 import * as network from '../network/network.js';

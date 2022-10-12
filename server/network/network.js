@@ -29,7 +29,7 @@ limitations under the License.
 import {easyLog} from '../../lib/log.js';
 import * as monitor from '../monitoring/monitor.js';
 import {Rectangle} from '../../lib/math/rectangle.js';
-import {now} from '../util/time.js';
+import {now} from '../util/time.ts';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
 import {WSS} from './websocket.ts';
 
