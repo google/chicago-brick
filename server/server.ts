@@ -49,11 +49,29 @@ addLogger(captureLog, "wall");
 const log = easyLog("wall:server");
 
 const FLAG_DEFS = [
+  { name: "help", type: Boolean, description: "Shows this help." },
+  {
+    name: "port",
+    type: Number,
+    defaultValue: 3000,
+    description: "The port on which the brick server should run.",
+  },
   {
     name: "playlist",
     type: String,
     alias: "p",
     defaultValue: "config/demo-playlist.json",
+    description: "The path to the playlist to run.",
+  },
+  {
+    name: "layout_duration",
+    type: Number,
+    description: "The default layout duration in seconds.",
+  },
+  {
+    name: "module_duration",
+    type: Number,
+    description: "The default module duration in seconds.",
   },
   {
     name: "assets_dir",
@@ -75,15 +93,31 @@ const FLAG_DEFS = [
     description: "A glob pattern matching directories that contain module " +
       "code may be specified multiple times.",
   },
-  { name: "help", type: Boolean },
-  { name: "port", type: Number, defaultValue: 3000 },
-  { name: "use_geometry", type: JSON.parse, defaultValue: null },
+  {
+    name: "use_geometry",
+    type: JSON.parse,
+    defaultValue: null,
+    description:
+      "When passed-in, describes the geometry of the wall via turtle-like commands. " +
+      "See server/util/wall_geometry for the parser for the format.",
+  },
+  {
+    name: "geometry_file",
+    type: String,
+    description: "The path to a JSON file describing the geometry of the wall.",
+  },
   { name: "screen_width", type: Number, defaultValue: 1920 },
-  { name: "layout_duration", type: Number },
-  { name: "module_duration", type: Number },
-  { name: "geometry_file", type: String },
-  { name: "credential_dir", type: String },
-  { name: "enable_monitoring", type: Boolean },
+  {
+    name: "credential_dir",
+    type: String,
+    description:
+      "The path to a directory containing credentials needed by various modules that access external APIs.",
+  },
+  {
+    name: "enable_monitoring",
+    type: Boolean,
+    description: "When true, enables a monitoring display on the client.",
+  },
   {
     name: "https_cert",
     type: String,
