@@ -20,7 +20,7 @@ import assert from '../../lib/assert.js';
 import {now, inFuture, until} from '../util/time.ts';
 import {RunningModule} from '../modules/module.js';
 import EventEmitter from 'https://deno.land/x/eventemitter/mod.ts';
-import * as network from '../network/network.js';
+import * as network from '../network/network.ts';
 
 const log = easyLog('wall:playlist_driver');
 

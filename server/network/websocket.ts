@@ -6,8 +6,8 @@ import { DispatchServer } from "../util/serving.ts";
 const log = easyLog("wall:websocket");
 
 interface WSSOptions {
-  port: number;
-  server: DispatchServer;
+  port?: number;
+  server?: DispatchServer;
 }
 
 export class WebSocketServer extends EventEmitter<any> {
@@ -17,7 +17,7 @@ export class WebSocketServer extends EventEmitter<any> {
     if (options.port) {
       this.server = new DispatchServer({ port: options.port });
     } else {
-      this.server = options.server;
+      this.server = options.server!;
     }
     this.server.addHandler("/websocket", (req: Request) => {
       // Assert upgrade to websocket.

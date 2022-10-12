@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as wallGeometry from './util/wall_geometry.ts';
 import * as time from './util/time.ts';
-import * as network from './network/network.js';
+import * as network from './network/network.ts';
 import {getErrors} from './util/last_n_errors_logger.ts';
 import {loadAllModules} from './playlist/playlist_loader.js';
 import {WSS} from './network/websocket.ts';

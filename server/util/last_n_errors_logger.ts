@@ -1,4 +1,4 @@
-import * as network from "../network/network.js";
+import * as network from "../network/network.ts";
 import { WS } from "../../lib/websocket.js";
 
 network.on("connection", (socket: WS) => {

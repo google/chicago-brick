@@ -26,43 +26,61 @@ limitations under the License.
 //   client fails to do this, the client is considered invalid and omitted from
 //   future calculations.
 
-import {easyLog} from '../../lib/log.js';
-import * as monitor from '../monitoring/monitor.js';
-import {Rectangle} from '../../lib/math/rectangle.js';
-import {now} from '../util/time.ts';
-import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
-import {WSS} from './websocket.ts';
+import { easyLog } from "../../lib/log.js";
+import * as monitor from "../monitoring/monitor.js";
+import { Rectangle } from "../../lib/math/rectangle.js";
+import { now } from "../util/time.ts";
+import {
+  cleanupModuleOverlayHandler,
+  installModuleOverlayHandler,
+  makeModuleOverlaySocket,
+} from "../../lib/socket_wrapper.js";
+import { WSS } from "./websocket.ts";
+import { WS } from "../../lib/websocket.js";
+import { DispatchServer } from "../util/serving.ts";
 
-let io;
+let io: WSS;
 
-const logClientError = () => {};
+const log = easyLog("wall:network");
 
-const log = easyLog('wall:network');
+interface Point {
+  x: number;
+  y: number;
+}
 
 class ClientInfo {
-  constructor(offset, rect, socket) {
-    this.offset = offset;
-    this.rect = rect;
-    this.socket = socket;
+  constructor(
+    readonly offset: Point,
+    readonly rect: Rectangle,
+    readonly socket: WS,
+  ) {
   }
 }
 
-export function getSocket() {
+export function getSocket(): WSS {
   return io;
 }
 
-export const clients = {};
+export const clients: Record<string, ClientInfo> = {};
 
-export function sendToAllClients(msgType, payload) {
+export function sendToAllClients(msgType: string, payload: unknown) {
   io.sendToAllClients(msgType, payload);
 }
 
-const specialHandlers = new Map([['new-client', []]]);
-const preinitHandlers = [];
-function addHandler(msgType, handler, once) {
+type Handler = (payload: any) => void;
+
+interface SavedMessage {
+  msgType: string;
+  handler: Handler;
+  once: boolean;
+}
+
+const specialHandlers = new Map<string, Handler[]>([["new-client", []]]);
+const preinitHandlers: SavedMessage[] = [];
+function addHandler(msgType: string, handler: Handler, once: boolean) {
   if (specialHandlers.has(msgType)) {
     // No once support...
-    specialHandlers.get(msgType).push(handler);
+    specialHandlers.get(msgType)!.push(handler);
   } else if (io) {
     if (once) {
       io.once(msgType, handler);
@@ -70,19 +88,19 @@ function addHandler(msgType, handler, once) {
       io.on(msgType, handler);
     }
   } else {
-    preinitHandlers.push({msgType, handler, once});
+    preinitHandlers.push({ msgType, handler, once });
   }
 }
 
-export function on(msgType, handler) {
+export function on(msgType: string, handler: Handler) {
   addHandler(msgType, handler, false);
 }
 
-export function once(msgType, handler) {
+export function once(msgType: string, handler: Handler) {
   addHandler(msgType, handler, true);
 }
 
-export function fireSpecialHandler(msgType, payload) {
+export function fireSpecialHandler(msgType: string, payload: unknown) {
   const handlers = specialHandlers.get(msgType) || [];
   for (const handler of handlers) {
     handler(payload);
@@ -91,57 +109,73 @@ export function fireSpecialHandler(msgType, payload) {
 
 let nextClientId = 1;
 
+interface ClientConfig {
+  rect: Rectangle;
+  offset: Point;
+}
+
+interface PerModuleClientInfo extends ClientConfig {
+  // TODO: Make this more accurate.
+  socket: unknown;
+}
+
 /**
  * Main entry point for networking.
  * Initializes the networking layer, given an httpserver instance.
  */
-export function init(server) {
+export function init(server: DispatchServer) {
   // Disable per-message compression, because it causes big issues on linux.
   // https://github.com/websockets/ws#websocket-compression
-  io = new WSS({server});
-  io.on('connection', socket => {
+  io = new WSS({ server });
+  io.on("connection", (socket: WS) => {
     const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
-    socket.on('client-start', config => {
+    socket.on("client-start", (config: ClientConfig) => {
       const clientRect = Rectangle.deserialize(config.rect);
       if (!clientRect) {
         log.error(`Bad client configuration: `, config);
         // Close the connection with this client.
-        socket.disconnect(true);
+        socket.close();
         return;
       }
       const client = new ClientInfo(config.offset, clientRect, socket);
       if (monitor.isEnabled()) {
-        monitor.update({layout: {
-          time: now(),
-          event: `newClient: ${client.rect.serialize()}`,
-        }});
+        monitor.update({
+          layout: {
+            time: now(),
+            event: `newClient: ${client.rect.serialize()}`,
+          },
+        });
       }
       clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
-      fireSpecialHandler('new-client', client);
+      fireSpecialHandler("new-client", client);
       // Tell the client the current time.
-      socket.send('time', now());
+      socket.send("time", now());
     });
 
     // When the client disconnects, we tell our listeners that we lost the client.
-    socket.once('disconnect', function() {
+    socket.once("disconnect", () => {
       if (clientId in clients) {
-        const {rect} = clients[clientId];
+        const { rect } = clients[clientId];
         if (monitor.isEnabled()) {
-          monitor.update({layout: {
-            time: now(),
-            event: `dropClient: ${rect.serialize()}`,
-          }});
+          monitor.update({
+            layout: {
+              time: now(),
+              event: `dropClient: ${rect.serialize()}`,
+            },
+          });
         }
         log(`Lost client: ${rect.serialize()}`);
       } else {
         if (monitor.isEnabled()) {
-          monitor.update({layout: {
-            time: now(),
-            event: `dropClient: id ${clientId}`,
-          }});
+          monitor.update({
+            layout: {
+              time: now(),
+              event: `dropClient: id ${clientId}`,
+            },
+          });
         }
       }
       delete clients[clientId];
@@ -150,9 +184,7 @@ export function init(server) {
     // If the client notices an exception, it can send us that information to
     // the server via this channel. The framework might choose to respond to
     // this by, say, moving on to the next module.
-    socket.on('record-error', function(e) {
-      logClientError(e);
-    });
+    // socket.on("record-error", ...);
 
     // Install the machinery so that we can receive messages on the per-module
     // network from this client.
@@ -160,7 +192,7 @@ export function init(server) {
   });
 
   for (const tuple of preinitHandlers) {
-    const {msgType, handler, once} = tuple;
+    const { msgType, handler, once } = tuple;
     // Now that io is defined...
     addHandler(msgType, handler, once);
   }
@@ -168,15 +200,13 @@ export function init(server) {
 
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {
-    io.sendToAllClients('time', now());
+    io.sendToAllClients("time", now());
   }, 10000);
 }
 
 // Return an object that can be opened to create an isolated per-module network,
 // and closed to clean up after that module.
-export function forModule(id) {
-  // The list of external sockets opened by this module.
-  const openedSockets = [];
+export function forModule(id: string) {
   return {
     open() {
       return makeModuleOverlaySocket(id, io, {
@@ -193,14 +223,12 @@ export function forModule(id) {
               socket: makeModuleOverlaySocket(id, clients[clientId].socket),
             };
             return agg;
-          }, {});
+          }, {} as Record<string, PerModuleClientInfo>);
         },
       });
     },
     close() {
       cleanupModuleOverlayHandler(id);
-      openedSockets.forEach(s => s.disconnect(true));
-      openedSockets.length = 0;
     },
   };
 }

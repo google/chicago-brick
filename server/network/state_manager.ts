@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { getSocket } from "./network.js";
+import { getSocket } from "./network.ts";
 import { WSS } from "./websocket.ts";
 
 interface StateEntry {
