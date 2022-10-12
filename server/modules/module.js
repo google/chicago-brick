@@ -14,13 +14,13 @@ limitations under the License.
 ==============================================================================*/
 
 import * as time from '../util/time.js';
-import * as wallGeometry from '../util/wall_geometry.js';
+import * as wallGeometry from '../util/wall_geometry.ts';
 import * as moduleTicker from './module_ticker.js';
 import assert from '../../lib/assert.js';
 import * as network from '../network/network.js';
 import * as stateManager from '../state/state_manager.js';
 import {delay} from '../../lib/promise.js';
-import {getGeo} from '../util/wall_geometry.js';
+import {getGeo} from '../util/wall_geometry.ts';
 import {clients} from '../network/network.js';
 import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
 import {Server} from '../../lib/module_interface.js';
