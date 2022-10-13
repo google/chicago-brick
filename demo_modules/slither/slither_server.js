@@ -1,4 +1,4 @@
-import {sub} from '../../lib/math/vector2d.js';
+import {sub} from '../../lib/math/vector2d.ts';
 
 export function load(debug, state, wallGeometry) {
   const COLORS = [

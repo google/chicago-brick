@@ -1,7 +1,7 @@
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 import {NumberLerpInterpolator, ValueNearestInterpolator} from '/lib/shared_state.js';
 
-import {rotCCW, scale, add} from '/lib/math/vector2d.js';
+import {rotCCW, scale, add} from '/lib/math/vector2d.ts';
 
 export function load(debug, state, wallGeometry) {
   // TODO(applmak): Use a real color object/library.

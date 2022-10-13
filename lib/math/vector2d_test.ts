@@ -13,7 +13,7 @@ import {
   scale,
   side,
   sub,
-} from "./vector2d.js";
+} from "./vector2d.ts";
 
 const expect = chai.expect;
 

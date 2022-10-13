@@ -42,7 +42,7 @@ import jsfeat from 'jsfeat';
 import randomjs from 'random-js';
 import sharp from 'sharp';
 import * as polygon2d from '../../lib/math/polygon2d.js';
-import * as vector2d from '../../lib/math/vector2d.js';
+import * as vector2d from '../../lib/math/vector2d.ts';
 
 const {Polygon} = polygon2d;
 const {sub, add, scale} = vector2d;

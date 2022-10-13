@@ -1,5 +1,5 @@
 import {P5Surface} from '/client/surface/p5_surface.js';
-import {sub} from '/lib/math/vector2d.js';
+import {sub} from '/lib/math/vector2d.ts';
 import {Polygon} from '/lib/math/polygon2d.js';
 
 // These control the thickness of the lines that are drawn, and are
