@@ -13,17 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {now} from '../util/time.js';
-import {easyLog} from '../../lib/log.js';
-const log = easyLog('wall:module_ticker');
-import * as stateManager from '../state/state_manager.js';
+import { now } from "../util/time.ts";
+import { easyLog } from "../../lib/log.js";
+const log = easyLog("wall:module_ticker");
+import * as stateManager from "../network/state_manager.ts";
+import type { RunningModule } from "./module.ts";
 
-// An array of RunningModule objects (see server_state_machine).
-var modulesToTick = [];
+// An array of RunningModule objects.
+let modulesToTick: RunningModule[] = [];
 
 // Ticking loop.
-var lastTime = 0;
-var interval = 1000.0 / 10.0;  // 10 FPS
+let lastTime = 0;
+const interval = 1000.0 / 10.0; // 10 FPS
 
 function tick() {
   const start = now();
@@ -43,31 +44,40 @@ function tick() {
   // over.
   const tickTime = now() - start;
   if (tickTime > interval) {
-    log.warn(`Module tick() took too long: ${tickTime} ms out of ${interval} ms.`);
+    log.warn(
+      `Module tick() took too long: ${tickTime} ms out of ${interval} ms.`,
+    );
   }
   setTimeout(tick, Math.max(interval - tickTime, 0));
 }
 tick();
 
-export function add(module) {
+/** Add a module to the list of modules to tick. */
+export function add(module: RunningModule) {
   if (module.instance) {
     modulesToTick.push(module);
-    log.debugAt(1,
-        'Add: We are now ticking ' + modulesToTick.length + ' modules:',
-        modulesToTick.map((m) => m.moduleDef.name).join(', '));
+    log.debugAt(
+      1,
+      "Add: We are now ticking " + modulesToTick.length + " modules:",
+      modulesToTick.map((m) => m.moduleDef.name).join(", "),
+    );
     if (modulesToTick.length > 2) {
-      log.error('Ticking more than 2 modules!');
+      log.error("Ticking more than 2 modules!");
     }
   }
 }
-export function remove(module) {
-  modulesToTick = modulesToTick.filter(m => {
+
+/** Remove a module from the list of modules to tick. */
+export function remove(module: RunningModule) {
+  modulesToTick = modulesToTick.filter((m) => {
     if (m === module) {
       m.dispose();
       return false;
     }
     return true;
   });
-  log.debugAt('Remove: We are now ticking ' + modulesToTick.length + ' modules',
-      modulesToTick.map((m) => m.moduleDef.name).join(', '));
+  log.debugAt(
+    "Remove: We are now ticking " + modulesToTick.length + " modules",
+    modulesToTick.map((m) => m.moduleDef.name).join(", "),
+  );
 }

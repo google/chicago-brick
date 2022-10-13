@@ -16,24 +16,23 @@ limitations under the License.
 "use strict";
 
 import * as credentials from "./util/credentials.ts";
-import * as moduleServing from "./modules/serving.js";
-import * as monitor from "./monitoring/monitor.js";
-import * as network from "./network/network.js";
-import * as peer from "./network/peer.js";
-import * as wallGeometry from "./util/wall_geometry.js";
-import { Control } from "./control.js";
-import { ServerModulePlayer } from "./modules/server_module_player.js";
-import { PlaylistDriver } from "./playlist/playlist_driver.js";
+import * as moduleServing from "./modules/serving.ts";
+import * as monitor from "./monitoring/monitor.ts";
+import * as network from "./network/network.ts";
+import * as peer from "./network/peer.ts";
+import * as wallGeometry from "./util/wall_geometry.ts";
+import { Control } from "./control.ts";
+import { ServerModulePlayer } from "./modules/server_module_player.ts";
+import { PlaylistDriver } from "./playlist/playlist_driver.ts";
 import {
   loadAllBrickJson,
   loadPlaylistFromFile,
-} from "./playlist/playlist_loader.js";
+} from "./playlist/playlist_loader.ts";
 import { makeConsoleLogger } from "../lib/console_logger.js";
-import { captureLog } from "./util/last_n_errors_logger.js";
+import { captureLog } from "./util/last_n_errors_logger.ts";
 import { addLogger, easyLog } from "../lib/log.js";
 import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
-import { now } from "./util/time.js";
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import { now } from "./util/time.ts";
 import commandLineArgs from "https://esm.sh/command-line-args";
 import commandLineUsage from "https://esm.sh/command-line-usage";
 import { DispatchServer, DispatchServerOptions } from "./util/serving.ts";
@@ -50,20 +49,29 @@ addLogger(captureLog, "wall");
 const log = easyLog("wall:server");
 
 const FLAG_DEFS = [
+  { name: "help", type: Boolean, description: "Shows this help." },
   {
-    name: "node_modules_dir",
-    type: String,
-    defaultValue: path.join(Deno.cwd(), "..", "node_modules"),
-    description: "If you are running a chicago-brick instance where " +
-      "chicago-brick is a dep and lives in node_modules, you must set " +
-      "this to your project's node_modules dir or the /sys path will " +
-      "be set to a nonexistent directory.",
+    name: "port",
+    type: Number,
+    defaultValue: 3000,
+    description: "The port on which the brick server should run.",
   },
   {
     name: "playlist",
     type: String,
     alias: "p",
     defaultValue: "config/demo-playlist.json",
+    description: "The path to the playlist to run.",
+  },
+  {
+    name: "layout_duration",
+    type: Number,
+    description: "The default layout duration in seconds.",
+  },
+  {
+    name: "module_duration",
+    type: Number,
+    description: "The default module duration in seconds.",
   },
   {
     name: "assets_dir",
@@ -85,15 +93,31 @@ const FLAG_DEFS = [
     description: "A glob pattern matching directories that contain module " +
       "code may be specified multiple times.",
   },
-  { name: "help", type: Boolean },
-  { name: "port", type: Number, defaultValue: 3000 },
-  { name: "use_geometry", type: JSON.parse, defaultValue: null },
+  {
+    name: "use_geometry",
+    type: JSON.parse,
+    defaultValue: null,
+    description:
+      "When passed-in, describes the geometry of the wall via turtle-like commands. " +
+      "See server/util/wall_geometry for the parser for the format.",
+  },
+  {
+    name: "geometry_file",
+    type: String,
+    description: "The path to a JSON file describing the geometry of the wall.",
+  },
   { name: "screen_width", type: Number, defaultValue: 1920 },
-  { name: "layout_duration", type: Number },
-  { name: "module_duration", type: Number },
-  { name: "geometry_file", type: String },
-  { name: "credential_dir", type: String },
-  { name: "enable_monitoring", type: Boolean },
+  {
+    name: "credential_dir",
+    type: String,
+    description:
+      "The path to a directory containing credentials needed by various modules that access external APIs.",
+  },
+  {
+    name: "enable_monitoring",
+    type: Boolean,
+    description: "When true, enables a monitoring display on the client.",
+  },
   {
     name: "https_cert",
     type: String,

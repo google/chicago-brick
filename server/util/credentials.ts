@@ -24,13 +24,14 @@ export function get(name: string) {
 // Loads every .json file in the specified dir. Credentials are stored under
 // the key related to the filename.
 export function loadFromDir(dir: string) {
-  // list...
-  [...Deno.readDirSync(dir)].filter((p) => p.name.match(/\.json$/)).forEach(
-    (p) => {
-      const contents = Deno.readFileSync(path.join(dir, p.name));
-      const decoder = new TextDecoder();
-      let cred = JSON.parse(decoder.decode(contents));
-      creds[p.name.replace(".json", "")] = cred;
-    },
-  );
+  for (
+    const p of [...Deno.readDirSync(dir)].filter((p) =>
+      p.name.endsWith(".json")
+    )
+  ) {
+    const contents = Deno.readFileSync(path.join(dir, p.name));
+    const decoder = new TextDecoder();
+    const cred = JSON.parse(decoder.decode(contents));
+    creds[p.name.replace(".json", "")] = cred;
+  }
 }

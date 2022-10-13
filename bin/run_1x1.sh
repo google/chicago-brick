@@ -28,7 +28,6 @@ deno run \
   $INSPECT \
   --allow-read --allow-net --allow-env \
   server/server.ts \
-  --node_modules_dir './node_modules' \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \
   --assets_dir demo_assets \

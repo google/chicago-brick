@@ -27,7 +27,6 @@ node \
   $INSPECT \
   --experimental_modules \
   server/server.js \
-  --node_modules_dir './node_modules' \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \
   --use_geometry '[{"right":2},{"down":2},{"left":2},{"up":2}]' \
