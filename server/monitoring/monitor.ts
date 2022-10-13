@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 import * as network from "../network/network.ts";
 
 const currentStatus = {};

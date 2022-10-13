@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {WS} from '/lib/websocket.js';
+import {WS} from '/lib/websocket.ts';
 import * as info from '/client/util/info.js';
 import * as time from '/client/util/time.js';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';

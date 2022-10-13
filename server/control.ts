@@ -23,7 +23,7 @@ import { easyLog } from "../lib/log.js";
 import { PlaylistDriver } from "./playlist/playlist_driver.ts";
 import { Layout } from "./modules/layout.ts";
 import { ModuleDef } from "./modules/module_def.ts";
-import { WS } from "../lib/websocket.js";
+import { WS } from "../lib/websocket.ts";
 
 const log = easyLog("wall:control");
 

@@ -1,5 +1,5 @@
 import EventEmitter from "https://deno.land/x/eventemitter@1.2.4/mod.ts";
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 import { easyLog } from "../../lib/log.js";
 import { DispatchServer } from "../util/serving.ts";
 

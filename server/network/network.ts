@@ -36,7 +36,7 @@ import {
   makeModuleOverlaySocket,
 } from "../../lib/socket_wrapper.js";
 import { WSS } from "./websocket.ts";
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 import { DispatchServer } from "../util/serving.ts";
 
 let io: WSS;

@@ -1,5 +1,5 @@
 import { easyLog } from "../../lib/log.js";
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 import * as network from "./network.ts";
 
 const log = easyLog("wall:peer");

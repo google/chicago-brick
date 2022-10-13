@@ -28,7 +28,7 @@ import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.js";
 import conform from "../../lib/conform.js";
 import inject from "../../lib/inject.js";
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 
 const log = easyLog("wall:module");
 
