@@ -13,18 +13,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+export interface LayoutConfig {
+  modules: string[];
+  duration: number;
+  moduleDuration: number;
+}
+
 /**
  * Defines the wall layout: what modules to run, for how long, etc.
  */
 export class Layout {
-  constructor(config) {
-    // The list of module names to play.
+  /** The list of module names to play. */
+  readonly modules: string[];
+  /** How long to run the entire layout. */
+  readonly duration: number;
+  /** How long to run individual modules, if there is more than one module. */
+  readonly moduleDuration: number;
+
+  constructor(config: LayoutConfig) {
     this.modules = config.modules;
-
-    // How long to run the entire layout.
+    // TODO(applmak): What is this even doing?
     this.duration = config.duration || config.moduleDuration;
-
-    // How long to run individual modules, if there is more than one module.
     this.moduleDuration = config.moduleDuration || config.duration;
   }
 }
