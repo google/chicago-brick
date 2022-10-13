@@ -17,23 +17,16 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "chalk": "^2.4.2",
-    "command-line-args": "^5.0.0",
-    "command-line-usage": "^5.0.0",
-    "glob": "^7.1.5",
     "googleapis": "^40.0.1",
     "jsfeat": "^0.0.8",
-    "mime": "^3.0.0",
     "node-fetch": "^2.6.0",
     "noisejs": "^2.1.0",
     "p5": "^0.8.0",
     "random-js": "^2.1.0",
-    "relaxed-json": "^1.0.0",
     "sharp": "^0.29.3",
     "sortablejs": "^1.14.0",
     "three-full": "^11.3.2",
-    "urlpattern-polyfill": "^6.0.1",
-    "ws": "^8.5.0"
+    "urlpattern-polyfill": "^6.0.1"
   },
   "husky": {
     "hooks": {
