@@ -17,7 +17,7 @@ import { now } from "../util/time.ts";
 import { easyLog } from "../../lib/log.js";
 const log = easyLog("wall:module_ticker");
 import * as stateManager from "../network/state_manager.ts";
-import type { RunningModule } from "./module.js";
+import type { RunningModule } from "./module.ts";
 
 // An array of RunningModule objects.
 let modulesToTick: RunningModule[] = [];
