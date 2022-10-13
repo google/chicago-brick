@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Polygon} from '../../lib/math/polygon2d.js';
+import {Polygon} from '../../lib/math/polygon2d.ts';
 import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
 import {Rectangle} from '../../lib/math/rectangle.ts';
 import {add, sub, scale, copy, flip} from '../../lib/math/vector2d.ts';

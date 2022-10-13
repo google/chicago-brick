@@ -1,5 +1,5 @@
 import {ClientModule} from './module.js';
-import {Polygon} from '/lib/math/polygon2d.js';
+import {Polygon} from '/lib/math/polygon2d.ts';
 import {TitleCard} from '/client/title_card.js';
 import {Client} from '/lib/module_interface.js';
 import conform from '/lib/conform.js';

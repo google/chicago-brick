@@ -41,7 +41,7 @@ import fetch from 'node-fetch';
 import jsfeat from 'jsfeat';
 import randomjs from 'random-js';
 import sharp from 'sharp';
-import * as polygon2d from '../../lib/math/polygon2d.js';
+import * as polygon2d from '../../lib/math/polygon2d.ts';
 import * as vector2d from '../../lib/math/vector2d.ts';
 
 const {Polygon} = polygon2d;

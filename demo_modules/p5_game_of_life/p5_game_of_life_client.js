@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Polygon} from '/lib/math/polygon2d.js';
+import {Polygon} from '/lib/math/polygon2d.ts';
 import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
 import {P5Surface} from '/client/surface/p5_surface.js';
 

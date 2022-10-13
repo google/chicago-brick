@@ -1,6 +1,6 @@
 import {P5Surface} from '/client/surface/p5_surface.js';
 import {sub} from '/lib/math/vector2d.ts';
-import {Polygon} from '/lib/math/polygon2d.js';
+import {Polygon} from '/lib/math/polygon2d.ts';
 
 // These control the thickness of the lines that are drawn, and are
 // determined by taking the log10 of the number of underlying image pixels

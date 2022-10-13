@@ -1,6 +1,6 @@
 import chai from "https://cdn.skypack.dev/chai@4.3.4?dts";
 import { describe, it } from "https://deno.land/std@0.159.0/testing/bdd.ts";
-import { Polygon } from "./polygon2d.js";
+import { Polygon } from "./polygon2d.ts";
 
 const expect = chai.expect;
 chai.config.truncateThreshold = 0;

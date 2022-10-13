@@ -17,7 +17,7 @@ export function onSegment(p: Point, q: Point, x: Point) {
     Math.abs(side(p, q, x)) < 0.0001;
 }
 
-interface IntersectionReport {
+export interface IntersectionReport {
   /** A number in [0, 1] that is the parameter of the line segment ab. */
   u: number;
   /** A number in [0, 1] that is the parameter of the line segment cd. */
