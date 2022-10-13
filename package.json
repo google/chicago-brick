@@ -4,7 +4,7 @@
   "description": "Code which can manage a large video wall with multiple nodes.",
   "main": "server/server.js",
   "scripts": {
-    "test": "deno test lib/**/*_test.ts",
+    "test": "deno test lib/",
     "jshint": "node_modules/eslint/bin/eslint.js .",
     "lint": "node_modules/eslint/bin/eslint.js .",
     "release": "node_modules/.bin/release-it -n"
