@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as time from '../util/time.ts';
 import * as wallGeometry from '../util/wall_geometry.ts';
-import * as moduleTicker from './module_ticker.js';
+import * as moduleTicker from './module_ticker.ts';
 import assert from '../../lib/assert.js';
 import * as network from '../network/network.ts';
 import * as stateManager from '../network/state_manager.ts';
