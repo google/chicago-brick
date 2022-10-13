@@ -28,7 +28,7 @@ limitations under the License.
 
 import { easyLog } from "../../lib/log.js";
 import * as monitor from "../monitoring/monitor.ts";
-import { Rectangle } from "../../lib/math/rectangle.js";
+import { Rectangle } from "../../lib/math/rectangle.ts";
 import { now } from "../util/time.ts";
 import {
   cleanupModuleOverlayHandler,

@@ -15,7 +15,7 @@ limitations under the License.
 
 import {Polygon} from '../../lib/math/polygon2d.js';
 import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
-import {Rectangle} from '../../lib/math/rectangle.js';
+import {Rectangle} from '../../lib/math/rectangle.ts';
 import {add, sub, scale, copy, flip} from '../../lib/math/vector2d.js';
 import * as randomjs from 'https://esm.sh/random-js';
 

@@ -1,5 +1,5 @@
 import {GOOGLE_COLORS} from './colors.js';
-import {Rectangle} from '../../lib/math/rectangle.js';
+import {Rectangle} from '../../lib/math/rectangle.ts';
 import randomjs from 'random-js';
 const random = new randomjs.Random();
 
