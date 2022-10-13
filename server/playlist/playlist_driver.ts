@@ -21,7 +21,7 @@ import { inFuture, now, until } from "../util/time.ts";
 import { RunningModule } from "../modules/module.ts";
 import EventEmitter from "https://deno.land/x/eventemitter/mod.ts";
 import * as network from "../network/network.ts";
-import { configure } from "../../lib/module_player.js";
+import { configure } from "../../lib/module_player.ts";
 import { ModuleDef } from "../modules/module_def.ts";
 import { Layout } from "../modules/layout.ts";
 

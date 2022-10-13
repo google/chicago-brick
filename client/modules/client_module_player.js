@@ -17,7 +17,7 @@ import * as monitor from '/client/monitoring/monitor.js';
 import * as time from '/client/util/time.js';
 import {ClientModule} from '/client/modules/module.js';
 import {easyLog} from '/lib/log.js';
-import {configure} from '/lib/module_player.js';
+import {configure} from '/lib/module_player.ts';
 
 const log = easyLog('wall:client_state_machine');
 

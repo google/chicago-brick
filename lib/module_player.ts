@@ -13,10 +13,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {delay, delayThenReject} from './promise.ts';
+import { delay, delayThenReject } from "./promise.ts";
 
-export function configure({makeEmptyModule, monitor, log, time}) {
-  function logIfError(fn, data) {
+export interface Module {
+  name: string;
+  deadline: number;
+  instantiate(): Promise<void>;
+  willBeShownSoon(): Promise<void>;
+  beginTransitionOut(deadline: number): void;
+  beginTransitionIn(deadline: number): void;
+  performTransition(oldModule: Module, deadline: number): Promise<void>;
+  finishTransitionOut(): void;
+  finishTransitionIn(): void;
+  dispose(): void;
+}
+
+export interface ModulePlayerConfig {
+  makeEmptyModule: () => Module;
+  monitor: {
+    isEnabled(): boolean;
+    update(payload: unknown): void;
+  };
+  log: {
+    (msg: string): void;
+    error: (e: unknown, data?: unknown) => void;
+    debugAt: (level: number, e: unknown, data?: unknown) => void;
+  };
+  time: {
+    now(): number;
+    until(time: number): number;
+  };
+}
+
+// TODO: Convert this to a strategy pattern.
+export function configure(
+  { makeEmptyModule, monitor, log, time }: ModulePlayerConfig,
+) {
+  function logIfError(fn: () => void, data: unknown) {
     try {
       fn();
     } catch (e) {
@@ -25,6 +58,10 @@ export function configure({makeEmptyModule, monitor, log, time}) {
   }
 
   return class ModulePlayer {
+    oldModule: Module;
+    nextModule: Module | null;
+    transitionInProgress: boolean;
+
     static makeEmptyModule() {
       return makeEmptyModule();
     }
@@ -49,13 +86,13 @@ export function configure({makeEmptyModule, monitor, log, time}) {
     // You only need to wait for playModule if you want to be sure that the
     // player has tried to transition to your module, which is perfect for
     // tests.
-    async playModule(module) {
+    async playModule(module: Module) {
       this.nextModule = module;
       if (monitor.isEnabled()) {
         monitor.update({
           event: `playModule: ${module.name}`,
           time: time.now(),
-          deadline: module.deadline
+          deadline: module.deadline,
         });
       }
       await this.performTransitions();
@@ -69,7 +106,7 @@ export function configure({makeEmptyModule, monitor, log, time}) {
       while (this.oldModule != this.nextModule) {
         // Our local copy of the module we are trying to go to.
         const module = this.nextModule;
-        await this.goToModule(this.nextModule);
+        await this.goToModule(this.nextModule!);
         // Maybe we succeeded in going to module... maybe we didn't. It isn't
         // clear. If we failed to go to the module, then we should stop trying
         // to do so, but only if we haven't been told to go somewhere else.
@@ -93,7 +130,7 @@ export function configure({makeEmptyModule, monitor, log, time}) {
      * starts, there's no way to interrupt it, so we change to the next module
      * as soon as we can.
      */
-    async goToModule(module) {
+    async goToModule(module: Module) {
       // Instantiate the module. If this throws, by contract, we have no cleanup
       // to do, so allow the exception to bubble up to the error logger and await
       // being told which module to go to next.
@@ -101,7 +138,8 @@ export function configure({makeEmptyModule, monitor, log, time}) {
         log.debugAt(1, `Instantiating module ${module.name}.`);
         await Promise.race([module.instantiate(), delayThenReject(5000)]);
       } catch (e) {
-        const err = e || new Error(`Module ${module.name} timed out in preparation.`);
+        const err = e ||
+          new Error(`Module ${module.name} timed out in preparation.`);
         log.error(err, {
           module: module.name,
           timestamp: time.now(),
@@ -114,7 +152,7 @@ export function configure({makeEmptyModule, monitor, log, time}) {
       // go to a new module, abort!
       if (this.nextModule != module) {
         // Clean up the just-instantiated module, and await further instructions.
-        log(`Switching to ${this.nextModule.name} after prior instantiation.`);
+        log(`Switching to ${this.nextModule!.name} after prior instantiation.`);
         module.dispose();
         return;
       }
@@ -127,14 +165,15 @@ export function configure({makeEmptyModule, monitor, log, time}) {
         monitor.update({
           state: `Preparing ${module.name}`,
           time: time.now(),
-          deadline: module.deadline
+          deadline: module.deadline,
         });
       }
       log(`Preparing ${module.name}.`);
       try {
         await Promise.race([module.willBeShownSoon(), delayThenReject(5000)]);
       } catch (e) {
-        const err = e || new Error(`Module ${module.name} timed out in preparation.`);
+        const err = e ||
+          new Error(`Module ${module.name} timed out in preparation.`);
         log.error(err, {
           module: module.name,
           timestamp: time.now(),
@@ -153,11 +192,17 @@ export function configure({makeEmptyModule, monitor, log, time}) {
         return;
       }
       // Wait until the deadline when we are supposed to being the transition.
-      log(`Delaying until ${module.deadline} (≈${time.until(module.deadline)} from now)`);
+      log(
+        `Delaying until ${module.deadline} (≈${
+          time.until(module.deadline)
+        } from now)`,
+      );
       await delay(time.until(module.deadline));
       if (this.nextModule != module) {
         // Clean up the module and await further instructions.
-        log(`Switching to ${this.nextModule.name} after delay post-preparation.`);
+        log(
+          `Switching to ${this.nextModule.name} after delay post-preparation.`,
+        );
         module.dispose();
         return;
       }
@@ -173,13 +218,16 @@ export function configure({makeEmptyModule, monitor, log, time}) {
         monitor.update({
           state: `Transition ${this.oldModule.name} -> ${module.name}`,
           time: time.now(),
-          deadline: transitionFinishDeadline
+          deadline: transitionFinishDeadline,
         });
       }
       log(`Beginning transition to ${module.name}.`);
-      logIfError(() => this.oldModule.beginTransitionOut(transitionFinishDeadline), {
-        module: this.oldModule.name,
-      });
+      logIfError(
+        () => this.oldModule.beginTransitionOut(transitionFinishDeadline),
+        {
+          module: this.oldModule.name,
+        },
+      );
       try {
         module.beginTransitionIn(transitionFinishDeadline);
       } catch (e) {
@@ -223,11 +271,11 @@ export function configure({makeEmptyModule, monitor, log, time}) {
       if (monitor.isEnabled()) {
         monitor.update({
           state: `Display: ${this.oldModule.name}`,
-          time: time.now()
+          time: time.now(),
         });
       }
       // FIN. Note that if the next module changed during our transition, then the
       // next iteration through our loop will cause that module to be displayed.
     }
-  }
+  };
 }
