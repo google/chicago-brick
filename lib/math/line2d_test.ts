@@ -5,7 +5,7 @@ import {
   intersection,
   intersects,
   onSegment,
-} from "./line2d.js";
+} from "./line2d.ts";
 
 const expect = chai.expect;
 

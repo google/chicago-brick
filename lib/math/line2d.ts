@@ -1,11 +1,29 @@
-import {crossMag, sub, dist, dist2, lerp, dot, side} from './vector2d.ts';
+import {
+  crossMag,
+  dist,
+  dist2,
+  dot,
+  lerp,
+  Point,
+  side,
+  sub,
+} from "./vector2d.ts";
 
-export function onSegment(p, q, x) {
+export function onSegment(p: Point, q: Point, x: Point) {
   return x.x >= Math.min(p.x, q.x) &&
-         x.x <= Math.max(p.x, q.x) &&
-         x.y >= Math.min(p.y, q.y) &&
-         x.y <= Math.max(p.y, q.y) &&
-         Math.abs(side(p, q, x)) < 0.0001;
+    x.x <= Math.max(p.x, q.x) &&
+    x.y >= Math.min(p.y, q.y) &&
+    x.y <= Math.max(p.y, q.y) &&
+    Math.abs(side(p, q, x)) < 0.0001;
+}
+
+interface IntersectionReport {
+  /** A number in [0, 1] that is the parameter of the line segment ab. */
+  u: number;
+  /** A number in [0, 1] that is the parameter of the line segment cd. */
+  v: number;
+  /** The intersection point. */
+  p: Point;
 }
 
 // Damn it! Here I am, solving line segment intersection AGAIN.
@@ -39,7 +57,12 @@ export function onSegment(p, q, x) {
 //     ((ax - cx) + u*(bx - ax))/(dx - cx) = v
 //   If v < 0 or v > 1, the lines intersect, but not on the segment.
 //   Intersection is a + (b - a)*u in both dimensions.
-export function intersection(a, b, c, d) {
+export function intersection(
+  a: Point,
+  b: Point,
+  c: Point,
+  d: Point,
+): IntersectionReport | null {
   const det = crossMag(sub(b, a), sub(d, c));
   // Nearly 0:
   if (Math.abs(det) < 0.0001) {
@@ -47,7 +70,7 @@ export function intersection(a, b, c, d) {
     return null;
   }
 
-  const u = crossMag(sub(d, c), sub(a, c))/det;
+  const u = crossMag(sub(d, c), sub(a, c)) / det;
   if (u < 0 || u > 1) {
     // Lines intersect; segments don't.
     return null;
@@ -63,14 +86,16 @@ export function intersection(a, b, c, d) {
   }
 
   // Send additional data for those curious.
-  return {u, v, p: lerp(a, b, u)};
+  return { u, v, p: lerp(a, b, u) };
 }
 
-export function intersects(a, b, c, d) {
+/** Returns true if the line segments ab and cd intersect. */
+export function intersects(a: Point, b: Point, c: Point, d: Point): boolean {
   return !!intersection(a, b, c, d);
 }
 
-export function distanceToSegment(x, y, p) {
+/** Returns the distance to the segment xy from the point p. */
+export function distanceToSegment(x: Point, y: Point, p: Point): number {
   const d2 = dist2(x, y);
   if (d2 == 0) {
     // Return the distance to either point.
