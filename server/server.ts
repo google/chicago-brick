@@ -21,7 +21,7 @@ import * as monitor from "./monitoring/monitor.ts";
 import * as network from "./network/network.ts";
 import * as peer from "./network/peer.ts";
 import * as wallGeometry from "./util/wall_geometry.ts";
-import { Control } from "./control.js";
+import { Control } from "./control.ts";
 import { ServerModulePlayer } from "./modules/server_module_player.ts";
 import { PlaylistDriver } from "./playlist/playlist_driver.ts";
 import {
