@@ -27,7 +27,7 @@ import { PlaylistDriver } from "./playlist/playlist_driver.js";
 import {
   loadAllBrickJson,
   loadPlaylistFromFile,
-} from "./playlist/playlist_loader.js";
+} from "./playlist/playlist_loader.ts";
 import { makeConsoleLogger } from "../lib/console_logger.js";
 import { captureLog } from "./util/last_n_errors_logger.ts";
 import { addLogger, easyLog } from "../lib/log.js";

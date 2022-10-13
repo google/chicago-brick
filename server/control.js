@@ -17,7 +17,7 @@ import * as wallGeometry from './util/wall_geometry.ts';
 import * as time from './util/time.ts';
 import * as network from './network/network.ts';
 import {getErrors} from './util/last_n_errors_logger.ts';
-import {loadAllModules} from './playlist/playlist_loader.js';
+import {loadAllModules} from './playlist/playlist_loader.ts';
 import {WSS} from './network/websocket.ts';
 import {easyLog} from '../lib/log.js';
 
