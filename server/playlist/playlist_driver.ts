@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from "../monitoring/monitor.js";
+import * as monitor from "../monitoring/monitor.ts";
 import { easyLog } from "../../lib/log.js";
 import shuffle from "https://deno.land/x/shuffle/mod.ts";
 import assert from "../../lib/assert.js";

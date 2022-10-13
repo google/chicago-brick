@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from "../monitoring/monitor.js";
+import * as monitor from "../monitoring/monitor.ts";
 import * as time from "../util/time.ts";
 import { configure } from "../../lib/module_player.js";
 import { RunningModule } from "./module.ts";

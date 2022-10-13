@@ -17,7 +17,7 @@ limitations under the License.
 
 import * as credentials from "./util/credentials.ts";
 import * as moduleServing from "./modules/serving.ts";
-import * as monitor from "./monitoring/monitor.js";
+import * as monitor from "./monitoring/monitor.ts";
 import * as network from "./network/network.ts";
 import * as peer from "./network/peer.ts";
 import * as wallGeometry from "./util/wall_geometry.ts";
