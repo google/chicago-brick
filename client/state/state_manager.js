@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as time from '../util/time.js';
 import {decodeInterpolator, SharedState} from '/lib/shared_state.js';
-import assert from '/lib/assert.js';
+import {assert} from '/lib/assert.ts';
 
 
 class StateRecord {

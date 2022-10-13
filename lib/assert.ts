@@ -13,10 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export default function(expr, ...rest) {
+export function assert(
+  expr: unknown,
+  ...rest: Array<string | number | undefined | null>
+) {
   if (!expr) {
     try {
-      throw new Error(`Assertion failure! ${rest.join(' ')}`);
+      throw new Error(`Assertion failure! ${rest.join(" ")}`);
     } catch (e) {
       console.error(e.stack);
       throw e;
