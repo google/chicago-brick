@@ -18,37 +18,43 @@ limitations under the License.
  * instantiate a module, including code location and config parameters.
  */
 export class ModuleDef {
-  constructor(name, moduleRoot, paths, baseName, config, credit, testonly) {
-    this.name = name;
-    this.root = moduleRoot;
+  /** The path to the client main file of the module. */
+  readonly clientPath: string;
+  /** The path to the server main file of the module. */
+  readonly serverPath: string;
 
-    // The path to the client main file of the module.
+  constructor(
+    readonly name: string,
+    readonly root: string,
+    paths: { client: string; server: string },
+    readonly baseName: string,
+    readonly config: unknown,
+    readonly credit: unknown,
+    readonly testonly: boolean,
+  ) {
     this.clientPath = paths.client;
-
-    // The path to the server main file of the module.
     this.serverPath = paths.server;
-
-    // The name of the base module, or falsey otherwise.
-    this.baseName = baseName;
-
-    // The config object.
-    this.config = config;
-
-    // The credits object.
-    this.credit = credit;
-
-    // True if this module should be excluded from all auto-generated
-    // collections.
-    this.testonly = testonly;
   }
 }
 
+/**
+ * A special null-type version of the ModuleDef.
+ * When the wall is told to play instances of this class, the wall will go black.
+ */
 export class EmptyModuleDef extends ModuleDef {
   constructor() {
-    super('_empty', '', {
-      client: '',
-      server: '',
-    }, '', {}, {}, true);
+    super(
+      "_empty",
+      "",
+      {
+        client: "",
+        server: "",
+      },
+      "",
+      {},
+      {},
+      true,
+    );
     // TODO(applmak): ^ this hacky.
   }
 }

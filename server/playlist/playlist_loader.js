@@ -19,7 +19,7 @@ import {Layout} from '../modules/layout.js';
 import {easyLog} from '../../lib/log.js';
 import * as path from 'https://deno.land/std@0.132.0/path/mod.ts';
 import {walkSync} from 'https://deno.land/std@0.132.0/fs/walk.ts';
-import {ModuleDef} from '../modules/module_def.js';
+import {ModuleDef} from '../modules/module_def.ts';
 
 const log = easyLog('wall:playlist_loader');
 
