@@ -19,7 +19,7 @@ import * as moduleTicker from "./module_ticker.ts";
 import { assert } from "../../lib/assert.ts";
 import * as network from "../network/network.ts";
 import * as stateManager from "../network/state_manager.ts";
-import { delay } from "../../lib/promise.js";
+import { delay } from "../../lib/promise.ts";
 import { getGeo } from "../util/wall_geometry.ts";
 import { clients } from "../network/network.ts";
 import * as path from "https://deno.land/std@0.129.0/path/mod.ts";

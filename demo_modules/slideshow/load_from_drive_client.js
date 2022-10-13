@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {ClientLoadStrategy} from './interfaces.js';
-import {delay} from '../../lib/promise.js';
+import {delay} from '../../lib/promise.ts';
 
 const API_BASE_URL = 'https://www.googleapis.com/drive/v3';
 

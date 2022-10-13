@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {ServerLoadStrategy} from './interfaces.js';
-import {delay} from '../../lib/promise.js';
+import {delay} from '../../lib/promise.ts';
 import {PromiseCache} from '../../lib/promise_cache.js';
 
 import sharp from 'sharp';

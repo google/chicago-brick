@@ -26,7 +26,7 @@ import inject from '/lib/inject.js';
 import * as stateManager from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
 import * as time from '/client/util/time.js';
-import {delay} from '/lib/promise.js';
+import {delay} from '/lib/promise.ts';
 
 function createNewContainer(name) {
   var newContainer = document.createElement('div');

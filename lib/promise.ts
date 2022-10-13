@@ -13,21 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export function delay(ms) {
-  return new Promise(resolve => {
+/** Waits ms ms, then resolves the returned promise. */
+export function delay(ms: number) {
+  return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
 }
 
-export function delayThenReject(ms) {
-  return new Promise((resolve, reject) => {
+/** Waits ms ms, then rejects the returned promise. */
+export function delayThenReject(ms: number) {
+  return new Promise((_resolve, reject) => {
     setTimeout(reject, ms);
-  })
-}
-
-Promise.prototype.done = function(opt_resolve, opt_reject) {
-  this.then(opt_resolve, opt_reject).catch(function(e) {
-    console.error('Unhandled rejection!', e.message);
-    console.error(e.stack);
   });
-};
+}
