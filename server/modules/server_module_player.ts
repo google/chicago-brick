@@ -13,13 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from '../monitoring/monitor.js';
-import * as time from '../util/time.ts';
-import {configure} from '../../lib/module_player.js';
-import {RunningModule} from './module.ts';
-import {easyLog} from '../../lib/log.js';
+import * as monitor from "../monitoring/monitor.js";
+import * as time from "../util/time.ts";
+import { configure } from "../../lib/module_player.js";
+import { RunningModule } from "./module.ts";
+import { easyLog } from "../../lib/log.js";
 
-const log = easyLog('wall:module_state_machine');
+const log = easyLog("wall:module_state_machine");
 
 export const ServerModulePlayer = configure({
   makeEmptyModule: () => {
@@ -29,9 +29,9 @@ export const ServerModulePlayer = configure({
     isEnabled() {
       return monitor.isEnabled();
     },
-    update(obj) {
-      monitor.update({server: obj});
-    }
+    update(obj: unknown) {
+      monitor.update({ server: obj });
+    },
   },
   log,
   time,

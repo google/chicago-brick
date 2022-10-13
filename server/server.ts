@@ -22,7 +22,7 @@ import * as network from "./network/network.ts";
 import * as peer from "./network/peer.ts";
 import * as wallGeometry from "./util/wall_geometry.ts";
 import { Control } from "./control.js";
-import { ServerModulePlayer } from "./modules/server_module_player.js";
+import { ServerModulePlayer } from "./modules/server_module_player.ts";
 import { PlaylistDriver } from "./playlist/playlist_driver.js";
 import {
   loadAllBrickJson,
