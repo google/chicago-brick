@@ -34,7 +34,7 @@ import {
   cleanupModuleOverlayHandler,
   installModuleOverlayHandler,
   makeModuleOverlaySocket,
-} from "../../lib/socket_wrapper.js";
+} from "../../lib/socket_wrapper.ts";
 import { WSS } from "./websocket.ts";
 import { WS } from "../../lib/websocket.ts";
 import { DispatchServer } from "../util/serving.ts";
@@ -114,6 +114,11 @@ interface ClientConfig {
   offset: Point;
 }
 
+interface SerializedClientConfig {
+  rect: string;
+  offset: Point;
+}
+
 interface PerModuleClientInfo extends ClientConfig {
   // TODO: Make this more accurate.
   socket: unknown;
@@ -131,7 +136,7 @@ export function init(server: DispatchServer) {
     const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
-    socket.on("client-start", (config: ClientConfig) => {
+    socket.on("client-start", (config: SerializedClientConfig) => {
       const clientRect = Rectangle.deserialize(config.rect);
       if (!clientRect) {
         log.error(`Bad client configuration: `, config);

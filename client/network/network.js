@@ -16,7 +16,7 @@ limitations under the License.
 import {WS} from '/lib/websocket.ts';
 import * as info from '/client/util/info.js';
 import * as time from '/client/util/time.js';
-import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.js';
+import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.ts';
 
 let socket;
 let ready, readyPromise = new Promise(r => ready = r);

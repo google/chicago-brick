@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { delay, delayThenReject } from "./promise.ts";
+import { WS } from "./websocket.ts";
 
 export interface Module {
   name: string;
@@ -26,6 +27,7 @@ export interface Module {
   finishTransitionOut(): void;
   finishTransitionIn(): void;
   dispose(): void;
+  tellClientToPlay(socket: WS): void;
 }
 
 export interface ModulePlayerConfig {

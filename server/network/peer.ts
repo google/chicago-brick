@@ -15,7 +15,7 @@ interface CommonPayloadFields {
 
 const knownPeers = new Map<string, PeerInfo>();
 
-function relayMessage(msg: unknown, payload: CommonPayloadFields) {
+function relayMessage(msg: string, payload: CommonPayloadFields) {
   const { to } = payload;
   const toPeer = knownPeers.get(to);
   if (!toPeer) {

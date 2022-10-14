@@ -2,18 +2,35 @@
  * Wrap a socket with handlers for sending and receiving per-module messages.
  */
 
-import {easyLog} from './log.ts';
-const debug = easyLog('wall:lib:socket_wrapper');
+import { easyLog } from "./log.ts";
+const debug = easyLog("wall:lib:socket_wrapper");
+
+interface Message {
+  id: string;
+  name: string;
+  payload: Message;
+}
+
+interface SocketLike {
+  on(type: string, handler: (payload: any) => void): void;
+  emit(type: string, payload: unknown): void;
+}
+
+interface EarlyMessage {
+  data: Message;
+  socket: SocketLike;
+}
 
 // A map of module-id -> [message]
-const earlyMessagesPerId = {};
+const earlyMessagesPerId: Record<string, EarlyMessage[]> = {};
 
+type Handler = (data: Message, socket: SocketLike) => void;
 // A map of module-id -> {messageName: (data, socket) -> void}
-const messageHandlersPerId = {};
+const messageHandlersPerId: Record<string, Record<string, Handler>> = {};
 
 // Make a variable that lazily initializes. The resulting value must be truthy.
-function lazyInit(init) {
-  let i;
+function lazyInit<T>(init: () => T): () => T {
+  let i: T;
   return () => (i || (i = init()));
 }
 
@@ -21,8 +38,8 @@ function lazyInit(init) {
  * Remove every element of arr for which fn returns true, and returns an array
  * of those removed elements.
  */
-function removeIf(arr, fn) {
-  const indicesToRemove = [];
+function removeIf<T>(arr: T[], fn: (t: T) => boolean): T[] {
+  const indicesToRemove: number[] = [];
   const ret = arr.filter((m, i) => {
     if (fn(m)) {
       indicesToRemove.push(i);
@@ -31,7 +48,7 @@ function removeIf(arr, fn) {
     return false;
   });
   indicesToRemove.reverse();
-  indicesToRemove.forEach(i => arr.splice(i, 1));
+  indicesToRemove.forEach((i) => arr.splice(i, 1));
   return ret;
 }
 
@@ -45,8 +62,8 @@ function removeIf(arr, fn) {
  * }
  * The socket is the unwrapped socket that received this message.
  */
-function deliverMessage(data, socket) {
-  const {id, name, payload} = data;
+function deliverMessage(data: Message, socket: SocketLike) {
+  const { id, name, payload } = data;
   const wrappedSocket = lazyInit(() => makeModuleOverlaySocket(id, socket));
   if (id in messageHandlersPerId) {
     const messageHandlers = messageHandlersPerId[id];
@@ -63,7 +80,7 @@ function deliverMessage(data, socket) {
       // never shows up, that's a big waste of memory, but it will eventually
       // get cleaned up when the module is finished.
       //debug(`cached ${name} ${id}`);
-      earlyMessagesPerId[id].push({data, socket});
+      earlyMessagesPerId[id].push({ data, socket });
     }
   } else {
     // We received a message for a module we don't know about.
@@ -79,15 +96,19 @@ function deliverMessage(data, socket) {
  * close, but stay open between the client & server for the whole operation of
  * the binary. As a result, it doesn't need to get cleaned up.
  */
-export function installModuleOverlayHandler(socket) {
-  socket.on('module-message', d => deliverMessage(d, socket));
+export function installModuleOverlayHandler(socket: SocketLike) {
+  socket.on("module-message", (d) => deliverMessage(d, socket));
 }
 
 /**
  * Creates a facade over a socket that emulates the socket.io API.
  * This is the most complex part of the wrapper.
  */
-export function makeModuleOverlaySocket(id, socket, additionalMethods = {}) {
+export function makeModuleOverlaySocket(
+  id: string,
+  socket: SocketLike,
+  additionalMethods = {},
+) {
   // Initialize our per-module stores.
   messageHandlersPerId[id] = messageHandlersPerId[id] || {};
   earlyMessagesPerId[id] = earlyMessagesPerId[id] || [];
@@ -97,19 +118,19 @@ export function makeModuleOverlaySocket(id, socket, additionalMethods = {}) {
   // even other instances of the same module).
   return {
     // Emits a message via the wrapped socket.
-    emit(messageName, payload) {
+    emit(messageName: string, payload: unknown) {
       //debug(`sent ${messageName} ${socket.id}`);
-      socket.emit('module-message', {
+      socket.emit("module-message", {
         id,
         name: messageName,
-        payload
+        payload,
       });
     },
     // Adds a listener for the named message, which will invoke the cb when
     // it arrives on the wrapped socket. If once is true, the cb will be
     // unregistered after it is invoked.
-    on(messageName, cb, once = false) {
-      const actualCb = !once ? cb : (...args) => {
+    on(messageName: string, cb: Handler, once = false) {
+      const actualCb = !once ? cb : (...args: Parameters<Handler>) => {
         // Invoke the callback...
         cb(...args);
         // And then pretend that I've never registered in the first place.
@@ -120,11 +141,16 @@ export function makeModuleOverlaySocket(id, socket, additionalMethods = {}) {
       // If there are messages that arrived on this module already, invoke them.
       const earlyMessages = earlyMessagesPerId[id];
       if (earlyMessages) {
-        const messagesToDeliver = removeIf(earlyMessages, m => m.data.name == messageName);
-        messagesToDeliver.forEach(({data, socket}) => deliverMessage(data, socket));
+        const messagesToDeliver = removeIf(
+          earlyMessages,
+          (m) => m.data.name == messageName,
+        );
+        messagesToDeliver.forEach(({ data, socket }) =>
+          deliverMessage(data, socket)
+        );
       }
     },
-    once(messageName, cb) {
+    once(messageName: string, cb: Handler) {
       this.on(messageName, cb, true);
     },
     // Add arbitrary additional methods/properties to the API.
@@ -132,7 +158,7 @@ export function makeModuleOverlaySocket(id, socket, additionalMethods = {}) {
   };
 }
 
-export function cleanupModuleOverlayHandler(id) {
+export function cleanupModuleOverlayHandler(id: string) {
   delete messageHandlersPerId[id];
   delete earlyMessagesPerId[id];
 }

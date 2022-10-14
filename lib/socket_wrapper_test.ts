@@ -10,26 +10,26 @@ import {
   cleanupModuleOverlayHandler,
   installModuleOverlayHandler,
   makeModuleOverlaySocket,
-} from "./socket_wrapper.js";
+} from "./socket_wrapper.ts";
 
 chai.use(sinonChai);
 const expect = chai.expect;
 
-interface FakeSender {
+interface FakeSocket {
   emit(messageName: string, payload: unknown): void;
-}
-interface FakeReceiver {
   on(messageName: string, cb: (payload: unknown) => void): void;
 }
 
-function makeSockets(): { receiver: FakeReceiver; sender: FakeSender } {
+function makeSockets(): { receiver: FakeSocket; sender: FakeSocket } {
   const registry: Record<string, (payload: unknown) => void> = {};
   const receiver = {
     on(messageName: string, cb: (payload: unknown) => void) {
       registry[messageName] = cb;
     },
+    emit() {},
   };
   const sender = {
+    on() {},
     emit(messageName: string, payload: unknown) {
       registry[messageName](payload);
     },
@@ -38,7 +38,7 @@ function makeSockets(): { receiver: FakeReceiver; sender: FakeSender } {
 }
 
 describe("socket wrapper", () => {
-  let sender: FakeSender, receiver: FakeReceiver;
+  let sender: FakeSocket, receiver: FakeSocket;
   let wrappedSender: ReturnType<typeof makeModuleOverlaySocket>,
     wrappedReceiver: ReturnType<typeof makeModuleOverlaySocket>;
   beforeEach(() => {

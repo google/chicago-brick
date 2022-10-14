@@ -77,6 +77,7 @@ export function remove(module: RunningModule) {
     return true;
   });
   log.debugAt(
+    1,
     "Remove: We are now ticking " + modulesToTick.length + " modules",
     modulesToTick.map((m) => m.moduleDef.name).join(", "),
   );
