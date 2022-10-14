@@ -6,7 +6,7 @@ import {
   serveDirectory,
   serveFile,
 } from "../server/util/serving.ts";
-import { addLogger } from "../lib/log.js";
+import { addLogger } from "../lib/log.ts";
 import { makeConsoleLogger } from "../lib/console_logger.js";
 
 addLogger(

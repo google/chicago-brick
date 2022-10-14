@@ -1,7 +1,7 @@
 import { serve, serveTls } from "https://deno.land/std@0.132.0/http/server.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import mime from "https://esm.sh/mime";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import { emit } from "https://deno.land/x/emit@0.9.0/mod.ts";
 
 const log = easyLog("wall:serving");

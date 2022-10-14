@@ -1,5 +1,5 @@
 import { EventEmitter } from "./event.js";
-import { easyLog } from "./log.js";
+import { easyLog } from "./log.ts";
 
 const log = easyLog("wall:websocket");
 

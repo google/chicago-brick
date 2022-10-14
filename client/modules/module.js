@@ -17,7 +17,7 @@ import {Polygon} from '/lib/math/polygon2d.ts';
 import * as moduleTicker from '/client/modules/module_ticker.js';
 import * as network from '/client/network/network.js';
 import * as peerNetwork from '/client/network/peer.js';
-import {easyLog} from '/lib/log.js';
+import {easyLog} from '/lib/log.ts';
 import {assert} from '/lib/assert.ts';
 import asset from '/client/asset/asset.js';
 import inject from '/lib/inject.ts';

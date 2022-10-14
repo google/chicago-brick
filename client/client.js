@@ -17,7 +17,7 @@ import * as monitor from '/client/monitoring/monitor.js';
 import * as network from '/client/network/network.js';
 import * as stateManager from '/client/state/state_manager.js';
 import {makeConsoleLogger} from '/lib/console_logger.js';
-import {addLogger} from '/lib/log.js';
+import {addLogger} from '/lib/log.ts';
 import {now} from './util/time.js';
 import {errorLogger} from './util/error_logger.js';
 import {ClientModulePlayer} from '/client/modules/client_module_player.js';

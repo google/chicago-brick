@@ -26,7 +26,7 @@ limitations under the License.
 //   client fails to do this, the client is considered invalid and omitted from
 //   future calculations.
 
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import { now } from "../util/time.ts";

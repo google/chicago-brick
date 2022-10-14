@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from "../monitoring/monitor.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import shuffle from "https://deno.land/x/shuffle/mod.ts";
 import { assert } from "../../lib/assert.ts";
 import { inFuture, now, until } from "../util/time.ts";

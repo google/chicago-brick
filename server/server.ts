@@ -30,7 +30,7 @@ import {
 } from "./playlist/playlist_loader.ts";
 import { makeConsoleLogger } from "../lib/console_logger.js";
 import { captureLog } from "./util/last_n_errors_logger.ts";
-import { addLogger, easyLog } from "../lib/log.js";
+import { addLogger, easyLog } from "../lib/log.ts";
 import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
 import { now } from "./util/time.ts";
 import commandLineArgs from "https://esm.sh/command-line-args";

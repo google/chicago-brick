@@ -6,7 +6,7 @@ import {
   describe,
   it,
 } from "https://deno.land/std@0.159.0/testing/bdd.ts";
-import { addLogger, disable, enable, log, reset } from "./log.js";
+import { addLogger, disable, enable, log, Logger, reset } from "./log.ts";
 
 chai.use(sinonChai);
 const expect = chai.expect;
@@ -22,10 +22,10 @@ describe("log", () => {
     channelSpy = sinon.spy();
     subSpy = sinon.spy();
     otherChannel = sinon.spy();
-    addLogger(spy);
-    addLogger(channelSpy, "channel");
-    addLogger(subSpy, "channel:subchannel");
-    addLogger(otherChannel, "otherthing");
+    addLogger(spy as unknown as Logger);
+    addLogger(channelSpy as unknown as Logger, "channel");
+    addLogger(subSpy as unknown as Logger, "channel:subchannel");
+    addLogger(otherChannel as unknown as Logger, "otherthing");
   });
   it("logger is invoked with the right args", () => {
     log("channel", 0, "stuff");

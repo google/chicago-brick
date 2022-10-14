@@ -1,4 +1,4 @@
-import {addLogger} from '/lib/log.js';
+import {addLogger} from '/lib/log.ts';
 
 const COLORS = [
   '#0074D9',

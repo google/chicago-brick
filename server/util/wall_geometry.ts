@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { Polygon } from "../../lib/math/polygon2d.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 
 const log = easyLog("wall:wall_geometry");
 

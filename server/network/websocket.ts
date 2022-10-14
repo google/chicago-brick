@@ -1,6 +1,6 @@
 import EventEmitter from "https://deno.land/x/eventemitter@1.2.4/mod.ts";
 import { WS } from "../../lib/websocket.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import { DispatchServer } from "../util/serving.ts";
 
 const log = easyLog("wall:websocket");

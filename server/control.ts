@@ -19,7 +19,7 @@ import * as network from "./network/network.ts";
 import { getErrors } from "./util/last_n_errors_logger.ts";
 import { loadAllModules } from "./playlist/playlist_loader.ts";
 import { WSS } from "./network/websocket.ts";
-import { easyLog } from "../lib/log.js";
+import { easyLog } from "../lib/log.ts";
 import { PlaylistDriver } from "./playlist/playlist_driver.ts";
 import { Layout } from "./modules/layout.ts";
 import { ModuleDef } from "./modules/module_def.ts";

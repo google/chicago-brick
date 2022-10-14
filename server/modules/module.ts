@@ -25,7 +25,7 @@ import { clients } from "../network/network.ts";
 import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
 import { Server } from "../../lib/module_interface.ts";
 import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import inject from "../../lib/inject.ts";
 import { WS } from "../../lib/websocket.ts";
 

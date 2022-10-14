@@ -16,7 +16,7 @@ limitations under the License.
 // A handy wrapper around peer.js that makes it easy for client modules to
 // connect to one another.
 import * as info from '/client/util/info.js';
-import {easyLog} from '/lib/log.js';
+import {easyLog} from '/lib/log.ts';
 import * as network from './network.js';
 
 const log = easyLog('wall:peer');

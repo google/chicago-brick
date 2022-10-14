@@ -1,4 +1,4 @@
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import { WS } from "../../lib/websocket.ts";
 import * as network from "./network.ts";
 
