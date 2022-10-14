@@ -19,7 +19,7 @@ import * as network from '/client/network/network.js';
 import * as peerNetwork from '/client/network/peer.js';
 import {easyLog} from '/lib/log.ts';
 import {assert} from '/lib/assert.ts';
-import asset from '/client/asset/asset.js';
+import asset from '/client/asset/asset.ts';
 import inject from '/lib/inject.ts';
 import * as stateManager from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';

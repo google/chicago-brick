@@ -13,10 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-const LOCAL_ASSET_PATH = 'http://127.0.0.1:8080/';
+const LOCAL_ASSET_PATH = "http://127.0.0.1:8080/";
 
-export default function asset(name) {
-  if (new URL(window.location.href).searchParams.get('useLocalAssets')) {
+export default function asset(name: string) {
+  if (new URL(window.location.href).searchParams.get("useLocalAssets")) {
     return `${LOCAL_ASSET_PATH}${name}`;
   }
   // By default, we pass the pass-through.
