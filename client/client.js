@@ -16,28 +16,34 @@ limitations under the License.
 import * as monitor from '/client/monitoring/monitor.js';
 import * as network from '/client/network/network.js';
 import * as stateManager from '/client/state/state_manager.js';
-import {makeConsoleLogger} from '/lib/console_logger.js';
+import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
 import {addLogger} from '/lib/log.ts';
 import {now} from './util/time.js';
 import {errorLogger} from './util/error_logger.js';
 import {ClientModulePlayer} from '/client/modules/client_module_player.js';
 import {ClientModule} from '/client/modules/module.js';
 
-function makeConsoleColorFn(css) {
-  const ret = str => {
-    return `%c${str}%c`;
+addLogger(makeConsoleLogger((...strings) => {
+  const processedStrs = [];
+  const css = [];
+  for (const str of strings) {
+    if (isStringWithOptions(str)) {  
+      processedStrs.push(str.str);
+      if (str.options.bold) {
+        css.push('font-weight: bolder');
+      }
+      if (str.options.backgroundColor) {
+        css.push(`background-color: ${str.options.backgroundColor}`);
+      }
+    } else {
+      processedStrs.push(str);
+      if (css.length) {
+        // Only add a '' css if we already have something in the css box.
+        css.push('');
+      }
+    }
   }
-  ret.desc = css;
-  return ret;
-}
-
-addLogger(makeConsoleLogger(c => {
-  const ret = makeConsoleColorFn([`color: ${c}`]);
-  ret.bold = {
-    bgRed: makeConsoleColorFn(['font-weight: bolder', 'background-color: red', `color: ${c}`]),
-  };
-  ret.bgBlue = makeConsoleColorFn(['background-color: blue', `color: ${c}`]);
-  return ret;
+  console.log(...processedStrs, ...css);
 }, now));
 addLogger(errorLogger);
 

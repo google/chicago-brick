@@ -7,11 +7,26 @@ import {
   serveFile,
 } from "../server/util/serving.ts";
 import { addLogger } from "../lib/log.ts";
-import { makeConsoleLogger } from "../lib/console_logger.js";
+import {
+  isStringWithOptions,
+  makeConsoleLogger,
+  StringWithOptions,
+} from "../lib/console_logger.ts";
 
 addLogger(
   makeConsoleLogger(
-    () => (a: unknown) => a,
+    (...strs: (string | StringWithOptions)[]) => {
+      // TODO(applmak): Implement actual color here.
+      const coloredStrings: string[] = [];
+      for (const str of strs) {
+        if (isStringWithOptions(str)) {
+          coloredStrings.push(str.str);
+        } else {
+          coloredStrings.push(str);
+        }
+      }
+      console.log(coloredStrings.join(""));
+    },
     () => performance.now(),
   ),
 );

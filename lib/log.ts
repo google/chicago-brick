@@ -1,5 +1,5 @@
-const perChannelLoggers = new Map<string, Set<Logger>>();
-const alwaysOnLoggers = new Set<Logger>();
+const perChannelLoggers = new Map<string, Set<LoggerBackend>>();
+const alwaysOnLoggers = new Set<LoggerBackend>();
 const channelStatus = new Map<string, number>();
 
 export function reset() {
@@ -8,7 +8,7 @@ export function reset() {
   channelStatus.clear();
 }
 
-export function addLogger(logger: Logger, channel = "") {
+export function addLogger(logger: LoggerBackend, channel = "") {
   if (channel) {
     if (perChannelLoggers.has(channel)) {
       perChannelLoggers.get(channel)!.add(logger);
@@ -54,9 +54,9 @@ export function isEnabled(severity: number, channel = ""): boolean {
 }
 
 export function log(channel: string, severity: number, ...args: unknown[]) {
-  loggerForChannel(channel, severity).forEach((c) =>
-    c(channel, severity, args)
-  );
+  for (const backend of loggerForChannel(channel, severity)) {
+    backend(channel, severity, args);
+  }
 }
 
 export interface Logger {
@@ -66,6 +66,12 @@ export interface Logger {
   info(...args: unknown[]): void;
   debugAt(level: number, ...args: unknown[]): void;
 }
+
+export type LoggerBackend = (
+  channel: string,
+  severity: number,
+  args: unknown[],
+) => void;
 
 export function easyLog(channel: string): Logger {
   const ret = (...args: unknown[]) => {
@@ -86,7 +92,7 @@ export function easyLog(channel: string): Logger {
   return ret;
 }
 
-function loggerForChannel(channel: string, severity: number): Logger[] {
+function loggerForChannel(channel: string, severity: number): LoggerBackend[] {
   const ret = [];
 
   if (perChannelLoggers.has(channel)) {
