@@ -4,12 +4,12 @@ import {
   describe,
   it,
 } from "https://deno.land/std@0.159.0/testing/bdd.ts";
-import { SizeLimitedCache } from "./size_limited_cache.js";
+import { SizeLimitedCache } from "./size_limited_cache.ts";
 
 const expect = chai.expect;
 
 describe("SizeLimitedCache", () => {
-  let cache: SizeLimitedCache;
+  let cache: SizeLimitedCache<string, string>;
   beforeEach(() => {
     cache = new SizeLimitedCache(10);
   });

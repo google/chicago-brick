@@ -1,24 +1,28 @@
 // A cache that knows the size of its values and tries to limit the stuff it has
 // a pointer to.
 
-export class SizeLimitedCache extends Map {
-  constructor(size) {
+export class SizeLimitedCache<K, V extends ArrayLike<unknown>>
+  extends Map<K, V> {
+  readonly maxSize: number;
+  currentSize: number;
+  constructor(size: number) {
     super();
     this.maxSize = size;
     this.currentSize = 0;
   }
-  set(key, buffer) {
+  set(key: K, buffer: V) {
     this.delete(key);
     this.currentSize += buffer.length;
     this.evict();
-    super.set(key, buffer);
+    return super.set(key, buffer);
   }
-  delete(key) {
+  delete(key: K) {
     const buffer = this.get(key);
     if (buffer) {
       this.currentSize -= buffer.length;
-      super.delete(key);
+      return super.delete(key);
     }
+    return false;
   }
   evict() {
     // Don't evict _everything_, because we just added something!

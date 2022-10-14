@@ -29,7 +29,7 @@ import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
 import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display_server.js';
-import {SizeLimitedCache} from '../../lib/size_limited_cache.js';
+import {SizeLimitedCache} from '../../lib/size_limited_cache.ts';
 import {Server} from '../../lib/module_interface.ts';
 
 import fetch from 'node-fetch';
