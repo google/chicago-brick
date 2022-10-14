@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-let lastServerTimeAtUpdate, lastClientTimeAtUpdate;
+let lastServerTimeAtUpdate: number, lastClientTimeAtUpdate: number;
 
-export function adjustTimeByReference(serverTime) {
+export function adjustTimeByReference(serverTime: number) {
   lastServerTimeAtUpdate = serverTime;
   lastClientTimeAtUpdate = performance.now();
 }
@@ -23,6 +23,6 @@ export function adjustTimeByReference(serverTime) {
 export function now() {
   return performance.now() - lastClientTimeAtUpdate + lastServerTimeAtUpdate;
 }
-export function until(serverDeadline) {
+export function until(serverDeadline: number) {
   return Math.max(0, serverDeadline - now());
 }

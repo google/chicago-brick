@@ -1,5 +1,5 @@
 import {send} from '../network/network.js';
-import {now} from './time.js';
+import {now} from './time.ts';
 import {virtualRect} from './info.js';
 
 export function errorLogger(channel, severity, args) {

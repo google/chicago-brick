@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as time from '../util/time.js';
+import * as time from '../util/time.ts';
 import {assert} from '/lib/assert.ts';
 
 // An interpolator knows how to retrieve data from a sharedstate's store.

@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as network from '/client/network/network.js';
-import {now} from '/client/util/time.js';
+import {now} from '/client/util/time.ts';
 
 // The monitor in the client displays up-to-date information about what the
 // server is doing. It's designed as a debugging tool.

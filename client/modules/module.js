@@ -23,7 +23,7 @@ import asset from '/client/asset/asset.ts';
 import inject from '/lib/inject.ts';
 import * as stateManager from '/client/network/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
-import * as time from '/client/util/time.js';
+import * as time from '/client/util/time.ts';
 import {delay} from '/lib/promise.ts';
 
 function createNewContainer(name) {
