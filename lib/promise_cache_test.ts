@@ -4,7 +4,7 @@ import {
   describe,
   it,
 } from "https://deno.land/std@0.159.0/testing/bdd.ts";
-import { PromiseCache } from "./promise_cache.js";
+import { PromiseCache } from "./promise_cache.ts";
 
 const expect = chai.expect;
 
@@ -15,7 +15,7 @@ function someAsyncWork() {
 }
 
 describe("PromiseCache", () => {
-  let cache: PromiseCache;
+  let cache: PromiseCache<string, unknown>;
   beforeEach(() => {
     cache = new PromiseCache();
   });
