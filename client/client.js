@@ -19,7 +19,7 @@ import * as stateManager from '/client/network/state_manager.js';
 import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
 import {addLogger} from '/lib/log.ts';
 import {now} from './util/time.ts';
-import {errorLogger} from './util/error_logger.js';
+import {errorLogger} from './util/error_logger.ts';
 import {ClientModulePlayer} from '/client/modules/client_module_player.js';
 import {ClientModule} from '/client/modules/module.js';
 

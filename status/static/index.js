@@ -17,7 +17,7 @@ import {ClientController} from './client_controller.js';
 import {PlaylistController} from './playlist_controller.js';
 import {ErrorController} from './error_controller.js';
 import {PlaylistCreator} from './playlist_creator.js';
-import {WS} from '/lib/websocket.ts';
+import {WS} from '../../lib/websocket.ts';
 import {addLogger} from '/lib/log.ts';
 import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
 

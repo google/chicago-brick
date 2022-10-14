@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {WS} from '/lib/websocket.ts';
-import * as info from '/client/util/info.ts';
-import * as time from '/client/util/time.ts';
+import {WS} from '../../lib/websocket.ts';
+import * as info from '../util/info.ts';
+import * as time from '../util/time.ts';
 import {installModuleOverlayHandler, makeModuleOverlaySocket, cleanupModuleOverlayHandler} from '../../lib/socket_wrapper.ts';
 
 let socket;
