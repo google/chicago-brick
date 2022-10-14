@@ -1,4 +1,4 @@
-import { EventEmitter } from "./event.js";
+import { EventEmitter } from "./event.ts";
 import { easyLog } from "./log.ts";
 
 const log = easyLog("wall:websocket");
