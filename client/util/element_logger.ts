@@ -1,3 +1,4 @@
+// @ts-ignore
 import { addLogger } from "../../lib/log.ts";
 
 const COLORS = [
