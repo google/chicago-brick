@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {Rectangle} from '/lib/math/rectangle.ts';
-import * as info from '/client/util/info.js';
+import * as info from '/client/util/info.ts';
 
 // Installs a surface in the given container & readies the surface for
 // drawing.

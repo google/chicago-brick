@@ -1,6 +1,6 @@
 import {send} from '../network/network.js';
 import {now} from './time.ts';
-import {virtualRect} from './info.js';
+import {virtualRect} from './info.ts';
 
 export function errorLogger(channel, severity, args) {
   if (severity >= 0) {

@@ -13,11 +13,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Rectangle} from '/lib/math/rectangle.ts';
+import { Rectangle } from "../../lib/math/rectangle.ts";
 
-function readClientRectFromLocation() {
-  const config = new URL(window.location.href).searchParams.get('config') || '0,0,1920,1080';
-  return Rectangle.deserialize(config);
+function readClientRectFromLocation(): Rectangle {
+  const config = new URL(window.location.href).searchParams.get("config") ||
+    "0,0,1920,1080";
+  return Rectangle.deserialize(config)!;
 }
 
 const rect = readClientRectFromLocation();
@@ -26,5 +27,5 @@ export const virtualRect = rect;
 export const virtualRectNoBezel = rect;
 export const virtualOffset = {
   x: rect.x / rect.w,
-  y: rect.y / rect.h
+  y: rect.y / rect.h,
 };
