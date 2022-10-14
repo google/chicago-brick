@@ -11,4 +11,3 @@ lib/module_interface.ts
 demo_modules/operational_tests/shared_test.js
 demo_modules/particles/particles.js
 demo_modules/wind
-lib/interpolate.js
