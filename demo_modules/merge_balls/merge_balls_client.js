@@ -15,7 +15,7 @@ limitations under the License.
 
 import { Client } from '/lib/module_interface.ts';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
-import {NumberLerpInterpolator} from '/lib/shared_state.js';
+import {NumberLerpInterpolator} from '/client/state/state_manager.js';
 
 export function load(state, network, wallGeometry, debug) {
   //
