@@ -20,7 +20,7 @@ import * as peerNetwork from '/client/network/peer.js';
 import {easyLog} from '/lib/log.js';
 import {assert} from '/lib/assert.ts';
 import asset from '/client/asset/asset.js';
-import inject from '/lib/inject.js';
+import inject from '/lib/inject.ts';
 import * as stateManager from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
 import * as time from '/client/util/time.js';

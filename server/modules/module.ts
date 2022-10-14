@@ -26,7 +26,7 @@ import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
 import { Server } from "../../lib/module_interface.ts";
 import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.js";
-import inject from "../../lib/inject.js";
+import inject from "../../lib/inject.ts";
 import { WS } from "../../lib/websocket.ts";
 
 const log = easyLog("wall:module");
@@ -94,7 +94,12 @@ export class RunningModule {
       assert,
     };
 
-    const { server } = inject(load, fakeEnv);
+    const { server } = inject(
+      load as (
+        ...args: unknown[]
+      ) => { server: { new (config: unknown): Server } },
+      fakeEnv,
+    );
     return { server };
   }
 
@@ -127,7 +132,7 @@ export class RunningModule {
           network: this.network.open(),
           state: this.stateManager!.open(),
         });
-        this.instance = new server(this.moduleDef.config, this.deadline);
+        this.instance = new server(this.moduleDef.config);
       } else {
         this.instance = new Server();
       }

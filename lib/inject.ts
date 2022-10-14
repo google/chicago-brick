@@ -16,11 +16,14 @@ limitations under the License.
 // Takes a function with specific named parameters and a sandbox with keys
 // that match those parameters, then invokes the function with the mapped
 // values of those keys.
-export default function inject(fn, sandbox) {
+export default function inject<R>(
+  fn: (...args: unknown[]) => R,
+  sandbox: Record<string, unknown>,
+): R {
   const args = fn.toString()
-      .match(/\(([^)]*)/)[1]
-      .split(',')
-      .filter(arg => arg)
-      .map(arg => arg.trim());
-  return fn.apply(null, args.map(a => sandbox[a]));
+    .match(/\(([^)]*)/)![1]
+    .split(",")
+    .filter((arg) => arg)
+    .map((arg) => arg.trim());
+  return fn.apply(null, args.map((a) => sandbox[a]));
 }
