@@ -112,11 +112,12 @@ export class DispatchServer {
     }
   }
   private async mainHandler(req: Request): Promise<Response> {
-    const baseUrl = `http://${req.headers.get("host") || "localhost"}/`;
+    const hostname = req.headers.get("host") || "localhost";
+    const baseUrl = `http://${hostname}/`;
     // Test the request url against each handler.
     for (const { pattern, handler } of this.handlers) {
       const url = new URL(req.url, baseUrl);
-      const p = new URLPattern(pattern, baseUrl);
+      const p = new URLPattern({ pathname: pattern });
       const match = p.exec(url);
       if (match) {
         // We got one!
