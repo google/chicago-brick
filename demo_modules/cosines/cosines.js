@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Client } from '/lib/module_interface.ts';
 import {P5Surface} from '/client/surface/p5_surface.js';
 
 export function load(wallGeometry) {
@@ -92,8 +93,9 @@ export function load(wallGeometry) {
     }
   }
 
-  class CosinesClient {
+  class CosinesClient extends Client {
     constructor() {
+      super();
       this.surface = null;
     }
 

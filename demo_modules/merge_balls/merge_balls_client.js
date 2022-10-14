@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Client } from '/lib/module_interface.ts';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 import {NumberLerpInterpolator} from '/lib/shared_state.js';
 
@@ -20,7 +21,7 @@ export function load(state, network, wallGeometry, debug) {
   //
   // Client Module
   //
-  class MergeBallsClient {
+  class MergeBallsClient extends Client {
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();

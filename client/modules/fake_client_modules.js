@@ -1,67 +1,67 @@
 import {ClientModule} from './module.js';
 import {Polygon} from '/lib/math/polygon2d.ts';
 import {TitleCard} from '/client/title_card.js';
-import {Client} from '/lib/module_interface.js';
-import conform from '/lib/conform.js';
+import {Client} from '/lib/module_interface.ts';
 
 export const TRIVIAL = function() {
-  return {client: conform(class {}, Client)};
+  return {client: class extends Client {}};
 };
 export const THROWS_ON_LOAD = function() {
   throw new Error();
 };
 export const THROWS_ON_CONSTRUCTION = function () {
-  return {client: conform(class {
+  return {client: class extends Client {
     constructor() {
+      super();
       throw new Error();
     }
-  }, Client)};
+  }};
 };
 export const THROWS_ON_WILL_BE_SHOWN_SOON = function () {
-  return {client: conform(class {
+  return {client: class extends Client {
     async willBeShownSoon() {
       throw new Error();
     }
-  }, Client)};
+  }};
 };
 export const THROWS_ON_BEGIN_FADE_OUT = function () {
-  return {client: conform(class {
+  return {client: class extends Client {
     beginFadeOut() {
       throw new Error();
     }
-  }, Client)};
+  }};
 };
 export const THROWS_ON_FINISH_FADE_OUT = function () {
-  return {client: conform(class {
+  return {client: class extends Client {
     finishFadeOut() {
       throw new Error();
     }
-  }, Client)};
+  }};
 };
 export const THROWS_ON_BEGIN_FADE_IN = function () {
-  return {client: conform(class {
+  return {client: class extends Client {
     beginFadeIn() {
       throw new Error();
     }
-  }, Client)};
+  }};
 };
 export const THROWS_ON_FINISH_FADE_IN = function () {
-  return {client: conform(class {
+  return {client: class extends Client {
     finishFadeIn() {
       throw new Error();
     }
-  }, Client)};
+  }};
 };
 
 export function allowPauseOnWillBeShownSoon() {
   let r, p = new Promise(resolve => r = resolve);
   return {
     load: function () {
-      return {client: conform(class {
+      return {client: class extends Client {
         async willBeShownSoon() {
           return p;
         }
-      }, Client)};
+      }};
     },
     resume: r,
   };

@@ -3,12 +3,13 @@
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 import {Rectangle} from '/lib/math/rectangle.ts';
+import {Client} from '/lib/module_interface.ts';
 
 export function load(debug, state, wallGeometry) {
   // Initially start with two layers.
   const layers = 2;
 
-  class GearsClient {
+  class GearsClient extends Client {
     async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.c = this.surface.context;

@@ -16,9 +16,10 @@ limitations under the License.
 import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 import {NumberLerpInterpolator, ValueNearestInterpolator} from '/lib/shared_state.js';
+import {Client} from '/lib/module_interface.ts';
 
 export function load(state, wallGeometry) {
-  class BallsClient {
+  class BallsClient extends Client {
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();

@@ -14,10 +14,12 @@ limitations under the License.
 ==============================================================================*/
 
 import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
+import {Server} from '../../lib/module_interface.ts';
 
 export function load(network, debug) {
-  class P5GameOfLifeServer  {
+  class P5GameOfLifeServer extends Server {
     constructor(config) {
+      super(config);
       debug('P5GameOfLife Server!', config);
 
       this.numTicks = 0;

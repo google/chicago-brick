@@ -13,11 +13,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Client } from '/lib/module_interface.ts';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 
 export function load(wallGeometry) {
-  class SolidColorClient {
+  class SolidColorClient extends Client {
     constructor(config) {
+      super();
       this.color = config.color || 'red';
     }
 

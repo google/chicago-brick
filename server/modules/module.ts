@@ -23,10 +23,9 @@ import { delay } from "../../lib/promise.ts";
 import { getGeo } from "../util/wall_geometry.ts";
 import { clients } from "../network/network.ts";
 import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
-import { Server } from "../../lib/module_interface.js";
+import { Server } from "../../lib/module_interface.ts";
 import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.js";
-import conform from "../../lib/conform.js";
 import inject from "../../lib/inject.js";
 import { WS } from "../../lib/websocket.ts";
 
@@ -96,7 +95,6 @@ export class RunningModule {
     };
 
     const { server } = inject(load, fakeEnv);
-    conform(server, Server);
     return { server };
   }
 

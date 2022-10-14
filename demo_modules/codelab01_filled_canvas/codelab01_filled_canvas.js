@@ -13,10 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Client } from '/lib/module_interface.ts';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
 
 export function load(wallGeometry) {
-  class Codelab01FilledCanvasClient {
+  class Codelab01FilledCanvasClient extends Client {
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();

@@ -14,14 +14,12 @@ limitations under the License.
 ==============================================================================*/
 
 import {Polygon} from '/lib/math/polygon2d.ts';
-import * as moduleInterface from '/lib/module_interface.js';
 import * as moduleTicker from '/client/modules/module_ticker.js';
 import * as network from '/client/network/network.js';
 import * as peerNetwork from '/client/network/peer.js';
 import {easyLog} from '/lib/log.js';
 import {assert} from '/lib/assert.ts';
 import asset from '/client/asset/asset.js';
-import conform from '/lib/conform.js';
 import inject from '/lib/inject.js';
 import * as stateManager from '/client/state/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
@@ -156,8 +154,6 @@ export class ClientModule {
         throw new Error(`${this.name} did not export a 'load' function!`);
       }
       const {client} = inject(load, fakeEnv);
-      conform(client, moduleInterface.Client);
-
       this.instance = new client(this.config);
     } catch (e) {
       // something went very wrong. Wind everything down.!

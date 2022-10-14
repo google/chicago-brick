@@ -43,6 +43,7 @@ import randomjs from 'random-js';
 import sharp from 'sharp';
 import * as polygon2d from '../../lib/math/polygon2d.ts';
 import * as vector2d from '../../lib/math/vector2d.ts';
+import { Server } from '../../lib/module_interface.ts';
 
 const {Polygon} = polygon2d;
 const {sub, add, scale} = vector2d;
@@ -207,8 +208,9 @@ export function load(debug, wallGeometry, network) {
     return copyAttrs(polygon, new Polygon(newPoints));
   }
 
-  class TiffanyServer {
+  class TiffanyServer extends Server {
     constructor(config = {}) {
+      super(config);
       debug('Tiffany Stained Glass Server!', config);
 
       // Contains all polygons created but not yet deleted

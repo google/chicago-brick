@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {GOOGLE_COLORS} from './colors.js';
+import {Server} from '/lib/module_interface.ts';
 
 export function load(network, wallGeometry) {
   // Set to true to enable console spam!
@@ -30,7 +31,7 @@ export function load(network, wallGeometry) {
     return dist < ar + br;
   }
 
-  class ChaosServer {
+  class ChaosServer extends Server {
     async willBeShownSoon() {
       // The time we last tried to place a new shape.
       this.oldtime = -Infinity;

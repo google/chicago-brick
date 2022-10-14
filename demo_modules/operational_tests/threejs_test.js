@@ -15,9 +15,10 @@ limitations under the License.
 
 import * as Three from '/node_modules/three-full/builds/Three.es.js';
 import {ThreeJsSurface} from '/client/surface/threejs_surface.js';
+import { Client } from '/lib/module_interface'; 
 
 export function load(wallGeometry) {
-  class ThreeJsTestClient {
+  class ThreeJsTestClient extends Client {
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();

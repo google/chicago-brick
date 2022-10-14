@@ -15,14 +15,16 @@ limitations under the License.
 
 import {GOOGLE_COLORS} from './colors.js';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {Client} from '/lib/module_interface.ts';
 
 export function load(network, wallGeometry) {
   // Maximum value in a particular pixel.
   const MAX_VALUE = 32;
 
-  class ChaosClient {
+  class ChaosClient extends Client {
 
     constructor() {
+      super();
       // Boolean that prevents drawing until we have data from the client.
       // The server layout
       this.shapes = [];

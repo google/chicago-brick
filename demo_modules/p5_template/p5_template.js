@@ -13,7 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export function life(wallGeometry, debug, P5Surface) {
+import { Client } from "/lib/module_interface.ts";
+
+export function load(wallGeometry, debug, P5Surface) {
   // p5 must be a P5.js instance.
   // TODO(jgessner): Make a P5Sketch base class.  I'm keeping the empty methods in
   //   here for now to remind me of the interface it should have.
@@ -36,8 +38,9 @@ export function life(wallGeometry, debug, P5Surface) {
     }
   }
 
-  class P5TemplateClient {
+  class P5TemplateClient extends Client {
     constructor(config) {
+      super();
       debug('P5Template Client!', config);
     }
 
