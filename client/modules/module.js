@@ -21,7 +21,7 @@ import {easyLog} from '/lib/log.ts';
 import {assert} from '/lib/assert.ts';
 import asset from '/client/asset/asset.ts';
 import inject from '/lib/inject.ts';
-import * as stateManager from '/client/state/state_manager.js';
+import * as stateManager from '/client/network/state_manager.js';
 import {TitleCard} from '/client/title_card.js';
 import * as time from '/client/util/time.js';
 import {delay} from '/lib/promise.ts';

@@ -1,5 +1,5 @@
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
-import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/state/state_manager.js';
+import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/network/state_manager.js';
 
 import {rotCCW, scale, add} from '/lib/math/vector2d.ts';
 import { Client } from '/lib/module_interface.ts';

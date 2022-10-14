@@ -15,7 +15,7 @@ limitations under the License.
 
 import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
 import {CanvasSurface} from '/client/surface/canvas_surface.js';
-import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/state/state_manager.js';
+import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/network/state_manager.js';
 import {Client} from '/lib/module_interface.ts';
 
 export function load(state, wallGeometry) {
