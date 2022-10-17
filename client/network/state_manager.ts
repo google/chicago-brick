@@ -13,8 +13,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as time from '../util/time.ts';
-import {assert} from '/lib/assert.ts';
+import { WS } from "../../lib/websocket.ts";
+import * as time from "../util/time.ts";
+import { assert } from "../../lib/assert.ts";
+
+interface StateDataPoint {
+  time: number;
+  value: unknown;
+}
+
+type Interpolator<T> = (
+  t: number,
+  a: number,
+  av: T,
+  b: number,
+  bv: T,
+) => T;
 
 // An interpolator knows how to retrieve data from a sharedstate's store.
 // It's a function (with a well-defined .name!) that takes two {time,value}
@@ -23,7 +37,16 @@ import {assert} from '/lib/assert.ts';
 // Shared State is a class that the server can use to share state with the
 // clients.
 export class SharedState {
-  constructor(name, interpolator, size) {
+  readonly name_: string;
+  readonly store_: StateDataPoint[];
+  readonly maxSize_: number;
+  readonly interpolator_: Interpolator<unknown>;
+
+  constructor(
+    name: string,
+    interpolator: Interpolator<unknown>,
+    size: number,
+  ) {
     // For debugging purposes only.
     this.name_ = name;
 
@@ -37,26 +60,26 @@ export class SharedState {
     // Strategy pattern: Defines a way to access the state.
     this.interpolator_ = interpolator;
   }
-  earliest() {
+  earliest(): StateDataPoint | undefined {
     return this.store_[0];
   }
-  latest() {
+  latest(): StateDataPoint | null {
     if (this.hasData()) {
       return this.store_[this.store_.length - 1];
     }
     return null;
   }
-  hasData() {
+  hasData(): boolean {
     return !!this.store_.length;
   }
-  *pairs() {
+  *pairs(): Iterable<[StateDataPoint, StateDataPoint]> {
     for (let i = 0; i < this.store_.length - 1; i++) {
       yield [this.store_[i], this.store_[i + 1]];
     }
   }
   // Returns the value of the shared state, according to the specific kind of
   // variable & interpolator.
-  get(t) {
+  get(t: number): unknown | null {
     // Subtract 200 ms, because in typical operation, the reader (the client) is
     // going to always be ahead of the writer (the server) by 1-2 server ticks
     // which is 100ms.
@@ -68,12 +91,12 @@ export class SharedState {
       return null;
     }
     // Too early!
-    if (t <= this.earliest().time) {
-      return this.earliest().value;
+    if (t <= this.earliest()!.time) {
+      return this.earliest()!.value;
     }
     // Too late!
-    if (t >= this.latest().time) {
-      return this.latest().value;
+    if (t >= this.latest()!.time) {
+      return this.latest()!.value;
     }
 
     for (const [a, b] of this.pairs()) {
@@ -86,7 +109,7 @@ export class SharedState {
     return null;
   }
   // Sets the current value of the state.
-  set(value, time) {
+  set(value: unknown, time: number) {
     this.store_.push({
       time: time,
       value: value,
@@ -102,7 +125,13 @@ export class SharedState {
 // The lerp interpolator walks the store, looking for a time value between
 // the start and end. If it finds one, we lerp between the values. If not, we
 // use the start or end, appropriately.
-export function NumberLerpInterpolator(time, at, av, bt, bv) {
+export function NumberLerpInterpolator(
+  time: number,
+  at: number,
+  av: number | null,
+  bt: number,
+  bv: number | null,
+): number | null {
   if (av === null || bv === null) {
     return null;
   }
@@ -110,7 +139,13 @@ export function NumberLerpInterpolator(time, at, av, bt, bv) {
 }
 
 // Jumps to the next value halfway through the allotted time interval.
-export function ValueNearestInterpolator(time, at, av, bt, bv) {
+export function ValueNearestInterpolator(
+  time: number,
+  at: number,
+  av: unknown,
+  bt: number,
+  bv: unknown,
+): unknown {
   if (Math.abs(time - at) < Math.abs(time - bt)) {
     return av;
   } else {
@@ -120,17 +155,31 @@ export function ValueNearestInterpolator(time, at, av, bt, bv) {
 
 // This interpolator doesn't interpolate, it just returns value A, meaning the
 // value that's still current.
-export function CurrentValueInterpolator(time, at, av, bt, bv) {
+export function CurrentValueInterpolator(
+  time: number,
+  _at: number,
+  av: unknown,
+  bt: number,
+  bv: unknown,
+) {
   return time >= bt ? bv : av;
 }
 
-function ObjectInterpolatorGenerator(def) {
-  const dynamicInterpolator = {};
-  for (var k in def) {
+function ObjectInterpolatorGenerator(
+  def: Record<string, unknown>,
+): Interpolator<Record<string, unknown>> {
+  const dynamicInterpolator: Record<string, Interpolator<unknown>> = {};
+  for (const k in def) {
     dynamicInterpolator[k] = decodeInterpolator(def[k]);
   }
 
-  return function ObjectInterpolator(time, at, av, bt, bv) {
+  return function ObjectInterpolator(
+    time: number,
+    at: number,
+    av: Record<string, unknown>,
+    bt: number,
+    bv: Record<string, unknown>,
+  ): Record<string, unknown> {
     av = av || {};
     bv = bv || {};
     // If the def has only the special key '*', then we use whatever keys
@@ -145,52 +194,63 @@ function ObjectInterpolatorGenerator(def) {
         ret[k] = interpolator(time, at, av[k], bt, bv[k]);
       }
       return ret;
-    }, {});
+    }, {} as Record<string, unknown>);
   };
 }
 
-function ArrayInterpolatorGenerator(def) {
+function ArrayInterpolatorGenerator(def: [unknown]): Interpolator<unknown[]> {
   // Def is an array of 1 generator reference.
   const dynamicInterpolator = decodeInterpolator(def[0]);
 
-  return function ArrayInterpolator(time, at, av, bt, bv) {
+  return function ArrayInterpolator(
+    time: number,
+    at: number,
+    av: unknown[],
+    bt: number,
+    bv: unknown[],
+  ): unknown[] {
     av = av || [];
     bv = bv || [];
-    return av.map((value, index) => {
+    return av.map((_value: unknown, index: number) => {
       return dynamicInterpolator(time, at, av[index], bt, bv[index]);
     });
   };
 }
 
-export function decodeInterpolator(def) {
+export function decodeInterpolator(
+  def: unknown,
+): Interpolator<unknown> {
   if (typeof def === "function") {
-    return def;
-  } else if (def instanceof Array || def[0] !== undefined) {
+    return def as Interpolator<unknown>;
+  } else if (def instanceof Array && def[0] !== undefined) {
     // array interpolator!
-    return ArrayInterpolatorGenerator(def);
+    return ArrayInterpolatorGenerator(def as [unknown]) as Interpolator<
+      unknown
+    >;
   } else {
     // object interpolator!
-    return ObjectInterpolatorGenerator(def);
+    return ObjectInterpolatorGenerator(
+      def as Record<string, unknown>,
+    ) as Interpolator<
+      unknown
+    >;
   }
 }
-
-
 
 class StateRecord {
-  constructor() {
-    this.state = {};
-    this.priorData = {};
-    this.clientClosedTime = Infinity;
-    this.serverClosedTime = Infinity;
-    this.lastUpdatedTime = time.now();
-  }
+  readonly state: Record<string, SharedState> = {};
+  readonly priorData: Record<string, Array<{ time: number; data: unknown }>> =
+    {};
+  clientClosedTime = Infinity;
+  serverClosedTime = Infinity;
+  lastUpdatedTime = time.now();
 }
 
-function isClosedOrStale(state) {
+function isClosedOrStale(state: StateRecord) {
   const now = time.now();
   return (state.clientClosedTime < now - 5000) ||
-      (state.serverClosedTime < now - 5000) ||
-      (state.lastUpdatedTime < now - 600000); // 10 minutes.
+    (state.serverClosedTime < now - 5000) ||
+    (state.lastUpdatedTime < now - 600000); // 10 minutes.
 }
 
 // A map of module id -> {
@@ -198,8 +258,8 @@ function isClosedOrStale(state) {
 //   clientClosedTime: timestamp,
 //   serverClosedTime: timestamp,
 // };
-const stateMap = {};
-export function forModule(network, id) {
+const stateMap: Record<string, StateRecord> = {};
+export function forModule(network: WS, id: string) {
   return {
     open() {
       // Before we add another state, reap old ones.
@@ -211,17 +271,23 @@ export function forModule(network, id) {
       }
 
       if (!stateMap[id]) {
-        stateMap[id] = new StateRecord;
+        stateMap[id] = new StateRecord();
       }
       return {
-        define(stateName, def, size = 25) {
-          assert(!(stateName in stateMap[id].state), `State ${stateName} was already defined!`);
-          stateMap[id].state[stateName] =
-              new SharedState(stateName, decodeInterpolator(def), size);
+        define(stateName: string, def: unknown, size = 25) {
+          assert(
+            !(stateName in stateMap[id].state),
+            `State ${stateName} was already defined!`,
+          );
+          stateMap[id].state[stateName] = new SharedState(
+            stateName,
+            decodeInterpolator(def),
+            size,
+          );
           if (stateMap[id].priorData[stateName]) {
             // We have some data that the server sent before we were ready.
             // Add it to the shared state now.
-            for (const {data, time} of stateMap[id].priorData[stateName]) {
+            for (const { data, time } of stateMap[id].priorData[stateName]) {
               // TODO(applmak): Warn if this overwrites data.
               stateMap[id].state[stateName].set(data, time);
             }
@@ -229,35 +295,38 @@ export function forModule(network, id) {
           }
           return stateMap[id].state[stateName];
         },
-        get(stateName) {
+        get(stateName: string) {
           return stateMap[id].state[stateName];
-        }
+        },
       };
     },
     close() {
       if (stateMap[id]) {
         stateMap[id].clientClosedTime = time.now();
       }
-    }
-  }
+    },
+  };
 }
 
-export function init(network) {
-  network.on('state', stateFromServer => {
+export function init(network: WS) {
+  network.on("state", (stateFromServer) => {
     for (const id in stateFromServer) {
       if (stateMap[id] && isClosedOrStale(stateMap[id])) {
         // Skip closed states.
         continue;
       }
       if (!stateMap[id]) {
-        stateMap[id] = new StateRecord;
+        stateMap[id] = new StateRecord();
       }
       let mostRecentTime = 0;
       for (const name in stateFromServer[id]) {
-        mostRecentTime = Math.max(mostRecentTime, stateFromServer[id][name].time);
+        mostRecentTime = Math.max(
+          mostRecentTime,
+          stateFromServer[id][name].time,
+        );
         if (stateMap[id].state[name]) {
           // The client has already created this state.
-          const {data, time} = stateFromServer[id][name];
+          const { data, time } = stateFromServer[id][name];
           stateMap[id].state[name].set(data, time);
         } else {
           // The client hasn't registered for this state yet...
@@ -272,7 +341,7 @@ export function init(network) {
       stateMap[id].lastUpdatedTime = time.now();
     }
   });
-  network.on('state-closed', id => {
+  network.on("state-closed", (id) => {
     if (stateMap[id]) {
       stateMap[id].serverClosedTime = time.now();
     }

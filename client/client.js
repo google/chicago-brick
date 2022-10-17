@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as monitor from '/client/monitoring/monitor.js';
 import * as network from '/client/network/network.ts';
-import * as stateManager from '/client/network/state_manager.js';
+import * as stateManager from '/client/network/state_manager.ts';
 import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
 import {addLogger} from '/lib/log.ts';
 import {now} from './util/time.ts';

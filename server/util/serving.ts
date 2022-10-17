@@ -41,7 +41,7 @@ export function serveDirectory(dir: string): Handler {
       const contents = await Deno.readFile(fullPath);
       return plain(contents, type);
     } catch (e) {
-      log.error(e);
+      log.error(fullPath, e);
       return notFound();
     }
   };
