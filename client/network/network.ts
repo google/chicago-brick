@@ -62,7 +62,7 @@ export function removeListener(event: string, callback: Handler) {
   socket.removeListener(event, callback);
 }
 export const whenReady = readyPromise;
-export function send(event: string, data: unknown) {
+export function send(event: string, data?: unknown) {
   if (socket) {
     socket.send(event, data);
   }

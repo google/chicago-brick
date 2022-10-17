@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from "../monitoring/monitor.js";
+import * as monitor from "../monitoring/monitor.ts";
 import { easyLog } from "../../lib/log.ts";
 import { now } from "../util/time.ts";
 import { Client } from "../../lib/module_interface.ts";

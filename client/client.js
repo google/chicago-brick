@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from './monitoring/monitor.js';
+import * as monitor from './monitoring/monitor.ts';
 import * as network from './network/network.ts';
 import * as stateManager from '/client/network/state_manager.ts';
 import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
