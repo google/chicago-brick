@@ -1,4 +1,4 @@
-import {ClientModule} from './module.js';
+import {ClientModule} from './module.ts';
 import {Polygon} from '/lib/math/polygon2d.ts';
 import {TitleCard} from '/client/title_card.js';
 import {Client} from '/lib/module_interface.ts';

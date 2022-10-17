@@ -21,7 +21,7 @@ import {addLogger} from '/lib/log.ts';
 import {now} from './util/time.ts';
 import {errorLogger} from './util/error_logger.ts';
 import {ClientModulePlayer} from '/client/modules/client_module_player.ts';
-import {ClientModule} from '/client/modules/module.js';
+import {ClientModule} from './modules/module.ts';
 
 addLogger(makeConsoleLogger((...strings) => {
   const processedStrs = [];

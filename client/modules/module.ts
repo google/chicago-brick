@@ -13,53 +13,77 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Polygon} from '../../lib/math/polygon2d.ts';
-import * as moduleTicker from './module_ticker.ts';
-import * as network from '../network/network.ts';
-import * as peerNetwork from '../network/peer.ts';
-import {easyLog} from '../../lib/log.ts';
-import {assert} from '../../lib/assert.ts';
-import asset from '../asset/asset.ts';
-import inject from '../../lib/inject.ts';
-import * as stateManager from '../network/state_manager.ts';
-import {TitleCard} from '../title_card.js';
-import * as time from '../util/time.ts';
-import {delay} from '../../lib/promise.ts';
+import { Polygon } from "../../lib/math/polygon2d.ts";
+import * as moduleTicker from "./module_ticker.ts";
+import * as network from "../network/network.ts";
+import * as peerNetwork from "../network/peer.ts";
+import { easyLog } from "../../lib/log.ts";
+import { assert } from "../../lib/assert.ts";
+import asset from "../asset/asset.ts";
+import inject from "../../lib/inject.ts";
+import * as stateManager from "../network/state_manager.ts";
+import { TitleCard } from "../title_card.js";
+import * as time from "../util/time.ts";
+import { delay } from "../../lib/promise.ts";
+import { Client } from "../../lib/module_interface.ts";
+import { WS } from "../../lib/websocket.ts";
 
-function createNewContainer(name) {
-  var newContainer = document.createElement('div');
-  newContainer.className = 'container';
-  newContainer.id = 't-' + time.now();
-  newContainer.setAttribute('moduleName', name);
+function createNewContainer(name: string) {
+  const newContainer = document.createElement("div");
+  newContainer.className = "container";
+  newContainer.id = "t-" + time.now();
+  newContainer.setAttribute("moduleName", name);
   return newContainer;
 }
 
 export const FadeTransition = {
-  start(container) {
+  start(container: Element) {
     if (container) {
       container.style.opacity = 0.001;
-      document.querySelector('#containers').appendChild(container);
+      document.querySelector("#containers").appendChild(container);
     }
   },
-  async perform(oldModule, newModule, deadline) {
-    if (newModule.name == '_empty') {
+  async perform(
+    oldModule: ClientModule,
+    newModule: ClientModule,
+    deadline: number,
+  ) {
+    if (newModule.name == "_empty") {
       // Fading out.. so fade *out* the *old* container.
-      oldModule.container.style.transition =
-          'opacity ' + time.until(deadline).toFixed(0) + 'ms';
+      oldModule.container.style.transition = "opacity " +
+        time.until(deadline).toFixed(0) + "ms";
       oldModule.container.style.opacity = 0.0;
     } else {
-      newModule.container.style.transition =
-          'opacity ' + time.until(deadline).toFixed(0) + 'ms';
+      newModule.container.style.transition = "opacity " +
+        time.until(deadline).toFixed(0) + "ms";
       newModule.container.style.opacity = 1.0;
     }
     // TODO(applmak): Maybe wait until css says that the transition is done?
     await delay(time.until(deadline));
-  }
-}
-
+  },
+};
 
 export class ClientModule {
-  constructor(name, path, config, titleCard, deadline, geo, transition) {
+  container: Element | null;
+  instance: Client | null;
+  network: { open: any; close(): void } | null;
+  stateManager: { open: any; close(): void } | null;
+  constructor(
+    readonly name: string,
+    readonly path: string,
+    readonly config: unknown,
+    readonly titleCard: TitleCard,
+    readonly deadline: number,
+    readonly geo: Polygon,
+    readonly transition: {
+      start(e: Element): void;
+      perform(
+        a: ClientModule,
+        b: ClientModule,
+        deadline: number,
+      ): Promise<void>;
+    },
+  ) {
     // The module name.
     this.name = name;
 
@@ -90,13 +114,15 @@ export class ClientModule {
 
     // Network instance for this module.
     this.network = null;
+
+    this.stateManager = null;
   }
 
   tellClientToPlay() {}
 
   // Deserializes from the json serialized form of ModuleDef in the server.
-  static deserialize(bits) {
-    if (bits.module.name == '_empty') {
+  static deserialize(bits: any) {
+    if (bits.module.name == "_empty") {
       return ClientModule.newEmptyModule(bits.time);
     }
     return new ClientModule(
@@ -112,18 +138,18 @@ export class ClientModule {
 
   static newEmptyModule(deadline = 0, transition = FadeTransition) {
     return new ClientModule(
-      '_empty',
-      '',
+      "_empty",
+      "",
       {},
       new TitleCard({}),
       deadline,
-      new Polygon([{x: 0, y:0}]),
-      transition
+      new Polygon([{ x: 0, y: 0 }]),
+      transition,
     );
   }
 
   // Extracted out for testing purposes.
-  static async loadPath(path) {
+  static async loadPath(path: string) {
     return await import(path);
   }
 
@@ -134,14 +160,16 @@ export class ClientModule {
       return;
     }
 
-    const INSTANTIATION_ID =
-      `${this.geo.extents.serialize()}-${this.deadline}`;
+    const INSTANTIATION_ID = `${this.geo.extents.serialize()}-${this.deadline}`;
     this.network = network.forModule(INSTANTIATION_ID);
     let openNetwork = this.network.open();
-    this.stateManager = stateManager.forModule(network, INSTANTIATION_ID);
+    this.stateManager = stateManager.forModule(
+      network as unknown as WS,
+      INSTANTIATION_ID,
+    );
     const fakeEnv = {
       asset,
-      debug: easyLog('wall:module:' + this.name),
+      debug: easyLog("wall:module:" + this.name),
       game: undefined,
       network: openNetwork,
       titleCard: this.titleCard.getModuleAPI(),
@@ -151,11 +179,16 @@ export class ClientModule {
       assert,
     };
     try {
-      const {load} = await ClientModule.loadPath(this.path);
+      const { load } = await ClientModule.loadPath(this.path);
       if (!load) {
         throw new Error(`${this.name} did not export a 'load' function!`);
       }
-      const {client} = inject(load, fakeEnv);
+      const { client } = inject(
+        load as (
+          ...args: unknown[]
+        ) => { client: { new (config: unknown): Client } },
+        fakeEnv,
+      );
       this.instance = new client(this.config);
     } catch (e) {
       // something went very wrong. Wind everything down.!
@@ -174,21 +207,21 @@ export class ClientModule {
     // TODO(applmak): Move the transition smarts out of ClientModule.
     this.transition.start(this.container);
     try {
-      await this.instance.willBeShownSoon(this.container, this.deadline);
-    } catch(e) {
+      await this.instance!.willBeShownSoon(this.container, this.deadline);
+    } catch (e) {
       this.dispose();
       throw e;
     }
   }
 
   // Returns true if module is still OK.
-  beginTransitionIn(deadline) {
+  beginTransitionIn(deadline: number) {
     if (!this.path) {
       return;
     }
-    moduleTicker.add(this.name, this.instance);
+    moduleTicker.add(this.name, this.instance as any);
     try {
-      this.instance.beginFadeIn(deadline);
+      this.instance!.beginFadeIn(deadline);
     } catch (e) {
       this.dispose();
       throw e;
@@ -200,25 +233,28 @@ export class ClientModule {
       return;
     }
     this.titleCard.enter();
-    this.instance.finishFadeIn();
+    this.instance!.finishFadeIn();
   }
 
-  beginTransitionOut(deadline) {
+  beginTransitionOut(deadline: number) {
     if (!this.path) {
       return;
     }
     this.titleCard.exit();
-    this.instance.beginFadeOut(deadline);
+    this.instance!.beginFadeOut();
   }
 
   finishTransitionOut() {
     if (!this.path) {
       return;
     }
-    this.instance.finishFadeOut();
+    this.instance!.finishFadeOut();
   }
 
-  async performTransition(otherModule, transitionFinishDeadline) {
+  async performTransition(
+    otherModule: ClientModule,
+    transitionFinishDeadline: number,
+  ) {
     await this.transition.perform(otherModule, this, transitionFinishDeadline);
   }
 
@@ -230,11 +266,11 @@ export class ClientModule {
     if (!this.path) {
       return;
     }
-    this.titleCard.exit();  // Just in case.
-    moduleTicker.remove(this.instance);
+    this.titleCard.exit(); // Just in case.
+    moduleTicker.remove(this.instance as any);
 
     if (this.network) {
-      this.stateManager.close();
+      this.stateManager!.close();
       this.stateManager = null;
       this.network.close();
       this.network = null;
