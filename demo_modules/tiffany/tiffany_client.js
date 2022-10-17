@@ -1,4 +1,4 @@
-import {P5Surface} from '/client/surface/p5_surface.js';
+import {P5Surface} from '/client/surface/p5_surface.ts';
 import {sub} from '/lib/math/vector2d.ts';
 import {Polygon} from '/lib/math/polygon2d.ts';
 import { Client } from '/lib/module_interface.ts';

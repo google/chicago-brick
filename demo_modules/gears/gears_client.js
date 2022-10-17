@@ -1,7 +1,7 @@
 /* globals Path2D */
 
 import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
-import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.ts';
 import {Rectangle} from '/lib/math/rectangle.ts';
 import {Client} from '/lib/module_interface.ts';
 

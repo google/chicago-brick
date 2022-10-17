@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
-import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.ts';
 import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/network/state_manager.ts';
 import {Client} from '/lib/module_interface.ts';
 

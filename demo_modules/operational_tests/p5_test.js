@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { Client } from '/lib/module_interface.ts';
-import {P5Surface} from '/client/surface/p5_surface.js';
+import {P5Surface} from '/client/surface/p5_surface.ts';
 
 export function load(wallGeometry, debug) {
   // p5 must be a P5.js instance.

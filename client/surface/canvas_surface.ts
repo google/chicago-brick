@@ -13,14 +13,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Surface} from '/client/surface/surface.js';
+import { Polygon } from "../../lib/math/polygon2d.ts";
+import { Surface } from "./surface.ts";
 
 export class CanvasSurface extends Surface {
-  constructor(container, wallGeometry) {
+  readonly canvas: HTMLCanvasElement;
+  readonly context: CanvasRendering2DContext;
+  constructor(container: Element, wallGeometry: Polygon) {
     super(container, wallGeometry);
 
-    this.canvas = document.createElement('canvas');
-    this.canvas.style.position = 'absolute';
+    this.canvas = document.createElement("canvas");
+    this.canvas.style.position = "absolute";
     this.canvas.style.left = 0;
     this.canvas.style.right = 0;
     this.canvas.style.top = 0;
@@ -28,16 +31,15 @@ export class CanvasSurface extends Surface {
     this.canvas.style.padding = 0;
     this.canvas.style.margin = 0;
 
-    this.canvas.setAttribute('width', this.virtualRect.w);
-    this.canvas.setAttribute('height', this.virtualRect.h);
+    this.canvas.setAttribute("width", this.virtualRect.w);
+    this.canvas.setAttribute("height", this.virtualRect.h);
 
     container.appendChild(this.canvas);
 
-    this.context = this.canvas.getContext('2d');
+    this.context = this.canvas.getContext("2d");
   }
   destroy() {
     this.canvas.remove();
-    this.canvas = null;
   }
   pushOffset() {
     this.context.save();
@@ -46,11 +48,18 @@ export class CanvasSurface extends Surface {
   applyOffset() {
     this.context.translate(-this.virtualRect.x, -this.virtualRect.y);
   }
-  popOffset() { this.context.restore(); }
-  setOpacity(alpha) {
+  popOffset() {
+    this.context.restore();
+  }
+  setOpacity(alpha: number) {
     this.canvas.style.opacity = alpha;
   }
   takeSnapshot() {
-    return this.context.getImageData(0, 0, this.canvas.width, this.canvas.height);
+    return this.context.getImageData(
+      0,
+      0,
+      this.canvas.width,
+      this.canvas.height,
+    );
   }
 }

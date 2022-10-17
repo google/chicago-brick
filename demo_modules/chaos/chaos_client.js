@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {GOOGLE_COLORS} from './colors.js';
-import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.ts';
 import {Client} from '/lib/module_interface.ts';
 
 export function load(network, wallGeometry) {

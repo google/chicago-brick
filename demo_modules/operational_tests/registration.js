@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { Client } from '/lib/module_interface.ts';
-import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.ts';
 
 export function load(wallGeometry) {
   class RegistrationClient extends Client {
