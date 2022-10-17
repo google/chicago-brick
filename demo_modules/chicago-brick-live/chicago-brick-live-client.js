@@ -12,7 +12,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-import {CanvasSurface} from '/client/surface/canvas_surface.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.ts';
+import {Client} from '/lib/module_interface.ts';
 
 export function load(debug, network, wallGeometry) {
   const HIGHLIGHT_COLORS = ['#3cba54', '#f4c20d', '#db3236', '#4885ed'];
@@ -162,7 +163,7 @@ export function load(debug, network, wallGeometry) {
   //
   // Client Module
   //
-  class ChicagoBrickLiveClient {
+  class ChicagoBrickLiveClient extends Client {
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();

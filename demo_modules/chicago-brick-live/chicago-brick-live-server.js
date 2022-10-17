@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import socketIoClient from 'socket.io-client';
+import { Server } from '/lib/module_interface.ts';
 
 export function load(debug, network) {
   //
@@ -41,8 +42,9 @@ export function load(debug, network) {
   //
   // Server Module
   //
-  class ChicagoBrickLiveServer {
+  class ChicagoBrickLiveServer extends Server {
     constructor(config) {
+      super(config);
       this.config = Object.assign({}, DEFAULT_CONFIG, config);
       debug(`Attempting to use codeserver at ${this.config.codeServer}`);
 

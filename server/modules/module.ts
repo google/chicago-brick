@@ -16,19 +16,18 @@ limitations under the License.
 import * as time from "../util/time.ts";
 import * as wallGeometry from "../util/wall_geometry.ts";
 import * as moduleTicker from "./module_ticker.ts";
-import assert from "../../lib/assert.js";
+import { assert } from "../../lib/assert.ts";
 import * as network from "../network/network.ts";
 import * as stateManager from "../network/state_manager.ts";
-import { delay } from "../../lib/promise.js";
+import { delay } from "../../lib/promise.ts";
 import { getGeo } from "../util/wall_geometry.ts";
 import { clients } from "../network/network.ts";
 import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
-import { Server } from "../../lib/module_interface.js";
+import { Server } from "../../lib/module_interface.ts";
 import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
-import { easyLog } from "../../lib/log.js";
-import conform from "../../lib/conform.js";
-import inject from "../../lib/inject.js";
-import { WS } from "../../lib/websocket.js";
+import { easyLog } from "../../lib/log.ts";
+import inject from "../../lib/inject.ts";
+import { WS } from "../../lib/websocket.ts";
 
 const log = easyLog("wall:module");
 
@@ -95,8 +94,12 @@ export class RunningModule {
       assert,
     };
 
-    const { server } = inject(load, fakeEnv);
-    conform(server, Server);
+    const { server } = inject(
+      load as (
+        ...args: unknown[]
+      ) => { server: { new (config: unknown): Server } },
+      fakeEnv,
+    );
     return { server };
   }
 
@@ -129,7 +132,7 @@ export class RunningModule {
           network: this.network.open(),
           state: this.stateManager!.open(),
         });
-        this.instance = new server(this.moduleDef.config, this.deadline);
+        this.instance = new server(this.moduleDef.config);
       } else {
         this.instance = new Server();
       }

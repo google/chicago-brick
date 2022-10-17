@@ -18,7 +18,7 @@ import {ServerDisplayStrategy} from './interfaces.js';
 import randomjs from 'random-js';
 const random = new randomjs.Random();
 
-import {Rectangle} from '../../lib/math/rectangle.js';
+import {Rectangle} from '../../lib/math/rectangle.ts';
 
 function pick(arr) {
   if (arr.length) {

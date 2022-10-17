@@ -1,9 +1,18 @@
 import { serve, serveTls } from "https://deno.land/std@0.132.0/http/server.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import mime from "https://esm.sh/mime";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
+import { emit } from "https://deno.land/x/emit@0.9.0/mod.ts";
 
 const log = easyLog("wall:serving");
+
+async function transpile(tsPath: string): Promise<string> {
+  const now = performance.now();
+  const url = new URL(tsPath, import.meta.url);
+  const result = await emit(url);
+  log(`transpiled ${tsPath} in ${performance.now() - now} ms`);
+  return result[url.href];
+}
 
 export function serveFile(filePath: string): Handler {
   return async (req: Request) => {
@@ -22,13 +31,17 @@ export function serveDirectory(dir: string): Handler {
   return async (req: Request, match: URLPatternResult) => {
     const filePath = match.pathname.groups.path || "index.html";
     const fullPath = path.join(dir, filePath);
-    log(req.url, fullPath);
     const type = mime.getType(path.extname(filePath)) || "text/plain";
+    log(req.url, fullPath, type);
     try {
+      if (filePath.endsWith(".ts")) {
+        const jsCode = await transpile(fullPath);
+        return plain(jsCode, "application/javascript");
+      }
       const contents = await Deno.readFile(fullPath);
       return plain(contents, type);
     } catch (e) {
-      log.error(e);
+      log.error(fullPath, e);
       return notFound();
     }
   };
@@ -99,11 +112,12 @@ export class DispatchServer {
     }
   }
   private async mainHandler(req: Request): Promise<Response> {
-    const baseUrl = `http://${req.headers.get("host") || "localhost"}/`;
+    const hostname = req.headers.get("host") || "localhost";
+    const baseUrl = `http://${hostname}/`;
     // Test the request url against each handler.
     for (const { pattern, handler } of this.handlers) {
       const url = new URL(req.url, baseUrl);
-      const p = new URLPattern(pattern, baseUrl);
+      const p = new URLPattern({ pathname: pattern });
       const match = p.exec(url);
       if (match) {
         // We got one!

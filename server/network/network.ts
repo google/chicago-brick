@@ -26,17 +26,17 @@ limitations under the License.
 //   client fails to do this, the client is considered invalid and omitted from
 //   future calculations.
 
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import * as monitor from "../monitoring/monitor.ts";
-import { Rectangle } from "../../lib/math/rectangle.js";
+import { Rectangle } from "../../lib/math/rectangle.ts";
 import { now } from "../util/time.ts";
 import {
   cleanupModuleOverlayHandler,
   installModuleOverlayHandler,
   makeModuleOverlaySocket,
-} from "../../lib/socket_wrapper.js";
+} from "../../lib/socket_wrapper.ts";
 import { WSS } from "./websocket.ts";
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 import { DispatchServer } from "../util/serving.ts";
 
 let io: WSS;
@@ -114,6 +114,11 @@ interface ClientConfig {
   offset: Point;
 }
 
+interface SerializedClientConfig {
+  rect: string;
+  offset: Point;
+}
+
 interface PerModuleClientInfo extends ClientConfig {
   // TODO: Make this more accurate.
   socket: unknown;
@@ -131,7 +136,7 @@ export function init(server: DispatchServer) {
     const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
-    socket.on("client-start", (config: ClientConfig) => {
+    socket.on("client-start", (config: SerializedClientConfig) => {
       const clientRect = Rectangle.deserialize(config.rect);
       if (!clientRect) {
         log.error(`Bad client configuration: `, config);

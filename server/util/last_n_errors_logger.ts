@@ -1,5 +1,5 @@
 import * as network from "../network/network.ts";
-import { WS } from "../../lib/websocket.js";
+import { WS } from "../../lib/websocket.ts";
 
 network.on("connection", (socket: WS) => {
   socket.on("record-error", (err: unknown) => {

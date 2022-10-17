@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { now } from "../util/time.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 const log = easyLog("wall:module_ticker");
 import * as stateManager from "../network/state_manager.ts";
 import type { RunningModule } from "./module.ts";
@@ -77,6 +77,7 @@ export function remove(module: RunningModule) {
     return true;
   });
   log.debugAt(
+    1,
     "Remove: We are now ticking " + modulesToTick.length + " modules",
     modulesToTick.map((m) => m.moduleDef.name).join(", "),
   );

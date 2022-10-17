@@ -1,6 +1,6 @@
 import * as fakes from './fake_client_modules.js';
-import {ClientModule} from './module.js';
-import {ClientModulePlayer} from './client_module_player.js';
+import {ClientModule} from './module.ts';
+import {ClientModulePlayer} from './client_module_player.ts';
 
 const expect = chai.expect;
 

@@ -13,7 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {P5Surface} from '/client/surface/p5_surface.js';
+import { Client } from '/lib/module_interface.ts';
+import {P5Surface} from '/client/surface/p5_surface.ts';
 
 export function load(wallGeometry, asset) {
   // Create a polygon extending from x,y by w,h.
@@ -147,8 +148,9 @@ export function load(wallGeometry, asset) {
     }
   }
 
-  class BigImageCarouselClient {
+  class BigImageCarouselClient extends Client {
     constructor(config) {
+      super(config);
       this.config = config;
     }
 

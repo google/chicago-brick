@@ -1,6 +1,7 @@
-import {P5Surface} from '/client/surface/p5_surface.js';
-import {sub} from '/lib/math/vector2d.js';
-import {Polygon} from '/lib/math/polygon2d.js';
+import {P5Surface} from '/client/surface/p5_surface.ts';
+import {sub} from '/lib/math/vector2d.ts';
+import {Polygon} from '/lib/math/polygon2d.ts';
+import { Client } from '/lib/module_interface.ts';
 
 // These control the thickness of the lines that are drawn, and are
 // determined by taking the log10 of the number of underlying image pixels
@@ -115,8 +116,9 @@ export function load(wallGeometry, debug, network) {
     }
   }
 
-  class TiffanyClient {
+  class TiffanyClient extends Client {
     constructor(config) {
+      super();
       debug('Tiffany Stained Glass Client!', config);
       // Polygons that have been received from the server
       this.polygons = null;

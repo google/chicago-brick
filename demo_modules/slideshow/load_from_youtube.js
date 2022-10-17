@@ -17,7 +17,7 @@ limitations under the License.
 
 import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
 import {loadYoutubeApi} from './load_youtube_api.js';
-import {delay} from '../../lib/promise.js';
+import {delay} from '../../lib/promise.ts';
 
 export default function({debug}) {
   // LOAD YOUTUBE PLAYLIST STRATEGY

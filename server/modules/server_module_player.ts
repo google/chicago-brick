@@ -15,9 +15,9 @@ limitations under the License.
 
 import * as monitor from "../monitoring/monitor.ts";
 import * as time from "../util/time.ts";
-import { configure } from "../../lib/module_player.js";
+import { configure } from "../../lib/module_player.ts";
 import { RunningModule } from "./module.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 
 const log = easyLog("wall:module_state_machine");
 

@@ -1,5 +1,5 @@
-import { easyLog } from "../../lib/log.js";
-import { WS } from "../../lib/websocket.js";
+import { easyLog } from "../../lib/log.ts";
+import { WS } from "../../lib/websocket.ts";
 import * as network from "./network.ts";
 
 const log = easyLog("wall:peer");
@@ -15,7 +15,7 @@ interface CommonPayloadFields {
 
 const knownPeers = new Map<string, PeerInfo>();
 
-function relayMessage(msg: unknown, payload: CommonPayloadFields) {
+function relayMessage(msg: string, payload: CommonPayloadFields) {
   const { to } = payload;
   const toPeer = knownPeers.get(to);
   if (!toPeer) {

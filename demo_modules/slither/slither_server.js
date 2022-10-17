@@ -1,4 +1,5 @@
-import {sub} from '../../lib/math/vector2d.js';
+import {sub} from '../../lib/math/vector2d.ts';
+import { Server } from '../../lib/module_interface.ts';
 
 export function load(debug, state, wallGeometry) {
   const COLORS = [
@@ -32,8 +33,9 @@ export function load(debug, state, wallGeometry) {
     return Math.ceil(wallGeometry.extents.w * wallGeometry.extents.h / 1000 / 1000);
   }
 
-  class SlitherServer {
+  class SlitherServer extends Server {
     constructor(config) {
+      super(config);
       // Last position and heading and color of each snake.
       this.snakes = [];
 

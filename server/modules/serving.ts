@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import {
   DispatchServer,

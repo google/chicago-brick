@@ -14,14 +14,14 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from "../monitoring/monitor.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import shuffle from "https://deno.land/x/shuffle/mod.ts";
-import assert from "../../lib/assert.js";
+import { assert } from "../../lib/assert.ts";
 import { inFuture, now, until } from "../util/time.ts";
 import { RunningModule } from "../modules/module.ts";
 import EventEmitter from "https://deno.land/x/eventemitter/mod.ts";
 import * as network from "../network/network.ts";
-import { configure } from "../../lib/module_player.js";
+import { configure } from "../../lib/module_player.ts";
 import { ModuleDef } from "../modules/module_def.ts";
 import { Layout } from "../modules/layout.ts";
 

@@ -13,7 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {P5Surface} from '/client/surface/p5_surface.js';
+import { Client } from '/lib/module_interface.ts';
+import {P5Surface} from '/client/surface/p5_surface.ts';
 
 export function load(wallGeometry, debug) {
   // p5 must be a P5.js instance.
@@ -70,8 +71,9 @@ export function load(wallGeometry, debug) {
     }
   }
 
-  class P5TestClient {
+  class P5TestClient extends Client {
     constructor(config) {
+      super();
       debug('P5Test Client!', config);
       this.image = null;
       this.surface = null;

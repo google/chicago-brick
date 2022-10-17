@@ -1,5 +1,5 @@
 import * as fakes from './fake_client_modules.js';
-import {willReject} from '/lib/testing_utils.js';
+import {willReject} from '/lib/testing_utils.ts';
 
 const expect = chai.expect;
 

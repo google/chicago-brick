@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import {Server} from '../../lib/module_interface.ts';
+
 export function load(state, network, wallGeometry) {
   var NUM_BALLS = 10;
   var INITIAL_RADIUS = 150;
@@ -102,7 +104,7 @@ export function load(state, network, wallGeometry) {
   //
   // Server Module
   //
-  class MergeBallsServer {
+  class MergeBallsServer extends Server {
     async willBeShownSoon() {
         function getInitialBallPosition(ballradius) {
             var rect = wallGeometry.extents;

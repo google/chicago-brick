@@ -13,11 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Client } from "/lib/module_interface.ts";
+
 export function load(network) {
   // This is a no-op module that shows what is leaking in the framework when we
   // switch modules.
-  class MemoryDebugClient {
+  class MemoryDebugClient extends Client {
     constructor() {
+      super();
       // TODO(applmak): Send something this message, maybe?
       const memoryDebugHandler = () => {
         this.thing = (this.thing || 0) + 1;

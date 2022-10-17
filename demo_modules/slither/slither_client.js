@@ -1,7 +1,8 @@
-import {CanvasSurface} from '/client/surface/canvas_surface.js';
-import {NumberLerpInterpolator, ValueNearestInterpolator} from '/lib/shared_state.js';
+import {CanvasSurface} from '/client/surface/canvas_surface.ts';
+import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/network/state_manager.ts';
 
-import {rotCCW, scale, add} from '/lib/math/vector2d.js';
+import {rotCCW, scale, add} from '/lib/math/vector2d.ts';
+import { Client } from '/lib/module_interface.ts';
 
 export function load(debug, state, wallGeometry) {
   // TODO(applmak): Use a real color object/library.
@@ -9,7 +10,7 @@ export function load(debug, state, wallGeometry) {
     return `#${color.substr(1).match(/.{2}/g).map(c => Math.max(0, parseInt(c, 16) - 5*i).toString(16).padStart(2, '0')).join('')}`;
   };
 
-  class SlitherClient {
+  class SlitherClient extends Client {
     async willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;

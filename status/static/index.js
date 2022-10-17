@@ -17,25 +17,31 @@ import {ClientController} from './client_controller.js';
 import {PlaylistController} from './playlist_controller.js';
 import {ErrorController} from './error_controller.js';
 import {PlaylistCreator} from './playlist_creator.js';
-import {WS} from '/lib/websocket.js';
-import {addLogger} from '/lib/log.js';
-import {makeConsoleLogger} from '/lib/console_logger.js';
+import {WS} from '../../lib/websocket.ts';
+import {addLogger} from '/lib/log.ts';
+import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
 
-function makeConsoleColorFn(css) {
-  const ret = str => {
-    return `%c${str}%c`;
+addLogger(makeConsoleLogger((...strings) => {
+  const processedStrs = [];
+  const css = [];
+  for (const str of strings) {
+    if (isStringWithOptions(str)) {  
+      processedStrs.push(str.str);
+      if (str.options.bold) {
+        css.push('font-weight: bolder');
+      }
+      if (str.options.backgroundColor) {
+        css.push(`background-color: ${str.options.backgroundColor}`);
+      }
+    } else {
+      processedStrs.push(str);
+      if (css.length) {
+        // Only add a '' css if we already have something in the css box.
+        css.push('');
+      }
+    }
   }
-  ret.desc = css;
-  return ret;
-}
-
-addLogger(makeConsoleLogger(c => {
-  const ret = makeConsoleColorFn([`color: ${c}`]);
-  ret.bold = {
-    bgRed: makeConsoleColorFn(['font-weight: bolder', 'background-color: red', `color: ${c}`]),
-  };
-  ret.bgBlue = makeConsoleColorFn(['background-color: blue', `color: ${c}`]);
-  return ret;
+  console.log(...processedStrs, ...css);
 }, () => performance.now()));
 
 let lastUpdateFromServer = 0;

@@ -29,7 +29,8 @@ import LoadFromYouTubePlaylistStrategy from './load_from_youtube.js';
 import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display_client.js';
-import {Surface} from '/client/surface/surface.js';
+import {Surface} from '/client/surface/surface.ts';
+import {Client} from '/lib/module_interface.ts';
 
 export function load(wallGeometry, debug, network, assert, asset) {
   // DISPATCH TABLES
@@ -57,7 +58,7 @@ export function load(wallGeometry, debug, network, assert, asset) {
     throw new Error('Could not parse load config: ' + Object.keys(displayConfig).join(', '));
   };
 
-  class ImageClient {
+  class ImageClient extends Client {
     async willBeShownSoon(container, deadline) {
       this.surface = new Surface(container, wallGeometry);
       return new Promise(resolve => {

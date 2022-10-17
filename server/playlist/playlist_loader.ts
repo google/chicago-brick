@@ -14,9 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 import RJSON from "https://esm.sh/relaxed-json";
-import assert from "../../lib/assert.js";
+import { assert } from "../../lib/assert.ts";
 import { Layout } from "../modules/layout.ts";
-import { easyLog } from "../../lib/log.js";
+import { easyLog } from "../../lib/log.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import { walkSync } from "https://deno.land/std@0.132.0/fs/walk.ts";
 import { ModuleDef } from "../modules/module_def.ts";
