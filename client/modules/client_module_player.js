@@ -13,11 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as monitor from '/client/monitoring/monitor.js';
-import * as time from '/client/util/time.ts';
-import {ClientModule} from '/client/modules/module.js';
-import {easyLog} from '/lib/log.ts';
-import {configure} from '/lib/module_player.ts';
+import * as monitor from '../monitoring/monitor.js';
+import * as time from '../util/time.ts';
+import {ClientModule} from './module.js';
+import {easyLog} from '../../lib/log.ts';
+import {configure} from '../../lib/module_player.ts';
 
 const log = easyLog('wall:client_state_machine');
 

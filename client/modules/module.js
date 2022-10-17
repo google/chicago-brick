@@ -14,8 +14,8 @@ limitations under the License.
 ==============================================================================*/
 
 import {Polygon} from '/lib/math/polygon2d.ts';
-import * as moduleTicker from '/client/modules/module_ticker.js';
-import * as network from '/client/network/network.ts';
+import * as moduleTicker from './module_ticker.ts';
+import * as network from '../network/network.ts';
 import * as peerNetwork from '/client/network/peer.ts';
 import {easyLog} from '/lib/log.ts';
 import {assert} from '../../lib/assert.ts';

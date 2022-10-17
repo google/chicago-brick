@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as network from '/client/network/network.ts';
-import {now} from '/client/util/time.ts';
+import * as network from '../network/network.ts';
+import {now} from '../util/time.ts';
 
 // The monitor in the client displays up-to-date information about what the
 // server is doing. It's designed as a debugging tool.
