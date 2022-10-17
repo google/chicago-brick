@@ -15,29 +15,30 @@ limitations under the License.
 
 // A handy wrapper around peer.js that makes it easy for client modules to
 // connect to one another.
-import * as info from '../util/info.ts';
-import {easyLog} from '/lib/log.ts';
-import * as network from './network.ts';
+import * as info from "../util/info.ts";
+import { easyLog } from "../../lib/log.ts";
+import * as network from "./network.ts";
+import { WS } from "../../lib/websocket.ts";
 
-const log = easyLog('wall:peer');
+const log = easyLog("wall:peer");
 
 const peers = new Map();
 const myPeerid = `${info.virtualOffset.x},${info.virtualOffset.y}`;
 const handlers = new Map();
 
-function addChannelEventListeners(channel, peerid) {
-  channel.addEventListener('open', () => {
-    log('Open channel with peer:', peerid);
+function addChannelEventListeners(channel: any, peerid: string) {
+  channel.addEventListener("open", () => {
+    log("Open channel with peer:", peerid);
     const peer = peers.get(peerid);
     if (!peer) {
-      log.error('Bad peer connection. No record found for peer', peerid);
+      log.error("Bad peer connection. No record found for peer", peerid);
       return;
     }
-    fire('connection', peerid, peerid);
+    fire("connection", peerid, peerid);
   });
-  channel.addEventListener('message', event => {
+  channel.addEventListener("message", (event: any) => {
     log(`Received message from ${peerid}`);
-    const {data} = event;
+    const { data } = event;
     try {
       const [msgType, payload] = JSON.parse(data);
       fire(msgType, payload, peerid);
@@ -45,19 +46,19 @@ function addChannelEventListeners(channel, peerid) {
       log.error(`Invalid message from peer: ${peerid}`);
     }
   });
-  channel.addEventListener('close', () => {
+  channel.addEventListener("close", () => {
     log(`Closed channel with peer: ${peerid}`);
     peers.delete(peerid);
-    fire('disconnect', peerid, peerid);
+    fire("disconnect", peerid, peerid);
   });
-  channel.addEventListener('error', event => {
+  channel.addEventListener("error", (event: any) => {
     log.error(`Error with peer: ${peerid}`, event.error);
   });
 }
 
-function addIceEventListeners(connection, peerid) {
-  connection.addEventListener('icecandidate', event => {
-    network.send('peer-icecandidate', {
+function addIceEventListeners(connection: any, peerid: string) {
+  connection.addEventListener("icecandidate", (event: any) => {
+    network.send("peer-icecandidate", {
       from: myPeerid,
       to: peerid,
       candidate: event.candidate,
@@ -65,8 +66,10 @@ function addIceEventListeners(connection, peerid) {
   });
 }
 
-async function connect(peerid) {
-  const connection = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+async function connect(peerid: string) {
+  const connection = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  });
   const channel = connection.createDataChannel(peerid);
   const peer = {
     id: peerid,
@@ -80,23 +83,23 @@ async function connect(peerid) {
   const offer = await connection.createOffer();
   await connection.setLocalDescription(offer);
 
-  network.send('peer-offer', {
+  network.send("peer-offer", {
     from: myPeerid,
     to: peerid,
     offer,
   });
 }
 
-export function init(network) {
-  network.on('peer-list', msg => {
-    const {knownPeers} = msg;
+export function init(network: WS) {
+  network.on("peer-list", (msg) => {
+    const { knownPeers } = msg;
     log(`peer-list: got ${knownPeers.length}`);
     for (const peerid of knownPeers) {
       connect(peerid);
     }
   });
-  network.on('peer-icecandidate', async msg => {
-    const {from, candidate} = msg;
+  network.on("peer-icecandidate", async (msg) => {
+    const { from, candidate } = msg;
     log(`peer-icecandidate from: ${from}`);
     const peer = peers.get(from);
     if (!peer) {
@@ -110,16 +113,19 @@ export function init(network) {
     }
     log(`peer-icecandidate accepted from: ${from}`);
   });
-  network.on('peer-offer', async msg => {
-    const {from, offer} = msg;
+  network.on("peer-offer", async (msg) => {
+    const { from, offer } = msg;
     log(`peer-offer from: ${from}`);
-    const connection = new RTCPeerConnection({iceServers: [{urls: 'stun:stun.l.google.com:19302'}]});
+    const connection = new RTCPeerConnection({
+      iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+    });
     const peer = {
       id: from,
       connection,
+      channel: undefined,
     };
     peers.set(from, peer);
-    connection.addEventListener('datachannel', e => {
+    connection.addEventListener("datachannel", (e) => {
       log(`Created data channel by: ${from}`);
       peer.channel = e.channel;
       addChannelEventListeners(peer.channel, from);
@@ -129,34 +135,36 @@ export function init(network) {
     const answer = await connection.createAnswer();
     await connection.setLocalDescription(answer);
     log(`Sending answer to: ${from}`);
-    network.send('peer-answer', {
+    network.send("peer-answer", {
       from: myPeerid,
       to: from,
       answer,
     });
   });
-  network.on('peer-answer', async msg => {
-    const {from, answer} = msg;
+  network.on("peer-answer", async (msg) => {
+    const { from, answer } = msg;
     log(`peer-answer from: ${from}`);
     const peer = peers.get(from);
     if (!peer) {
       log.error(`Answer from unknown peer: ${from}`);
       return;
     }
-    await peer.connection.setRemoteDescription(new RTCSessionDescription(answer));
+    await peer.connection.setRemoteDescription(
+      new RTCSessionDescription(answer),
+    );
     log(`peer-answer accepted from: ${from}`);
   });
-  network.send('peer-register', {id: myPeerid});
+  network.send("peer-register", { id: myPeerid });
 }
 
-export function sendToAllPeers(msgType, payload) {
+export function sendToAllPeers(msgType: string, payload: unknown) {
   for (const [peer] of peers.values()) {
     peer.channel.send(JSON.stringify([msgType, payload]));
   }
 }
 
-export function send(peerid, msgType, payload) {
-  const peer = peer.get(peerid);
+export function send(peerid: string, msgType: string, payload: unknown) {
+  const peer = peers.get(peerid);
   if (!peer) {
     log.error(`Asked to send data to non-existent peer: ${peerid}`);
     return;
@@ -164,13 +172,15 @@ export function send(peerid, msgType, payload) {
   peer.channel.send(JSON.stringify([msgType, payload]));
 }
 
-export function on(msgType, handler) {
+type Handler = (payload: unknown) => void;
+
+export function on(msgType: string, handler: Handler) {
   const msgHandlers = handlers.get(msgType) || [];
   msgHandlers.push(handler);
   handlers.set(msgType, msgHandlers);
 }
 
-function fire(msgType, payload, peerid) {
+function fire(msgType: string, payload: unknown, peerid: string) {
   const msgHandlers = handlers.get(msgType);
   if (!msgHandlers) {
     return;
@@ -180,17 +190,17 @@ function fire(msgType, payload, peerid) {
   }
 }
 
-export function forModule(moduleid) {
+export function forModule(moduleid: string) {
   // Return an object that provides "scoped" versions of the standard api.
   const handlers = new Set();
   return {
-    send(peerid, msgType, payload) {
+    send(peerid: string, msgType: string, payload: unknown) {
       send(peerid, `${moduleid}-${msgType}`, payload);
     },
-    sendToAllPeers(msgType, payload) {
+    sendToAllPeers(msgType: string, payload: unknown) {
       sendToAllPeers(`${moduleid}-${msgType}`, payload);
     },
-    on(msgType, handler) {
+    on(msgType: string, handler: Handler) {
       const handlerName = `${moduleid}-${msgType}`;
       handlers.add(handlerName);
       on(handlerName, handler);
