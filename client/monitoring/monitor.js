@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as network from '/client/network/network.js';
+import * as network from '/client/network/network.ts';
 import {now} from '/client/util/time.ts';
 
 // The monitor in the client displays up-to-date information about what the

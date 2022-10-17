@@ -1,4 +1,4 @@
-import { send } from "../network/network.js";
+import { send } from "../network/network.ts";
 import { now } from "./time.ts";
 import { virtualRect } from "./info.ts";
 

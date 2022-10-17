@@ -17,7 +17,7 @@ limitations under the License.
 // connect to one another.
 import * as info from '../util/info.ts';
 import {easyLog} from '/lib/log.ts';
-import * as network from './network.js';
+import * as network from './network.ts';
 
 const log = easyLog('wall:peer');
 
