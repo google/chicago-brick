@@ -13,18 +13,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Polygon} from '/lib/math/polygon2d.ts';
+import {Polygon} from '../../lib/math/polygon2d.ts';
 import * as moduleTicker from './module_ticker.ts';
 import * as network from '../network/network.ts';
-import * as peerNetwork from '/client/network/peer.ts';
-import {easyLog} from '/lib/log.ts';
+import * as peerNetwork from '../network/peer.ts';
+import {easyLog} from '../../lib/log.ts';
 import {assert} from '../../lib/assert.ts';
-import asset from '/client/asset/asset.ts';
-import inject from '/lib/inject.ts';
-import * as stateManager from '/client/network/state_manager.ts';
-import {TitleCard} from '/client/title_card.js';
-import * as time from '/client/util/time.ts';
-import {delay} from '/lib/promise.ts';
+import asset from '../asset/asset.ts';
+import inject from '../../lib/inject.ts';
+import * as stateManager from '../network/state_manager.ts';
+import {TitleCard} from '../title_card.js';
+import * as time from '../util/time.ts';
+import {delay} from '../../lib/promise.ts';
 
 function createNewContainer(name) {
   var newContainer = document.createElement('div');
@@ -91,6 +91,8 @@ export class ClientModule {
     // Network instance for this module.
     this.network = null;
   }
+
+  tellClientToPlay() {}
 
   // Deserializes from the json serialized form of ModuleDef in the server.
   static deserialize(bits) {

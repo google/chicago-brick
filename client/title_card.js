@@ -65,7 +65,8 @@ limitations under the License.
  *     }
  */
 
-import asset from '/client/asset/asset.ts';
+import asset from './asset/asset.ts';
+
 
 function makeEmptyTitleCard() {
   const elem = document.createElement('div');
