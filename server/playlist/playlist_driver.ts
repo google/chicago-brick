@@ -19,7 +19,7 @@ import shuffle from "https://deno.land/x/shuffle/mod.ts";
 import { assert } from "../../lib/assert.ts";
 import { inFuture, now, until } from "../util/time.ts";
 import { RunningModule } from "../modules/module.ts";
-import EventEmitter from "https://deno.land/x/eventemitter/mod.ts";
+import { EventEmitter } from "../../lib/event.ts";
 import * as network from "../network/network.ts";
 import { configure } from "../../lib/module_player.ts";
 import { ModuleDef } from "../modules/module_def.ts";
@@ -27,7 +27,7 @@ import { Layout } from "../modules/layout.ts";
 
 const log = easyLog("wall:playlist_driver");
 
-export class PlaylistDriver extends EventEmitter<any> {
+export class PlaylistDriver extends EventEmitter {
   /**
    * If non-zero, a handle to the current timer, which when fired, will tell the
    * wall to play a new module.

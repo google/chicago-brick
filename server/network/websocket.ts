@@ -1,4 +1,4 @@
-import EventEmitter from "https://deno.land/x/eventemitter@1.2.4/mod.ts";
+import { EventEmitter } from "../../lib/event.ts";
 import { WS } from "../../lib/websocket.ts";
 import { easyLog } from "../../lib/log.ts";
 import { DispatchServer } from "../util/serving.ts";
@@ -10,7 +10,7 @@ interface WSSOptions {
   server?: DispatchServer;
 }
 
-export class WebSocketServer extends EventEmitter<any> {
+export class WebSocketServer extends EventEmitter {
   server: DispatchServer;
   constructor(options: WSSOptions) {
     super();
@@ -35,7 +35,7 @@ export class WebSocketServer extends EventEmitter<any> {
   }
 }
 
-export class WSS extends EventEmitter<any> {
+export class WSS extends EventEmitter {
   webSocketServer: WebSocketServer;
   clientSockets: Set<WS>;
   constructor(options: WSSOptions) {
