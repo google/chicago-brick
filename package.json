@@ -23,7 +23,7 @@
     "noisejs": "^2.1.0",
     "p5": "^0.8.0",
     "random-js": "^2.1.0",
-    "sharp": "^0.29.3",
+    "sharp": "^0.30.5",
     "sortablejs": "^1.14.0",
     "three-full": "^11.3.2",
     "urlpattern-polyfill": "^6.0.1"
