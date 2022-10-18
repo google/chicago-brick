@@ -37,10 +37,9 @@ import { captureLog } from "./util/last_n_errors_logger.ts";
 import { addLogger, easyLog } from "../lib/log.ts";
 import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
 import { now } from "./util/time.ts";
-import commandLineArgs from "https://esm.sh/command-line-args";
-import commandLineUsage from "https://esm.sh/command-line-usage";
 import { DispatchServer, DispatchServerOptions } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
+import { flags } from "./flags.ts";
 
 addLogger(
   makeConsoleLogger(
@@ -102,112 +101,13 @@ addLogger(captureLog, "wall");
 
 const log = easyLog("wall:server");
 
-const FLAG_DEFS = [
-  { name: "help", type: Boolean, description: "Shows this help." },
-  {
-    name: "port",
-    type: Number,
-    defaultValue: 3000,
-    description: "The port on which the brick server should run.",
-  },
-  {
-    name: "playlist",
-    type: String,
-    alias: "p",
-    defaultValue: "config/demo-playlist.json",
-    description: "The path to the playlist to run.",
-  },
-  {
-    name: "layout_duration",
-    type: Number,
-    description: "The default layout duration in seconds.",
-  },
-  {
-    name: "module_duration",
-    type: Number,
-    description: "The default module duration in seconds.",
-  },
-  {
-    name: "assets_dir",
-    type: String,
-    alias: "d",
-    // demo_modules contains the platform demos.
-    // The modules dir should contain your own modules.
-    defaultValue: ["demo_modules", "modules"],
-    multiple: true,
-    description: "List of directories of modules and assets.  Everything " +
-      "under these dirs will be available under " +
-      "/asset/(whatever is under your directories).",
-  },
-  {
-    name: "module_dir",
-    type: String,
-    defaultValue: ["demo_modules/*", "node_modules/*"],
-    multiple: true,
-    description: "A glob pattern matching directories that contain module " +
-      "code may be specified multiple times.",
-  },
-  {
-    name: "use_geometry",
-    type: JSON.parse,
-    defaultValue: null,
-    description:
-      "When passed-in, describes the geometry of the wall via turtle-like commands. " +
-      "See server/util/wall_geometry for the parser for the format.",
-  },
-  {
-    name: "geometry_file",
-    type: String,
-    description: "The path to a JSON file describing the geometry of the wall.",
-  },
-  { name: "screen_width", type: Number, defaultValue: 1920 },
-  {
-    name: "credential_dir",
-    type: String,
-    description:
-      "The path to a directory containing credentials needed by various modules that access external APIs.",
-  },
-  {
-    name: "enable_monitoring",
-    type: Boolean,
-    description: "When true, enables a monitoring display on the client.",
-  },
-  {
-    name: "https_cert",
-    type: String,
-    defaultValue: "",
-    description: "Path to a SSL certification file. Often has extension crt.",
-  },
-  {
-    name: "https_key",
-    type: String,
-    defaultValue: "",
-    description: "Path to a SSL key file. Often has extension key.",
-  },
-  {
-    name: "require_client_cert",
-    type: Boolean,
-    defaultValue: false,
-    description: "Whether to require HTTPS certs from clients.",
-  },
-];
-const flags = commandLineArgs(FLAG_DEFS);
-if (flags.help) {
-  console.log(
-    "Available flags: " + commandLineUsage({ optionList: FLAG_DEFS }),
-  );
-  Deno.exit();
-}
-log("flags");
-log(flags);
-
 // Load credentials.
 if (flags.credential_dir) {
   credentials.loadFromDir(flags.credential_dir);
 }
 
 // Initialize the wall geometry.
-wallGeometry.init(flags);
+wallGeometry.init();
 
 // Load all of the module information we know about.
 await loadAllBrickJson(flags.module_dir);
@@ -215,8 +115,8 @@ await loadAllBrickJson(flags.module_dir);
 // Load the playlist. If the playlist is malformed, we throw and abort.
 const playlist = await loadPlaylistFromFile(
   flags.playlist,
-  flags.layout_duration,
-  flags.module_duration,
+  flags.layout_duration || 0,
+  flags.module_duration || 0,
 );
 
 // Create an serve that can describes the routes that serve the files the client
@@ -231,7 +131,7 @@ if (flags.https_cert) {
 const server = new DispatchServer(options);
 
 // Add module serving routes to the server.
-moduleServing.addRoutes(server, flags);
+moduleServing.addRoutes(server);
 
 // Add websocket routes to the server.
 network.init(server);

@@ -22,6 +22,7 @@ import {
   serveFile,
 } from "../util/serving.ts";
 import { library } from "./library.ts";
+import { flags } from "../flags.ts";
 
 const log = easyLog("wall:serving");
 
@@ -39,7 +40,6 @@ function exists(str: string) {
  */
 export function addRoutes(
   server: DispatchServer,
-  flags: any,
 ) {
   // The location we are running from.
   const cwd = Deno.cwd();
