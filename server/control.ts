@@ -20,10 +20,11 @@ import { getErrors } from "./util/last_n_errors_logger.ts";
 import { WSS } from "./network/websocket.ts";
 import { easyLog } from "../lib/log.ts";
 import { PlaylistDriver } from "./playlist/playlist_driver.ts";
-import { Layout } from "./modules/layout.ts";
+import { Layout, LayoutConfig } from "./modules/layout.ts";
 import { WS } from "../lib/websocket.ts";
 import { DispatchServer } from "./util/serving.ts";
-import { library } from "./modules/library.ts";
+import { library, ModuleConfig } from "./modules/library.ts";
+import { loadLayoutsFromConfig } from "./playlist/playlist_loader.ts";
 
 const log = easyLog("wall:control");
 
@@ -32,8 +33,8 @@ interface TakeSnapshotRequest {
 }
 
 interface NewPlaylistRequest {
-  playlist: any;
-  moduleConfig: any;
+  playlist: LayoutConfig[];
+  moduleConfig: Record<string, ModuleConfig>;
 }
 
 // Basic server management hooks.
@@ -93,7 +94,8 @@ export class Control {
       socket.on("newPlaylist", (data: NewPlaylistRequest) => {
         const { playlist, moduleConfig } = data;
         library.loadAllModules(Object.values(moduleConfig));
-        this.playlistDriver.setPlaylist(playlist);
+        const layouts = loadLayoutsFromConfig(playlist);
+        this.playlistDriver.setPlaylist(layouts);
       });
       socket.on("resetPlaylist", () => {
         this.playlistDriver.setPlaylist(this.initialPlaylist);

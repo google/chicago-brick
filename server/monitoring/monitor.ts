@@ -29,7 +29,7 @@ network.on("connection", (socket) => {
     sendCurrentState(socket);
   });
   socket.on("disable-monitoring", () => {
-    let i = monitoringSockets.indexOf(socket);
+    const i = monitoringSockets.indexOf(socket);
     if (i != -1) {
       monitoringSockets.splice(i, 1);
     }

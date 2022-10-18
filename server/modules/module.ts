@@ -172,7 +172,7 @@ export class RunningModule {
   }
 
   async performTransition(
-    otherModule: RunningModule,
+    _otherModule: RunningModule,
     transitionFinishDeadline: number,
   ) {
     await delay(time.until(transitionFinishDeadline));

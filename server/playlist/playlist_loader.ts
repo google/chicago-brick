@@ -89,8 +89,8 @@ export async function loadAllBrickJson(moduleDirs: string[]) {
  */
 export async function loadPlaylistFromFile(
   path: string,
-  overrideLayoutDuration: number,
-  overrideModuleDuration: number,
+  overrideLayoutDuration?: number,
+  overrideModuleDuration?: number,
 ): Promise<Layout[]> {
   const contents = await readTextFile<PlaylistJson>(path);
 
@@ -112,6 +112,20 @@ export async function loadPlaylistFromFile(
     library.loadAllModules(modules as ModuleConfig[]);
   }
 
+  return loadLayoutsFromConfig(
+    playlist,
+    collections,
+    overrideLayoutDuration,
+    overrideModuleDuration,
+  );
+}
+
+export function loadLayoutsFromConfig(
+  playlist: LayoutConfig[],
+  collections: Record<string, string[]> = {},
+  overrideLayoutDuration?: number,
+  overrideModuleDuration?: number,
+): Layout[] {
   const layouts: Layout[] = [];
   for (const layoutJson of playlist) {
     const { collection, modules } = layoutJson;
