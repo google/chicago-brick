@@ -3,12 +3,12 @@ import { easyLog } from "./log.ts";
 
 const log = easyLog("wall:websocket");
 
-function parseMessage(data: string): [string, unknown] {
+function parseMessage(data: string): [string, unknown[]] {
   const json = JSON.parse(data);
   const [type, payload] = json;
   return [type, payload];
 }
-function serializeMessage(type: string, payload: unknown): string {
+function serializeMessage(type: string, payload: unknown[]): string {
   return JSON.stringify([type, payload]);
 }
 
@@ -93,7 +93,7 @@ export class WS extends EventEmitter {
       const { data } = message;
       try {
         const [type, payload] = parseMessage(data);
-        this.emit(type, payload);
+        this.emit(type, ...payload);
       } catch (e) {
         log.error("Failed to parse message:", e);
         return;
@@ -111,7 +111,7 @@ export class WS extends EventEmitter {
     }
     this.buffer.length = 0;
   }
-  send(msg: string, payload: unknown) {
+  send(msg: string, ...payload: unknown[]) {
     if (this.isOpen) {
       this.websocket.send(serializeMessage(msg, payload));
     } else {
