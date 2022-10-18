@@ -1,7 +1,11 @@
 /** A class that holds onto all the known module definitions. */
 
 import { easyLog } from "../../lib/log.ts";
-import { ModuleConfig } from "../playlist/playlist.ts";
+import {
+  BrickJson,
+  isBaseBrickJson,
+  isExtendsBrickJson,
+} from "../playlist/playlist.ts";
 import { ModuleDef } from "./module_def.ts";
 
 const log = easyLog("wall:library");
@@ -10,8 +14,8 @@ class ModuleLibrary extends Map<string, ModuleDef> {
   /**
    * Turns module configs into module defs. Returns a map of name => def.
    */
-  loadAllModules(configs: ModuleConfig[]) {
-    for (const config of configs.filter((c) => !c.extends)) {
+  loadAllModules(configs: BrickJson[]) {
+    for (const config of configs.filter(isBaseBrickJson)) {
       // This is a "base" module. Make a moduleDef.
       this.set(
         config.name,
@@ -30,7 +34,7 @@ class ModuleLibrary extends Map<string, ModuleDef> {
       );
     }
 
-    for (const config of configs.filter((c) => c.extends)) {
+    for (const config of configs.filter(isExtendsBrickJson)) {
       // This is an extension module, so we need to combine some things to make a module def.
       const base = this.get(config.extends!);
       if (!base) {

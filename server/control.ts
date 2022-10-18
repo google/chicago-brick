@@ -25,7 +25,7 @@ import { WS } from "../lib/websocket.ts";
 import { DispatchServer } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
 import { loadLayoutsFromConfig } from "./playlist/playlist_loader.ts";
-import { ModuleConfig } from "./playlist/playlist.ts";
+import { BrickJson } from "./playlist/playlist.ts";
 
 const log = easyLog("wall:control");
 
@@ -35,7 +35,7 @@ interface TakeSnapshotRequest {
 
 interface NewPlaylistRequest {
   playlist: LayoutConfig[];
-  moduleConfig: Record<string, ModuleConfig>;
+  moduleConfig: Record<string, BrickJson>;
 }
 
 // Basic server management hooks.
