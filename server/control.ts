@@ -23,8 +23,9 @@ import { PlaylistDriver } from "./playlist/playlist_driver.ts";
 import { Layout, LayoutConfig } from "./modules/layout.ts";
 import { WS } from "../lib/websocket.ts";
 import { DispatchServer } from "./util/serving.ts";
-import { library, ModuleConfig } from "./modules/library.ts";
+import { library } from "./modules/library.ts";
 import { loadLayoutsFromConfig } from "./playlist/playlist_loader.ts";
+import { ModuleConfig } from "./playlist/playlist.ts";
 
 const log = easyLog("wall:control");
 

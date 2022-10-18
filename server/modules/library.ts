@@ -1,34 +1,10 @@
 /** A class that holds onto all the known module definitions. */
 
 import { easyLog } from "../../lib/log.ts";
+import { ModuleConfig } from "../playlist/playlist.ts";
 import { ModuleDef } from "./module_def.ts";
 
 const log = easyLog("wall:library");
-
-export interface CreditAuthorTitleJson {
-  title: string;
-  author?: string;
-}
-
-export interface CreditImageJson {
-  image: string;
-}
-
-export type CreditJson = CreditAuthorTitleJson | CreditImageJson;
-
-export interface BrickJson {
-  name: string;
-  extends?: string;
-  client_path: string;
-  server_path?: string;
-  credit: CreditJson;
-  config?: Record<string, unknown>;
-  testonly: boolean;
-}
-
-export interface ModuleConfig extends BrickJson {
-  root: string;
-}
 
 class ModuleLibrary extends Map<string, ModuleDef> {
   /**

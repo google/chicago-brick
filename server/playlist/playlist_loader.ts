@@ -20,21 +20,9 @@ import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
 import { readTextFile } from "../util/read_file.ts";
 import { BrickJson, library, ModuleConfig } from "../modules/library.ts";
+import { LayoutConfig, PlaylistJson } from "./playlist.ts";
 
 const log = easyLog("wall:playlist_loader");
-
-interface LayoutConfig {
-  modules?: string[];
-  collection?: "__ALL__" | string;
-  moduleDuration: number;
-  duration: number;
-}
-
-interface PlaylistJson {
-  collections?: Record<string, string[]>;
-  modules?: BrickJson[];
-  playlist: LayoutConfig[];
-}
 
 /**
  * Looks through the moduleDirs for brick.json files.
