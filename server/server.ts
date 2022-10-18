@@ -239,9 +239,6 @@ network.init(server);
 // Initialize routes for peer connectivity.
 peer.initPeer();
 
-// Start the server with the routes installed.
-server.start();
-
 // Create a module player, which is the master control for telling the wall to do anything.
 const modulePlayer = new ServerModulePlayer();
 
@@ -256,7 +253,10 @@ if (flags.enable_monitoring) {
 
 // Initialize a set of routes that communicate with the control server.
 const control = new Control(driver, playlist, moduleDefsByName);
-control.installHandlers();
+control.installHandlers(server);
+
+// Start the server with the routes installed.
+server.start();
 
 // We are good to go: start the playlist!
 log(`Loaded ${moduleDefsByName.size} modules`);

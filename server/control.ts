@@ -24,6 +24,7 @@ import { PlaylistDriver } from "./playlist/playlist_driver.ts";
 import { Layout } from "./modules/layout.ts";
 import { ModuleDef } from "./modules/module_def.ts";
 import { WS } from "../lib/websocket.ts";
+import { DispatchServer } from "./util/serving.ts";
 
 const log = easyLog("wall:control");
 
@@ -47,8 +48,8 @@ export class Control {
   ) {
   }
 
-  installHandlers() {
-    const wss = new WSS({ port: 6001 });
+  installHandlers(server: DispatchServer) {
+    const wss = new WSS({ server, path: "/control" });
     let transitionData: unknown = {};
     this.playlistDriver.on("transition", (data: unknown) => {
       transitionData = data;

@@ -135,6 +135,11 @@ export class DispatchServer {
     pattern: string,
     handler: Handler,
   ) {
+    if (this.handlers.find((h) => h.pattern === pattern)) {
+      throw new Error(
+        `Handler ${pattern} is already registered on this server1`,
+      );
+    }
     this.handlers.push({ pattern, handler });
   }
 }

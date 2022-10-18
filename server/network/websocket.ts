@@ -6,8 +6,12 @@ import { DispatchServer } from "../util/serving.ts";
 const log = easyLog("wall:websocket");
 
 interface WSSOptions {
+  /** When specified, opens a new server on this port. */
   port?: number;
+  /** If port is not specified, use this dispatchserver as the server. */
   server?: DispatchServer;
+  /** The path on the server that should be intercepted for these websocket requests. */
+  path?: string;
 }
 
 export class WebSocketServer extends EventEmitter {
@@ -19,7 +23,9 @@ export class WebSocketServer extends EventEmitter {
     } else {
       this.server = options.server!;
     }
-    this.server.addHandler("/websocket", (req: Request) => {
+    options.path = options.path ?? "/websocket";
+
+    this.server.addHandler(options.path, (req: Request) => {
       // Assert upgrade to websocket.
       const upgrade = req.headers.get("upgrade") || "";
       if (upgrade.toLowerCase() != "websocket") {
