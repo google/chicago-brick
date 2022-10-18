@@ -57,13 +57,8 @@ export function addRoutes(
   // These are:
   //   /client => node_modules/brick/client
   //   /lib => node_modules/brick/lib
-  //   /node_modules => node_modules
   server.addHandler("/client/:path*", serveDirectory(path.join(cwd, "client")));
   server.addHandler("/lib/:path*", serveDirectory(path.join(cwd, "lib")));
-  server.addHandler(
-    "/node_modules/:path*",
-    serveDirectory(path.join(cwd, "node_modules")),
-  );
 
   // We support a global set of asset directories.
   for (const assets_dir of flags.assets_dir) {
