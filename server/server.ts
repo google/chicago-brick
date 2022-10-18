@@ -209,10 +209,10 @@ if (flags.credential_dir) {
 wallGeometry.init(flags);
 
 // Load all of the module information we know about.
-const moduleDefsByName = loadAllBrickJson(flags.module_dir);
+const moduleDefsByName = await loadAllBrickJson(flags.module_dir);
 
 // Load the playlist. If the playlist is malformed, we throw and abort.
-const playlist = loadPlaylistFromFile(
+const playlist = await loadPlaylistFromFile(
   flags.playlist,
   moduleDefsByName,
   flags.layout_duration,

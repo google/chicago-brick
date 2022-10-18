@@ -28,7 +28,7 @@ export class ModuleDef {
     readonly root: string,
     paths: { client: string; server: string },
     readonly baseName: string,
-    readonly config: unknown,
+    readonly config: Record<string, unknown>,
     readonly credit: unknown,
     readonly testonly: boolean,
   ) {

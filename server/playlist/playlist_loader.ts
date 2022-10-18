@@ -13,66 +13,102 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import RJSON from "https://esm.sh/relaxed-json";
 import { assert } from "../../lib/assert.ts";
 import { Layout } from "../modules/layout.ts";
 import { easyLog } from "../../lib/log.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
-import { walkSync } from "https://deno.land/std@0.132.0/fs/walk.ts";
+import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
 import { ModuleDef } from "../modules/module_def.ts";
+import { readTextFile } from "../util/read_file.ts";
 
 const log = easyLog("wall:playlist_loader");
+
+interface CreditAuthorTitleJson {
+  title: string;
+  author?: string;
+}
+
+interface CreditImageJson {
+  image: string;
+}
+
+type CreditJson = CreditAuthorTitleJson | CreditImageJson;
+
+interface BrickJson {
+  name: string;
+  extends?: string;
+  client_path: string;
+  server_path?: string;
+  credit: CreditJson;
+  config?: Record<string, unknown>;
+  testonly: boolean;
+}
+
+interface ModuleConfig extends BrickJson {
+  root: string;
+}
+
+interface LayoutConfig {
+  modules?: string[];
+  collection?: "__ALL__" | string;
+  moduleDuration: number;
+  duration: number;
+}
+
+interface PlaylistJson {
+  collections?: Record<string, string[]>;
+  modules?: BrickJson[];
+  playlist: LayoutConfig[];
+}
 
 /**
  * Looks through the moduleDirs for brick.json files.
  * Returns a map of module name => module def.
  */
-export function loadAllBrickJson(moduleDirs: string[]) {
+export async function loadAllBrickJson(
+  moduleDirs: string[],
+): Promise<Map<string, ModuleDef>> {
   // Try to find all of the modules on disk. We scan them all in order to
   // figure out the whole universe of modules. We have to do this, because
   // if we are told to play a module by name, we don't know which path to
   // load or whatever config to use.
-  const bricks = moduleDirs.flatMap((p) =>
-    [...walkSync(".", {
-      match: [path.globToRegExp(path.join(p, "brick.json"))],
-    })].map((e) => e.path)
-  );
-  const allConfigs = bricks.flatMap((b) => {
-    const def = Deno.readTextFileSync(b);
-    const root = path.dirname(b);
-    try {
-      const config = RJSON.parse(def);
-      if (Array.isArray(config)) {
-        for (const c of config) {
-          c.root = root;
-        }
-        return config;
-      } else {
-        config.root = root;
-        return [config];
+  const allConfigs: ModuleConfig[] = [];
+  for (const dir of moduleDirs) {
+    for await (
+      const brickEntry of walk(".", {
+        match: [path.globToRegExp(path.join(dir, "brick.json"))],
+      })
+    ) {
+      let brickJson;
+      try {
+        brickJson = await readTextFile<BrickJson | BrickJson[]>(
+          brickEntry.path,
+        );
+      } catch (e) {
+        log.error(e);
+        log.error(`Skipping invalid config in: ${brickEntry.path}`);
+        continue;
       }
-    } catch (e) {
-      log.error(e);
-      log.error(`Skipping invalid config in: ${b}`);
-      return [];
+
+      const root = path.dirname(brickEntry.path);
+
+      if (Array.isArray(brickJson)) {
+        for (const brick of brickJson) {
+          allConfigs.push({
+            ...brick,
+            root,
+          });
+        }
+      } else {
+        allConfigs.push({
+          ...brickJson,
+          root,
+        });
+      }
     }
-  });
+  }
 
   return loadAllModules(allConfigs);
-}
-
-interface ModuleConfig {
-  name: string;
-  root: string;
-  path?: string;
-  serverPath?: string;
-  server_path?: string;
-  clientPath?: string;
-  client_path?: string;
-  extends?: string;
-  config?: unknown;
-  credit: unknown;
-  testonly?: boolean;
 }
 
 /**
@@ -80,27 +116,39 @@ interface ModuleConfig {
  */
 export function loadAllModules(
   configs: ModuleConfig[],
-  defsByName = new Map(),
-) {
-  // Sort the base before the extends so that we process them in this order.
-  const sortedConfigs = [
-    ...configs.filter((c) => !c.extends),
-    ...configs.filter((c) => c.extends),
-  ];
+  defsByName = new Map<string, ModuleDef>(),
+): Map<string, ModuleDef> {
+  for (const config of configs.filter((c) => !c.extends)) {
+    // This is a "base" module. Make a moduleDef.
+    defsByName.set(
+      config.name,
+      new ModuleDef(
+        config.name,
+        config.root,
+        {
+          server: config.server_path ?? "",
+          client: config.client_path ?? "",
+        },
+        "",
+        config.config ?? {},
+        config.credit || {},
+        !!config.testonly,
+      ),
+    );
+  }
 
-  return sortedConfigs.reduce((map, config) => {
-    let def;
-    if (config.extends) {
-      const base = map.get(config.extends);
-      if (!base) {
-        log.error(
-          `Module ${config.name} attempted to extend module ${config.extends}, which cannot be found.`,
-        );
-        return map;
-      }
-      // Augment the base config with the extended config.
-      const extendedConfig = { ...base.config, ...config.config || {} };
-      def = new ModuleDef(
+  for (const config of configs.filter((c) => c.extends)) {
+    // This is an extension module, so we need to combine some things to make a module def.
+    const base = defsByName.get(config.extends!);
+    if (!base) {
+      log.error(
+        `Module ${config.name} attempted to extend module ${config.extends}, which cannot be found.`,
+      );
+      continue;
+    }
+    defsByName.set(
+      config.name,
+      new ModuleDef(
         config.name,
         base.root,
         {
@@ -108,58 +156,47 @@ export function loadAllModules(
           client: base.clientPath,
         },
         base.name,
-        extendedConfig,
+        { ...base.config, ...config.config ?? [] },
         config.credit || {},
         !!config.testonly,
-      );
-    } else {
-      def = new ModuleDef(
-        config.name,
-        config.root,
-        {
-          server: config.path || config.serverPath || config.server_path || "",
-          client: config.path || config.clientPath || config.client_path || "",
-        },
-        "",
-        config.config || {},
-        config.credit || {},
-        !!config.testonly,
-      );
-    }
-    map.set(config.name, def);
-    return map;
-  }, defsByName);
-}
-
-interface LayoutConfig {
-  modules?: string[];
-  collection: string;
-  moduleDuration: number;
-  duration: number;
+      ),
+    );
+  }
+  return defsByName;
 }
 
 /**
  * Loads a playlist from a file and turns it into a list of Layout objects.
  */
-export function loadPlaylistFromFile(
+export async function loadPlaylistFromFile(
   path: string,
   defsByName: Map<string, ModuleDef>,
   overrideLayoutDuration: number,
   overrideModuleDuration: number,
-) {
-  const decoder = new TextDecoder();
-  const contents = decoder.decode(Deno.readFileSync(path));
+): Promise<Layout[]> {
+  const contents = await readTextFile<PlaylistJson>(path);
 
-  const parsedPlaylist = RJSON.parse(contents);
-  const { collections, playlist, modules } = parsedPlaylist;
+  let { collections, playlist, modules } = contents;
   if (playlist.length === 0) {
-    throw new Error("Nothing to play!");
+    throw new Error(`No Layouts specified in playlist: ${path}!`);
   }
 
-  loadAllModules(modules || [], defsByName);
+  collections = collections ?? {};
 
-  return playlist.map((layout: LayoutConfig) => {
-    const { collection, modules } = layout;
+  if (modules) {
+    for (const module of modules) {
+      if (!module.extends) {
+        throw new Error(
+          `Module ${module.name} defined in playlist ${path} must extend some existing module`,
+        );
+      }
+    }
+    loadAllModules(modules as ModuleConfig[], defsByName);
+  }
+
+  const layouts: Layout[] = [];
+  for (const layoutJson of playlist) {
+    const { collection, modules } = layoutJson;
 
     let moduleNames;
     if (collection) {
@@ -177,10 +214,13 @@ export function loadPlaylistFromFile(
       moduleNames = [...modules!];
     }
 
-    return new Layout({
-      modules: moduleNames,
-      moduleDuration: overrideModuleDuration || layout.moduleDuration,
-      duration: overrideLayoutDuration || layout.duration,
-    });
-  });
+    layouts.push(
+      new Layout({
+        modules: moduleNames,
+        moduleDuration: overrideModuleDuration || layoutJson.moduleDuration,
+        duration: overrideLayoutDuration || layoutJson.duration,
+      }),
+    );
+  }
+  return layouts;
 }
