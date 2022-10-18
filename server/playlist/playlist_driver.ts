@@ -24,6 +24,7 @@ import * as network from "../network/network.ts";
 import { configure } from "../../lib/module_player.ts";
 import { ModuleDef } from "../modules/module_def.ts";
 import { Layout } from "../modules/layout.ts";
+import { library } from "../modules/library.ts";
 
 const log = easyLog("wall:playlist_driver");
 
@@ -53,7 +54,6 @@ export class PlaylistDriver extends EventEmitter {
 
   constructor(
     readonly modulePlayer: InstanceType<ReturnType<typeof configure>>,
-    readonly defByName: Map<string, ModuleDef>,
   ) {
     super();
 
@@ -209,7 +209,7 @@ export class PlaylistDriver extends EventEmitter {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
     this.lastDeadline_ = now() + 5000;
-    const def = this.defByName.get(moduleName)!;
+    const def = library.get(moduleName)!;
     this.modulePlayer.playModule(new RunningModule(def, this.lastDeadline_));
 
     if (monitor.isEnabled()) {
@@ -233,7 +233,7 @@ export class PlaylistDriver extends EventEmitter {
       moduleIndex: this.moduleIndex,
       layouts: this.playlist,
       layoutIndex: this.layoutIndex,
-      configMap: [...this.defByName.values()].reduce((ret, def) => {
+      configMap: [...library.values()].reduce((ret, def) => {
         ret[def.name] = {
           name: def.name,
           root: def.root,

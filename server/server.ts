@@ -40,6 +40,7 @@ import { now } from "./util/time.ts";
 import commandLineArgs from "https://esm.sh/command-line-args";
 import commandLineUsage from "https://esm.sh/command-line-usage";
 import { DispatchServer, DispatchServerOptions } from "./util/serving.ts";
+import { library } from "./modules/library.ts";
 
 addLogger(
   makeConsoleLogger(
@@ -209,12 +210,11 @@ if (flags.credential_dir) {
 wallGeometry.init(flags);
 
 // Load all of the module information we know about.
-const moduleDefsByName = await loadAllBrickJson(flags.module_dir);
+await loadAllBrickJson(flags.module_dir);
 
 // Load the playlist. If the playlist is malformed, we throw and abort.
 const playlist = await loadPlaylistFromFile(
   flags.playlist,
-  moduleDefsByName,
   flags.layout_duration,
   flags.module_duration,
 );
@@ -231,7 +231,7 @@ if (flags.https_cert) {
 const server = new DispatchServer(options);
 
 // Add module serving routes to the server.
-moduleServing.addRoutes(server, flags, moduleDefsByName);
+moduleServing.addRoutes(server, flags);
 
 // Add websocket routes to the server.
 network.init(server);
@@ -243,7 +243,7 @@ peer.initPeer();
 const modulePlayer = new ServerModulePlayer();
 
 // Create a driver, which walks through a playlist one step at a time.
-const driver = new PlaylistDriver(modulePlayer, moduleDefsByName);
+const driver = new PlaylistDriver(modulePlayer);
 
 // Optionally enable the monitoring mode, which shows debug and performance
 // information on the client screens.
@@ -252,13 +252,13 @@ if (flags.enable_monitoring) {
 }
 
 // Initialize a set of routes that communicate with the control server.
-const control = new Control(driver, playlist, moduleDefsByName);
+const control = new Control(driver, playlist);
 control.installHandlers(server);
 
 // Start the server with the routes installed.
 server.start();
 
 // We are good to go: start the playlist!
-log(`Loaded ${moduleDefsByName.size} modules`);
+log(`Loaded ${library.size} modules`);
 log("Running playlist of " + playlist.length + " layouts");
 driver.start(playlist);

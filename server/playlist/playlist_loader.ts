@@ -18,35 +18,10 @@ import { Layout } from "../modules/layout.ts";
 import { easyLog } from "../../lib/log.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
-import { ModuleDef } from "../modules/module_def.ts";
 import { readTextFile } from "../util/read_file.ts";
+import { BrickJson, library, ModuleConfig } from "../modules/library.ts";
 
 const log = easyLog("wall:playlist_loader");
-
-interface CreditAuthorTitleJson {
-  title: string;
-  author?: string;
-}
-
-interface CreditImageJson {
-  image: string;
-}
-
-type CreditJson = CreditAuthorTitleJson | CreditImageJson;
-
-interface BrickJson {
-  name: string;
-  extends?: string;
-  client_path: string;
-  server_path?: string;
-  credit: CreditJson;
-  config?: Record<string, unknown>;
-  testonly: boolean;
-}
-
-interface ModuleConfig extends BrickJson {
-  root: string;
-}
 
 interface LayoutConfig {
   modules?: string[];
@@ -65,9 +40,7 @@ interface PlaylistJson {
  * Looks through the moduleDirs for brick.json files.
  * Returns a map of module name => module def.
  */
-export async function loadAllBrickJson(
-  moduleDirs: string[],
-): Promise<Map<string, ModuleDef>> {
+export async function loadAllBrickJson(moduleDirs: string[]) {
   // Try to find all of the modules on disk. We scan them all in order to
   // figure out the whole universe of modules. We have to do this, because
   // if we are told to play a module by name, we don't know which path to
@@ -108,61 +81,7 @@ export async function loadAllBrickJson(
     }
   }
 
-  return loadAllModules(allConfigs);
-}
-
-/**
- * Turns module configs into module defs. Returns a map of name => def.
- */
-export function loadAllModules(
-  configs: ModuleConfig[],
-  defsByName = new Map<string, ModuleDef>(),
-): Map<string, ModuleDef> {
-  for (const config of configs.filter((c) => !c.extends)) {
-    // This is a "base" module. Make a moduleDef.
-    defsByName.set(
-      config.name,
-      new ModuleDef(
-        config.name,
-        config.root,
-        {
-          server: config.server_path ?? "",
-          client: config.client_path ?? "",
-        },
-        "",
-        config.config ?? {},
-        config.credit || {},
-        !!config.testonly,
-      ),
-    );
-  }
-
-  for (const config of configs.filter((c) => c.extends)) {
-    // This is an extension module, so we need to combine some things to make a module def.
-    const base = defsByName.get(config.extends!);
-    if (!base) {
-      log.error(
-        `Module ${config.name} attempted to extend module ${config.extends}, which cannot be found.`,
-      );
-      continue;
-    }
-    defsByName.set(
-      config.name,
-      new ModuleDef(
-        config.name,
-        base.root,
-        {
-          server: base.serverPath,
-          client: base.clientPath,
-        },
-        base.name,
-        { ...base.config, ...config.config ?? [] },
-        config.credit || {},
-        !!config.testonly,
-      ),
-    );
-  }
-  return defsByName;
+  library.loadAllModules(allConfigs);
 }
 
 /**
@@ -170,7 +89,6 @@ export function loadAllModules(
  */
 export async function loadPlaylistFromFile(
   path: string,
-  defsByName: Map<string, ModuleDef>,
   overrideLayoutDuration: number,
   overrideModuleDuration: number,
 ): Promise<Layout[]> {
@@ -191,7 +109,7 @@ export async function loadPlaylistFromFile(
         );
       }
     }
-    loadAllModules(modules as ModuleConfig[], defsByName);
+    library.loadAllModules(modules as ModuleConfig[]);
   }
 
   const layouts: Layout[] = [];
@@ -201,7 +119,7 @@ export async function loadPlaylistFromFile(
     let moduleNames;
     if (collection) {
       if (collection == "__ALL__") {
-        moduleNames = [...defsByName.values()].map((d) => d.name);
+        moduleNames = [...library.values()].map((d) => d.name);
       } else {
         assert(
           collections[collection],
