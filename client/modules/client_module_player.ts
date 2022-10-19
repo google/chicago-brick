@@ -21,7 +21,7 @@ const clientMonitorWrapper = {
   isEnabled() {
     return monitor.isEnabled();
   },
-  update(obj: unknown) {
+  update(obj: monitor.StateMachineEvent) {
     monitor.update({ client: obj });
   },
 };

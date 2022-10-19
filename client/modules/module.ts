@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+/// <reference lib="dom" />
+
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import * as moduleTicker from "./module_ticker.ts";
 import * as network from "../network/network.ts";
@@ -37,10 +39,10 @@ function createNewContainer(name: string) {
 }
 
 export const FadeTransition = {
-  start(container: Element) {
+  start(container: HTMLElement) {
     if (container) {
-      container.style.opacity = 0.001;
-      document.querySelector("#containers").appendChild(container);
+      container.style.opacity = "0.001";
+      document.querySelector("#containers")!.appendChild(container);
     }
   },
   async perform(
@@ -50,13 +52,13 @@ export const FadeTransition = {
   ) {
     if (newModule.name == "_empty") {
       // Fading out.. so fade *out* the *old* container.
-      oldModule.container.style.transition = "opacity " +
+      oldModule.container!.style.transition = "opacity " +
         time.until(deadline).toFixed(0) + "ms";
-      oldModule.container.style.opacity = 0.0;
+      oldModule.container!.style.opacity = "0.0";
     } else {
-      newModule.container.style.transition = "opacity " +
+      newModule.container!.style.transition = "opacity " +
         time.until(deadline).toFixed(0) + "ms";
-      newModule.container.style.opacity = 1.0;
+      newModule.container!.style.opacity = "1.0";
     }
     // TODO(applmak): Maybe wait until css says that the transition is done?
     await delay(time.until(deadline));
@@ -64,7 +66,7 @@ export const FadeTransition = {
 };
 
 export class ClientModule {
-  container: Element | null;
+  container: HTMLElement | null;
   instance: Client | null;
   network: { open: any; close(): void } | null;
   stateManager: { open: any; close(): void } | null;
@@ -76,7 +78,7 @@ export class ClientModule {
     readonly deadline: number,
     readonly geo: Polygon,
     readonly transition: {
-      start(e: Element): void;
+      start(e: HTMLElement): void;
       perform(
         a: ClientModule,
         b: ClientModule,
@@ -205,7 +207,7 @@ export class ClientModule {
     }
     // Prep the container for transition.
     // TODO(applmak): Move the transition smarts out of ClientModule.
-    this.transition.start(this.container);
+    this.transition.start(this.container!);
     try {
       await this.instance!.willBeShownSoon(this.container, this.deadline);
     } catch (e) {
