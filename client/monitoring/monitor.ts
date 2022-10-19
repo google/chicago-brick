@@ -739,7 +739,7 @@ const updateUI = () => {
     .modulesToDraw.join("\n");
 
   if (enabled) {
-    window.requestAnimationFrame(updateUI);
+    self.requestAnimationFrame(updateUI);
   }
 };
 

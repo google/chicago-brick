@@ -239,7 +239,7 @@ export class ClientModule {
     this.instance!.finishFadeIn();
   }
 
-  beginTransitionOut(deadline: number) {
+  beginTransitionOut() {
     if (!this.path) {
       return;
     }

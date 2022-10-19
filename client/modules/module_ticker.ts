@@ -40,9 +40,9 @@ function draw() {
   }
 
   lastTime = n;
-  window.requestAnimationFrame(draw);
+  self.requestAnimationFrame(draw);
 }
-window.requestAnimationFrame(draw);
+self.requestAnimationFrame(draw);
 
 export function add(name: string, module: Client) {
   modulesToDraw.push({ name, module });
