@@ -29,6 +29,7 @@ import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../lib/module_interface.ts";
 import { WS } from "../../lib/websocket.ts";
+import { LoadModuleEvent } from "../../server/modules/module.ts";
 
 function createNewContainer(name: string) {
   const newContainer = document.createElement("div");
@@ -123,7 +124,7 @@ export class ClientModule {
   tellClientToPlay() {}
 
   // Deserializes from the json serialized form of ModuleDef in the server.
-  static deserialize(bits: any) {
+  static deserialize(bits: LoadModuleEvent) {
     if (bits.module.name == "_empty") {
       return ClientModule.newEmptyModule(bits.time);
     }
@@ -164,7 +165,7 @@ export class ClientModule {
 
     const INSTANTIATION_ID = `${this.geo.extents.serialize()}-${this.deadline}`;
     this.network = network.forModule(INSTANTIATION_ID);
-    let openNetwork = this.network.open();
+    const openNetwork = this.network.open();
     this.stateManager = stateManager.forModule(
       network as unknown as WS,
       INSTANTIATION_ID,
