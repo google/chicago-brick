@@ -21,11 +21,7 @@ import { Client } from "../../lib/module_interface.ts";
 const log = easyLog("wall:module_ticker");
 
 // An array of modules.
-let modulesToDraw: Array<{ name: string; module: ClientModule }> = [];
-
-interface ClientModule extends Client {
-  name: string;
-}
+let modulesToDraw: Array<{ name: string; module: Client }> = [];
 
 // Drawing loop.
 let lastTime = 0;
@@ -33,12 +29,12 @@ function draw() {
   const n = time.now();
   const delta = n - lastTime;
 
-  for (const { module } of modulesToDraw) {
+  for (const { name, module } of modulesToDraw) {
     try {
       module.draw(n, delta);
     } catch (e) {
       log.error(e, {
-        module: module.name,
+        module: name,
       });
     }
   }
@@ -48,7 +44,7 @@ function draw() {
 }
 window.requestAnimationFrame(draw);
 
-export function add(name: string, module: ClientModule) {
+export function add(name: string, module: Client) {
   modulesToDraw.push({ name, module });
   log.debugAt(
     1,
@@ -58,7 +54,7 @@ export function add(name: string, module: ClientModule) {
   );
   monitor.markDrawnModules(modulesToDraw.map((m) => m.name));
 }
-export function remove(module: ClientModule) {
+export function remove(module: Client) {
   modulesToDraw = modulesToDraw.filter((pair) => pair.module !== module);
   log.debugAt(
     1,

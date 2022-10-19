@@ -53,7 +53,7 @@ export function init() {
   ready();
 }
 
-type Handler = (payload: unknown) => void;
+type Handler = (payload: any) => void;
 
 export function on(event: string, callback: Handler) {
   socket.on(event, callback);

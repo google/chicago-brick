@@ -222,7 +222,7 @@ export class ClientModule {
     if (!this.path) {
       return;
     }
-    moduleTicker.add(this.name, this.instance as any);
+    moduleTicker.add(this.name, this.instance!);
     try {
       this.instance!.beginFadeIn(deadline);
     } catch (e) {
@@ -270,7 +270,7 @@ export class ClientModule {
       return;
     }
     this.titleCard.exit(); // Just in case.
-    moduleTicker.remove(this.instance as any);
+    moduleTicker.remove(this.instance!);
 
     if (this.network) {
       this.stateManager!.close();
