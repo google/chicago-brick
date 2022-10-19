@@ -17,9 +17,6 @@ import * as monitor from "../monitoring/monitor.ts";
 import * as time from "../util/time.ts";
 import { ModulePlayer } from "../../lib/module_player.ts";
 import { RunningModule } from "./module.ts";
-import { easyLog } from "../../lib/log.ts";
-
-const log = easyLog("wall:module_state_machine");
 
 export class ServerModulePlayer extends ModulePlayer {
   constructor() {
@@ -35,7 +32,7 @@ export class ServerModulePlayer extends ModulePlayer {
           monitor.update({ server: obj });
         },
       },
-      log,
+      logName: "wall:server_state_machine",
       time,
     });
   }

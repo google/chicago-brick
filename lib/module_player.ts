@@ -15,6 +15,7 @@ limitations under the License.
 
 import { delay, delayThenReject } from "./promise.ts";
 import { WS } from "./websocket.ts";
+import { easyLog, Logger } from "./log.ts";
 
 export interface Module {
   name: string;
@@ -30,12 +31,6 @@ export interface Module {
   tellClientToPlay(socket: WS): void;
 }
 
-export interface ModuleLogger {
-  (msg: string): void;
-  error: (e: unknown, data?: unknown) => void;
-  debugAt: (level: number, e: unknown, data?: unknown) => void;
-}
-
 export interface ModuleMonitor {
   isEnabled(): boolean;
   update(payload: unknown): void;
@@ -49,7 +44,7 @@ export interface ModuleTime {
 export interface ModulePlayerConfig {
   makeEmptyModule: () => Module;
   monitor: ModuleMonitor;
-  log: ModuleLogger;
+  logName: string;
   time: ModuleTime;
 }
 
@@ -57,13 +52,13 @@ export class ModulePlayer {
   oldModule: Module;
   nextModule: Module | null;
   transitionInProgress: boolean;
-  readonly log: ModuleLogger;
+  readonly log: Logger;
   readonly makeEmptyModule: () => Module;
   readonly monitor: ModuleMonitor;
   readonly time: ModuleTime;
 
-  constructor({ log, makeEmptyModule, monitor, time }: ModulePlayerConfig) {
-    this.log = log;
+  constructor({ logName, makeEmptyModule, monitor, time }: ModulePlayerConfig) {
+    this.log = easyLog(logName);
     this.makeEmptyModule = makeEmptyModule;
     this.monitor = monitor;
     this.time = time;
