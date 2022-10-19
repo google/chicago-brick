@@ -36,7 +36,7 @@ import {
 import { captureLog } from "./util/last_n_errors_logger.ts";
 import { addLogger, easyLog } from "../lib/log.ts";
 import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
-import { now } from "./util/time.ts";
+import * as time from "../lib/adjustable_time.ts";
 import { DispatchServer, DispatchServerOptions } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
 import { flags } from "./flags.ts";
@@ -94,7 +94,7 @@ addLogger(
       }
       console.log(coloredStrings.join(""));
     },
-    now,
+    time.now,
   ),
 );
 addLogger(captureLog, "wall");

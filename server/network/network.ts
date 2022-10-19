@@ -29,7 +29,7 @@ limitations under the License.
 import { easyLog } from "../../lib/log.ts";
 import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
-import { now } from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import {
   cleanupModuleOverlayHandler,
   installModuleOverlayHandler,
@@ -148,7 +148,7 @@ export function init(server: DispatchServer) {
       if (monitor.isEnabled()) {
         monitor.update({
           layout: {
-            time: now(),
+            time: time.now(),
             event: `newClient: ${client.rect.serialize()}`,
           },
         });
@@ -157,7 +157,7 @@ export function init(server: DispatchServer) {
       log(`New client: ${client.rect.serialize()}`);
       fireSpecialHandler("new-client", client);
       // Tell the client the current time.
-      socket.send("time", now());
+      socket.send("time", time.now());
     });
 
     // When the client disconnects, we tell our listeners that we lost the client.
@@ -167,7 +167,7 @@ export function init(server: DispatchServer) {
         if (monitor.isEnabled()) {
           monitor.update({
             layout: {
-              time: now(),
+              time: time.now(),
               event: `dropClient: ${rect.serialize()}`,
             },
           });
@@ -177,7 +177,7 @@ export function init(server: DispatchServer) {
         if (monitor.isEnabled()) {
           monitor.update({
             layout: {
-              time: now(),
+              time: time.now(),
               event: `dropClient: id ${clientId}`,
             },
           });
@@ -205,7 +205,7 @@ export function init(server: DispatchServer) {
 
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {
-    io.sendToAllClients("time", now());
+    io.sendToAllClients("time", time.now());
   }, 10000);
 }
 

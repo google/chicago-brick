@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as time from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import * as wallGeometry from "../util/wall_geometry.ts";
 import * as moduleTicker from "./module_ticker.ts";
 import { assert } from "../../lib/assert.ts";

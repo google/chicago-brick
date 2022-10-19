@@ -23,7 +23,7 @@ import asset from "../asset/asset.ts";
 import inject from "../../lib/inject.ts";
 import * as stateManager from "../network/state_manager.ts";
 import { TitleCard } from "../title_card.js";
-import * as time from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../lib/module_interface.ts";
 import { WS } from "../../lib/websocket.ts";

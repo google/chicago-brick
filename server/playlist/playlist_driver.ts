@@ -17,7 +17,7 @@ import * as monitor from "../monitoring/monitor.ts";
 import { easyLog } from "../../lib/log.ts";
 import shuffle from "https://deno.land/x/shuffle/mod.ts";
 import { assert } from "../../lib/assert.ts";
-import { inFuture, now, until } from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import { RunningModule } from "../modules/module.ts";
 import { EventEmitter } from "../../lib/event.ts";
 import * as network from "../network/network.ts";
@@ -69,7 +69,7 @@ export class PlaylistDriver extends EventEmitter {
   async setPlaylist(newPlaylist: Layout[]) {
     if (this.modulePlayer.oldModule.name != "_empty") {
       // Give the wall 1 second to get ready to fade out.
-      this.lastDeadline_ = now() + 1000;
+      this.lastDeadline_ = time.now() + 1000;
       await this.modulePlayer.playModule(
         RunningModule.empty(this.lastDeadline_),
       );
@@ -138,7 +138,7 @@ export class PlaylistDriver extends EventEmitter {
     this.resetTimer_();
 
     // Reset duration for this module.
-    this.newModuleTime = inFuture(layout.moduleDuration * 1000);
+    this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
     // Ensure that we won't change layouts until this module is done.
     this.newLayoutTime = Math.max(this.newModuleTime, this.newLayoutTime);
     // Now play this module.
@@ -156,12 +156,12 @@ export class PlaylistDriver extends EventEmitter {
     this.moduleIndex = -1;
 
     // The time that we'll switch to a new layout.
-    this.newLayoutTime = inFuture(layout.duration * 1000);
+    this.newLayoutTime = time.inFuture(layout.duration * 1000);
 
     if (monitor.isEnabled()) {
       monitor.update({
         playlist: {
-          time: now(),
+          time: time.now(),
           event: `change layout`,
           deadline: this.newLayoutTime,
         },
@@ -174,7 +174,7 @@ export class PlaylistDriver extends EventEmitter {
     const concurrentWork = [];
     if (this.modulePlayer.oldModule.name != "_empty") {
       // Give the wall 1 second to get ready to fade out.
-      this.lastDeadline_ = now() + 1000;
+      this.lastDeadline_ = time.now() + 1000;
       concurrentWork.push(
         this.modulePlayer.playModule(RunningModule.empty(this.lastDeadline_)),
       );
@@ -198,7 +198,7 @@ export class PlaylistDriver extends EventEmitter {
     let layout = this.playlist![this.layoutIndex];
 
     // The time that we'll switch to the next module.
-    this.newModuleTime = inFuture(layout.moduleDuration * 1000);
+    this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
 
     this.playModule_(this.modules[this.moduleIndex]);
   }
@@ -207,14 +207,14 @@ export class PlaylistDriver extends EventEmitter {
   playModule_(moduleName: string) {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
-    this.lastDeadline_ = now() + 5000;
+    this.lastDeadline_ = time.now() + 5000;
     const def = library.get(moduleName)!;
     this.modulePlayer.playModule(new RunningModule(def, this.lastDeadline_));
 
     if (monitor.isEnabled()) {
       monitor.update({
         playlist: {
-          time: now(),
+          time: time.now(),
           event: `change module ${moduleName}`,
           deadline: this.getNextDeadline(),
         },
@@ -240,7 +240,7 @@ export class PlaylistDriver extends EventEmitter {
     if (this.newLayoutTime < this.newModuleTime) {
       this.timer = setTimeout(
         () => this.nextLayout(),
-        until(this.newLayoutTime),
+        time.until(this.newLayoutTime),
       );
     } else {
       // Only schedule the next module to play if:
@@ -249,7 +249,7 @@ export class PlaylistDriver extends EventEmitter {
       //    we wish to return to that layout.
       this.timer = setTimeout(
         () => this.nextModule(),
-        until(this.newModuleTime),
+        time.until(this.newModuleTime),
       );
     }
   }

@@ -1,5 +1,5 @@
 import { send } from "../network/network.ts";
-import { now } from "./time.ts";
+import { now } from "../../lib/adjustable_time.ts";
 import { virtualRect } from "./info.ts";
 
 interface RecordErrorMessage {

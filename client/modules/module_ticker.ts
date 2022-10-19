@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as monitor from "../monitoring/monitor.ts";
 import { easyLog } from "../../lib/log.ts";
-import { now } from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import { Client } from "../../lib/module_interface.ts";
 
 const log = easyLog("wall:module_ticker");
@@ -30,7 +30,7 @@ interface ClientModule extends Client {
 // Drawing loop.
 let lastTime = 0;
 function draw() {
-  const n = now();
+  const n = time.now();
   const delta = n - lastTime;
 
   for (const { module } of modulesToDraw) {

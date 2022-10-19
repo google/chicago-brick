@@ -15,7 +15,7 @@ limitations under the License.
 
 import { WebXRManager } from "https://esm.sh/three-full@28.0.2";
 import * as network from "../network/network.ts";
-import { now } from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 
 // The monitor in the client displays up-to-date information about what the
 // server is doing. It's designed as a debugging tool.
@@ -514,7 +514,7 @@ let clientSmTimeline: any,
   layoutSmTimeline: any,
   playlistTimeline: any;
 let updateUI = () => {
-  let t = now();
+  let t = time.now();
   let width = monitoringElement.offsetWidth;
   // Assume 60 fps, assume 1 frame of data per pixel.
 

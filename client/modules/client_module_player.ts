@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from "../monitoring/monitor.ts";
-import * as time from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import { ClientModule } from "./module.ts";
 import { ModulePlayer } from "../../lib/module_player.ts";
 
