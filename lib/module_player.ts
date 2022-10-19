@@ -16,6 +16,7 @@ limitations under the License.
 import { delay, delayThenReject } from "./promise.ts";
 import { WS } from "./websocket.ts";
 import { easyLog, Logger } from "./log.ts";
+import * as time from "./adjustable_time.ts";
 
 export interface Module {
   name: string;
@@ -36,16 +37,10 @@ export interface ModuleMonitor {
   update(payload: unknown): void;
 }
 
-export interface ModuleTime {
-  now(): number;
-  until(time: number): number;
-}
-
 export interface ModulePlayerConfig {
   makeEmptyModule: () => Module;
   monitor: ModuleMonitor;
   logName: string;
-  time: ModuleTime;
 }
 
 export class ModulePlayer {
@@ -55,13 +50,11 @@ export class ModulePlayer {
   readonly log: Logger;
   readonly makeEmptyModule: () => Module;
   readonly monitor: ModuleMonitor;
-  readonly time: ModuleTime;
 
-  constructor({ logName, makeEmptyModule, monitor, time }: ModulePlayerConfig) {
+  constructor({ logName, makeEmptyModule, monitor }: ModulePlayerConfig) {
     this.log = easyLog(logName);
     this.makeEmptyModule = makeEmptyModule;
     this.monitor = monitor;
-    this.time = time;
 
     // start with some kind of initial, off module.
     this.oldModule = this.makeEmptyModule();
@@ -88,7 +81,7 @@ export class ModulePlayer {
     if (this.monitor.isEnabled()) {
       this.monitor.update({
         event: `playModule: ${module.name}`,
-        time: this.time.now(),
+        time: time.now(),
         deadline: module.deadline,
       });
     }
@@ -147,8 +140,8 @@ export class ModulePlayer {
         new Error(`Module ${module.name} timed out in preparation.`);
       this.log.error(err, {
         module: module.name,
-        timestamp: this.time.now(),
-        timestampSinceModuleStart: this.time.now() - module.deadline,
+        timestamp: time.now(),
+        timestampSinceModuleStart: time.now() - module.deadline,
       });
       module.dispose();
       return;
@@ -171,7 +164,7 @@ export class ModulePlayer {
     if (this.monitor.isEnabled()) {
       this.monitor.update({
         state: `Preparing ${module.name}`,
-        time: this.time.now(),
+        time: time.now(),
         deadline: module.deadline,
       });
     }
@@ -183,8 +176,8 @@ export class ModulePlayer {
         new Error(`Module ${module.name} timed out in preparation.`);
       this.log.error(err, {
         module: module.name,
-        timestamp: this.time.now(),
-        timestampSinceModuleStart: this.time.now() - module.deadline,
+        timestamp: time.now(),
+        timestampSinceModuleStart: time.now() - module.deadline,
       });
       module.dispose();
       return;
@@ -201,10 +194,10 @@ export class ModulePlayer {
     // Wait until the deadline when we are supposed to being the transition.
     this.log(
       `Delaying until ${module.deadline} (≈${
-        this.time.until(module.deadline)
+        time.until(module.deadline)
       } from now)`,
     );
-    await delay(this.time.until(module.deadline));
+    await delay(time.until(module.deadline));
     if (this.nextModule != module) {
       // Clean up the module and await further instructions.
       this.log(
@@ -224,7 +217,7 @@ export class ModulePlayer {
     if (this.monitor.isEnabled()) {
       this.monitor.update({
         state: `Transition ${this.oldModule.name} -> ${module.name}`,
-        time: this.time.now(),
+        time: time.now(),
         deadline: transitionFinishDeadline,
       });
     }
@@ -241,8 +234,8 @@ export class ModulePlayer {
       this.log.error(`Error forcing fade to black.`);
       this.log.error(e, {
         module: module.name,
-        timestamp: this.time.now(),
-        timestampSinceModuleStart: this.time.now() - module.deadline,
+        timestamp: time.now(),
+        timestampSinceModuleStart: time.now() - module.deadline,
       });
       // Now try to go to the empty module!
       this.nextModule = module = this.makeEmptyModule();
@@ -263,8 +256,8 @@ export class ModulePlayer {
     } catch (e) {
       this.log.error(e, {
         module: module.name,
-        timestamp: this.time.now(),
-        timestampSinceModuleStart: this.time.now() - module.deadline,
+        timestamp: time.now(),
+        timestampSinceModuleStart: time.now() - module.deadline,
       });
     } finally {
       // If finish fade in throws an exception, that's bad, and should cause us
@@ -278,7 +271,7 @@ export class ModulePlayer {
     if (this.monitor.isEnabled()) {
       this.monitor.update({
         state: `Display: ${this.oldModule.name}`,
-        time: this.time.now(),
+        time: time.now(),
       });
     }
     // FIN. Note that if the next module changed during our transition, then the
