@@ -21,7 +21,7 @@ import { inFuture, now, until } from "../util/time.ts";
 import { RunningModule } from "../modules/module.ts";
 import { EventEmitter } from "../../lib/event.ts";
 import * as network from "../network/network.ts";
-import { configure } from "../../lib/module_player.ts";
+import { ModulePlayer } from "../../lib/module_player.ts";
 import { Layout } from "../modules/layout.ts";
 import { library } from "../modules/library.ts";
 
@@ -52,7 +52,7 @@ export class PlaylistDriver extends EventEmitter {
   lastDeadline_ = 0;
 
   constructor(
-    readonly modulePlayer: InstanceType<ReturnType<typeof configure>>,
+    readonly modulePlayer: ModulePlayer,
   ) {
     super();
 

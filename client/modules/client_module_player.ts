@@ -17,7 +17,7 @@ import * as monitor from "../monitoring/monitor.ts";
 import * as time from "../util/time.ts";
 import { ClientModule } from "./module.ts";
 import { easyLog } from "../../lib/log.ts";
-import { configure } from "../../lib/module_player.ts";
+import { ModulePlayer } from "../../lib/module_player.ts";
 
 const log = easyLog("wall:client_state_machine");
 
@@ -30,9 +30,13 @@ const clientMonitorWrapper = {
   },
 };
 
-export const ClientModulePlayer = configure({
-  makeEmptyModule: ClientModule.newEmptyModule,
-  monitor: clientMonitorWrapper,
-  log,
-  time,
-});
+export class ClientModulePlayer extends ModulePlayer {
+  constructor() {
+    super({
+      makeEmptyModule: ClientModule.newEmptyModule,
+      monitor: clientMonitorWrapper,
+      log,
+      time,
+    });
+  }
+}
