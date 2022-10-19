@@ -20,6 +20,7 @@ import {PlaylistCreator} from './playlist_creator.js';
 import {WS} from '../../lib/websocket.ts';
 import {addLogger} from '/lib/log.ts';
 import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
+import {library} from '../../server/modules/library.ts';
 
 addLogger(makeConsoleLogger((...strings) => {
   const processedStrs = [];
@@ -57,11 +58,15 @@ const host = new URL(location).searchParams.get('host') || 'localhost:3000';
 const control = WS.clientWrapper(`ws://${host}/control`);
 const creatorEl = document.querySelector('#playlist-creator');
 
-function applyNewPlaylist(playlist, moduleConfig) {
+function applyNewPlaylist(playlist) {
   // TODO(applmak): Passing a string here is a bit hacky.
   if (playlist == 'reset') {
     control.send('resetPlaylist');
   } else {
+    const moduleConfig = [...library.entries()].reduce((agg, [name, config]) => {
+      agg[name] = config;
+      return agg;
+    }, {});
     control.send('newPlaylist', {playlist, moduleConfig});
   }
 }
@@ -95,7 +100,10 @@ control.on('transition', data => {
 
   playlistController.updateTransitionData(data);
   playlistCreator.setLivePlaylist(data.layouts);
-  playlistCreator.setModuleConfig(data.configMap);
+  for (const name in data.configMap) {
+    library.set(name, data.configMap[name]);
+  }
+  playlistCreator.renderModuleConfig();
 });
 control.on('clients', data => {
   clientController.setClients(data);

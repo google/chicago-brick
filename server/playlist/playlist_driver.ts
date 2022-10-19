@@ -232,18 +232,7 @@ export class PlaylistDriver extends EventEmitter {
       moduleIndex: this.moduleIndex,
       layouts: this.playlist,
       layoutIndex: this.layoutIndex,
-      configMap: [...library.values()].reduce((ret, def) => {
-        ret[def.name] = {
-          name: def.name,
-          root: def.root,
-          extends: def.baseName,
-          clientPath: def.clientPath,
-          serverPath: def.serverPath,
-          config: def.config,
-          credit: def.credit,
-        };
-        return ret;
-      }, {} as Record<string, unknown>),
+      configMap: library.serialize(),
     });
 
     // Now, in so many seconds, we'll need to switch to another module

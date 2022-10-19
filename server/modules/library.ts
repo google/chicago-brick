@@ -11,6 +11,21 @@ import { ModuleDef } from "./module_def.ts";
 const log = easyLog("wall:library");
 
 class ModuleLibrary extends Map<string, ModuleDef> {
+  serialize(): Record<string, BrickJson> {
+    return [...library.values()].reduce((ret, def) => {
+      ret[def.name] = {
+        name: def.name,
+        root: def.root,
+        extends: def.baseName,
+        client_path: def.clientPath,
+        server_path: def.serverPath,
+        config: def.config,
+        credit: def.credit,
+        testonly: def.testonly,
+      };
+      return ret;
+    }, {} as Record<string, BrickJson>);
+  }
   /**
    * Turns module configs into module defs. Returns a map of name => def.
    */

@@ -1,3 +1,4 @@
+import { library } from '../../server/modules/library.ts';
 import Sortable from '/node_modules/sortablejs/modular/sortable.esm.js';
 
 function makeEditableText(el, getFn, setFn) {
@@ -73,8 +74,6 @@ export class PlaylistCreator {
     this.playlist = [];
 
     this.livePlaylist = null;
-
-    this.moduleConfig = null;
   }
   clearPlaylist() {
     this.playlist = [];
@@ -90,7 +89,7 @@ export class PlaylistCreator {
     this.playlist = [{
       moduleDuration: 30,
       duration: 600,
-      modules: Object.keys(this.moduleConfig || {})
+      modules: [...library.keys()],
     }];
     this.render();
   }
@@ -260,15 +259,12 @@ export class PlaylistCreator {
       config
     };
 
-    this.setModuleConfig({[newModuleDef.name]: newModuleDef});
+    library.set(newModuleDef.name, newModuleDef);
+    this.renderModuleConfig();
     this.closeModuleMaker();
   }
   setLivePlaylist(livePlaylist) {
     this.livePlaylist = livePlaylist;
-  }
-  setModuleConfig(moduleConfig) {
-    this.moduleConfig = Object.assign({}, this.moduleConfig || {}, moduleConfig);
-    this.renderModuleConfig();
   }
   open() {
     this.container.style.right = '0';
@@ -278,7 +274,7 @@ export class PlaylistCreator {
   }
   applyPlaylist() {
     this.close();
-    this.applyPlaylistFn(this.playlist, this.moduleConfig);
+    this.applyPlaylistFn(this.playlist);
   }
   resetPlaylist() {
     this.close();
@@ -408,8 +404,8 @@ export class PlaylistCreator {
     const modulesEl = this.container.querySelector('#all-known-modules');
     Array.from(modulesEl.children).forEach(m => m.remove());
 
-    for (const name in this.moduleConfig) {
-      const module = this.moduleConfig[name];
+    for (const name of library.keys()) {
+      const module = library.get(name);
       const mEl = document.createElement('div');
       mEl.className = 'module';
 
@@ -450,7 +446,7 @@ export class PlaylistCreator {
     const extendEl = this.container.querySelector('#extend-field');
     // Get a set of options.
     const optionsToRemove = new Set(Array.from(extendEl.children).map(c => c.value));
-    for (const name in this.moduleConfig) {
+    for (const name of library.keys()) {
       if (optionsToRemove.has(name)) {
         optionsToRemove.delete(name);
       } else {

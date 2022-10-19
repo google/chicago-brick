@@ -94,6 +94,7 @@ export class Control {
       });
       socket.on("newPlaylist", (data: NewPlaylistRequest) => {
         const { playlist, moduleConfig } = data;
+        console.log(moduleConfig);
         library.loadAllModules(Object.values(moduleConfig));
         const layouts = loadLayoutsFromConfig(playlist);
         this.playlistDriver.setPlaylist(layouts);
