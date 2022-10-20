@@ -13,7 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Module } from "https://deno.land/x/deno_graph@0.26.0/mod.ts";
 import { getSocket } from "./network.ts";
 import { WSS } from "./websocket.ts";
 

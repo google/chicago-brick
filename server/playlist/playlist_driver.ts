@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as monitor from "../monitoring/monitor.ts";
 import { easyLog } from "../../lib/log.ts";
-import shuffle from "https://deno.land/x/shuffle/mod.ts";
+import shuffle from "https://deno.land/x/shuffle@v1.0.1/mod.ts";
 import { assert } from "../../lib/assert.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { RunningModule } from "../modules/module.ts";
@@ -195,7 +195,7 @@ export class PlaylistDriver extends EventEmitter {
     log(`Next module: ${this.modules[this.moduleIndex]}`);
 
     // The current layout.
-    let layout = this.playlist![this.layoutIndex];
+    const layout = this.playlist![this.layoutIndex];
 
     // The time that we'll switch to the next module.
     this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);

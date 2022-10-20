@@ -62,6 +62,7 @@ export function sendToAllClients(msgType: string, payload: unknown) {
   io.sendToAllClients(msgType, payload);
 }
 
+// deno-lint-ignore no-explicit-any
 type Handler = (payload: any) => void;
 
 interface SavedMessage {
