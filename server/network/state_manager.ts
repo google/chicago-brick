@@ -13,6 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Module } from "https://deno.land/x/deno_graph@0.26.0/mod.ts";
 import { getSocket } from "./network.ts";
 import { WSS } from "./websocket.ts";
 
@@ -46,7 +47,26 @@ export function forModule(network: WSS, id: string) {
   };
 }
 
+let justSentAnEmptyState = false;
 /** Sends the saved state to clients. */
 export function send() {
-  getSocket().sendToAllClients("state", stateMap);
+  const stateToSend = Object.entries(stateMap).reduce(
+    (agg, [moduleId, state]) => {
+      if (Object.keys(state).length) {
+        agg[moduleId] = state;
+      }
+      return agg;
+    },
+    {} as typeof stateMap,
+  );
+  if (Object.keys(stateToSend).length == 0) {
+    if (justSentAnEmptyState) {
+      return;
+    }
+    justSentAnEmptyState = true;
+  } else {
+    justSentAnEmptyState = false;
+  }
+
+  getSocket().sendToAllClients("state", stateToSend);
 }
