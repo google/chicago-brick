@@ -1,4 +1,4 @@
-type Handler = (...payload: any[]) => void;
+export type Handler = (...payload: any[]) => void;
 interface StoredHandler {
   origFn: Handler;
   handler: Handler;

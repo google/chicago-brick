@@ -30,12 +30,7 @@ import { easyLog } from "../../lib/log.ts";
 import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import * as time from "../../lib/adjustable_time.ts";
-import {
-  cleanupModuleOverlayHandler,
-  installModuleOverlayHandler,
-  makeModuleOverlaySocket,
-} from "../../lib/socket_wrapper.ts";
-import { WSS } from "./websocket.ts";
+import { WSS, WSSWrapper } from "./websocket.ts";
 import { WS } from "../../lib/websocket.ts";
 import { DispatchServer } from "../util/serving.ts";
 
@@ -190,10 +185,6 @@ export function init(server: DispatchServer) {
     // the server via this channel. The framework might choose to respond to
     // this by, say, moving on to the next module.
     // socket.on("record-error", ...);
-
-    // Install the machinery so that we can receive messages on the per-module
-    // network from this client.
-    installModuleOverlayHandler(socket);
   });
 
   for (const tuple of preinitHandlers) {
@@ -212,28 +203,31 @@ export function init(server: DispatchServer) {
 // Return an object that can be opened to create an isolated per-module network,
 // and closed to clean up after that module.
 export function forModule(id: string) {
+  let s: WSSWrapper;
   return {
     open() {
-      return makeModuleOverlaySocket(id, io, {
-        // Here, we provide a per-module list of clients that the module
-        // can inspect and invoke. Because our list contains unwrapped sockets,
-        // we need to wrap them before exposing them to the module.
-        // TODO(applmak): If a module chooses to listen on a per-client wrapped
-        // socket like this, it will remove other any such listener. Fix this
-        // in order to match socket.io behavior, if possible.
-        clients() {
-          return Object.keys(clients).reduce((agg, clientId) => {
-            agg[clientId] = {
-              ...clients[clientId],
-              socket: makeModuleOverlaySocket(id, clients[clientId].socket),
-            };
-            return agg;
-          }, {} as Record<string, PerModuleClientInfo>);
-        },
-      });
+      s = io.createRoom(id);
+      return s;
+      // return makeModuleOverlaySocket(id, io, {
+      //   // Here, we provide a per-module list of clients that the module
+      //   // can inspect and invoke. Because our list contains unwrapped sockets,
+      //   // we need to wrap them before exposing them to the module.
+      //   // TODO(applmak): If a module chooses to listen on a per-client wrapped
+      //   // socket like this, it will remove other any such listener. Fix this
+      //   // in order to match socket.io behavior, if possible.
+      //   clients() {
+      //     return Object.keys(clients).reduce((agg, clientId) => {
+      //       agg[clientId] = {
+      //         ...clients[clientId],
+      //         socket: makeModuleOverlaySocket(id, clients[clientId].socket),
+      //       };
+      //       return agg;
+      //     }, {} as Record<string, PerModuleClientInfo>);
+      //   },
+      // });
     },
     close() {
-      cleanupModuleOverlayHandler(id);
+      s?.close();
     },
   };
 }
