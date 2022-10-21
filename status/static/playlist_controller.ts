@@ -1,6 +1,5 @@
 /// <reference lib="dom" />
 
-import { BrickJson, LayoutConfig } from "../../server/playlist/playlist.ts";
 import { TransitionData } from "../../server/playlist/playlist_driver.ts";
 import { library } from "./library.ts";
 
