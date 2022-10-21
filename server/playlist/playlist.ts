@@ -13,7 +13,7 @@ interface CommonBrickJson {
   name: string;
   credit: CreditJson;
   config?: Record<string, unknown>;
-  testonly: boolean;
+  testonly?: boolean;
 }
 
 export interface BaseBrickJson extends CommonBrickJson {

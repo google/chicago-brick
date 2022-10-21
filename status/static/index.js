@@ -16,11 +16,11 @@ limitations under the License.
 import {ClientController} from './client_controller.js';
 import {PlaylistController} from './playlist_controller.js';
 import {ErrorController} from './error_controller.js';
-import {PlaylistCreator} from './playlist_creator.js';
+import {PlaylistCreator} from './playlist_creator.ts';
 import {WS} from '../../lib/websocket.ts';
 import {addLogger} from '/lib/log.ts';
 import {isStringWithOptions, makeConsoleLogger} from '/lib/console_logger.ts';
-import {library} from '../../server/modules/library.ts';
+import {library} from './library.ts';
 
 addLogger(makeConsoleLogger((...strings) => {
   const processedStrs = [];
@@ -166,6 +166,6 @@ function render() {
 
   playlistController.render();
 
-  window.requestAnimationFrame(render);
+  self.requestAnimationFrame(render);
 }
 render();
