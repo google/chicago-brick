@@ -16,6 +16,7 @@ limitations under the License.
 import { WS } from "../../lib/websocket.ts";
 import * as info from "../util/info.ts";
 import * as time from "../../lib/adjustable_time.ts";
+import { Handler } from "../../lib/event.ts";
 
 let socket: WS;
 let ready: () => void;
@@ -45,8 +46,6 @@ export function init() {
   sendHello();
   ready();
 }
-
-type Handler = (payload: any) => void;
 
 export function on(event: string, callback: Handler) {
   socket.on(event, callback);

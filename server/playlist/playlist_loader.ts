@@ -20,14 +20,7 @@ import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
 import { readTextFile } from "../util/read_file.ts";
 import { library } from "../modules/library.ts";
-import {
-  BrickJson,
-  isBaseBrickJson,
-  isExtendsBrickJson,
-  LayoutConfig,
-  PlaylistJson,
-} from "./playlist.ts";
-import { basename } from "https://deno.land/std@0.132.0/path/win32.ts";
+import { BrickJson, LayoutConfig, PlaylistJson } from "./playlist.ts";
 
 const log = easyLog("wall:playlist_loader");
 

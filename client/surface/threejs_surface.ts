@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { Surface } from "./surface.ts";
-import * as Three from "https://esm.sh/three-full@28.0.2";
+import * as Three from "https://esm.sh/three@0.145.0";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 
 export class ThreeJsSurface extends Surface {
@@ -22,12 +22,16 @@ export class ThreeJsSurface extends Surface {
   camera: Three.PerspectiveCamera;
   scene: Three.Scene;
 
-  constructor(container: Element, wallGeometry: Polygon, properties: unknown) {
+  constructor(
+    container: HTMLElement,
+    wallGeometry: Polygon,
+    properties: Three.WebGLRendererParameters,
+  ) {
     super(container, wallGeometry);
     this.renderer = new Three.WebGLRenderer(properties);
     this.renderer.setSize(
-      this.container.offsetWidth,
-      this.container.offsetHeight,
+      container.offsetWidth,
+      container.offsetHeight,
     );
     container.appendChild(this.renderer.domElement);
 
@@ -49,7 +53,7 @@ export class ThreeJsSurface extends Surface {
     );
   }
   setTileViewOffsetForCamera(camera: Three.PerspectiveCamera) {
-    var cam = camera || this.camera;
+    const cam = camera || this.camera;
     cam.setViewOffset(
       this.wallRect.w,
       this.wallRect.h,
@@ -63,14 +67,14 @@ export class ThreeJsSurface extends Surface {
     this.renderer.dispose();
   }
   setOpacity(alpha: number) {
-    this.renderer.domElement.style.opacity = alpha;
+    this.renderer.domElement.style.opacity = String(alpha);
   }
   render() {
     this.renderer.render(this.scene, this.camera);
   }
   takeSnapshot() {
     this.render();
-    const context = this.renderer.context;
+    const context = this.renderer.getContext();
     const data = new Uint8Array(
       context.drawingBufferWidth * context.drawingBufferHeight * 4,
     );

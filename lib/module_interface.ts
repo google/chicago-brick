@@ -24,7 +24,7 @@ limitations under the License.
 // with the config data, but should not do any drawing/file/network operations
 // in the constructor.
 class Server {
-  constructor(config?: unknown) {}
+  constructor(_config?: unknown) {}
 
   // Notification that your module has been selected next in the queue. You now
   // have 60 seconds to load whatever content you'd like to load.
@@ -49,7 +49,7 @@ class Server {
   // tick. The second argument is the amount of time that has passed since the
   // last tick. This is always >= 0, and is 0 on the first call. All times are
   // in ms.
-  tick(time: number, delta: number) {}
+  tick(_time: number, _delta: number) {}
 }
 
 // The ModuleInterface (on the client). The module manager will never
@@ -61,7 +61,7 @@ class Server {
 // data, but should not do any drawing/file/network operations in the
 // constructor.
 class Client {
-  constructor(config: unknown) {}
+  constructor(_config: unknown) {}
 
   // Notification that your module has been selected next in the queue. You now
   // have 60 seconds to load whatever content you'd like to load.
@@ -72,7 +72,7 @@ class Client {
   // running again. At this point, the impl is free to start reading from disk.
   // Communication with the server is also fine, because the server is already
   // responding to your events.
-  async willBeShownSoon(container: unknown, deadline: number) {}
+  async willBeShownSoon(_container: unknown, _deadline: number) {}
 
   // Notification that your module has started to fade out.
   beginFadeOut() {}
@@ -82,7 +82,7 @@ class Client {
 
   // Notification that your module has started to fade in. Time is the time that
   // the module began to fade in.
-  beginFadeIn(time: number) {}
+  beginFadeIn(_time: number) {}
 
   // Notification that your module has finished fading in.
   finishFadeIn() {}
@@ -95,7 +95,7 @@ class Client {
   // with respect to any prior draw. The second argument is the amount of time
   // that has passed since the last draw. This is always >= 0, and is 0 on the
   // first call. All times are in ms.
-  draw(time: number, delta: number) {}
+  draw(_time: number, _delta: number) {}
 }
 
 export { Client, Server };

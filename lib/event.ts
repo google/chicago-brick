@@ -1,3 +1,4 @@
+// deno-lint-ignore no-explicit-any
 export type Handler = (...payload: any[]) => void;
 interface StoredHandler {
   origFn: Handler;
