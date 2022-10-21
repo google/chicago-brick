@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ClientController} from './client_controller.js';
+import {ClientController} from './client_controller.ts';
 import {PlaylistController} from './playlist_controller.ts';
 import {ErrorController} from './error_controller.ts';
 import {PlaylistCreator} from './playlist_creator.ts';
