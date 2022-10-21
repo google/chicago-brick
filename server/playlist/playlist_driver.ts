@@ -24,8 +24,21 @@ import * as network from "../network/network.ts";
 import { ModulePlayer } from "../../lib/module_player.ts";
 import { Layout } from "../modules/layout.ts";
 import { library } from "../modules/library.ts";
+import { BrickJson, LayoutConfig } from "./playlist.ts";
 
 const log = easyLog("wall:playlist_driver");
+
+export interface TransitionData {
+  deadline: number;
+  module: string;
+  nextDeadline: number;
+  nextLayoutDeadline: number;
+  moduleList: string[];
+  moduleIndex: number;
+  layouts: LayoutConfig[];
+  layoutIndex: number;
+  configMap: Record<string, BrickJson>;
+}
 
 export class PlaylistDriver extends EventEmitter {
   /**
@@ -223,17 +236,25 @@ export class PlaylistDriver extends EventEmitter {
 
     const nextDeadline = Math.min(this.newLayoutTime, this.newModuleTime);
 
-    this.emit("transition", {
+    const data: TransitionData = {
       deadline: this.lastDeadline_,
       module: moduleName,
       nextDeadline,
       nextLayoutDeadline: this.newLayoutTime,
       moduleList: this.modules,
       moduleIndex: this.moduleIndex,
-      layouts: this.playlist,
+      layouts: this.playlist?.map((l) => {
+        return {
+          duration: l.duration,
+          moduleDuration: l.moduleDuration,
+          modules: l.modules,
+        };
+      }) || [],
       layoutIndex: this.layoutIndex,
       configMap: library.serialize(),
-    });
+    };
+
+    this.emit("transition", data);
 
     // Now, in so many seconds, we'll need to switch to another module
     // or another layout. How much time do we have?
