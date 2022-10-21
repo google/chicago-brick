@@ -13,13 +13,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import RJSON from "https://esm.sh/relaxed-json";
 import { assert } from "../../lib/assert.ts";
 import { Layout } from "../modules/layout.ts";
 import { easyLog } from "../../lib/log.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
-import { walkSync } from "https://deno.land/std@0.132.0/fs/walk.ts";
-import { ModuleDef } from "../modules/module_def.ts";
+import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
+import { readTextFile } from "../util/read_file.ts";
+import { library } from "../modules/library.ts";
+import {
+  BrickJson,
+  isBaseBrickJson,
+  isExtendsBrickJson,
+  LayoutConfig,
+  PlaylistJson,
+} from "./playlist.ts";
+import { basename } from "https://deno.land/std@0.132.0/path/win32.ts";
 
 const log = easyLog("wall:playlist_loader");
 
@@ -27,144 +35,93 @@ const log = easyLog("wall:playlist_loader");
  * Looks through the moduleDirs for brick.json files.
  * Returns a map of module name => module def.
  */
-export function loadAllBrickJson(moduleDirs: string[]) {
+export async function loadAllBrickJson(moduleDirs: string[]) {
   // Try to find all of the modules on disk. We scan them all in order to
   // figure out the whole universe of modules. We have to do this, because
   // if we are told to play a module by name, we don't know which path to
   // load or whatever config to use.
-  const bricks = moduleDirs.flatMap((p) =>
-    [...walkSync(".", {
-      match: [path.globToRegExp(path.join(p, "brick.json"))],
-    })].map((e) => e.path)
-  );
-  const allConfigs = bricks.flatMap((b) => {
-    const def = Deno.readTextFileSync(b);
-    const root = path.dirname(b);
-    try {
-      const config = RJSON.parse(def);
-      if (Array.isArray(config)) {
-        for (const c of config) {
-          c.root = root;
-        }
-        return config;
-      } else {
-        config.root = root;
-        return [config];
-      }
-    } catch (e) {
-      log.error(e);
-      log.error(`Skipping invalid config in: ${b}`);
-      return [];
-    }
-  });
-
-  return loadAllModules(allConfigs);
-}
-
-interface ModuleConfig {
-  name: string;
-  root: string;
-  path?: string;
-  serverPath?: string;
-  server_path?: string;
-  clientPath?: string;
-  client_path?: string;
-  extends?: string;
-  config?: unknown;
-  credit: unknown;
-  testonly?: boolean;
-}
-
-/**
- * Turns module configs into module defs. Returns a map of name => def.
- */
-export function loadAllModules(
-  configs: ModuleConfig[],
-  defsByName = new Map(),
-) {
-  // Sort the base before the extends so that we process them in this order.
-  const sortedConfigs = [
-    ...configs.filter((c) => !c.extends),
-    ...configs.filter((c) => c.extends),
-  ];
-
-  return sortedConfigs.reduce((map, config) => {
-    let def;
-    if (config.extends) {
-      const base = map.get(config.extends);
-      if (!base) {
-        log.error(
-          `Module ${config.name} attempted to extend module ${config.extends}, which cannot be found.`,
+  const allConfigs: BrickJson[] = [];
+  for (const dir of moduleDirs) {
+    for await (
+      const brickEntry of walk(".", {
+        match: [path.globToRegExp(path.join(dir, "brick.json"))],
+      })
+    ) {
+      let brickJson;
+      try {
+        brickJson = await readTextFile<BrickJson | BrickJson[]>(
+          brickEntry.path,
         );
-        return map;
+      } catch (e) {
+        log.error(e);
+        log.error(`Skipping invalid config in: ${brickEntry.path}`);
+        continue;
       }
-      // Augment the base config with the extended config.
-      const extendedConfig = { ...base.config, ...config.config || {} };
-      def = new ModuleDef(
-        config.name,
-        base.root,
-        {
-          server: base.serverPath,
-          client: base.clientPath,
-        },
-        base.name,
-        extendedConfig,
-        config.credit || {},
-        !!config.testonly,
-      );
-    } else {
-      def = new ModuleDef(
-        config.name,
-        config.root,
-        {
-          server: config.path || config.serverPath || config.server_path || "",
-          client: config.path || config.clientPath || config.client_path || "",
-        },
-        "",
-        config.config || {},
-        config.credit || {},
-        !!config.testonly,
-      );
-    }
-    map.set(config.name, def);
-    return map;
-  }, defsByName);
-}
 
-interface LayoutConfig {
-  modules?: string[];
-  collection: string;
-  moduleDuration: number;
-  duration: number;
+      const root = path.dirname(brickEntry.path);
+
+      if (Array.isArray(brickJson)) {
+        for (const brick of brickJson) {
+          allConfigs.push({
+            ...brick,
+            root,
+          });
+        }
+      } else {
+        allConfigs.push({
+          ...brickJson,
+          root,
+        });
+      }
+    }
+  }
+
+  library.loadAllModules(allConfigs);
 }
 
 /**
  * Loads a playlist from a file and turns it into a list of Layout objects.
  */
-export function loadPlaylistFromFile(
+export async function loadPlaylistFromFile(
   path: string,
-  defsByName: Map<string, ModuleDef>,
-  overrideLayoutDuration: number,
-  overrideModuleDuration: number,
-) {
-  const decoder = new TextDecoder();
-  const contents = decoder.decode(Deno.readFileSync(path));
+  overrideLayoutDuration?: number,
+  overrideModuleDuration?: number,
+): Promise<Layout[]> {
+  const contents = await readTextFile<PlaylistJson>(path);
 
-  const parsedPlaylist = RJSON.parse(contents);
-  const { collections, playlist, modules } = parsedPlaylist;
+  let { collections, playlist, modules } = contents;
   if (playlist.length === 0) {
-    throw new Error("Nothing to play!");
+    throw new Error(`No Layouts specified in playlist: ${path}!`);
   }
 
-  loadAllModules(modules || [], defsByName);
+  collections = collections ?? {};
 
-  return playlist.map((layout: LayoutConfig) => {
-    const { collection, modules } = layout;
+  if (modules) {
+    library.loadAllModules(modules);
+  }
+
+  return loadLayoutsFromConfig(
+    playlist,
+    collections,
+    overrideLayoutDuration,
+    overrideModuleDuration,
+  );
+}
+
+export function loadLayoutsFromConfig(
+  playlist: LayoutConfig[],
+  collections: Record<string, string[]> = {},
+  overrideLayoutDuration?: number,
+  overrideModuleDuration?: number,
+): Layout[] {
+  const layouts: Layout[] = [];
+  for (const layoutJson of playlist) {
+    const { collection, modules } = layoutJson;
 
     let moduleNames;
     if (collection) {
       if (collection == "__ALL__") {
-        moduleNames = [...defsByName.values()].map((d) => d.name);
+        moduleNames = [...library.values()].map((d) => d.name);
       } else {
         assert(
           collections[collection],
@@ -177,10 +134,13 @@ export function loadPlaylistFromFile(
       moduleNames = [...modules!];
     }
 
-    return new Layout({
-      modules: moduleNames,
-      moduleDuration: overrideModuleDuration || layout.moduleDuration,
-      duration: overrideLayoutDuration || layout.duration,
-    });
-  });
+    layouts.push(
+      new Layout({
+        modules: moduleNames,
+        moduleDuration: overrideModuleDuration || layoutJson.moduleDuration,
+        duration: overrideLayoutDuration || layoutJson.duration,
+      }),
+    );
+  }
+  return layouts;
 }

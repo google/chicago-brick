@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as time from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import * as wallGeometry from "../util/wall_geometry.ts";
 import * as moduleTicker from "./module_ticker.ts";
 import { assert } from "../../lib/assert.ts";
@@ -28,12 +28,27 @@ import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.ts";
 import inject from "../../lib/inject.ts";
 import { WS } from "../../lib/websocket.ts";
+import { CreditJson } from "../playlist/playlist.ts";
+import { Point } from "../../lib/math/vector2d.ts";
 
 const log = easyLog("wall:module");
 
 interface PerModuleDep {
   open(): void;
   close(): void;
+}
+
+export interface SerializedModule {
+  name: string;
+  path: string;
+  credit: CreditJson;
+  config: unknown;
+}
+
+export interface LoadModuleEvent {
+  module: SerializedModule;
+  time: number;
+  geo: Point[];
 }
 
 export class RunningModule {
@@ -140,7 +155,7 @@ export class RunningModule {
   }
 
   tellClientToPlay(socket: WS) {
-    socket.send("loadModule", {
+    const config: LoadModuleEvent = {
       module: {
         name: this.moduleDef.name,
         path: this.moduleDef.name == "_empty" ? "" : path.join(
@@ -153,7 +168,8 @@ export class RunningModule {
       },
       time: this.deadline,
       geo: wallGeometry.getGeo().points,
-    });
+    };
+    socket.send("loadModule", config);
   }
 
   tick(now: number, delta: number) {
@@ -172,7 +188,7 @@ export class RunningModule {
   }
 
   async performTransition(
-    otherModule: RunningModule,
+    _otherModule: RunningModule,
     transitionFinishDeadline: number,
   ) {
     await delay(time.until(transitionFinishDeadline));

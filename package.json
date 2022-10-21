@@ -17,13 +17,7 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "googleapis": "^40.0.1",
-    "jsfeat": "^0.0.8",
-    "node-fetch": "^2.6.0",
-    "noisejs": "^2.1.0",
     "p5": "^0.8.0",
-    "random-js": "^2.1.0",
-    "sharp": "^0.29.3",
     "sortablejs": "^1.14.0",
     "three-full": "^11.3.2",
     "urlpattern-polyfill": "^6.0.1"

@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { now } from "../util/time.ts";
+import * as time from "../../lib/adjustable_time.ts";
 import { easyLog } from "../../lib/log.ts";
 const log = easyLog("wall:module_ticker");
 import * as stateManager from "../network/state_manager.ts";
@@ -27,7 +27,7 @@ let lastTime = 0;
 const interval = 1000.0 / 10.0; // 10 FPS
 
 function tick() {
-  const start = now();
+  const start = time.now();
   if (modulesToTick.length) {
     stateManager.send();
   }
@@ -42,7 +42,7 @@ function tick() {
 
   // Set timeout for remaining tick time, or immediately if the module went
   // over.
-  const tickTime = now() - start;
+  const tickTime = time.now() - start;
   if (tickTime > interval) {
     log.warn(
       `Module tick() took too long: ${tickTime} ms out of ${interval} ms.`,

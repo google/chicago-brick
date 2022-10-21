@@ -14,16 +14,18 @@ limitations under the License.
 ==============================================================================*/
 
 import * as wallGeometry from "./util/wall_geometry.ts";
-import * as time from "./util/time.ts";
+import * as time from "../lib/adjustable_time.ts";
 import * as network from "./network/network.ts";
 import { getErrors } from "./util/last_n_errors_logger.ts";
-import { loadAllModules } from "./playlist/playlist_loader.ts";
 import { WSS } from "./network/websocket.ts";
 import { easyLog } from "../lib/log.ts";
 import { PlaylistDriver } from "./playlist/playlist_driver.ts";
-import { Layout } from "./modules/layout.ts";
-import { ModuleDef } from "./modules/module_def.ts";
+import { Layout, LayoutConfig } from "./modules/layout.ts";
 import { WS } from "../lib/websocket.ts";
+import { DispatchServer } from "./util/serving.ts";
+import { library } from "./modules/library.ts";
+import { loadLayoutsFromConfig } from "./playlist/playlist_loader.ts";
+import { BrickJson } from "./playlist/playlist.ts";
 
 const log = easyLog("wall:control");
 
@@ -32,8 +34,8 @@ interface TakeSnapshotRequest {
 }
 
 interface NewPlaylistRequest {
-  playlist: any;
-  moduleConfig: any;
+  playlist: LayoutConfig[];
+  moduleConfig: Record<string, BrickJson>;
 }
 
 // Basic server management hooks.
@@ -43,12 +45,11 @@ export class Control {
   constructor(
     readonly playlistDriver: PlaylistDriver,
     readonly initialPlaylist: Layout[],
-    readonly defsByName: Map<string, ModuleDef>,
   ) {
   }
 
-  installHandlers() {
-    const wss = new WSS({ port: 6001 });
+  installHandlers(server: DispatchServer) {
+    const wss = new WSS({ server, path: "/control" });
     let transitionData: unknown = {};
     this.playlistDriver.on("transition", (data: unknown) => {
       transitionData = data;
@@ -93,8 +94,10 @@ export class Control {
       });
       socket.on("newPlaylist", (data: NewPlaylistRequest) => {
         const { playlist, moduleConfig } = data;
-        loadAllModules(Object.values(moduleConfig), this.defsByName);
-        this.playlistDriver.setPlaylist(playlist);
+        console.log(moduleConfig);
+        library.loadAllModules(Object.values(moduleConfig));
+        const layouts = loadLayoutsFromConfig(playlist);
+        this.playlistDriver.setPlaylist(layouts);
       });
       socket.on("resetPlaylist", () => {
         this.playlistDriver.setPlaylist(this.initialPlaylist);

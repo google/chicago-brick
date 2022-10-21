@@ -46,7 +46,26 @@ export function forModule(network: WSS, id: string) {
   };
 }
 
+let justSentAnEmptyState = false;
 /** Sends the saved state to clients. */
 export function send() {
-  getSocket().sendToAllClients("state", stateMap);
+  const stateToSend = Object.entries(stateMap).reduce(
+    (agg, [moduleId, state]) => {
+      if (Object.keys(state).length) {
+        agg[moduleId] = state;
+      }
+      return agg;
+    },
+    {} as typeof stateMap,
+  );
+  if (Object.keys(stateToSend).length == 0) {
+    if (justSentAnEmptyState) {
+      return;
+    }
+    justSentAnEmptyState = true;
+  } else {
+    justSentAnEmptyState = false;
+  }
+
+  getSocket().sendToAllClients("state", stateToSend);
 }

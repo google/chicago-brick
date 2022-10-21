@@ -13,8 +13,8 @@ function makeEmptyModule() {
 describe('client module player', () => {
   let player;
   beforeEach(() => {
-    ClientModulePlayer.makeEmptyModule = makeEmptyModule;
     player = new ClientModulePlayer;
+    player.makeEmptyModule = makeEmptyModule;
     document.body.querySelectorAll('#containers').forEach(e => e.remove());
     const containersEl = document.createElement('div');
     containersEl.id = 'containers';

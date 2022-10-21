@@ -14,25 +14,24 @@ limitations under the License.
 ==============================================================================*/
 
 import * as monitor from "../monitoring/monitor.ts";
-import * as time from "../util/time.ts";
 import { ClientModule } from "./module.ts";
-import { easyLog } from "../../lib/log.ts";
-import { configure } from "../../lib/module_player.ts";
-
-const log = easyLog("wall:client_state_machine");
+import { ModulePlayer } from "../../lib/module_player.ts";
 
 const clientMonitorWrapper = {
   isEnabled() {
     return monitor.isEnabled();
   },
-  update(obj: unknown) {
+  update(obj: monitor.StateMachineEvent) {
     monitor.update({ client: obj });
   },
 };
 
-export const ClientModulePlayer = configure({
-  makeEmptyModule: ClientModule.newEmptyModule,
-  monitor: clientMonitorWrapper,
-  log,
-  time,
-});
+export class ClientModulePlayer extends ModulePlayer {
+  constructor() {
+    super({
+      makeEmptyModule: ClientModule.newEmptyModule,
+      monitor: clientMonitorWrapper,
+      logName: "wall:client_state_machine",
+    });
+  }
+}

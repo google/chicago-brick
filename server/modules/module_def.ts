@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { CreditJson } from "../playlist/playlist.ts";
+
 /**
  * The ModuleDef class contains all the information necessary to load &
  * instantiate a module, including code location and config parameters.
@@ -28,8 +30,8 @@ export class ModuleDef {
     readonly root: string,
     paths: { client: string; server: string },
     readonly baseName: string,
-    readonly config: unknown,
-    readonly credit: unknown,
+    readonly config: Record<string, unknown>,
+    readonly credit: CreditJson,
     readonly testonly: boolean,
   ) {
     this.clientPath = paths.client;
@@ -52,7 +54,7 @@ export class EmptyModuleDef extends ModuleDef {
       },
       "",
       {},
-      {},
+      {} as CreditJson,
       true,
     );
     // TODO(applmak): ^ this hacky.

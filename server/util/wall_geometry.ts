@@ -15,6 +15,7 @@ limitations under the License.
 
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { easyLog } from "../../lib/log.ts";
+import { flags } from "../flags.ts";
 
 const log = easyLog("wall:wall_geometry");
 
@@ -70,7 +71,7 @@ export function getGeo() {
 // TODO(applmak): Geometry specified as a single polygon doesn't really accurately reflect what's going on
 // on an actual wall, which has a bunch of rectangles slightly offset from one another. Instead of a poly,
 // switch the model generating a concave hull of the screens as they load in, which becomes the poly.
-export function init(flags: any) {
+export function init() {
   let xscale = 1920;
   let yscale = 1080;
   if (flags.screen_width) {

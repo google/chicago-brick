@@ -1,6 +1,6 @@
 import { serve, serveTls } from "https://deno.land/std@0.132.0/http/server.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
-import mime from "https://esm.sh/mime";
+import mime from "https://esm.sh/mime@3.0.0?no-dts";
 import { easyLog } from "../../lib/log.ts";
 import { emit } from "https://deno.land/x/emit@0.9.0/mod.ts";
 
@@ -15,7 +15,7 @@ async function transpile(tsPath: string): Promise<string> {
 }
 
 export function serveFile(filePath: string): Handler {
-  return async (req: Request) => {
+  return async () => {
     const type = mime.getType(path.extname(filePath)) || "text/plain";
     try {
       const contents = await Deno.readFile(filePath);
@@ -135,6 +135,11 @@ export class DispatchServer {
     pattern: string,
     handler: Handler,
   ) {
+    if (this.handlers.find((h) => h.pattern === pattern)) {
+      throw new Error(
+        `Handler ${pattern} is already registered on this server1`,
+      );
+    }
     this.handlers.push({ pattern, handler });
   }
 }

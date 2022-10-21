@@ -21,7 +21,8 @@ import {
   serveDirectory,
   serveFile,
 } from "../util/serving.ts";
-import { ModuleDef } from "./module_def.ts";
+import { library } from "./library.ts";
+import { flags } from "../flags.ts";
 
 const log = easyLog("wall:serving");
 
@@ -39,8 +40,6 @@ function exists(str: string) {
  */
 export function addRoutes(
   server: DispatchServer,
-  flags: any,
-  moduleDefsByName: Map<string, ModuleDef>,
 ) {
   // The location we are running from.
   const cwd = Deno.cwd();
@@ -57,13 +56,8 @@ export function addRoutes(
   // These are:
   //   /client => node_modules/brick/client
   //   /lib => node_modules/brick/lib
-  //   /node_modules => node_modules
   server.addHandler("/client/:path*", serveDirectory(path.join(cwd, "client")));
   server.addHandler("/lib/:path*", serveDirectory(path.join(cwd, "lib")));
-  server.addHandler(
-    "/node_modules/:path*",
-    serveDirectory(path.join(cwd, "node_modules")),
-  );
 
   // We support a global set of asset directories.
   for (const assets_dir of flags.assets_dir) {
@@ -72,8 +66,8 @@ export function addRoutes(
 
   // We also support per-module routing.
   server.addHandler("/module/:name/:path*", async (req, match) => {
-    if (moduleDefsByName.has(match.pathname.groups.name)) {
-      const def = moduleDefsByName.get(match.pathname.groups.name)!;
+    if (library.has(match.pathname.groups.name)) {
+      const def = library.get(match.pathname.groups.name)!;
       const res = await serveDirectory(def.root)(req, match);
       res.headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
       res.headers.set("Pragma", "no-cache");

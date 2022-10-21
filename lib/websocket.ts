@@ -1,24 +1,24 @@
-import { EventEmitter } from "./event.ts";
+import { EventEmitter, Handler } from "./event.ts";
 import { easyLog } from "./log.ts";
 
 const log = easyLog("wall:websocket");
 
-function parseMessage(data: string): [string, unknown] {
+function parseMessage(data: string): [string, unknown[]] {
   const json = JSON.parse(data);
   const [type, payload] = json;
   return [type, payload];
 }
-function serializeMessage(type: string, payload: unknown): string {
+function serializeMessage(type: string, payload: unknown[]): string {
   return JSON.stringify([type, payload]);
 }
 
 type RetryStrategy = (signal: AbortSignal) => Promise<WebSocket>;
 
 export class WS extends EventEmitter {
-  static serverWrapper(websocket: WebSocket) {
-    return new WS(websocket, null);
+  static serverWrapper(websocket: WebSocket, room: string) {
+    return new WS(websocket, null, room);
   }
-  static clientWrapper(href: string) {
+  static clientWrapper(href: string, room: string) {
     return new WS(new WebSocket(href), async (signal: AbortSignal) => {
       let backoffMs = 100;
       const tryReconnect: () => Promise<WebSocket> = () => {
@@ -41,7 +41,7 @@ export class WS extends EventEmitter {
         });
       };
       return await tryReconnect();
-    });
+    }, room);
   }
 
   websocket!: WebSocket;
@@ -52,6 +52,7 @@ export class WS extends EventEmitter {
   constructor(
     websocket: WebSocket,
     readonly retryStrategy: RetryStrategy | null,
+    readonly room: string,
   ) {
     super();
     this._bindToWebsocket(websocket);
@@ -93,7 +94,8 @@ export class WS extends EventEmitter {
       const { data } = message;
       try {
         const [type, payload] = parseMessage(data);
-        this.emit(type, payload);
+        // Use the event emitter because type is already prefixed.
+        super.emit(type, ...payload);
       } catch (e) {
         log.error("Failed to parse message:", e);
         return;
@@ -111,17 +113,41 @@ export class WS extends EventEmitter {
     }
     this.buffer.length = 0;
   }
-  send(msg: string, payload: unknown) {
+  send(msg: string, ...payload: unknown[]) {
+    this.sendWithRoom(this.room, msg, ...payload);
+  }
+  sendWithRoom(room: string, msg: string, ...payload: unknown[]) {
+    msg = `${room || "global"}:${msg}`;
     if (this.isOpen) {
       this.websocket.send(serializeMessage(msg, payload));
     } else {
       this.buffer.push(serializeMessage(msg, payload));
     }
   }
+  on(type: string, fn: Handler): void {
+    type = `${this.room || "global"}:${type}`;
+    super.on(type, fn);
+  }
+  once(type: string, fn: Handler): void {
+    type = `${this.room || "global"}:${type}`;
+    super.once(type, fn);
+  }
+  emit(type: string, ...payload: unknown[]): void {
+    type = `${this.room || "global"}:${type}`;
+    super.emit(type, ...payload);
+  }
   close() {
     this.isOpen = false;
     if (this.stopRetryingSignal) {
       this.stopRetryingSignal.abort();
     }
+    this.handlers.clear();
+  }
+  /**
+   * Returns a new websocket with a different 'room' that has an
+   * entirely different set of handlers.
+   */
+  createRoom(room: string): WS {
+    return new WS(this.websocket, this.retryStrategy, room);
   }
 }

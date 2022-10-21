@@ -21,11 +21,12 @@ import {
   makeConsoleLogger,
 } from "../lib/console_logger.ts";
 import { addLogger } from "../lib/log.ts";
-import { now } from "./util/time.ts";
+import * as time from "../lib/adjustable_time.ts";
 import { errorLogger } from "./util/error_logger.ts";
 import { ClientModulePlayer } from "./modules/client_module_player.ts";
 import { ClientModule } from "./modules/module.ts";
 import { WS } from "../lib/websocket.ts";
+import { LoadModuleEvent } from "../server/modules/module.ts";
 
 addLogger(makeConsoleLogger((...strings) => {
   const processedStrs = [];
@@ -48,7 +49,7 @@ addLogger(makeConsoleLogger((...strings) => {
     }
   }
   console.log(...processedStrs, ...css);
-}, now));
+}, time.now));
 addLogger(errorLogger);
 
 // Open our socket to the server.
@@ -64,7 +65,8 @@ const modulePlayer = new ClientModulePlayer();
 // Server has asked us to load a new module.
 network.on(
   "loadModule",
-  (bits) => modulePlayer.playModule(ClientModule.deserialize(bits)),
+  (bits: LoadModuleEvent) =>
+    modulePlayer.playModule(ClientModule.deserialize(bits)),
 );
 
 network.on("takeSnapshot", async (req) => {

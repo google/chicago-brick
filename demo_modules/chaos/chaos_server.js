@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {GOOGLE_COLORS} from './colors.js';
-import {Server} from '/lib/module_interface.ts';
+import {Server} from '../../lib/module_interface.ts';
 
 export function load(network, wallGeometry) {
   // Set to true to enable console spam!
@@ -32,7 +32,7 @@ export function load(network, wallGeometry) {
   }
 
   class ChaosServer extends Server {
-    async willBeShownSoon() {
+    willBeShownSoon() {
       // The time we last tried to place a new shape.
       this.oldtime = -Infinity;
       // The time we last sent information to the clients about the shapes.
@@ -123,7 +123,7 @@ export function load(network, wallGeometry) {
       // Send information about the layout of the wall to the clients.
       if (time > this.oldsend + (1000)) {
         this.oldsend = time;
-        network.emit('chaos', {
+        network.sendToAllClients('chaos', {
           time: this.build,
           shapes : this.shapes,
         });

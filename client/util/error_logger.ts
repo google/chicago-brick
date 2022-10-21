@@ -1,8 +1,8 @@
 import { send } from "../network/network.ts";
-import { now } from "./time.ts";
+import { now } from "../../lib/adjustable_time.ts";
 import { virtualRect } from "./info.ts";
 
-interface RecordErrorMessage {
+export interface RecordErrorMessage {
   message?: string;
   stack?: string;
   namespace: string;
@@ -10,6 +10,7 @@ interface RecordErrorMessage {
   client: string;
   channel: string;
   severity: number;
+  args: unknown[];
 }
 
 export function errorLogger(
@@ -23,17 +24,17 @@ export function errorLogger(
 
   const errorBits = {} as RecordErrorMessage;
   if (args[0] instanceof Error) {
-    errorBits.message = args[0].message;
-    errorBits.stack = args[0].stack;
+    const error = args.shift() as Error;
+    errorBits.message = error.message;
+    errorBits.stack = error.stack;
   }
 
-  send("record-error", {
-    ...args,
-    ...errorBits,
-    namespace: channel,
-    timestamp: now(),
-    client: virtualRect.serialize(),
-    channel,
-    severity,
-  });
+  errorBits.namespace = channel;
+  errorBits.timestamp = now();
+  errorBits.client = virtualRect.serialize();
+  errorBits.channel = channel;
+  errorBits.severity = severity;
+  errorBits.args = args;
+
+  send("record-error", errorBits);
 }
