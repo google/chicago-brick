@@ -1,7 +1,8 @@
 <html>
-  <head>
-    <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
-    <style>
+
+<head>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <style>
     html {
       padding: 0;
       margin: 0;
@@ -9,6 +10,7 @@
       height: 100%;
       overflow: hidden;
     }
+
     body {
       padding: 0;
       margin: 0;
@@ -20,19 +22,23 @@
 
       font: 12px 'Roboto', sans-serif;
     }
+
     header {
       flex: 0 0 auto;
       padding: 5px;
       background-color: #111;
       color: #FFF;
     }
-    header > span {
+
+    header>span {
       font-weight: bolder;
     }
+
     section {
       flex: 1 1 0;
       display: flex;
     }
+
     footer {
       flex: 0 0 auto;
       overflow-y: scroll;
@@ -41,6 +47,7 @@
       padding: 5px;
       border-top: 1px solid black;
     }
+
     footer .count {
       background-color: #4288b7;
       color: white;
@@ -49,9 +56,11 @@
       padding: 1px 3px;
       margin-right: 4px;
     }
+
     footer .clients {
       color: gray;
     }
+
     footer .module {
       font-weight: bolder;
     }
@@ -60,6 +69,7 @@
       position: relative;
       flex: 1 1 auto;
     }
+
     .diagram svg {
       position: absolute;
       top: 0;
@@ -70,22 +80,27 @@
       height: 100%;
       background-color: gray;
     }
+
     .diagram path {
       fill: #CCC;
       stroke: black;
     }
+
     .diagram rect {
       stroke: #DDD;
       strokeWidth: 1px;
       fill: white;
     }
+
     .diagram g {
       cursor: pointer;
     }
+
     .diagram g.loading rect {
       strokeWidth: 50px;
       stroke: yellow;
     }
+
     .diagram g.failed rect {
       strokeWidth: 50px;
       fill: #FFEEEE;
@@ -99,23 +114,28 @@
       display: flex;
       flex-direction: column;
     }
+
     .playlist-container {
       position: relative;
       overflow-y: scroll;
       flex: 1 1 auto;
     }
+
     .playlist-scroll {
       position: absolute;
       width: 100%;
     }
+
     .playlist-scroll::-webkit-scrollbar {
       width: 6px;
       background: #CCC;
     }
+
     .playlist-scroll::-webkit-scrollbar-thumb {
       background: #444;
       border-radius: 10px;
     }
+
     .playlist-config {
       flex: 0 0 auto;
       max-height: 150px;
@@ -124,11 +144,13 @@
       padding: 2px;
       white-space: pre;
     }
+
     .playlist-control {
       flex: 0 0 auto;
       border-top: 1px solid black;
       padding: 2px;
     }
+
     .playlist #line {
       position: absolute;
       left: 0;
@@ -144,19 +166,21 @@
       transition: margin-left 0.5s ease-in-out 0.0s;
       background-color: white;
     }
+
     .layout:last-child {
       margin-left: 30px;
     }
 
-    .layout > div {
+    .layout>div {
       padding: 2px;
     }
 
-    .layout > div:nth-child(even):not(.header):not(.footer) {
+    .layout>div:nth-child(even):not(.header):not(.footer) {
       background-color: #EEE;
     }
 
-    .layout .header, .layout .footer {
+    .layout .header,
+    .layout .footer {
       background-color: #444;
       font-weight: bolder;
       color: white;
@@ -166,13 +190,15 @@
     .layout .past:not(.current) {
       font-style: italic;
     }
+
     .layout:not(:last-child) .module:not(.past):not(.current) {
       color: gray;
     }
 
-    .layout .current > span:first-child {
+    .layout .current>span:first-child {
       font-weight: bolder;
     }
+
     .layout .error {
       color: red;
     }
@@ -194,10 +220,12 @@
       visibility: hidden;
       z-index: 10;
     }
-    #disconnected-warning > * {
+
+    #disconnected-warning>* {
       flex: 1 1 auto;
       transform: rotate(-35deg);
     }
+
     #playlist-creator {
       position: absolute;
       right: -600px;
@@ -212,9 +240,11 @@
       flex-direction: column;
       overflow: hidden;
     }
+
     #preset-playlists {
       flex: 0 0 auto;
     }
+
     #current-playlist-container {
       flex: 1 1 auto;
       border-top: 1px solid #AAA;
@@ -224,19 +254,20 @@
       position: relative;
       overflow-y: auto;
     }
-    #current-playlist {
-    }
+
+    #current-playlist {}
+
     #all-known-modules {
       flex: 0 0 auto;
       height: 200px;
       overflow-y: scroll;
     }
 
-    #playlist-creator .module > span {
+    #playlist-creator .module>span {
       font-weight: bolder;
     }
 
-    #playlist-creator .layout > div.module {
+    #playlist-creator .layout>div.module {
       background-color: inherit;
       padding: 0;
       transition: margin-top 0.2s ease-out 0.0s, margin-bottom 0.2s ease-out 0.0s;
@@ -245,6 +276,7 @@
     .extend-bottom {
       margin-bottom: 15px;
     }
+
     .extend-top {
       margin-top: 15px;
     }
@@ -252,6 +284,7 @@
     .accept-drop {
       border: 1px solid green;
     }
+
     .reject-drop {
       border: 1px solid red;
     }
@@ -280,104 +313,111 @@
       width: 100%;
       min-height: 200px;
     }
+
     textarea.invalid {
       border: 3px solid red;
     }
+
     #drive-folder-config {
       display: none;
     }
+
     #local-image-config {
       display: none;
     }
-    </style>
-    <script src="/index.js" type="module"></script>
-  </head>
-  <body>
-    <header>
-      Current Server Time: <span id="time">Time</span>
-      Current Module Playing: <span id="module">Module</span>
-      Duration: <span id="duration">Duration</span>
-      Remaining: <span id="remaining">Remaining</span>
-    </header>
-    <section>
-      <article class="diagram"></article>
-      <article class="playlist">
-        <div class="playlist-container">
-          <div class="playlist-scroll"></div>
+  </style>
+  <script src="/index.ts" type="module"></script>
+</head>
+
+<body>
+  <header>
+    Current Server Time: <span id="time">Time</span>
+    Current Module Playing: <span id="module">Module</span>
+    Duration: <span id="duration">Duration</span>
+    Remaining: <span id="remaining">Remaining</span>
+  </header>
+  <section>
+    <article class="diagram"></article>
+    <article class="playlist">
+      <div class="playlist-container">
+        <div class="playlist-scroll"></div>
+      </div>
+      <div class="playlist-config"></div>
+      <div class="playlist-control"><button id="open-creator">Creator</button></div>
+    </article>
+  </section>
+  <footer>
+  </footer>
+  <div id="disconnected-warning">
+    <div>Disconnected</div>
+  </div>
+  <div id="playlist-creator">
+    <div id="preset-playlists">
+      <button id="close-creator">Discard</button>
+      <button id="apply-playlist">Apply</button>
+      <button id="reset-playlist">Reset</button>
+      |
+      <button id="new-layout">New Layout</button>
+      <button id="clear-playlist">Clear</button>
+      <button id="load-live">Current Playlist</button>
+      <button id="load-all">All Modules</button>
+      |
+      <button id="extend-module-maker">Extend Module...</button>
+    </div>
+    <div id="current-playlist-container">
+      <div id="current-playlist"></div>
+    </div>
+    <div id="all-known-modules"></div>
+    <div id="module-maker">
+      <header>
+        <button id="discard-module">Discard</button>
+        <button id="create-module">Create</button>
+        <button id="reset-maker">Reset</button>
+        <button id="set-drive-images">Drive Images</button>
+        <button id="set-single-big-image">Single, big image</button>
+      </header>
+      <form id="module-maker-form">
+        <label for="extend-field">Extend:</label><br>
+        <select id="extend-field">
+        </select><br>
+        <label for="name-field">Name:</label><br>
+        <input type="text" id="name-field" placeholder="Name" required><br>
+        Choose Credits Type:<br>
+        <div id="credits-fields">
+          <fieldset>
+            <div>No attribution.</div>
+          </fieldset>
+          <fieldset disabled>
+            <label for="title-field">Credits - Title:</label><br>
+            <input type="text" id="title-field" placeholder="Title"><br>
+            <label for="author-field">Credits - Author:</label><br>
+            <input type="text" id="author-field" placeholder="Author"><br>
+          </fieldset>
+          <fieldset disabled>
+            <label for="image-field">Credits - Image Path:</label><br>
+            <input type="text" id="image-field" placeholder="Path"><br>
+          </fieldset>
         </div>
-        <div class="playlist-config"></div>
-        <div class="playlist-control"><button id="open-creator">Creator</button></div>
-      </article>
-    </section>
-    <footer>
-    </footer>
-    <div id="disconnected-warning"><div>Disconnected</div></div>
-    <div id="playlist-creator">
-      <div id="preset-playlists">
-        <button id="close-creator">Discard</button>
-        <button id="apply-playlist">Apply</button>
-        <button id="reset-playlist">Reset</button>
-        |
-        <button id="new-layout">New Layout</button>
-        <button id="clear-playlist">Clear</button>
-        <button id="load-live">Current Playlist</button>
-        <button id="load-all">All Modules</button>
-        |
-        <button id="extend-module-maker">Extend Module...</button>
-      </div>
-      <div id="current-playlist-container">
-        <div id="current-playlist"></div>
-      </div>
-      <div id="all-known-modules"></div>
-      <div id="module-maker">
-        <header>
-          <button id="discard-module">Discard</button>
-          <button id="create-module">Create</button>
-          <button id="reset-maker">Reset</button>
-          <button id="set-drive-images">Drive Images</button>
-          <button id="set-single-big-image">Single, big image</button>
-        </header>
-        <form id="module-maker-form">
-          <label for="extend-field">Extend:</label><br>
-          <select id="extend-field">
-          </select><br>
-          <label for="name-field">Name:</label><br>
-          <input type="text" id="name-field" placeholder="Name" required><br>
-          Choose Credits Type:<br>
-          <div id="credits-fields">
-            <fieldset>
-              <div>No attribution.</div>
-            </fieldset>
-            <fieldset disabled>
-              <label for="title-field">Credits - Title:</label><br>
-              <input type="text" id="title-field" placeholder="Title"><br>
-              <label for="author-field">Credits - Author:</label><br>
-              <input type="text" id="author-field" placeholder="Author"><br>
-            </fieldset>
-            <fieldset disabled>
-              <label for="image-field">Credits - Image Path:</label><br>
-              <input type="text" id="image-field" placeholder="Path"><br>
-            </fieldset>
-          </div>
-          <div id="normal-config">
-            <label for="config-field">Config:</label><br>
-            <textarea id="config-field" placeholder="{
+        <div id="normal-config">
+          <label for="config-field">Config:</label><br>
+          <textarea id="config-field" placeholder="{
       &quot;option1&quot;: &quot;value&quot;,
     }"></textarea>
-          </div>
-          <div id="drive-folder-config">
-            <input type="checkbox" id="drive-split"><label for="drive-split">Split?</label><br>
-            <label for="drive-folder-field">Drive Folder ID:</label><br>
-            <input type="text" id="drive-folder-field" placeholder="Drive Folder ID"><br>
-            <label for="drive-file-field">Drive File ID:</label><br>
-            <input type="text" id="drive-file-field" placeholder="Drive File ID"><br>
-          </div>
-          <div id="local-image-config">
-            <label for="local-image-field">Local Image Name:</label><br>
-            <input type="text" id="local-image-field" placeholder="Name"><br>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div id="drive-folder-config">
+          <input type="checkbox" id="drive-split"><label for="drive-split">Split?</label><br>
+          <label for="drive-folder-field">Drive Folder ID:</label><br>
+          <input type="text" id="drive-folder-field" placeholder="Drive Folder ID"><br>
+          <label for="drive-file-field">Drive File ID:</label><br>
+          <input type="text" id="drive-file-field" placeholder="Drive File ID"><br>
+        </div>
+        <div id="local-image-config">
+          <label for="local-image-field">Local Image Name:</label><br>
+          <input type="text" id="local-image-field" placeholder="Name"><br>
+        </div>
+      </form>
     </div>
-  </body>
+  </div>
+</body>
+
 </html>
