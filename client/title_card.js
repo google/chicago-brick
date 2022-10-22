@@ -105,17 +105,16 @@ export class TitleCard {
 
   // Creates a global API instance for use by the module code.
   getModuleAPI() {
-    var card = this;
     // This is the titleCard API provided to modules.
     return {
       // Creates a custom (empty) card and returns a reference to the caller.
-      useCustomCard: function() {
-        return card.replaceCard_(makeEmptyTitleCard());
+      useCustomCard: () => {
+        return this.replaceCard_(makeEmptyTitleCard());
       },
       // Creates a standard (config-based) card and returns a reference to the
       // caller.
-      useDefaultCard: function() {
-        return card.replaceCard_(makeDefaultTitleCard(card.credit));
+      useDefaultCard: () => {
+        return this.replaceCard_(makeDefaultTitleCard(this.credit));
       },
     };
   }
@@ -128,7 +127,7 @@ export class TitleCard {
         document.body.insertBefore(this.elem_, document.body.firstChild);
         this.inDocument_ = true;
         // Shrink the fonts so that things don't wrap beyond the containing box.
-        for (let e of this.elem_.querySelectorAll('div')) {
+        for (const e of this.elem_.querySelectorAll('div')) {
           // Read the initial font size:
           let fontSize = parseInt(window.getComputedStyle(e).fontSize);
           while (e.scrollWidth > this.elem_.offsetWidth) {
