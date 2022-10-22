@@ -1,13 +1,4 @@
-export interface CreditAuthorTitleJson {
-  title: string;
-  author?: string;
-}
-
-export interface CreditImageJson {
-  image: string;
-}
-
-export type CreditJson = CreditAuthorTitleJson | CreditImageJson;
+import { CreditJson } from "../../client/title_card.ts";
 
 interface CommonBrickJson {
   name: string;

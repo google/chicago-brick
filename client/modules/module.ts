@@ -24,7 +24,7 @@ import { assert } from "../../lib/assert.ts";
 import asset from "../asset/asset.ts";
 import inject from "../../lib/inject.ts";
 import * as stateManager from "../network/state_manager.ts";
-import { TitleCard } from "../title_card.js";
+import { CreditJson, TitleCard } from "../title_card.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../lib/module_interface.ts";
@@ -144,7 +144,7 @@ export class ClientModule {
       "_empty",
       "",
       {},
-      new TitleCard({}),
+      new TitleCard({} as CreditJson),
       deadline,
       new Polygon([{ x: 0, y: 0 }]),
       transition,
