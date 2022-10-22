@@ -71,13 +71,9 @@ interface SavedMessage {
   once: boolean;
 }
 
-const specialHandlers = new Map<string, Handler[]>([["new-client", []]]);
 const preinitHandlers: SavedMessage[] = [];
 function addHandler(msgType: string, handler: Handler, once: boolean) {
-  if (specialHandlers.has(msgType)) {
-    // No once support...
-    specialHandlers.get(msgType)!.push(handler);
-  } else if (io) {
+  if (io) {
     if (once) {
       io.once(msgType, handler);
     } else {
@@ -94,13 +90,6 @@ export function on(msgType: string, handler: Handler) {
 
 export function once(msgType: string, handler: Handler) {
   addHandler(msgType, handler, true);
-}
-
-export function fireSpecialHandler(msgType: string, payload: unknown) {
-  const handlers = specialHandlers.get(msgType) || [];
-  for (const handler of handlers) {
-    handler(payload);
-  }
 }
 
 let nextClientId = 1;
@@ -151,7 +140,6 @@ export function init(server: DispatchServer) {
       }
       clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
-      fireSpecialHandler("new-client", client);
       // Tell the client the current time.
       socket.send("time", time.now());
     });
