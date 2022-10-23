@@ -26,6 +26,6 @@
     "babel-eslint": "^8.2.6",
     "eslint": "^5.16.0",
     "husky": "^2.7.0",
-    "release-it": "^12.4.3"
+    "release-it": "^15.5.0"
   }
 }
