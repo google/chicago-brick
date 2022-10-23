@@ -70,10 +70,8 @@ network.socket.on(
 
 network.socket.on("takeSnapshot", async (req) => {
   const oldModule = modulePlayer.oldModule as ClientModule;
-  if (
-    (oldModule?.instance as any)?.surface
-  ) {
-    const image = (oldModule.instance! as any).surface.takeSnapshot();
+  if (oldModule?.instance?.surface) {
+    const image = oldModule.instance.surface.takeSnapshot();
     if (image) {
       // You can't draw an imagedata, so we convert to an imagebitmap.
       const WIDTH = 192;

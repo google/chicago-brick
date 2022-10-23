@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Surface } from "../surface/surface.ts";
+
 // The ModuleInterface (on the client). The module manager will never
 // instantiage this on the client, but will still parse it. This means that
 // all global symbols must be defined by the server or this framework. The
@@ -57,6 +59,12 @@ class Client {
   // that has passed since the last draw. This is always >= 0, and is 0 on the
   // first call. All times are in ms.
   draw(_time: number, _delta: number) {}
+
+  /**
+   * If set, allows the framework to access the surface for
+   * framework-level operations, like taking a snapshot.
+   */
+  surface?: Surface;
 }
 
 export { Client };
