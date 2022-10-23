@@ -1,9 +1,9 @@
 {
   "name": "slither",
-  "client_path": "./slither_client.js",
-  "server_path": "./slither_server.js",
+  "client_path": "./slither_client.ts",
+  "server_path": "./slither_server.ts",
   "credit": {
     "title": "Slither",
-    "author": "Matt Handley",
-  },
+    "author": "Matt Handley"
+  }
 }

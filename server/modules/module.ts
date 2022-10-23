@@ -207,7 +207,7 @@ export class RunningModule {
 
   async willBeShownSoon() {
     if (this.instance) {
-      await this.instance.willBeShownSoon();
+      await this.instance.willBeShownSoon(this.deadline);
     }
   }
 }
