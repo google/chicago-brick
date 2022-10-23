@@ -44,10 +44,6 @@ console.log(`CWD: ${cwd}`);
 console.log(`Static Dir: ${staticDir}`);
 
 const app = new DispatchServer({ port: flags.port });
-app.addHandler(
-  "/node_modules/:path*",
-  serveDirectory(path.join(cwd, "node_modules")),
-);
 app.addHandler("/lib/:path*", serveDirectory(path.join(cwd, "lib")));
 app.addHandler("/server/:path*", serveDirectory(path.join(cwd, "server")));
 app.addHandler("/client/:path*", serveDirectory(path.join(cwd, "client")));
