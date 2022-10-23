@@ -1,37 +1,51 @@
 /* globals Path2D */
 
-import {GOOGLE_COLORS, DARK_COLORS} from './colors.js';
-import {CanvasSurface} from '/client/surface/canvas_surface.ts';
-import {Rectangle} from '/lib/math/rectangle.ts';
-import {Client} from '/client/modules/module_interface.ts';
+import { DARK_COLORS, GOOGLE_COLORS } from "./colors.ts";
+import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
+import { Rectangle } from "../../lib/math/rectangle.ts";
+import { Client } from "../../client/modules/module_interface.ts";
+import { Logger } from "../../lib/log.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
+import {
+  CurrentValueInterpolator,
+  ModuleState,
+  SharedState,
+} from "../../client/network/state_manager.ts";
+import { Gear, GearDetails, HoleSpec } from "./gears.ts";
 
-export function load(debug, state, wallGeometry) {
+export function load(debug: Logger, state: ModuleState, wallGeometry: Polygon) {
   // Initially start with two layers.
   const layers = 2;
 
   class GearsClient extends Client {
-    async willBeShownSoon(container) {
+    surface: CanvasSurface | undefined = undefined;
+    c!: CanvasRenderingContext2D;
+    gears_?: Gear[];
+    gearDetails_: Record<string, GearDetails> = {};
+    gearPaths_: Record<string, Path2D> = {};
+    gearsState?: SharedState;
+
+    willBeShownSoon(container: HTMLElement) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.c = this.surface.context;
-      this.gears_ = null;
 
       // A map of gear metric details.
-      this.gearDetails_ = [];
+      this.gearDetails_ = {};
 
       // A map of teeth -> Path2D.
-      this.gearPaths_ = [];
+      this.gearPaths_ = {};
 
-      this.gearsState = state.define('gears', {
-        x: (t, k, v) => v,
-        y: (t, k, v) => v,
-        z: (t, k, v) => v,
-        radius: (t, k, v) => v,
-        teeth: (t, k, v) => v,
-        speed: (t, k, v) => v,
-        angle: (t, k, v) => v,
-        colorIndex: (t, k, v) => v,
-        holes: (t, k, v) => v,
-        pitch: (t, k, v) => v,
+      this.gearsState = state.define("gears", {
+        x: CurrentValueInterpolator,
+        y: CurrentValueInterpolator,
+        z: CurrentValueInterpolator,
+        radius: CurrentValueInterpolator,
+        teeth: CurrentValueInterpolator,
+        speed: CurrentValueInterpolator,
+        angle: CurrentValueInterpolator,
+        colorIndex: CurrentValueInterpolator,
+        holes: CurrentValueInterpolator,
+        pitch: CurrentValueInterpolator,
       });
     }
     finishFadeOut() {
@@ -39,8 +53,8 @@ export function load(debug, state, wallGeometry) {
         this.surface.destroy();
       }
     }
-    getGearDetails_(pitchRadius, numberOfTeeth) {
-      const key = [pitchRadius, numberOfTeeth].join(',');
+    getGearDetails_(pitchRadius: number, numberOfTeeth: number) {
+      const key = [pitchRadius, numberOfTeeth].join(",");
       if (!this.gearDetails_[key]) {
         const pitchDiameter = pitchRadius * 2;
         const diametralPitch = numberOfTeeth / pitchDiameter;
@@ -51,7 +65,7 @@ export function load(debug, state, wallGeometry) {
         //var clearance = wholeDepth - workingDepth;
         //var filletRadius = 1.5 * clearance;
 
-        const radiusAngle = 2*Math.PI / numberOfTeeth;
+        const radiusAngle = 2 * Math.PI / numberOfTeeth;
         const baseDiameter = pitchDiameter * Math.cos(20 * Math.PI / 180);
         const baseRadius = baseDiameter / 2;
         const outsideRadius = pitchRadius + addendum;
@@ -66,20 +80,20 @@ export function load(debug, state, wallGeometry) {
           baseDiameter,
           baseRadius,
           outsideRadius,
-          rootRadius
+          rootRadius,
         };
       }
       return this.gearDetails_[key];
     }
-    getGearPath_(holes, pitchRadius, numberOfTeeth) {
+    getGearPath_(holes: HoleSpec, pitchRadius: number, numberOfTeeth: number) {
       // Rather than always making a new gear path, consult our cache.
-      const key = [holes, pitchRadius, numberOfTeeth].join(',');
+      const key = [holes, pitchRadius, numberOfTeeth].join(",");
       if (!this.gearPaths_[key]) {
         const {
           radiusAngle,
           baseRadius,
           outsideRadius,
-          rootRadius
+          rootRadius,
         } = this.getGearDetails_(pitchRadius, numberOfTeeth);
 
         const path = new Path2D();
@@ -87,45 +101,57 @@ export function load(debug, state, wallGeometry) {
         let firstCommand = false;
 
         // Center hole.
-        path.arc(0, 0, 10, 0, 2*Math.PI, false);
-        if (holes[0] == 'circles') {
+        path.arc(0, 0, 10, 0, 2 * Math.PI, false);
+        if (holes[0] == "circles") {
           const circleR = rootRadius / 4;
-          const numCircles = holes[1];
+          const numCircles = holes[1] as number;
           for (let i = 0; i < numCircles; ++i) {
             const angle = i * 2 * Math.PI / numCircles;
             const cx = Math.cos(angle) * circleR * 2;
             const cy = Math.sin(angle) * circleR * 2;
-            path.moveTo(cx + circleR/1.5, cy);
-            path.arc(cx, cy, circleR/1.5, 0, 2*Math.PI, false);
+            path.moveTo(cx + circleR / 1.5, cy);
+            path.arc(cx, cy, circleR / 1.5, 0, 2 * Math.PI, false);
           }
-        } else if (holes[0] == 'rounded') {
+        } else if (holes[0] == "rounded") {
           const edgeThickness = 20;
           const barThickness = 30;
-          let count, innerArcRadius, ed, deltaAngle;
+          let count = holes[1] as number,
+            innerArcRadius = 1,
+            ed = 10,
+            deltaAngle = 0.1;
           do {
-            count = holes[1];
             if (count < 2) {
               break;
             }
             deltaAngle = 2 * Math.PI / count;
-            innerArcRadius = barThickness / Math.sin(deltaAngle/2);
+            innerArcRadius = barThickness / Math.sin(deltaAngle / 2);
             ed = rootRadius - edgeThickness;
-          } while (count > 0 && innerArcRadius > ed && (holes[1] = Math.floor(holes[1]/2)));
+          } while (
+            count > 0 && innerArcRadius > ed &&
+            (count = Math.floor(count / 2))
+          );
           if (count >= 2) {
             // It's possible our teeth are so small that we would extend beyond
             // the edge of the gear. If this would happen, halve the number of
             // holes we request, and try again.
             for (let i = 0; i < count; ++i) {
               const angle = i * deltaAngle;
-              const cx = Math.cos(angle + deltaAngle/2) * innerArcRadius;
-              const cy = Math.sin(angle + deltaAngle/2) * innerArcRadius;
-              const csa = angle + deltaAngle + Math.PI/2;
-              const cr = barThickness/2;
+              const cx = Math.cos(angle + deltaAngle / 2) * innerArcRadius;
+              const cy = Math.sin(angle + deltaAngle / 2) * innerArcRadius;
+              const csa = angle + deltaAngle + Math.PI / 2;
+              const cr = barThickness / 2;
               const bx = cx + Math.cos(csa) * cr;
               const by = cy + Math.sin(csa) * cr;
               path.moveTo(bx, by);
-              path.arc(cx, cy, barThickness/2, csa, angle + 3*Math.PI/2, false);
-              const ea = Math.asin(barThickness/2/ed);
+              path.arc(
+                cx,
+                cy,
+                barThickness / 2,
+                csa,
+                angle + 3 * Math.PI / 2,
+                false,
+              );
+              const ea = Math.asin(barThickness / 2 / ed);
               if (ed < 0) {
                 throw new Error(`... huh? ed shouldn't be negative!`);
               }
@@ -170,8 +196,8 @@ export function load(debug, state, wallGeometry) {
             // a = dir*tan(arccos(r_base/r_pitch)) - arccos(r_base/r_pitch) + t_0
             // =>
             // t_0 = a - dir*tan(arccos(r_base/r_pitch)) + arccos(r_base/r_pitch)
-            const t_pitch = Math.acos(baseRadius/pitchRadius);
-            const t_0 = a - dir*(Math.tan(t_pitch) - t_pitch);
+            const t_pitch = Math.acos(baseRadius / pitchRadius);
+            const t_0 = a - dir * (Math.tan(t_pitch) - t_pitch);
 
             // Now that we have our equation, figure out the t for when we hit the
             // outer radius.
@@ -179,17 +205,18 @@ export function load(debug, state, wallGeometry) {
             if (baseRadius > rootRadius) {
               minT = 0;
             } else {
-              minT = Math.acos(baseRadius/rootRadius);
+              minT = Math.acos(baseRadius / rootRadius);
             }
-            const maxT = Math.acos(baseRadius/outsideRadius);
+            const maxT = Math.acos(baseRadius / outsideRadius);
 
             const numSteps = 6;
             for (let step = 0; step <= numSteps; step++) {
-              const t = (dir > 0 ? minT : maxT) + dir * step / numSteps * (maxT - minT);
+              const t = (dir > 0 ? minT : maxT) +
+                dir * step / numSteps * (maxT - minT);
               const r = baseRadius / Math.cos(t);
               const theta = dir * (Math.tan(t) - t) + t_0;
-              const x = Math.cos(theta)*r;
-              const y = Math.sin(theta)*r;
+              const x = Math.cos(theta) * r;
+              const y = Math.sin(theta) * r;
               if (!firstCommand) {
                 path.moveTo(x, y);
                 firstCommand = true;
@@ -208,24 +235,38 @@ export function load(debug, state, wallGeometry) {
       }
       return this.gearPaths_[key];
     }
-    drawGear_(centerX, centerY, z, pitchRadius, numberOfTeeth, baseAngle, colorIndex, holes) {
+    drawGear_(
+      centerX: number,
+      centerY: number,
+      z: number,
+      pitchRadius: number,
+      numberOfTeeth: number,
+      baseAngle: number,
+      colorIndex: number,
+      holes: HoleSpec,
+    ) {
       const path = this.getGearPath_(holes, pitchRadius, numberOfTeeth);
-      this.c.setTransform(1, 0 , 0, 1, 0, 0);
-      this.surface.applyOffset();
+      this.c.setTransform(1, 0, 0, 1, 0, 0);
+      this.surface!.applyOffset();
       this.c.translate(centerX, centerY);
       this.c.rotate(baseAngle);
 
       const colors = z ? GOOGLE_COLORS : DARK_COLORS;
-      this.c.fillStyle = colorIndex >= 0 ? colors[colorIndex] : 'white';
-      this.c.fill(path, 'evenodd');
+      this.c.fillStyle = colorIndex >= 0 ? colors[colorIndex] : "white";
+      this.c.fill(path, "evenodd");
     }
-    draw(time) {
+    draw(time: number) {
       this.c.setTransform(1, 0, 0, 1, 0, 0);
-      this.c.fillStyle = 'black';
-      this.c.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+      this.c.fillStyle = "black";
+      this.c.fillRect(
+        0,
+        0,
+        this.surface!.virtualRect.w,
+        this.surface!.virtualRect.h,
+      );
 
       if (!this.gears_) {
-        this.gears_ = this.gearsState.get(0);
+        this.gears_ = this.gearsState!.get(0) as Gear[];
 
         if (!this.gears_) {
           return;
@@ -233,23 +274,37 @@ export function load(debug, state, wallGeometry) {
 
         // First time we're seeing the gears, so cull the ones we can't see on
         // this screen.
-        debug('gears before: ' + this.gears_.length);
-        this.gears_ = this.gears_.filter(g => {
+        debug("gears before: " + this.gears_.length);
+        this.gears_ = this.gears_.filter((g) => {
           const details = this.getGearDetails_(g.radius, g.teeth);
-          const rect = Rectangle.centeredAt(g.x, g.y, details.outsideRadius*2, details.outsideRadius*2);
-          return rect.intersects(this.surface.virtualRect);
+          const rect = Rectangle.centeredAt(
+            g.x,
+            g.y,
+            details.outsideRadius * 2,
+            details.outsideRadius * 2,
+          );
+          return rect.intersects(this.surface!.virtualRect);
         });
-        debug('gears after: ' + this.gears_.length);
+        debug("gears after: " + this.gears_.length);
       }
 
       for (let z = 0; z < layers; z++) {
-        this.gears_.filter(g => g.z == z)
-            .forEach(gear => {
-              const angle = 2*Math.PI * gear.speed * time / 1000 + gear.angle;
-              this.drawGear_(gear.x, gear.y, gear.z, gear.radius, gear.teeth, angle, gear.colorIndex, gear.holes);
-            });
+        this.gears_.filter((g) => g.z == z)
+          .forEach((gear) => {
+            const angle = 2 * Math.PI * gear.speed * time / 1000 + gear.angle;
+            this.drawGear_(
+              gear.x,
+              gear.y,
+              gear.z,
+              gear.radius,
+              gear.teeth,
+              angle,
+              gear.colorIndex,
+              gear.holes,
+            );
+          });
       }
     }
   }
-  return {client: GearsClient};
+  return { client: GearsClient };
 }

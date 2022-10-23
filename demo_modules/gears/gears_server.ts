@@ -1,21 +1,41 @@
-import {GOOGLE_COLORS} from './colors.js';
-import {Rectangle} from '../../lib/math/rectangle.ts';
-import * as randomjs from 'https://esm.sh/random-js@2.1.0';
-import {Server} from '../../server/modules/module_interface.ts';
+import { GOOGLE_COLORS } from "./colors.ts";
+import { Rectangle } from "../../lib/math/rectangle.ts";
+import * as randomjs from "https://esm.sh/random-js@2.1.0";
+import { Server } from "../../server/modules/module_interface.ts";
+import { Logger } from "../../lib/log.ts";
+import { ModuleState } from "../../server/network/state_manager.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
+import { Gear, HoleSpec } from "./gears.ts";
 
 const random = new randomjs.Random();
 
 const MIN_GEAR_RADIUS = 50;
 const MAX_GEAR_RADIUS = 500;
 
-export function load(debug, state, wallGeometry) {
-  const HOLE_VARIETIES = ['none', 'rounded', 'circles'];
+export function load(debug: Logger, state: ModuleState, wallGeometry: Polygon) {
+  const HOLE_VARIETIES = ["none", "rounded", "circles"];
 
-  function overlaps(x1, y1, r1, x2, y2, r2) {
-    return (x1-x2)*(x1-x2) + (y1-y2)*(y1-y2) < (r1+r2)*(r1+r2);
+  function overlaps(
+    x1: number,
+    y1: number,
+    r1: number,
+    x2: number,
+    y2: number,
+    r2: number,
+  ) {
+    return (x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2) <
+      (r1 + r2) * (r1 + r2);
   }
 
-  function calculateAngle(x1, y1, t1, a1, x2, y2, t2) {
+  function calculateAngle(
+    x1: number,
+    y1: number,
+    t1: number,
+    a1: number,
+    x2: number,
+    y2: number,
+    t2: number,
+  ): number {
     // When second gear is exactly horizontal right from the first, and the
     // angle of the first is 0, we need only consider if the second geer has
     // even (adjust by half-circular-pitch) or odd teeth (no adjustment).
@@ -25,45 +45,47 @@ export function load(debug, state, wallGeometry) {
     // So we solve for theta_2.
     // If the positions are not exactly horizontal, we first move the frame of
     // reference, then do the above, then move it back.
-    const frame = Math.atan2(y2-y1, x2-x1);
+    const frame = Math.atan2(y2 - y1, x2 - x1);
     // Figure out where other gear should be.
-    let newAngle = (a1 - frame)*t1/t2;
+    let newAngle = (a1 - frame) * t1 / t2;
     newAngle *= -1;
     // Adjust for even/odd
     if (t2 % 2 == 0) {
-      newAngle += Math.PI/t2;
+      newAngle += Math.PI / t2;
     }
     // Move back to reference frame.
     newAngle += frame;
     return newAngle;
   }
 
-  function calculatePitch(radius, numberOfTeeth) {
+  function calculatePitch(radius: number, numberOfTeeth: number) {
     // Two gears will mesh only if they have the same pitch.
     const pitchDiameter = radius * 2;
     return numberOfTeeth / pitchDiameter;
   }
 
   class GearsServer extends Server {
-    async willBeShownSoon() {
+    gears_: Gear[] = [];
+    willBeShownSoon() {
       // Generate a random gear train.
 
       // To start, place the middle gear.
       this.gears_ = [{
-        x: wallGeometry.extents.w/2,
-        y: wallGeometry.extents.h/2,
-        z: 1,  // Which layer we're talking about.
+        x: wallGeometry.extents.w / 2,
+        y: wallGeometry.extents.h / 2,
+        z: 1, // Which layer we're talking about.
         radius: random.integer(MIN_GEAR_RADIUS, MAX_GEAR_RADIUS),
         teeth: random.integer(6, 50),
-        speed: random.integer(1, 10)/40,
+        speed: random.integer(1, 10) / 40,
         angle: 0,
         colorIndex: -1,
-        holes: 'none',
+        holes: "none",
         pitch: -1,
       }];
       this.gears_[0].pitch = calculatePitch(
-          this.gears_[0].radius, this.gears_[0].teeth);
-
+        this.gears_[0].radius,
+        this.gears_[0].teeth,
+      );
 
       // Now, add 1000 gears. We might fail to place some of them, but that's
       // okay, it will look great.
@@ -73,9 +95,9 @@ export function load(debug, state, wallGeometry) {
         this.makeNewGear_();
       }
 
-      debug('Num gears', this.gears_.length);
+      debug("Num gears", this.gears_.length);
 
-      state.store('gears', 0, this.gears_);
+      state.store("gears", 0, this.gears_);
     }
 
     makeNewGear_() {
@@ -97,11 +119,11 @@ export function load(debug, state, wallGeometry) {
         // 2.25) Perhaps create an axle, which allows a gear to connect to the
         // chosen gear in the z-direction.
         let newZ = chosenGear.z;
-        let newRadius, newX, newY, newSpeed, rotation;
+        let newRadius, newX = 0, newY = 0, newSpeed, rotation;
         // Bias against axles and towards long gear trains.
         if (chosenGear.colorIndex >= 0 && Math.random() < 0.1) {
           // Pick the other z-plane.
-          newZ = 1-newZ;
+          newZ = 1 - newZ;
           // 2.5) Pick a random new radius (which might generate a random new
           // pitch), but that's okay.
           newRadius = random.integer(MIN_GEAR_RADIUS, MAX_GEAR_RADIUS * 2);
@@ -140,7 +162,12 @@ export function load(debug, state, wallGeometry) {
             newY = Math.sin(placementAngle) * dist + chosenGear.y;
 
             // 3.3) Make sure that this gear is on the screen.
-            const rect = Rectangle.centeredAt(newX, newY, newRadius*2);
+            const rect = Rectangle.centeredAt(
+              newX,
+              newY,
+              newRadius * 2,
+              newRadius * 2,
+            );
             if (!rect.intersects(wallGeometry.extents)) {
               continue;
             }
@@ -162,8 +189,14 @@ export function load(debug, state, wallGeometry) {
           newSpeed = -chosenGear.speed * ratio;
           // 3.5) Calculate the rotation of this gear to mesh with the chosenGear.
           rotation = calculateAngle(
-              chosenGear.x, chosenGear.y, chosenGear.teeth, chosenGear.angle,
-              newX, newY, newTeeth);
+            chosenGear.x,
+            chosenGear.y,
+            chosenGear.teeth,
+            chosenGear.angle,
+            newX,
+            newY,
+            newTeeth,
+          );
         }
 
         // If the chosen radius is too small, reject.
@@ -171,24 +204,37 @@ export function load(debug, state, wallGeometry) {
           continue;
         }
 
-
         // 3.7) Check to see if this meshes well with everything else we've
         // already placed (for example, this might intersect another gear!).
-        if (!this.wouldMesh_(newX, newY, newZ, newRadius, newTeeth, newSpeed, rotation)) {
+        if (
+          !this.wouldMesh_(
+            newX,
+            newY,
+            newZ,
+            newRadius,
+            newTeeth,
+            newSpeed,
+            rotation,
+          )
+        ) {
           continue;
         }
 
         // 3.8) Pick a look for the gear.
-        let holes = random.pick(HOLE_VARIETIES);
-        if (holes == 'rounded') {
-          holes = ['rounded', random.integer(2, Math.floor(newTeeth / 4))];
-        } else if (holes == 'circles') {
-          holes = ['circles', random.integer(2, 8)];
+        const holeType = random.pick(HOLE_VARIETIES);
+        let holes: HoleSpec;
+        if (holeType == "rounded") {
+          holes = ["rounded", random.integer(2, Math.floor(newTeeth / 4))];
+        } else if (holeType == "circles") {
+          holes = ["circles", random.integer(2, 8)];
+        } else {
+          holes = "none";
         }
 
         const newColorIndex = random.pick(
-            Array.from({length: GOOGLE_COLORS.length}, (u,i) => i)
-                .filter(i => i != chosenGear.colorIndex));
+          Array.from({ length: GOOGLE_COLORS.length }, (_u, i) => i)
+            .filter((i) => i != chosenGear.colorIndex),
+        );
 
         this.gears_.push({
           x: newX,
@@ -207,16 +253,34 @@ export function load(debug, state, wallGeometry) {
       }
       return false;
     }
-    wouldOverlap_(x, y, z, r) {
-      return !!this.gears_.filter(g => g.z == z)
-          .find(gear => overlaps(x, y, r, gear.x, gear.y, gear.radius));
+    wouldOverlap_(x: number, y: number, z: number, r: number) {
+      return !!this.gears_.filter((g) => g.z == z)
+        .find((gear) => overlaps(x, y, r, gear.x, gear.y, gear.radius));
     }
-    wouldMesh_(x, y, z, r, t, s, a) {
-      const calcOutsideRadius = (radius, teeth) => radius + radius * 2 / teeth;
+    wouldMesh_(
+      x: number,
+      y: number,
+      z: number,
+      r: number,
+      t: number,
+      s: number,
+      a: number,
+    ) {
+      const calcOutsideRadius = (radius: number, teeth: number) =>
+        radius + radius * 2 / teeth;
       const p = calculatePitch(r, t);
-      const mustMeshGears = this.gears_.filter(g => g.z == z)
-        .filter(gear => overlaps(x, y, calcOutsideRadius(r, t), gear.x, gear.y, calcOutsideRadius(gear.radius, gear.teeth)));
-      return !mustMeshGears.find(gear => {
+      const mustMeshGears = this.gears_.filter((g) => g.z == z)
+        .filter((gear) =>
+          overlaps(
+            x,
+            y,
+            calcOutsideRadius(r, t),
+            gear.x,
+            gear.y,
+            calcOutsideRadius(gear.radius, gear.teeth),
+          )
+        );
+      return !mustMeshGears.find((gear) => {
         // Find one that does not mesh, return true.
         // The pitches must match.
         if (gear.pitch != p) {
@@ -224,22 +288,28 @@ export function load(debug, state, wallGeometry) {
         }
 
         // To mesh, we must show that s_1*r_1 = -s_2*r_2, or close enough.
-        if (Math.abs(s*r + gear.speed * gear.radius) > 0.001) {
+        if (Math.abs(s * r + gear.speed * gear.radius) > 0.001) {
           return true;
         }
 
         // Well, it's going the right speed, but does it have the right angle?
         const idealAngle = calculateAngle(
-          gear.x, gear.y, gear.teeth, gear.angle, x, y, t
+          gear.x,
+          gear.y,
+          gear.teeth,
+          gear.angle,
+          x,
+          y,
+          t,
         );
         // The ideal angle and our angle must be offset by exactly a multiple of
         // our teeth angle.
-        const teethAngle = 2*Math.PI/t;
+        const teethAngle = 2 * Math.PI / t;
         const diff = ((a - idealAngle) % teethAngle + teethAngle) % teethAngle;
         return diff > 0.01;
       });
     }
   }
 
-  return {server: GearsServer};
+  return { server: GearsServer };
 }

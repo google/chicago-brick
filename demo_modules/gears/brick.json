@@ -1,9 +1,9 @@
 {
   "name": "gears",
-  "client_path": "./gears_client.js",
-  "server_path": "./gears_server.js",
+  "client_path": "./gears_client.ts",
+  "server_path": "./gears_server.ts",
   "credit": {
     "title": "Gears",
     "author": "Matt Handley"
-  },
+  }
 }
