@@ -30,7 +30,7 @@ import { easyLog } from "../../lib/log.ts";
 import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import * as time from "../../lib/adjustable_time.ts";
-import { WSS, WSSWrapper } from "./websocket.ts";
+import { WSS } from "./websocket.ts";
 import { WS } from "../../lib/websocket.ts";
 import { DispatchServer, DispatchServerOptions } from "../util/serving.ts";
 import { flags } from "../flags.ts";
@@ -140,19 +140,4 @@ export function init() {
   setInterval(() => {
     wss.sendToAllClients("time", time.now());
   }, 10000);
-}
-
-// Return an object that can be opened to create an isolated per-module network,
-// and closed to clean up after that module.
-export function forModule(id: string) {
-  let s: WSSWrapper;
-  return {
-    open() {
-      s = wss.createRoom(id);
-      return s;
-    },
-    close() {
-      s?.close();
-    },
-  };
 }

@@ -30,6 +30,7 @@ import inject from "../../lib/inject.ts";
 import { WS } from "../../lib/websocket.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import { CreditJson } from "../../client/title_card.ts";
+import { WSSWrapper } from "../network/websocket.ts";
 
 const log = easyLog("wall:module");
 
@@ -56,7 +57,7 @@ export class RunningModule {
   readonly loaded: Promise<void>;
   valid = false;
 
-  network?: PerModuleDep;
+  network?: WSSWrapper;
   stateManager?: PerModuleDep;
 
   instance?: Server;
@@ -128,7 +129,7 @@ export class RunningModule {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID =
         `${getGeo().extents.serialize()}-${this.deadline}`;
-      this.network = network.forModule(INSTANTIATION_ID);
+      this.network = network.wss.createRoom(INSTANTIATION_ID);
       this.stateManager = stateManager.forModule(
         INSTANTIATION_ID,
       );
@@ -143,7 +144,7 @@ export class RunningModule {
     if (this.network) {
       if (this.moduleDef.serverPath) {
         const { server } = await this.extractServerClass({
-          network: this.network.open(),
+          network: this.network,
           state: this.stateManager!.open(),
         });
         this.instance = new server(this.moduleDef.config);
@@ -199,8 +200,6 @@ export class RunningModule {
     }
     if (this.network) {
       this.stateManager!.close();
-
-      // This also cleans up stateManager.
       this.network.close();
       this.network = undefined;
     }
