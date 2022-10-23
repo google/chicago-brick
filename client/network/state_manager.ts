@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { WS } from "../../lib/websocket.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { assert } from "../../lib/assert.ts";
+import * as network from "./network.ts";
 
 interface StateDataPoint {
   time: number;
@@ -308,8 +308,8 @@ export function forModule(id: string) {
   };
 }
 
-export function init(network: WS) {
-  network.on("state", (stateFromServer) => {
+export function init() {
+  network.socket.on("state", (stateFromServer) => {
     for (const id in stateFromServer) {
       if (stateMap[id] && isClosedOrStale(stateMap[id])) {
         // Skip closed states.
@@ -341,7 +341,7 @@ export function init(network: WS) {
       stateMap[id].lastUpdatedTime = time.now();
     }
   });
-  network.on("state-closed", (id) => {
+  network.socket.on("state-closed", (id) => {
     if (stateMap[id]) {
       stateMap[id].serverClosedTime = time.now();
     }

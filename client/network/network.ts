@@ -16,9 +16,8 @@ limitations under the License.
 import { WS } from "../../lib/websocket.ts";
 import * as info from "../util/info.ts";
 import * as time from "../../lib/adjustable_time.ts";
-import { Handler } from "../../lib/event.ts";
 
-let socket: WS;
+export const socket = WS.clientWrapper(`ws://${location.host}/websocket`);
 let ready: () => void;
 const readyPromise = new Promise<void>((r) => ready = r);
 
@@ -26,8 +25,6 @@ const readyPromise = new Promise<void>((r) => ready = r);
  * Initializes the connection with the server & sets up the network layer.
  */
 export function init() {
-  socket = WS.clientWrapper(`ws://${location.host}/websocket`);
-
   function sendHello() {
     socket.send("client-start", {
       offset: info.virtualOffset,
@@ -47,18 +44,7 @@ export function init() {
   ready();
 }
 
-export function on(event: string, callback: Handler) {
-  socket.on(event, callback);
-}
-export function removeListener(event: string, callback: Handler) {
-  socket.removeListener(event, callback);
-}
 export const whenReady = readyPromise;
-export function send(event: string, data?: unknown) {
-  if (socket) {
-    socket.send(event, data);
-  }
-}
 
 // Return an object that can be opened to create an isolated per-module network,
 // and closed to clean up after that module.

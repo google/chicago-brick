@@ -18,7 +18,6 @@ limitations under the License.
 import * as info from "../util/info.ts";
 import { easyLog } from "../../lib/log.ts";
 import * as network from "./network.ts";
-import { WS } from "../../lib/websocket.ts";
 
 const log = easyLog("wall:peer");
 
@@ -58,7 +57,7 @@ function addChannelEventListeners(channel: any, peerid: string) {
 
 function addIceEventListeners(connection: any, peerid: string) {
   connection.addEventListener("icecandidate", (event: any) => {
-    network.send("peer-icecandidate", {
+    network.socket.send("peer-icecandidate", {
       from: myPeerid,
       to: peerid,
       candidate: event.candidate,
@@ -83,22 +82,22 @@ async function connect(peerid: string) {
   const offer = await connection.createOffer();
   await connection.setLocalDescription(offer);
 
-  network.send("peer-offer", {
+  network.socket.send("peer-offer", {
     from: myPeerid,
     to: peerid,
     offer,
   });
 }
 
-export function init(network: WS) {
-  network.on("peer-list", (msg) => {
+export function init() {
+  network.socket.on("peer-list", (msg) => {
     const { knownPeers } = msg;
     log(`peer-list: got ${knownPeers.length}`);
     for (const peerid of knownPeers) {
       connect(peerid);
     }
   });
-  network.on("peer-icecandidate", async (msg) => {
+  network.socket.on("peer-icecandidate", async (msg) => {
     const { from, candidate } = msg;
     log(`peer-icecandidate from: ${from}`);
     const peer = peers.get(from);
@@ -113,7 +112,7 @@ export function init(network: WS) {
     }
     log(`peer-icecandidate accepted from: ${from}`);
   });
-  network.on("peer-offer", async (msg) => {
+  network.socket.on("peer-offer", async (msg) => {
     const { from, offer } = msg;
     log(`peer-offer from: ${from}`);
     const connection = new RTCPeerConnection({
@@ -122,7 +121,7 @@ export function init(network: WS) {
     const peer = {
       id: from,
       connection,
-      channel: undefined,
+      channel: undefined as RTCDataChannel | undefined,
     };
     peers.set(from, peer);
     connection.addEventListener("datachannel", (e) => {
@@ -135,13 +134,13 @@ export function init(network: WS) {
     const answer = await connection.createAnswer();
     await connection.setLocalDescription(answer);
     log(`Sending answer to: ${from}`);
-    network.send("peer-answer", {
+    network.socket.send("peer-answer", {
       from: myPeerid,
       to: from,
       answer,
     });
   });
-  network.on("peer-answer", async (msg) => {
+  network.socket.on("peer-answer", async (msg) => {
     const { from, answer } = msg;
     log(`peer-answer from: ${from}`);
     const peer = peers.get(from);
@@ -154,7 +153,7 @@ export function init(network: WS) {
     );
     log(`peer-answer accepted from: ${from}`);
   });
-  network.send("peer-register", { id: myPeerid });
+  network.socket.send("peer-register", { id: myPeerid });
 }
 
 export function sendToAllPeers(msgType: string, payload: unknown) {

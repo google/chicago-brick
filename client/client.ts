@@ -25,7 +25,6 @@ import * as time from "../lib/adjustable_time.ts";
 import { errorLogger } from "./util/error_logger.ts";
 import { ClientModulePlayer } from "./modules/client_module_player.ts";
 import { ClientModule } from "./modules/module.ts";
-import { WS } from "../lib/websocket.ts";
 import { LoadModuleEvent } from "../server/modules/module.ts";
 
 addLogger(makeConsoleLogger((...strings) => {
@@ -54,7 +53,7 @@ addLogger(errorLogger);
 
 // Open our socket to the server.
 network.init();
-stateManager.init(network as unknown as WS);
+stateManager.init();
 
 if (new URL(window.location.href).searchParams.get("monitor")) {
   monitor.enable();
@@ -63,13 +62,13 @@ if (new URL(window.location.href).searchParams.get("monitor")) {
 const modulePlayer = new ClientModulePlayer();
 
 // Server has asked us to load a new module.
-network.on(
+network.socket.on(
   "loadModule",
   (bits: LoadModuleEvent) =>
     modulePlayer.playModule(ClientModule.deserialize(bits)),
 );
 
-network.on("takeSnapshot", async (req) => {
+network.socket.on("takeSnapshot", async (req) => {
   const oldModule = modulePlayer.oldModule as ClientModule;
   if (
     (oldModule?.instance as any)?.surface
@@ -89,12 +88,12 @@ network.on("takeSnapshot", async (req) => {
       const canvas = document.createElement("canvas");
       canvas.width = WIDTH;
       canvas.height = HEIGHT;
-      const context = canvas.getContext("2d");
+      const context = canvas.getContext("2d")!;
       context.drawImage(bitmap, 0, 0);
       const smallData = context.getImageData(0, 0, WIDTH, HEIGHT);
 
       // And now, we get the array itself.
-      network.send("takeSnapshotRes", {
+      network.socket.send("takeSnapshotRes", {
         data: Array.from(smallData.data),
         width: smallData.width,
         ...req,
@@ -103,5 +102,5 @@ network.on("takeSnapshot", async (req) => {
     }
   }
   console.error("snapshot failed", req);
-  network.send("takeSnapshotRes", { ...req });
+  network.socket.send("takeSnapshotRes", { ...req });
 });

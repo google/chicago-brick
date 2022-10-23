@@ -85,13 +85,13 @@ const handleManyModelChanges = (changes: unknown) =>
 
 const watchForModelChanges = () => {
   // Open connection to the server, monitor for updates to the model.
-  network.send("enable-monitoring");
-  network.on("monitor", handleManyModelChanges);
+  network.socket.send("enable-monitoring");
+  network.socket.on("monitor", handleManyModelChanges);
 };
 
 const stopWatchingModelChanges = () => {
-  network.send("disable-monitoring");
-  network.removeListener("monitor", handleManyModelChanges);
+  network.socket.send("disable-monitoring");
+  network.socket.removeListener("monitor", handleManyModelChanges);
 };
 
 let enabled = false;
