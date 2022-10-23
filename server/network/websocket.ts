@@ -52,7 +52,7 @@ export class WSS extends EventEmitter {
     this.webSocketServer = options.existingWSS ?? new WebSocketServer(options);
     this.clientSockets = new Set();
     this.webSocketServer.on("connection", (websocket: WebSocket) => {
-      const ws = WS.serverWrapper(websocket, "");
+      const ws = WS.serverWrapper(websocket);
       this.clientSockets.add(ws);
       ws.on("disconnect", (code: number, reason: string) => {
         log.error(`Lost client: ${code} Reason: ${reason}`);

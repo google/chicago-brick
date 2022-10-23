@@ -63,7 +63,7 @@ function getTime() {
 }
 const host = new URL(location.href).searchParams.get("host") ||
   "localhost:3000";
-const control = WS.clientWrapper(`ws://${host}/control`, "");
+const control = WS.clientWrapper(`ws://${host}/control`);
 const creatorEl = document.querySelector("#playlist-creator")! as HTMLElement;
 
 function applyNewPlaylist(playlist: LayoutConfig[] | "reset") {

@@ -33,7 +33,6 @@ import * as time from "../../lib/adjustable_time.ts";
 import { WSS, WSSWrapper } from "./websocket.ts";
 import { WS } from "../../lib/websocket.ts";
 import { DispatchServer, DispatchServerOptions } from "../util/serving.ts";
-import { Handler } from "../../lib/event.ts";
 import { flags } from "../flags.ts";
 
 const log = easyLog("wall:network");

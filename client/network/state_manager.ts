@@ -259,7 +259,7 @@ function isClosedOrStale(state: StateRecord) {
 //   serverClosedTime: timestamp,
 // };
 const stateMap: Record<string, StateRecord> = {};
-export function forModule(network: WS, id: string) {
+export function forModule(id: string) {
   return {
     open() {
       // Before we add another state, reap old ones.

@@ -15,10 +15,10 @@ function serializeMessage(type: string, payload: unknown[]): string {
 type RetryStrategy = (signal: AbortSignal) => Promise<WebSocket>;
 
 export class WS extends EventEmitter {
-  static serverWrapper(websocket: WebSocket, room: string) {
-    return new WS(websocket, null, room);
+  static serverWrapper(websocket: WebSocket) {
+    return new WS(websocket, null, "");
   }
-  static clientWrapper(href: string, room: string) {
+  static clientWrapper(href: string) {
     return new WS(new WebSocket(href), async (signal: AbortSignal) => {
       let backoffMs = 100;
       const tryReconnect: () => Promise<WebSocket> = () => {
@@ -41,7 +41,7 @@ export class WS extends EventEmitter {
         });
       };
       return await tryReconnect();
-    }, room);
+    }, "");
   }
 
   websocket!: WebSocket;

@@ -28,7 +28,6 @@ import { CreditJson, TitleCard } from "../title_card.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../lib/module_interface.ts";
-import { WS } from "../../lib/websocket.ts";
 import { LoadModuleEvent } from "../../server/modules/module.ts";
 
 function createNewContainer(name: string) {
@@ -167,7 +166,6 @@ export class ClientModule {
     this.network = network.forModule(INSTANTIATION_ID);
     const openNetwork = this.network.open();
     this.stateManager = stateManager.forModule(
-      network as unknown as WS,
       INSTANTIATION_ID,
     );
     const fakeEnv = {
