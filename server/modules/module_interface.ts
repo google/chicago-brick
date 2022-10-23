@@ -35,7 +35,7 @@ class Server {
   // running again. At this point, the impl is free to start reading from disk.
   // Communication with clients is also fine, as we ensure that clients are
   // notified before we notify the server module.
-  async willBeShownSoon() {}
+  willBeShownSoon(): Promise<void> | void {}
 
   // Notification that your module has been removed from the clients.
   dispose() {}

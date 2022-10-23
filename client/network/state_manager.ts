@@ -253,6 +253,11 @@ function isClosedOrStale(state: StateRecord) {
     (state.lastUpdatedTime < now - 600000); // 10 minutes.
 }
 
+export interface ModuleState {
+  define(stateName: string, def: unknown, size?: number): SharedState;
+  get(stateName: string): SharedState;
+}
+
 // A map of module id -> {
 //   state: {state name -> SharedState},
 //   clientClosedTime: timestamp,

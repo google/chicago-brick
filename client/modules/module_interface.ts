@@ -35,7 +35,10 @@ class Client {
   // running again. At this point, the impl is free to start reading from disk.
   // Communication with the server is also fine, because the server is already
   // responding to your events.
-  async willBeShownSoon(_container: unknown, _deadline: number) {}
+  willBeShownSoon(
+    _container: unknown,
+    _deadline: number,
+  ): Promise<void> | void {}
 
   // Notification that your module has started to fade out.
   beginFadeOut() {}

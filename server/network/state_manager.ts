@@ -24,12 +24,16 @@ type PerModuleState = Record<string, StateEntry>;
 // A map of module id -> {state name -> {time, data}};
 const stateMap: Record<string, PerModuleState> = {};
 
+export interface ModuleState {
+  store(stateName: string, time: number, data: unknown): void;
+}
+
 /** Returns a state-capturing object bound to a specific module id. */
 export function forModule(id: string) {
   // Return a module-appropriate facade that can be used to fill out the state
   // map.
   return {
-    open() {
+    open(): ModuleState {
       stateMap[id] = {};
       return {
         store(stateName: string, time: number, data: unknown) {

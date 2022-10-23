@@ -13,47 +13,56 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Polygon} from '../../lib/math/polygon2d.ts';
-import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
-import {Rectangle} from '../../lib/math/rectangle.ts';
-import {add, sub, scale, copy, flip} from '../../lib/math/vector2d.ts';
-import * as randomjs from 'https://esm.sh/random-js@2.1.0';
-import { Server } from '../../server/modules/module_interface.ts';
+import { Polygon } from "../../lib/math/polygon2d.ts";
+import {
+  BALL_RADIUS,
+  BallState,
+  GOOGLE_COLORS,
+  NUM_BALLS,
+} from "./constants.ts";
+import { Rectangle } from "../../lib/math/rectangle.ts";
+import { add, copy, flip, scale, sub } from "../../lib/math/vector2d.ts";
+import * as randomjs from "https://esm.sh/random-js@2.1.0";
+import { Server } from "../../server/modules/module_interface.ts";
+import { ModuleState } from "../../server/network/state_manager.ts";
 
 const random = new randomjs.Random();
 
-function *zip(...args) {
+function* zip<T>(...args: T[][]): Iterable<T[]> {
   for (let i = 0; i < args[0].length; ++i) {
-    yield args.map(a => a[i]);
+    yield args.map((a) => a[i]);
   }
 }
 
-function min(arr, fn) {
+function min<T>(arr: T[], fn: (v: T) => number): T | undefined {
   const minValue = Math.min(...arr.map(fn));
-  return arr.find(v => fn(v) == minValue);
+  return arr.find((v) => fn(v) == minValue);
 }
 
-
 const ORIGIN_BALL_POLYGON = new Polygon([
-  {x: -BALL_RADIUS, y: -BALL_RADIUS},
-  {x: BALL_RADIUS, y: -BALL_RADIUS},
-  {x: BALL_RADIUS, y: BALL_RADIUS},
-  {x: -BALL_RADIUS, y: BALL_RADIUS},
+  { x: -BALL_RADIUS, y: -BALL_RADIUS },
+  { x: BALL_RADIUS, y: -BALL_RADIUS },
+  { x: BALL_RADIUS, y: BALL_RADIUS },
+  { x: -BALL_RADIUS, y: BALL_RADIUS },
 ]);
 
-function findSoonestIntersection(oldCollision, newCollision, boundingPoly) {
+function findSoonestIntersection(
+  oldCollision: Polygon,
+  newCollision: Polygon,
+  boundingPoly: Polygon,
+) {
   // Consider each point in the oldCollision and its corresponding new point
   // in the poly. Find the intersection of that segment with the boundingPoly.
   // If there are multiple hits, return the one that has the lowest u,
   // indicating that the position is closest to oldCollision.
   const intersections = [...zip(oldCollision.points, newCollision.points)]
-      .map(pair => boundingPoly.intersectionWithSegment(...pair))
-      .filter(i => i);
-  return min(intersections, i => i.v);
+    .map(([x, y]) => boundingPoly.intersectionWithSegment(x, y))
+    .filter((i) => i);
+  return min(intersections, (i) => i!.v);
 }
 
-function doPhysics(ball, dt, boundingPoly) {
-  const v = {x: ball.vx, y: ball.vy};
+function doPhysics(ball: BallState, dt: number, boundingPoly: Polygon) {
+  const v = { x: ball.vx, y: ball.vy };
   // First, ensure that the current position is fully inside of the boundingPoly.
   // If not, then we can't really fix that, so we'll just ensure that we are
   // heading toward the center of the wall... ish.
@@ -68,7 +77,11 @@ function doPhysics(ball, dt, boundingPoly) {
       // Is the new collision of this ball outside of the boundingPoly?
       const oldCollision = ORIGIN_BALL_POLYGON.translate(ball);
       const newCollision = ORIGIN_BALL_POLYGON.translate(newPos);
-      const intersection = findSoonestIntersection(oldCollision, newCollision, boundingPoly);
+      const intersection = findSoonestIntersection(
+        oldCollision,
+        newCollision,
+        boundingPoly,
+      );
       if (intersection) {
         // Well, we collided with the boundingPoly. If the normalized time unit at
         // which we bumped into the poly is less than some small amount, then we
@@ -93,7 +106,7 @@ function doPhysics(ball, dt, boundingPoly) {
         // Now, our collision is near enough the boundingPoly to respond.
         // One side of our collision geometry is on the boundingPoly. Figure
         // out which side that it by looking at the intersection results.
-        const {a, b} = intersection;
+        const { a, b } = intersection;
 
         const base = sub(a, b);
         // Flip v over base.
@@ -129,43 +142,46 @@ function doPhysics(ball, dt, boundingPoly) {
   ball.vx = v.x;
   ball.vy = v.y;
 
-  if (ball.x > boundingPoly.extents.w || ball.y > boundingPoly.extents.h ||
-      ball.x < 0 || ball.y < 0) {
+  if (
+    ball.x > boundingPoly.extents.w || ball.y > boundingPoly.extents.h ||
+    ball.x < 0 || ball.y < 0
+  ) {
     // console.error('WHOA NELLY:', ball.x, ball.y);
   }
 }
 
-export function load(wallGeometry, state) {
+export function load(wallGeometry: Polygon, state: ModuleState) {
   class BallsServer extends Server {
-    async willBeShownSoon() {
-      this.balls = [];
-      var extents = wallGeometry.extents;
-      var spawnRect = new Rectangle(
+    readonly balls: BallState[] = [];
+    willBeShownSoon() {
+      const extents = wallGeometry.extents;
+      const spawnRect = new Rectangle(
         extents.x + BALL_RADIUS,
         extents.y + BALL_RADIUS,
         extents.w - 2 * BALL_RADIUS,
-        extents.h - 2 * BALL_RADIUS);
-      for (var i = 0; i < NUM_BALLS; ++i) {
+        extents.h - 2 * BALL_RADIUS,
+      );
+      for (let i = 0; i < NUM_BALLS; ++i) {
         this.balls.push({
           x: random.real(spawnRect.x, spawnRect.x + spawnRect.w),
           y: random.real(spawnRect.y, spawnRect.y + spawnRect.h),
           vx: random.real(-1, 1, true),
           vy: random.real(-1, 1, true),
-          color: random.integer(0, GOOGLE_COLORS.length-1),
+          color: random.integer(0, GOOGLE_COLORS.length - 1),
         });
       }
     }
 
-    tick(time, delta) {
+    tick(time: number, delta: number) {
       // Move the balls a bit.
-      this.balls.forEach(ball => {
+      this.balls.forEach((ball) => {
         // Calculate the new ball positions.
         doPhysics(ball, delta, wallGeometry);
       });
 
-      state.store('balls', time, this.balls);
+      state.store("balls", time, this.balls);
     }
   }
 
-  return {server: BallsServer};
+  return { server: BallsServer };
 }
