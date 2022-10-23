@@ -34,14 +34,13 @@ export function init() {
 
   // When we reconnect after a disconnection, we need to tell the server
   // about who we are all over again.
-  socket.on("connect", sendHello);
+  socket.on("connect", () => {
+    sendHello();
+    ready();
+  });
 
   // Install our time listener.
   socket.on("time", time.adjustTimeByReference);
-
-  // Tell the server who we are.
-  sendHello();
-  ready();
 }
 
 export const whenReady = readyPromise;
