@@ -7,29 +7,10 @@ import {
   serveFile,
 } from "../server/util/serving.ts";
 import { addLogger } from "../lib/log.ts";
-import {
-  isStringWithOptions,
-  makeConsoleLogger,
-  StringWithOptions,
-} from "../lib/console_logger.ts";
+import { makeConsoleLogger } from "../lib/console_logger.ts";
+import { consoleLogger } from "../server/util/console_logger.ts";
 
-addLogger(
-  makeConsoleLogger(
-    (...strs: (string | StringWithOptions)[]) => {
-      // TODO(applmak): Implement actual color here.
-      const coloredStrings: string[] = [];
-      for (const str of strs) {
-        if (isStringWithOptions(str)) {
-          coloredStrings.push(str.str);
-        } else {
-          coloredStrings.push(str);
-        }
-      }
-      console.log(coloredStrings.join(""));
-    },
-    () => performance.now(),
-  ),
-);
+addLogger(makeConsoleLogger(consoleLogger, () => performance.now()));
 
 const FLAG_DEFS = [
   { name: "port", type: Number, defaultValue: 3000 },
@@ -63,12 +44,9 @@ console.log(`CWD: ${cwd}`);
 console.log(`Static Dir: ${staticDir}`);
 
 const app = new DispatchServer({ port: flags.port });
-app.addHandler(
-  "/node_modules/:path*",
-  serveDirectory(path.join(cwd, "node_modules")),
-);
 app.addHandler("/lib/:path*", serveDirectory(path.join(cwd, "lib")));
 app.addHandler("/server/:path*", serveDirectory(path.join(cwd, "server")));
+app.addHandler("/client/:path*", serveDirectory(path.join(cwd, "client")));
 app.addHandler("/:path*", serveDirectory(path.join(staticDir, "static")));
 app.addHandler("/", serveFile(path.join(staticDir, "static/index.html")));
 

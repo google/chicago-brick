@@ -1,4 +1,5 @@
-// @ts-ignore
+/// <reference lib="dom" />
+
 import { addLogger } from "../../lib/log.ts";
 
 const COLORS = [

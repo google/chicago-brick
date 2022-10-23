@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
-import {Server} from '../../lib/module_interface.ts';
+import {Server} from '../../server/modules/module_interface.ts';
 
 export function load(network, debug) {
   class P5GameOfLifeServer extends Server {

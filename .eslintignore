@@ -5,7 +5,6 @@ extras/
 # or interfaces which document their arguments.
 demo_modules/p5_template/p5_template.js
 demo_modules/slideshow/interfaces.js
-lib/module_interface.ts
 
 # At some point, fix these:
 demo_modules/operational_tests/shared_test.js

@@ -7,6 +7,6 @@ export async function willReject(fn: () => Promise<void>) {
   throw new Error("Should have rejected!");
 }
 
-export async function isPending(p: Promise<any>) {
+export async function isPending<T>(p: Promise<T>) {
   return "pending" == await Promise.race([p, "pending"]);
 }

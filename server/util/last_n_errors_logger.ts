@@ -1,14 +1,15 @@
 import * as network from "../network/network.ts";
 import { WS } from "../../lib/websocket.ts";
+import { RecordErrorMessage } from "../../client/util/error_logger.ts";
 
-network.on("connection", (socket: WS) => {
-  socket.on("record-error", (err: unknown) => {
+network.wss.on("connection", (socket: WS) => {
+  socket.on("record-error", (err: RecordErrorMessage) => {
     addToBuffer(err);
   });
 });
 
-const buffer: unknown[] = [];
-function addToBuffer(item: unknown) {
+const buffer: RecordErrorMessage[] = [];
+function addToBuffer(item: RecordErrorMessage) {
   buffer.push(item);
   if (buffer.length > 100) {
     buffer.shift();
@@ -24,9 +25,9 @@ export function getErrors() {
 export function captureLog(channel: string, severity: number, args: unknown[]) {
   if (severity < 0) {
     addToBuffer({
+      ...args as unknown as RecordErrorMessage,
       channel,
       severity,
-      ...args,
     });
   }
 }

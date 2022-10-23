@@ -13,9 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { WS } from "../../lib/websocket.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { assert } from "../../lib/assert.ts";
+import { PerModuleState } from "../../server/network/state_manager.ts";
+import * as network from "./network.ts";
 
 interface StateDataPoint {
   time: number;
@@ -253,13 +254,18 @@ function isClosedOrStale(state: StateRecord) {
     (state.lastUpdatedTime < now - 600000); // 10 minutes.
 }
 
+export interface ModuleState {
+  define(stateName: string, def: unknown, size?: number): SharedState;
+  get(stateName: string): SharedState;
+}
+
 // A map of module id -> {
 //   state: {state name -> SharedState},
 //   clientClosedTime: timestamp,
 //   serverClosedTime: timestamp,
 // };
 const stateMap: Record<string, StateRecord> = {};
-export function forModule(network: WS, id: string) {
+export function forModule(id: string) {
   return {
     open() {
       // Before we add another state, reap old ones.
@@ -308,8 +314,8 @@ export function forModule(network: WS, id: string) {
   };
 }
 
-export function init(network: WS) {
-  network.on("state", (stateFromServer) => {
+export function init() {
+  network.socket.on("state", (stateFromServer) => {
     for (const id in stateFromServer) {
       if (stateMap[id] && isClosedOrStale(stateMap[id])) {
         // Skip closed states.
@@ -341,9 +347,16 @@ export function init(network: WS) {
       stateMap[id].lastUpdatedTime = time.now();
     }
   });
-  network.on("state-closed", (id) => {
+  network.socket.on("state-closed", (id) => {
     if (stateMap[id]) {
       stateMap[id].serverClosedTime = time.now();
     }
   });
+}
+
+declare global {
+  interface EmittedEvents {
+    state(map: Record<string, PerModuleState>): void;
+    "state-closed": (id: string) => void;
+  }
 }

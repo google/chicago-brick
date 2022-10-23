@@ -16,45 +16,21 @@ limitations under the License.
 import * as monitor from "./monitoring/monitor.ts";
 import * as network from "./network/network.ts";
 import * as stateManager from "./network/state_manager.ts";
-import {
-  isStringWithOptions,
-  makeConsoleLogger,
-} from "../lib/console_logger.ts";
+import { makeConsoleLogger } from "../lib/console_logger.ts";
 import { addLogger } from "../lib/log.ts";
 import * as time from "../lib/adjustable_time.ts";
 import { errorLogger } from "./util/error_logger.ts";
 import { ClientModulePlayer } from "./modules/client_module_player.ts";
 import { ClientModule } from "./modules/module.ts";
-import { WS } from "../lib/websocket.ts";
 import { LoadModuleEvent } from "../server/modules/module.ts";
+import { consoleLogger } from "./util/console_logger.ts";
 
-addLogger(makeConsoleLogger((...strings) => {
-  const processedStrs = [];
-  const css = [];
-  for (const str of strings) {
-    if (isStringWithOptions(str)) {
-      processedStrs.push(str.str);
-      if (str.options.bold) {
-        css.push("font-weight: bolder");
-      }
-      if (str.options.backgroundColor) {
-        css.push(`background-color: ${str.options.backgroundColor}`);
-      }
-    } else {
-      processedStrs.push(str);
-      if (css.length) {
-        // Only add a '' css if we already have something in the css box.
-        css.push("");
-      }
-    }
-  }
-  console.log(...processedStrs, ...css);
-}, time.now));
+addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(errorLogger);
 
 // Open our socket to the server.
 network.init();
-stateManager.init(network as unknown as WS);
+stateManager.init();
 
 if (new URL(window.location.href).searchParams.get("monitor")) {
   monitor.enable();
@@ -63,18 +39,15 @@ if (new URL(window.location.href).searchParams.get("monitor")) {
 const modulePlayer = new ClientModulePlayer();
 
 // Server has asked us to load a new module.
-network.on(
+network.socket.on(
   "loadModule",
-  (bits: LoadModuleEvent) =>
-    modulePlayer.playModule(ClientModule.deserialize(bits)),
+  (bits) => modulePlayer.playModule(ClientModule.deserialize(bits)),
 );
 
-network.on("takeSnapshot", async (req) => {
+network.socket.on("takeSnapshot", async (req) => {
   const oldModule = modulePlayer.oldModule as ClientModule;
-  if (
-    (oldModule?.instance as any)?.surface
-  ) {
-    const image = (oldModule.instance! as any).surface.takeSnapshot();
+  if (oldModule?.instance?.surface) {
+    const image = oldModule.instance.surface.takeSnapshot();
     if (image) {
       // You can't draw an imagedata, so we convert to an imagebitmap.
       const WIDTH = 192;
@@ -89,12 +62,12 @@ network.on("takeSnapshot", async (req) => {
       const canvas = document.createElement("canvas");
       canvas.width = WIDTH;
       canvas.height = HEIGHT;
-      const context = canvas.getContext("2d");
+      const context = canvas.getContext("2d")!;
       context.drawImage(bitmap, 0, 0);
       const smallData = context.getImageData(0, 0, WIDTH, HEIGHT);
 
       // And now, we get the array itself.
-      network.send("takeSnapshotRes", {
+      network.socket.send("takeSnapshotRes", {
         data: Array.from(smallData.data),
         width: smallData.width,
         ...req,
@@ -103,5 +76,24 @@ network.on("takeSnapshot", async (req) => {
     }
   }
   console.error("snapshot failed", req);
-  network.send("takeSnapshotRes", { ...req });
+  network.socket.send("takeSnapshotRes", { ...req });
 });
+
+export interface TakeSnapshotRequest {
+  client: string;
+  id: string;
+}
+
+export interface TakeSnapshotResponse extends TakeSnapshotRequest {
+  data?: number[];
+  width?: number;
+  error?: string;
+}
+
+declare global {
+  interface EmittedEvents {
+    takeSnapshot(req: TakeSnapshotRequest): void;
+    takeSnapshotRes(res: TakeSnapshotResponse): void;
+    loadModule(config: LoadModuleEvent): void;
+  }
+}

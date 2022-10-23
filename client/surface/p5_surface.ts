@@ -13,8 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+/// <reference lib="dom" />
+
 import { Surface } from "./surface.ts";
-import P5 from "https://esm.sh/p5@0.8";
+import P5 from "https://cdn.skypack.dev/p5?dts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 
@@ -39,7 +41,7 @@ export class P5Surface extends Surface {
   p5: P5;
 
   constructor(
-    container: Element,
+    container: HTMLElement,
     wallGeometry: Polygon,
     providedSketchClass: SketchClass,
     startTime: number,
@@ -48,61 +50,59 @@ export class P5Surface extends Surface {
     super(container, wallGeometry);
 
     this.realPixelScalingFactors = {
-      x: this.container.offsetWidth / this.virtualRect.w,
-      y: this.container.offsetHeight / this.virtualRect.h,
+      x: container.offsetWidth / this.virtualRect.w,
+      y: container.offsetHeight / this.virtualRect.h,
     };
 
     this.startTime = startTime;
-    var randomSeed = this.startTime || 0;
+    const randomSeed = this.startTime || 0;
 
-    var processing_canvas_width = this.container.offsetWidth;
-    var processing_canvas_height = this.container.offsetHeight;
+    const processing_canvas_width = container.offsetWidth;
+    const processing_canvas_height = container.offsetHeight;
 
-    var xScale = this.realPixelScalingFactors.x;
-    var yScale = this.realPixelScalingFactors.y;
+    const xScale = this.realPixelScalingFactors.x;
+    const yScale = this.realPixelScalingFactors.y;
 
-    var wallWidth = this.wallRect.w;
-    var wallHeight = this.wallRect.h;
+    const wallWidth = this.wallRect.w;
+    const wallHeight = this.wallRect.h;
 
-    var xOffset = this.virtualRect.x;
-    var yOffset = this.virtualRect.y;
+    const xOffset = this.virtualRect.x;
+    const yOffset = this.virtualRect.y;
 
     this.sketch = null;
 
-    var surface = this;
-
     // p5 must be a P5.js instance.  new P5(...) below takes care of this.
-    var scaffolding = function (p5) {
-      surface.sketch = new providedSketchClass(
+    const scaffolding = (p5: P5) => {
+      this.sketch = new providedSketchClass(
         p5,
-        surface,
+        this,
         sketchConstructorArgs,
       );
 
-      p5.wallWidth = wallWidth;
-      p5.wallHeight = wallHeight;
+      (p5 as unknown as { wallWidth: number }).wallWidth = wallWidth;
+      (p5 as unknown as { wallHeight: number }).wallHeight = wallHeight;
 
-      p5.preload = function () {
-        if (typeof (surface.sketch!.preload) == "function") {
-          surface.sketch!.preload(p5);
+      p5.preload = () => {
+        if (typeof (this.sketch!.preload) == "function") {
+          this.sketch!.preload(p5);
         }
       };
 
-      p5.setup = function () {
+      p5.setup = () => {
         // Videowall required setup.
         p5.createCanvas(processing_canvas_width, processing_canvas_height);
         p5.resetMatrix();
         p5.noLoop();
         p5.randomSeed(randomSeed);
 
-        surface.sketch!.setup(p5);
+        this.sketch!.setup(p5);
       };
 
       p5.draw = (...args: unknown[]) => {
         p5.push();
         p5.scale(xScale, yScale);
         p5.translate(-xOffset, -yOffset);
-        surface.sketch!.draw(...args);
+        this.sketch!.draw(...args);
         p5.pop();
       };
 
@@ -117,8 +117,8 @@ export class P5Surface extends Surface {
     }
   }
   takeSnapshot() {
-    const canvas = this.container.querySelector("canvas");
-    return canvas.getContext("2d").getImageData(
+    const canvas = this.container.querySelector("canvas")!;
+    return canvas.getContext("2d")!.getImageData(
       0,
       0,
       canvas.width,

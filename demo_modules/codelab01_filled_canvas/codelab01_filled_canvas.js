@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Client } from '/lib/module_interface.ts';
+import { Client } from '/client/modules/module_interface.ts';
 import {CanvasSurface} from '/client/surface/canvas_surface.ts';
 
 export function load(wallGeometry) {

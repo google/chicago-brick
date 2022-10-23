@@ -19,37 +19,15 @@ import { ErrorController } from "./error_controller.ts";
 import { PlaylistCreator } from "./playlist_creator.ts";
 import { WS } from "../../lib/websocket.ts";
 import { addLogger } from "../../lib/log.ts";
-import {
-  isStringWithOptions,
-  makeConsoleLogger,
-} from "../../lib/console_logger.ts";
+import { makeConsoleLogger } from "../../lib/console_logger.ts";
 import { library } from "./library.ts";
 import { BrickJson, LayoutConfig } from "../../server/playlist/playlist.ts";
 import { RecordErrorMessage } from "../../client/util/error_logger.ts";
 import { TransitionData } from "../../server/playlist/playlist_driver.ts";
+import { consoleLogger } from "../../client/util/console_logger.ts";
+import { NewPlaylistRequest } from "../../server/control.ts";
 
-addLogger(makeConsoleLogger((...strings) => {
-  const processedStrs = [];
-  const css = [];
-  for (const str of strings) {
-    if (isStringWithOptions(str)) {
-      processedStrs.push(str.str);
-      if (str.options.bold) {
-        css.push("font-weight: bolder");
-      }
-      if (str.options.backgroundColor) {
-        css.push(`background-color: ${str.options.backgroundColor}`);
-      }
-    } else {
-      processedStrs.push(str);
-      if (css.length) {
-        // Only add a '' css if we already have something in the css box.
-        css.push("");
-      }
-    }
-  }
-  console.log(...processedStrs, ...css);
-}, () => performance.now()));
+addLogger(makeConsoleLogger(consoleLogger, () => performance.now()));
 
 let lastUpdateFromServer = 0;
 let timeOfLastUpdateFromServer = window.performance.now();
@@ -63,7 +41,7 @@ function getTime() {
 }
 const host = new URL(location.href).searchParams.get("host") ||
   "localhost:3000";
-const control = WS.clientWrapper(`ws://${host}/control`, "");
+const control = WS.clientWrapper(`ws://${host}/control`);
 const creatorEl = document.querySelector("#playlist-creator")! as HTMLElement;
 
 function applyNewPlaylist(playlist: LayoutConfig[] | "reset") {
@@ -78,7 +56,8 @@ function applyNewPlaylist(playlist: LayoutConfig[] | "reset") {
       },
       {} as Record<string, BrickJson>,
     );
-    control.send("newPlaylist", { playlist, moduleConfig });
+    const req: NewPlaylistRequest = { playlist, moduleConfig };
+    control.send("newPlaylist", req);
   }
 }
 
@@ -90,7 +69,7 @@ const playlistController = new PlaylistController(
 const errorController = new ErrorController(document.querySelector("footer")!);
 const clientController = new ClientController(
   document.querySelector(".diagram")!,
-  (req) => control.send("takeSnapshot", req),
+  (req: { client: string; id: string }) => control.send("takeSnapshot", req),
   errorController,
   getTime,
 );
@@ -135,8 +114,8 @@ control.on("disconnect", () => {
   errorController.disconnect();
   clientController.disconnect();
 });
-control.on("time", (data) => {
-  lastUpdateFromServer = data.time;
+control.on("time", (time) => {
+  lastUpdateFromServer = time;
   timeOfLastUpdateFromServer = window.performance.now();
 });
 control.on("error", (e) => {

@@ -13,30 +13,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+/// <reference lib="dom" />
+
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { Surface } from "./surface.ts";
 
 export class CanvasSurface extends Surface {
   readonly canvas: HTMLCanvasElement;
-  readonly context: CanvasRendering2DContext;
+  readonly context: CanvasRenderingContext2D;
   constructor(container: Element, wallGeometry: Polygon) {
     super(container, wallGeometry);
 
     this.canvas = document.createElement("canvas");
     this.canvas.style.position = "absolute";
-    this.canvas.style.left = 0;
-    this.canvas.style.right = 0;
-    this.canvas.style.top = 0;
-    this.canvas.style.bottom = 0;
-    this.canvas.style.padding = 0;
-    this.canvas.style.margin = 0;
+    this.canvas.style.left = "0";
+    this.canvas.style.right = "0";
+    this.canvas.style.top = "0";
+    this.canvas.style.bottom = "0";
+    this.canvas.style.padding = "0";
+    this.canvas.style.margin = "0";
 
-    this.canvas.setAttribute("width", this.virtualRect.w);
-    this.canvas.setAttribute("height", this.virtualRect.h);
+    this.canvas.setAttribute("width", String(this.virtualRect.w));
+    this.canvas.setAttribute("height", String(this.virtualRect.h));
 
     container.appendChild(this.canvas);
 
-    this.context = this.canvas.getContext("2d");
+    this.context = this.canvas.getContext("2d")!;
   }
   destroy() {
     this.canvas.remove();
@@ -52,7 +54,7 @@ export class CanvasSurface extends Surface {
     this.context.restore();
   }
   setOpacity(alpha: number) {
-    this.canvas.style.opacity = alpha;
+    this.canvas.style.opacity = String(alpha);
   }
   takeSnapshot() {
     return this.context.getImageData(

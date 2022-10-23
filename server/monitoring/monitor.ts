@@ -13,34 +13,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { MonitoringChange } from "../../client/monitoring/monitor.ts";
 import { WS } from "../../lib/websocket.ts";
 import * as network from "../network/network.ts";
 
-const currentStatus = {};
+const currentStatus: MonitoringChange = {};
 const sendCurrentState = (socket: WS) => {
   socket.send("monitor", currentStatus);
 };
 
-const monitoringSockets: WS[] = [];
-network.on("connection", (socket) => {
-  // Listen for a msg indicating that it would like some monitoring.
-  socket.on("enable-monitoring", () => {
-    monitoringSockets.push(socket);
-    sendCurrentState(socket);
-  });
-  socket.on("disable-monitoring", () => {
-    const i = monitoringSockets.indexOf(socket);
-    if (i != -1) {
-      monitoringSockets.splice(i, 1);
-    }
-  });
-});
+let connectionHandlersInstalled = false;
 
+const monitoringSockets: WS[] = [];
 let enabled = false;
 export function isEnabled() {
   return enabled;
 }
 export function enable() {
+  if (!connectionHandlersInstalled) {
+    network.wss.on("connection", (socket) => {
+      // Listen for a msg indicating that it would like some monitoring.
+      socket.on("enable-monitoring", () => {
+        monitoringSockets.push(socket);
+        sendCurrentState(socket);
+      });
+      socket.on("disable-monitoring", () => {
+        const i = monitoringSockets.indexOf(socket);
+        if (i != -1) {
+          monitoringSockets.splice(i, 1);
+        }
+      });
+    });
+    connectionHandlersInstalled = true;
+  }
   enabled = true;
   monitoringSockets.forEach(sendCurrentState);
 }
@@ -48,5 +53,11 @@ export function update(change: Record<string, unknown>) {
   if (enabled) {
     Object.assign(currentStatus, change);
     monitoringSockets.forEach((socket) => socket.send("monitor", change));
+  }
+}
+
+declare global {
+  interface EmittedEvents {
+    monitor(change: MonitoringChange): void;
   }
 }

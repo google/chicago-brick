@@ -1,4 +1,4 @@
-import { send } from "../network/network.ts";
+import { socket } from "../network/network.ts";
 import { now } from "../../lib/adjustable_time.ts";
 import { virtualRect } from "./info.ts";
 
@@ -36,5 +36,11 @@ export function errorLogger(
   errorBits.severity = severity;
   errorBits.args = args;
 
-  send("record-error", errorBits);
+  socket.send("record-error", errorBits);
+}
+
+declare global {
+  interface EmittedEvents {
+    "record-error": (error: RecordErrorMessage) => void;
+  }
 }

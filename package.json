@@ -16,12 +16,6 @@
   "repository": "github:google/chicago-brick",
   "author": "",
   "license": "Apache-2.0",
-  "dependencies": {
-    "p5": "^0.8.0",
-    "sortablejs": "^1.14.0",
-    "three-full": "^11.3.2",
-    "urlpattern-polyfill": "^6.0.1"
-  },
   "husky": {
     "hooks": {
       "pre-commit": "npm run-script lint && npm test",

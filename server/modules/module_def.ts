@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { CreditJson } from "../playlist/playlist.ts";
+import { CreditJson } from "../../client/title_card.ts";
 
 /**
  * The ModuleDef class contains all the information necessary to load &

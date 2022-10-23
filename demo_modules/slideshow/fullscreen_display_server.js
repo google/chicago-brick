@@ -15,7 +15,7 @@ limitations under the License.
 
 import {ServerDisplayStrategy} from './interfaces.js';
 
-import randomjs from 'random-js';
+import * as randomjs from 'https://esm.sh/random-js@2.1.0';
 const random = new randomjs.Random();
 
 import {Rectangle} from '../../lib/math/rectangle.ts';

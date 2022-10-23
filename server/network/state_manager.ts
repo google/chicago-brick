@@ -13,24 +13,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { getSocket } from "./network.ts";
-import { WSS } from "./websocket.ts";
+import { wss } from "./network.ts";
 
-interface StateEntry {
+export interface StateEntry {
   time: number;
   data: unknown;
 }
-type PerModuleState = Record<string, StateEntry>;
+export type PerModuleState = Record<string, StateEntry>;
 
 // A map of module id -> {state name -> {time, data}};
 const stateMap: Record<string, PerModuleState> = {};
 
+export interface ModuleState {
+  store(stateName: string, time: number, data: unknown): void;
+}
+
 /** Returns a state-capturing object bound to a specific module id. */
-export function forModule(network: WSS, id: string) {
+export function forModule(id: string) {
   // Return a module-appropriate facade that can be used to fill out the state
   // map.
   return {
-    open() {
+    open(): ModuleState {
       stateMap[id] = {};
       return {
         store(stateName: string, time: number, data: unknown) {
@@ -41,7 +44,7 @@ export function forModule(network: WSS, id: string) {
     },
     close() {
       delete stateMap[id];
-      network.sendToAllClients("state-closed", id);
+      wss.sendToAllClients("state-closed", id);
     },
   };
 }
@@ -67,5 +70,5 @@ export function send() {
     justSentAnEmptyState = false;
   }
 
-  getSocket().sendToAllClients("state", stateToSend);
+  wss.sendToAllClients("state", stateToSend);
 }

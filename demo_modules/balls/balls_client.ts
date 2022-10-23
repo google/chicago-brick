@@ -13,53 +13,68 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {GOOGLE_COLORS, BALL_RADIUS} from './constants.js';
-import {CanvasSurface} from '/client/surface/canvas_surface.ts';
-import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/network/state_manager.ts';
-import {Client} from '/lib/module_interface.ts';
+import { BALL_RADIUS, BallState, GOOGLE_COLORS } from "./constants.ts";
+import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
+import {
+  ModuleState,
+  NumberLerpInterpolator,
+  SharedState,
+  ValueNearestInterpolator,
+} from "../../client/network/state_manager.ts";
+import { Client } from "../../client/modules/module_interface.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
 
-export function load(state, wallGeometry) {
+export function load(state: ModuleState, wallGeometry: Polygon) {
   class BallsClient extends Client {
+    surface: CanvasSurface | undefined = undefined;
+    canvas!: CanvasRenderingContext2D;
+    ballsState?: SharedState;
+
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();
       }
     }
 
-    async willBeShownSoon(container) {
+    willBeShownSoon(container: HTMLElement) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
 
-      this.ballsState = state.define('balls', [{
+      this.ballsState = state.define("balls", [{
         x: NumberLerpInterpolator,
         y: NumberLerpInterpolator,
         color: ValueNearestInterpolator,
       }]);
     }
 
-    draw(time) {
-      this.canvas.fillStyle = 'black';
-      this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+    draw(time: number) {
+      this.canvas.fillStyle = "black";
+      this.canvas.fillRect(
+        0,
+        0,
+        this.surface!.virtualRect.w,
+        this.surface!.virtualRect.h,
+      );
 
-      const balls = this.ballsState.get(time);
+      const balls = this.ballsState!.get(time);
       if (!balls) {
         return;
       }
 
       // Draw the balls!
-      this.surface.pushOffset();
+      this.surface!.pushOffset();
 
-      for (const b of balls) {
+      for (const b of balls as BallState[]) {
         this.canvas.fillStyle = GOOGLE_COLORS[b.color];
         this.canvas.beginPath();
-        this.canvas.arc(b.x, b.y, BALL_RADIUS, 0, 2*Math.PI);
+        this.canvas.arc(b.x, b.y, BALL_RADIUS, 0, 2 * Math.PI);
         this.canvas.closePath();
         this.canvas.fill();
       }
 
-      this.surface.popOffset();
+      this.surface!.popOffset();
     }
   }
 
-  return {client: BallsClient};
+  return { client: BallsClient };
 }

@@ -30,11 +30,10 @@ import { easyLog } from "../../lib/log.ts";
 import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import * as time from "../../lib/adjustable_time.ts";
-import { WSS, WSSWrapper } from "./websocket.ts";
+import { WSS } from "./websocket.ts";
 import { WS } from "../../lib/websocket.ts";
-import { DispatchServer } from "../util/serving.ts";
-
-let io: WSS;
+import { DispatchServer, DispatchServerOptions } from "../util/serving.ts";
+import { flags } from "../flags.ts";
 
 const log = easyLog("wall:network");
 
@@ -43,7 +42,7 @@ interface Point {
   y: number;
 }
 
-class ClientInfo {
+export class ClientInfo {
   constructor(
     readonly offset: Point,
     readonly rect: Rectangle,
@@ -52,83 +51,33 @@ class ClientInfo {
   }
 }
 
-export function getSocket(): WSS {
-  return io;
-}
-
 export const clients: Record<string, ClientInfo> = {};
 
-export function sendToAllClients(msgType: string, payload: unknown) {
-  io.sendToAllClients(msgType, payload);
-}
-
-// deno-lint-ignore no-explicit-any
-type Handler = (payload: any) => void;
-
-interface SavedMessage {
-  msgType: string;
-  handler: Handler;
-  once: boolean;
-}
-
-const specialHandlers = new Map<string, Handler[]>([["new-client", []]]);
-const preinitHandlers: SavedMessage[] = [];
-function addHandler(msgType: string, handler: Handler, once: boolean) {
-  if (specialHandlers.has(msgType)) {
-    // No once support...
-    specialHandlers.get(msgType)!.push(handler);
-  } else if (io) {
-    if (once) {
-      io.once(msgType, handler);
-    } else {
-      io.on(msgType, handler);
-    }
-  } else {
-    preinitHandlers.push({ msgType, handler, once });
-  }
-}
-
-export function on(msgType: string, handler: Handler) {
-  addHandler(msgType, handler, false);
-}
-
-export function once(msgType: string, handler: Handler) {
-  addHandler(msgType, handler, true);
-}
-
-export function fireSpecialHandler(msgType: string, payload: unknown) {
-  const handlers = specialHandlers.get(msgType) || [];
-  for (const handler of handlers) {
-    handler(payload);
-  }
-}
-
 let nextClientId = 1;
-
-interface ClientConfig {
-  rect: Rectangle;
-  offset: Point;
-}
 
 interface SerializedClientConfig {
   rect: string;
   offset: Point;
 }
 
-interface PerModuleClientInfo extends ClientConfig {
-  // TODO: Make this more accurate.
-  socket: unknown;
+// Create an serve that can describes the routes that serve the files the client
+// needs to run.
+const options: DispatchServerOptions = { port: flags.port };
+if (flags.https_cert) {
+  options.ssl = {
+    certFile: flags.https_cert,
+    keyFile: flags.https_key,
+  };
 }
+export const server = new DispatchServer(options);
+export const wss = new WSS({ server });
 
 /**
  * Main entry point for networking.
  * Initializes the networking layer, given an httpserver instance.
  */
-export function init(server: DispatchServer) {
-  // Disable per-message compression, because it causes big issues on linux.
-  // https://github.com/websockets/ws#websocket-compression
-  io = new WSS({ server });
-  io.on("connection", (socket: WS) => {
+export function init() {
+  wss.on("connection", (socket: WS) => {
     const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
@@ -151,7 +100,7 @@ export function init(server: DispatchServer) {
       }
       clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
-      fireSpecialHandler("new-client", client);
+      socket.emit("new-client", client);
       // Tell the client the current time.
       socket.send("time", time.now());
     });
@@ -188,47 +137,8 @@ export function init(server: DispatchServer) {
     // socket.on("record-error", ...);
   });
 
-  for (const tuple of preinitHandlers) {
-    const { msgType, handler, once } = tuple;
-    // Now that io is defined...
-    addHandler(msgType, handler, once);
-  }
-  preinitHandlers.length = 0;
-
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {
-    io.sendToAllClients("time", time.now());
+    wss.sendToAllClients("time", time.now());
   }, 10000);
-}
-
-// Return an object that can be opened to create an isolated per-module network,
-// and closed to clean up after that module.
-export function forModule(id: string) {
-  let s: WSSWrapper;
-  return {
-    open() {
-      s = io.createRoom(id);
-      return s;
-      // return makeModuleOverlaySocket(id, io, {
-      //   // Here, we provide a per-module list of clients that the module
-      //   // can inspect and invoke. Because our list contains unwrapped sockets,
-      //   // we need to wrap them before exposing them to the module.
-      //   // TODO(applmak): If a module chooses to listen on a per-client wrapped
-      //   // socket like this, it will remove other any such listener. Fix this
-      //   // in order to match socket.io behavior, if possible.
-      //   clients() {
-      //     return Object.keys(clients).reduce((agg, clientId) => {
-      //       agg[clientId] = {
-      //         ...clients[clientId],
-      //         socket: makeModuleOverlaySocket(id, clients[clientId].socket),
-      //       };
-      //       return agg;
-      //     }, {} as Record<string, PerModuleClientInfo>);
-      //   },
-      // });
-    },
-    close() {
-      s?.close();
-    },
-  };
 }

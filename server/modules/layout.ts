@@ -13,11 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export interface LayoutConfig {
-  modules: string[];
-  duration: number;
-  moduleDuration: number;
-}
+import { LayoutConfig } from "../playlist/playlist.ts";
 
 /**
  * Defines the wall layout: what modules to run, for how long, etc.
@@ -31,7 +27,7 @@ export class Layout {
   readonly moduleDuration: number;
 
   constructor(config: LayoutConfig) {
-    this.modules = config.modules;
+    this.modules = config.modules || [];
     // TODO(applmak): What is this even doing?
     this.duration = config.duration || config.moduleDuration;
     this.moduleDuration = config.moduleDuration || config.duration;

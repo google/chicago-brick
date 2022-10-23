@@ -65,18 +65,42 @@ limitations under the License.
  *     }
  */
 
-import asset from './asset/asset.ts';
+/// <reference lib="dom" />
 
+import asset from "./asset/asset.ts";
+
+export interface CreditAuthorTitleJson {
+  title: string;
+  author?: string;
+}
+
+export interface CreditImageJson {
+  image: string;
+}
+
+export type CreditJson = CreditAuthorTitleJson | CreditImageJson;
+
+export function isCreditAuthorTitleJson(
+  credit: CreditJson,
+): credit is CreditAuthorTitleJson {
+  return !!((credit as CreditAuthorTitleJson).title);
+}
+
+export function isCreditImageJson(
+  credit: CreditJson,
+): credit is CreditImageJson {
+  return !!((credit as CreditImageJson).image);
+}
 
 function makeEmptyTitleCard() {
-  const elem = document.createElement('div');
-  elem.id = 'title-card';
+  const elem = document.createElement("div");
+  elem.id = "title-card";
   return elem;
 }
 
-function makeDefaultTitleCard(credit) {
+function makeDefaultTitleCard(credit: CreditJson) {
   const elem = makeEmptyTitleCard();
-  if (credit.image) {
+  if (isCreditImageJson(credit)) {
     elem.innerHTML = `<img src="${asset(credit.image)}">`;
   } else if (credit.title && credit.author) {
     elem.innerHTML = `<div>${credit.title}</div>
@@ -89,15 +113,15 @@ function makeDefaultTitleCard(credit) {
 }
 
 export class TitleCard {
-  constructor(credit) {
-    this.credit = credit;
-    this.inDocument_ = false;
+  inDocument_ = false;
+  elem_: HTMLElement;
+  constructor(readonly credit: CreditJson) {
     this.elem_ = makeDefaultTitleCard(credit);
   }
 
-  replaceCard_(newCard) {
+  replaceCard_(newCard: HTMLElement) {
     if (this.inDocument_) {
-      this.elem_.parentNode.replaceChild(newCard, this.elem_);
+      this.elem_.parentNode!.replaceChild(newCard, this.elem_);
     }
     this.elem_ = newCard;
     return this.elem_;
@@ -105,17 +129,16 @@ export class TitleCard {
 
   // Creates a global API instance for use by the module code.
   getModuleAPI() {
-    var card = this;
     // This is the titleCard API provided to modules.
     return {
       // Creates a custom (empty) card and returns a reference to the caller.
-      useCustomCard: function() {
-        return card.replaceCard_(makeEmptyTitleCard());
+      useCustomCard: () => {
+        return this.replaceCard_(makeEmptyTitleCard());
       },
       // Creates a standard (config-based) card and returns a reference to the
       // caller.
-      useDefaultCard: function() {
-        return card.replaceCard_(makeDefaultTitleCard(card.credit));
+      useDefaultCard: () => {
+        return this.replaceCard_(makeDefaultTitleCard(this.credit));
       },
     };
   }
@@ -128,7 +151,7 @@ export class TitleCard {
         document.body.insertBefore(this.elem_, document.body.firstChild);
         this.inDocument_ = true;
         // Shrink the fonts so that things don't wrap beyond the containing box.
-        for (let e of this.elem_.querySelectorAll('div')) {
+        for (const e of Array.from(this.elem_.querySelectorAll("div"))) {
           // Read the initial font size:
           let fontSize = parseInt(window.getComputedStyle(e).fontSize);
           while (e.scrollWidth > this.elem_.offsetWidth) {
@@ -148,7 +171,7 @@ export class TitleCard {
     }
   }
 
-  isTitleClient() {
-    return !!new URL(window.location.href).searchParams.get('title');
+  isTitleClient(): boolean {
+    return !!new URL(window.location.href).searchParams.get("title");
   }
 }

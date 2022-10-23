@@ -10,7 +10,7 @@ async function transpile(tsPath: string): Promise<string> {
   const now = performance.now();
   const url = new URL(tsPath, import.meta.url);
   const result = await emit(url);
-  log(`transpiled ${tsPath} in ${performance.now() - now} ms`);
+  log.debugAt(1, `transpiled ${tsPath} in ${performance.now() - now} ms`);
   return result[url.href];
 }
 
@@ -28,9 +28,10 @@ export function serveFile(filePath: string): Handler {
 }
 
 export function serveDirectory(dir: string): Handler {
+  const absDir = path.isAbsolute(dir) ? dir : path.join(Deno.cwd(), dir);
   return async (req: Request, match: URLPatternResult) => {
     const filePath = match.pathname.groups.path || "index.html";
-    const fullPath = path.join(dir, filePath);
+    const fullPath = path.join(absDir, filePath);
     const type = mime.getType(path.extname(filePath)) || "text/plain";
     log(req.url, fullPath, type);
     try {

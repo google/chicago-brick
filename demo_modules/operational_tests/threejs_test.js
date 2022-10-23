@@ -13,9 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as Three from '/node_modules/three-full/builds/Three.es.js';
-import {ThreeJsSurface} from '/client/surface/threejs_surface.ts';
-import { Client } from '/lib/module_interface'; 
+import * as Three from "https://esm.sh/three@0.145.0";
+import {ThreeJsSurface} from '../../client/surface/threejs_surface.ts';
+import { Client } from '../../client/modules/module_interface.ts'; 
 
 export function load(wallGeometry) {
   class ThreeJsTestClient extends Client {

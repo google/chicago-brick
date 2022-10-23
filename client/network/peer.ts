@@ -18,7 +18,6 @@ limitations under the License.
 import * as info from "../util/info.ts";
 import { easyLog } from "../../lib/log.ts";
 import * as network from "./network.ts";
-import { WS } from "../../lib/websocket.ts";
 
 const log = easyLog("wall:peer");
 
@@ -26,7 +25,7 @@ const peers = new Map();
 const myPeerid = `${info.virtualOffset.x},${info.virtualOffset.y}`;
 const handlers = new Map();
 
-function addChannelEventListeners(channel: any, peerid: string) {
+function addChannelEventListeners(channel: RTCDataChannel, peerid: string) {
   channel.addEventListener("open", () => {
     log("Open channel with peer:", peerid);
     const peer = peers.get(peerid);
@@ -36,7 +35,7 @@ function addChannelEventListeners(channel: any, peerid: string) {
     }
     fire("connection", peerid, peerid);
   });
-  channel.addEventListener("message", (event: any) => {
+  channel.addEventListener("message", (event: MessageEvent) => {
     log(`Received message from ${peerid}`);
     const { data } = event;
     try {
@@ -44,6 +43,7 @@ function addChannelEventListeners(channel: any, peerid: string) {
       fire(msgType, payload, peerid);
     } catch (e) {
       log.error(`Invalid message from peer: ${peerid}`);
+      log.error(e);
     }
   });
   channel.addEventListener("close", () => {
@@ -51,19 +51,23 @@ function addChannelEventListeners(channel: any, peerid: string) {
     peers.delete(peerid);
     fire("disconnect", peerid, peerid);
   });
-  channel.addEventListener("error", (event: any) => {
-    log.error(`Error with peer: ${peerid}`, event.error);
+  channel.addEventListener("error", (event: Event) => {
+    const error = (event as RTCErrorEvent).error;
+    log.error(`Error with peer: ${peerid}`, error);
   });
 }
 
-function addIceEventListeners(connection: any, peerid: string) {
-  connection.addEventListener("icecandidate", (event: any) => {
-    network.send("peer-icecandidate", {
-      from: myPeerid,
-      to: peerid,
-      candidate: event.candidate,
-    });
-  });
+function addIceEventListeners(connection: RTCPeerConnection, peerid: string) {
+  connection.addEventListener(
+    "icecandidate",
+    (event: RTCPeerConnectionIceEvent) => {
+      network.socket.send("peer-icecandidate", {
+        from: myPeerid,
+        to: peerid,
+        candidate: event.candidate!,
+      });
+    },
+  );
 }
 
 async function connect(peerid: string) {
@@ -83,22 +87,22 @@ async function connect(peerid: string) {
   const offer = await connection.createOffer();
   await connection.setLocalDescription(offer);
 
-  network.send("peer-offer", {
+  network.socket.send("peer-offer", {
     from: myPeerid,
     to: peerid,
     offer,
   });
 }
 
-export function init(network: WS) {
-  network.on("peer-list", (msg) => {
+export function init() {
+  network.socket.on("peer-list", (msg) => {
     const { knownPeers } = msg;
     log(`peer-list: got ${knownPeers.length}`);
     for (const peerid of knownPeers) {
       connect(peerid);
     }
   });
-  network.on("peer-icecandidate", async (msg) => {
+  network.socket.on("peer-icecandidate", async (msg) => {
     const { from, candidate } = msg;
     log(`peer-icecandidate from: ${from}`);
     const peer = peers.get(from);
@@ -110,10 +114,11 @@ export function init(network: WS) {
       await peer.connection.addIceCandidate(candidate);
     } catch (e) {
       log.error(`Error adding ice candidate from: ${from}`);
+      log.error(e);
     }
     log(`peer-icecandidate accepted from: ${from}`);
   });
-  network.on("peer-offer", async (msg) => {
+  network.socket.on("peer-offer", async (msg) => {
     const { from, offer } = msg;
     log(`peer-offer from: ${from}`);
     const connection = new RTCPeerConnection({
@@ -122,7 +127,7 @@ export function init(network: WS) {
     const peer = {
       id: from,
       connection,
-      channel: undefined,
+      channel: undefined as RTCDataChannel | undefined,
     };
     peers.set(from, peer);
     connection.addEventListener("datachannel", (e) => {
@@ -135,13 +140,13 @@ export function init(network: WS) {
     const answer = await connection.createAnswer();
     await connection.setLocalDescription(answer);
     log(`Sending answer to: ${from}`);
-    network.send("peer-answer", {
+    network.socket.send("peer-answer", {
       from: myPeerid,
       to: from,
       answer,
     });
   });
-  network.on("peer-answer", async (msg) => {
+  network.socket.on("peer-answer", async (msg) => {
     const { from, answer } = msg;
     log(`peer-answer from: ${from}`);
     const peer = peers.get(from);
@@ -154,7 +159,7 @@ export function init(network: WS) {
     );
     log(`peer-answer accepted from: ${from}`);
   });
-  network.send("peer-register", { id: myPeerid });
+  network.socket.send("peer-register", { id: myPeerid });
 }
 
 export function sendToAllPeers(msgType: string, payload: unknown) {
@@ -211,4 +216,28 @@ export function forModule(moduleid: string) {
       }
     },
   };
+}
+
+declare global {
+  interface EmittedEvents {
+    "peer-register": (msg: {
+      id: string;
+    }) => void;
+    "peer-offer": (msg: {
+      from: string;
+      to: string;
+      offer: RTCSessionDescriptionInit;
+    }) => void;
+    "peer-answer": (msg: {
+      from: string;
+      to: string;
+      answer: RTCSessionDescriptionInit;
+    }) => void;
+    "peer-icecandidate": (msg: {
+      from: string;
+      to: string;
+      candidate: RTCIceCandidate;
+    }) => void;
+    "peer-list": (msg: { knownPeers: string[] }) => void;
+  }
 }

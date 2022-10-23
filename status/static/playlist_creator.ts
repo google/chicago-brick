@@ -2,14 +2,16 @@
 
 import { library } from "./library.ts";
 import {
-  CreditAuthorTitleJson,
-  CreditImageJson,
-  CreditJson,
   ExtendsBrickJson,
   isExtendsBrickJson,
   LayoutConfig,
 } from "../../server/playlist/playlist.ts";
 import Sortable from "https://esm.sh/sortablejs@1.15.0";
+import {
+  CreditAuthorTitleJson,
+  CreditImageJson,
+  CreditJson,
+} from "../../client/title_card.ts";
 
 function makeEditableText(
   el: HTMLElement,

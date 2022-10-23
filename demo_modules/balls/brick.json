@@ -1,7 +1,7 @@
 {
   "name": "balls",
-  "client_path": "./balls_client.js",
-  "server_path": "./balls_server.js",
+  "client_path": "./balls_client.ts",
+  "server_path": "./balls_server.ts",
   "credit": {
     "title": "Bouncing Balls",
     "author": "Matt Handley"

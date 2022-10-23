@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+/// <reference lib="dom" />
+
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import * as info from "../util/info.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
@@ -82,5 +84,5 @@ export class Surface {
   // Destroys a surface.
   destroy() {}
   // Returns an ImageData of pixel values for the canvas.
-  takeSnapshot() {}
+  takeSnapshot(): ImageData | void {}
 }
