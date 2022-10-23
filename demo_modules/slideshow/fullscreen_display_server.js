@@ -60,7 +60,7 @@ export default function({network, wallGeometry}) {
     async sendContent(client, socket) {
       const content = await this.contentFetcher.chooseContent(client);
       // Send it to the specified client.
-      socket.emit('display:content', content);
+      socket.send('display:content', content);
     }
     tick(time) {
       if (this.config.period) {

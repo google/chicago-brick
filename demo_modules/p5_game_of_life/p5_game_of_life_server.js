@@ -89,7 +89,7 @@ export function load(network, debug) {
       this.gameBoard = this.tmpBoard;
       this.tmpBoard = temp;
 
-      network.emit('board', {
+      network.send('board', {
         board : this.gameBoard,
       });
     }

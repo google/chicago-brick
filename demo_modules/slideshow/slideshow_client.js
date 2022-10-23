@@ -59,11 +59,11 @@ export function load(wallGeometry, debug, network, assert, asset) {
   };
 
   class ImageClient extends Client {
-    async willBeShownSoon(container, deadline) {
+    willBeShownSoon(container, deadline) {
       this.surface = new Surface(container, wallGeometry);
       return new Promise(resolve => {
         debug('Waiting for network init...');
-        network.emit('req_init');
+        network.send('req_init');
         network.once('init', config => {
           debug('Init received.');
           this.loadStrategy = parseClientLoadStrategy(config.load);

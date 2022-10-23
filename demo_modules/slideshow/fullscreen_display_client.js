@@ -38,7 +38,7 @@ export default function({debug, network}) {
     }
     init(surface, loadStrategy) {
       this.content = null;
-      network.emit('display:init', {
+      network.send('display:init', {
         offset: surface.virtualOffset,
         rect: surface.virtualRect,
       });

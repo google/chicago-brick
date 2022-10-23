@@ -597,7 +597,7 @@ export function load(debug, wallGeometry, network) {
         debug("sending", "deleted", deleted, "have", this.polygons.length,
             "sending", polygonsToSend.length);
 
-        network.emit('polygons', {
+        network.send('polygons', {
           polygons: polygonsToSend,
         });
       }

@@ -140,7 +140,7 @@ export function load(debug, network, assert, wallGeometry) {
 
       // When the clients ask for the init, we tell them.
       network.on('req_init', (data, socket) => {
-        socket.emit('init', {
+        socket.send('init', {
           load: this.loadStrategy.serializeForClient(),
           display: this.displayStrategy.serializeForClient()
         });
