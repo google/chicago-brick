@@ -45,18 +45,3 @@ export function init() {
 }
 
 export const whenReady = readyPromise;
-
-// Return an object that can be opened to create an isolated per-module network,
-// and closed to clean up after that module.
-export function forModule(id: string) {
-  let s: WS;
-  return {
-    open() {
-      s = socket.createRoom(id);
-      return s;
-    },
-    close() {
-      s?.close();
-    },
-  };
-}

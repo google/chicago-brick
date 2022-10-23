@@ -29,6 +29,7 @@ import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../lib/module_interface.ts";
 import { LoadModuleEvent } from "../../server/modules/module.ts";
+import { WS } from "../../lib/websocket.ts";
 
 function createNewContainer(name: string) {
   const newContainer = document.createElement("div");
@@ -68,7 +69,7 @@ export const FadeTransition = {
 export class ClientModule {
   container: HTMLElement | null;
   instance: Client | null;
-  network: { open: any; close(): void } | null;
+  network: WS | null;
   stateManager: { open: any; close(): void } | null;
   constructor(
     readonly name: string,
@@ -163,8 +164,7 @@ export class ClientModule {
     }
 
     const INSTANTIATION_ID = `${this.geo.extents.serialize()}-${this.deadline}`;
-    this.network = network.forModule(INSTANTIATION_ID);
-    const openNetwork = this.network.open();
+    this.network = network.socket.createRoom(INSTANTIATION_ID);
     this.stateManager = stateManager.forModule(
       INSTANTIATION_ID,
     );
@@ -172,7 +172,7 @@ export class ClientModule {
       asset,
       debug: easyLog("wall:module:" + this.name),
       game: undefined,
-      network: openNetwork,
+      network: this.network,
       titleCard: this.titleCard.getModuleAPI(),
       state: this.stateManager.open(),
       wallGeometry: this.geo,
