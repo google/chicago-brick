@@ -37,9 +37,8 @@
 // TODO(johnotto): Accelerate the shatter rate as time goes on
 // TODO(johnotto): Lazily load images
 
-import fetch from 'node-fetch';
 import jsfeat from 'jsfeat';
-import randomjs from 'random-js';
+import * as randomjs from 'https://esm.sh/random-js@2.1.0';
 import sharp from 'sharp';
 import * as polygon2d from '../../lib/math/polygon2d.ts';
 import * as vector2d from '../../lib/math/vector2d.ts';

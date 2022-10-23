@@ -32,8 +32,7 @@ import FullscreenDisplayStrategy from './fullscreen_display_server.js';
 import {SizeLimitedCache} from '../../lib/size_limited_cache.ts';
 import {Server} from '../../server/modules/module_interface.ts';
 
-import fetch from 'node-fetch';
-import randomjs from 'random-js';
+import * as randomjs from 'https://esm.sh/random-js@2.1.0';
 const random = new randomjs.Random();
 
 export function load(debug, network, assert, wallGeometry) {

@@ -1,6 +1,6 @@
 import {GOOGLE_COLORS} from './colors.js';
 import {Rectangle} from '../../lib/math/rectangle.ts';
-import randomjs from 'random-js';
+import * as randomjs from 'https://esm.sh/random-js@2.1.0';
 import {Server} from '../../server/modules/module_interface.ts';
 
 const random = new randomjs.Random();
