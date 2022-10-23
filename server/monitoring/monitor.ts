@@ -13,10 +13,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { MonitoringChange } from "../../client/monitoring/monitor.ts";
 import { WS } from "../../lib/websocket.ts";
 import * as network from "../network/network.ts";
 
-const currentStatus = {};
+const currentStatus: MonitoringChange = {};
 const sendCurrentState = (socket: WS) => {
   socket.send("monitor", currentStatus);
 };
@@ -52,5 +53,11 @@ export function update(change: Record<string, unknown>) {
   if (enabled) {
     Object.assign(currentStatus, change);
     monitoringSockets.forEach((socket) => socket.send("monitor", change));
+  }
+}
+
+declare global {
+  interface EmittedEvents {
+    monitor(change: MonitoringChange): void;
   }
 }

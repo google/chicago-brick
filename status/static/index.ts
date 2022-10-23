@@ -25,6 +25,7 @@ import { BrickJson, LayoutConfig } from "../../server/playlist/playlist.ts";
 import { RecordErrorMessage } from "../../client/util/error_logger.ts";
 import { TransitionData } from "../../server/playlist/playlist_driver.ts";
 import { consoleLogger } from "../../client/util/console_logger.ts";
+import { NewPlaylistRequest } from "../../server/control.ts";
 
 addLogger(makeConsoleLogger(consoleLogger, () => performance.now()));
 
@@ -55,7 +56,8 @@ function applyNewPlaylist(playlist: LayoutConfig[] | "reset") {
       },
       {} as Record<string, BrickJson>,
     );
-    control.send("newPlaylist", { playlist, moduleConfig });
+    const req: NewPlaylistRequest = { playlist, moduleConfig };
+    control.send("newPlaylist", req);
   }
 }
 
@@ -67,7 +69,7 @@ const playlistController = new PlaylistController(
 const errorController = new ErrorController(document.querySelector("footer")!);
 const clientController = new ClientController(
   document.querySelector(".diagram")!,
-  (req) => control.send("takeSnapshot", req),
+  (req: { client: string; id: string }) => control.send("takeSnapshot", req),
   errorController,
   getTime,
 );
@@ -112,8 +114,8 @@ control.on("disconnect", () => {
   errorController.disconnect();
   clientController.disconnect();
 });
-control.on("time", (data) => {
-  lastUpdateFromServer = data.time;
+control.on("time", (time) => {
+  lastUpdateFromServer = time;
   timeOfLastUpdateFromServer = window.performance.now();
 });
 control.on("error", (e) => {

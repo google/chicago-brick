@@ -1,5 +1,5 @@
 import { EventEmitter, Handler } from "../../lib/event.ts";
-import { WS } from "../../lib/websocket.ts";
+import { Exact, WS } from "../../lib/websocket.ts";
 import { easyLog } from "../../lib/log.ts";
 import { DispatchServer } from "../util/serving.ts";
 
@@ -62,7 +62,10 @@ export class WSS extends EventEmitter {
       this.emit("connection", ws);
     });
   }
-  sendToAllClients(msg: string, ...payload: unknown[]) {
+  sendToAllClients<K extends keyof EmittedEvents, V>(
+    msg: K,
+    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  ) {
     for (const websocket of this.clientSockets) {
       websocket.send(msg, ...payload);
     }
@@ -89,7 +92,10 @@ export class WSSWrapper {
     type = `${this.room || "global"}:${type}`;
     this.wss.once(type, fn);
   }
-  sendToAllClients(type: string, ...payload: unknown[]): void {
+  sendToAllClients<K extends keyof EmittedEvents, V>(
+    type: K,
+    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  ) {
     // Send to sockets with our current room.
     for (const websocket of this.wss.clientSockets) {
       websocket.sendWithRoom(this.room, type, ...payload);
@@ -132,7 +138,10 @@ export class WSWrapper {
     type = `${this.room || "global"}:${type}`;
     this.ws.once(type, fn);
   }
-  send(type: string, ...payload: unknown[]): void {
+  send<K extends keyof EmittedEvents, V>(
+    type: K,
+    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  ) {
     this.ws.sendWithRoom(this.room, type, ...payload);
   }
   removeListener(type: string, fn: Handler): void {

@@ -14,6 +14,13 @@ function serializeMessage(type: string, payload: unknown[]): string {
 
 type RetryStrategy = (signal: AbortSignal) => Promise<WebSocket>;
 
+type NeverHandler = (...args: never[]) => void;
+type Events = Record<string, NeverHandler>;
+
+export type Exact<T, Goal> = T extends Goal
+  ? Exclude<keyof T, keyof Goal> extends never ? T : never
+  : never;
+
 export class WS extends EventEmitter {
   static serverWrapper(websocket: WebSocket) {
     return new WS(websocket, null, "");
@@ -113,28 +120,35 @@ export class WS extends EventEmitter {
     }
     this.buffer.length = 0;
   }
-  send(msg: string, ...payload: unknown[]) {
+  send<K extends keyof EmittedEvents, V>(
+    msg: K,
+    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  ) {
     this.sendWithRoom(this.room, msg, ...payload);
   }
-  sendWithRoom(room: string, msg: string, ...payload: unknown[]) {
-    msg = `${room || "global"}:${msg}`;
+  sendWithRoom<K extends keyof EmittedEvents>(
+    room: string,
+    msg: K,
+    ...payload: Parameters<EmittedEvents[K]>
+  ) {
+    const typeWithRoom = `${room || "global"}:${msg}`;
     if (this.isOpen) {
-      this.websocket.send(serializeMessage(msg, payload));
+      this.websocket.send(serializeMessage(typeWithRoom, payload));
     } else {
-      this.buffer.push(serializeMessage(msg, payload));
+      this.buffer.push(serializeMessage(typeWithRoom, payload));
     }
   }
-  on(type: string, fn: Handler): void {
-    type = `${this.room || "global"}:${type}`;
-    super.on(type, fn);
+  on<K extends keyof EmittedEvents>(type: K, fn: EmittedEvents[K]) {
+    const typeWithRoom = `${this.room || "global"}:${type}`;
+    super.on(typeWithRoom, fn as Handler);
   }
-  once(type: string, fn: Handler): void {
-    type = `${this.room || "global"}:${type}`;
-    super.once(type, fn);
+  once<K extends keyof EmittedEvents>(type: K, fn: EmittedEvents[K]) {
+    const typeWithRoom = `${this.room || "global"}:${type}`;
+    super.once(typeWithRoom, fn as Handler);
   }
   emit(type: string, ...payload: unknown[]): void {
-    type = `${this.room || "global"}:${type}`;
-    super.emit(type, ...payload);
+    const typeWithRoom = `${this.room || "global"}:${type}`;
+    super.emit(typeWithRoom, ...payload);
   }
   close() {
     this.isOpen = false;
@@ -149,5 +163,11 @@ export class WS extends EventEmitter {
    */
   createRoom(room: string): WS {
     return new WS(this.websocket, this.retryStrategy, room);
+  }
+}
+
+declare global {
+  interface EmittedEvents extends Events {
+    connect(socket: WS): void;
   }
 }

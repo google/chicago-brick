@@ -78,20 +78,15 @@ const handleModelChange = (change: MonitoringChange) => {
   }
 };
 
-const handleManyModelChanges = (changes: unknown) =>
-  Array.isArray(changes)
-    ? changes.forEach(handleModelChange)
-    : handleModelChange(changes as MonitoringChange);
-
 const watchForModelChanges = () => {
   // Open connection to the server, monitor for updates to the model.
   network.socket.send("enable-monitoring");
-  network.socket.on("monitor", handleManyModelChanges);
+  network.socket.on("monitor", handleModelChange);
 };
 
 const stopWatchingModelChanges = () => {
   network.socket.send("disable-monitoring");
-  network.socket.removeListener("monitor", handleManyModelChanges);
+  network.socket.removeListener("monitor", handleModelChange);
 };
 
 let enabled = false;

@@ -64,7 +64,7 @@ function addIceEventListeners(connection: RTCPeerConnection, peerid: string) {
       network.socket.send("peer-icecandidate", {
         from: myPeerid,
         to: peerid,
-        candidate: event.candidate,
+        candidate: event.candidate!,
       });
     },
   );
@@ -216,4 +216,28 @@ export function forModule(moduleid: string) {
       }
     },
   };
+}
+
+declare global {
+  interface EmittedEvents {
+    "peer-register": (msg: {
+      id: string;
+    }) => void;
+    "peer-offer": (msg: {
+      from: string;
+      to: string;
+      offer: RTCSessionDescriptionInit;
+    }) => void;
+    "peer-answer": (msg: {
+      from: string;
+      to: string;
+      answer: RTCSessionDescriptionInit;
+    }) => void;
+    "peer-icecandidate": (msg: {
+      from: string;
+      to: string;
+      candidate: RTCIceCandidate;
+    }) => void;
+    "peer-list": (msg: { knownPeers: string[] }) => void;
+  }
 }

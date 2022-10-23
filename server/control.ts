@@ -19,21 +19,20 @@ import * as network from "./network/network.ts";
 import { getErrors } from "./util/last_n_errors_logger.ts";
 import { WSS } from "./network/websocket.ts";
 import { easyLog } from "../lib/log.ts";
-import { PlaylistDriver } from "./playlist/playlist_driver.ts";
-import { Layout, LayoutConfig } from "./modules/layout.ts";
+import { PlaylistDriver, TransitionData } from "./playlist/playlist_driver.ts";
+import { Layout } from "./modules/layout.ts";
 import { WS } from "../lib/websocket.ts";
 import { DispatchServer } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
 import { loadLayoutsFromConfig } from "./playlist/playlist_loader.ts";
-import { BrickJson } from "./playlist/playlist.ts";
+import { BrickJson, LayoutConfig } from "./playlist/playlist.ts";
+import { RecordErrorMessage } from "../client/util/error_logger.ts";
+import { Point } from "../lib/math/vector2d.ts";
+import { TakeSnapshotRequest } from "../client/client.ts";
 
 const log = easyLog("wall:control");
 
-interface TakeSnapshotRequest {
-  client: string;
-}
-
-interface NewPlaylistRequest {
+export interface NewPlaylistRequest {
   playlist: LayoutConfig[];
   moduleConfig: Record<string, BrickJson>;
 }
@@ -50,18 +49,23 @@ export class Control {
 
   installHandlers(server: DispatchServer) {
     const wss = new WSS({ server, path: "/control" });
-    let transitionData: unknown = {};
-    this.playlistDriver.on("transition", (data: unknown) => {
+    let transitionData = {} as TransitionData;
+    this.playlistDriver.on("transition", (data: TransitionData) => {
       transitionData = data;
       wss.sendToAllClients("transition", data);
     });
-    network.wss.on("new-client", (client) => {
+    network.wss.on("new-client", (client: network.ClientInfo) => {
       wss.sendToAllClients("new-client", client.rect.serialize());
-      client.socket.on("takeSnapshotRes", (res: unknown) => {
-        log("Got snapshot result.");
-        wss.sendToAllClients("takeSnapshotRes", res);
-      });
-      client.socket.on("record-error", (err: unknown) => {
+      client.socket.on(
+        "takeSnapshotRes",
+        (
+          res: { client: string; id: string; data?: number[]; width?: number },
+        ) => {
+          log("Got snapshot result.");
+          wss.sendToAllClients("takeSnapshotRes", res);
+        },
+      );
+      client.socket.on("record-error", (err: RecordErrorMessage) => {
         wss.sendToAllClients("error", err);
       });
       client.socket.on("disconnect", () => {
@@ -70,7 +74,7 @@ export class Control {
     });
     wss.on("connection", (socket: WS) => {
       // When we transition to a new module, let this guy know.
-      socket.send("time", { time: time.now() });
+      socket.send("time", time.now());
       socket.send("transition", transitionData);
       socket.send(
         "clients",
@@ -103,9 +107,22 @@ export class Control {
         this.playlistDriver.setPlaylist(this.initialPlaylist);
       });
     });
-    wss.sendToAllClients("time", { time: time.now() });
+    wss.sendToAllClients("time", time.now());
     setInterval(() => {
-      wss.sendToAllClients("time", { time: time.now() });
+      wss.sendToAllClients("time", time.now());
     }, 20000);
+  }
+}
+
+declare global {
+  interface EmittedEvents {
+    "new-client": (rect: string) => void;
+    "lost-client": (rect: string) => void;
+    transition(data: TransitionData): void;
+    error(error: RecordErrorMessage): void;
+    errors(errors: RecordErrorMessage[]): void;
+    clients(clients: string[]): void;
+    wallGeometry(points: Point[]): void;
+    newPlaylist(req: NewPlaylistRequest): void;
   }
 }

@@ -38,3 +38,9 @@ export function errorLogger(
 
   socket.send("record-error", errorBits);
 }
+
+declare global {
+  interface EmittedEvents {
+    "record-error": (error: RecordErrorMessage) => void;
+  }
+}

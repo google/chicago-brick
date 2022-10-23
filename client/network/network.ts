@@ -16,6 +16,7 @@ limitations under the License.
 import { WS } from "../../lib/websocket.ts";
 import * as info from "../util/info.ts";
 import * as time from "../../lib/adjustable_time.ts";
+import { Point } from "../../lib/math/vector2d.ts";
 
 export const socket = WS.clientWrapper(`ws://${location.host}/websocket`);
 let ready: () => void;
@@ -44,3 +45,10 @@ export function init() {
 }
 
 export const whenReady = readyPromise;
+
+declare global {
+  interface EmittedEvents {
+    "client-start": (msg: { offset: Point; rect: string }) => void;
+    time(serverTime: number): void;
+  }
+}

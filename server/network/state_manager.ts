@@ -15,11 +15,11 @@ limitations under the License.
 
 import { wss } from "./network.ts";
 
-interface StateEntry {
+export interface StateEntry {
   time: number;
   data: unknown;
 }
-type PerModuleState = Record<string, StateEntry>;
+export type PerModuleState = Record<string, StateEntry>;
 
 // A map of module id -> {state name -> {time, data}};
 const stateMap: Record<string, PerModuleState> = {};

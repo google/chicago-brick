@@ -41,8 +41,7 @@ const modulePlayer = new ClientModulePlayer();
 // Server has asked us to load a new module.
 network.socket.on(
   "loadModule",
-  (bits: LoadModuleEvent) =>
-    modulePlayer.playModule(ClientModule.deserialize(bits)),
+  (bits) => modulePlayer.playModule(ClientModule.deserialize(bits)),
 );
 
 network.socket.on("takeSnapshot", async (req) => {
@@ -79,3 +78,22 @@ network.socket.on("takeSnapshot", async (req) => {
   console.error("snapshot failed", req);
   network.socket.send("takeSnapshotRes", { ...req });
 });
+
+export interface TakeSnapshotRequest {
+  client: string;
+  id: string;
+}
+
+export interface TakeSnapshotResponse extends TakeSnapshotRequest {
+  data?: number[];
+  width?: number;
+  error?: string;
+}
+
+declare global {
+  interface EmittedEvents {
+    takeSnapshot(req: TakeSnapshotRequest): void;
+    takeSnapshotRes(res: TakeSnapshotResponse): void;
+    loadModule(config: LoadModuleEvent): void;
+  }
+}

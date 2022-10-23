@@ -42,7 +42,7 @@ interface Point {
   y: number;
 }
 
-class ClientInfo {
+export class ClientInfo {
   constructor(
     readonly offset: Point,
     readonly rect: Rectangle,
@@ -100,6 +100,7 @@ export function init() {
       }
       clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
+      socket.emit("new-client", client);
       // Tell the client the current time.
       socket.send("time", time.now());
     });

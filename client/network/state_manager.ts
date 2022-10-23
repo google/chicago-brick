@@ -15,6 +15,7 @@ limitations under the License.
 
 import * as time from "../../lib/adjustable_time.ts";
 import { assert } from "../../lib/assert.ts";
+import { PerModuleState } from "../../server/network/state_manager.ts";
 import * as network from "./network.ts";
 
 interface StateDataPoint {
@@ -351,4 +352,11 @@ export function init() {
       stateMap[id].serverClosedTime = time.now();
     }
   });
+}
+
+declare global {
+  interface EmittedEvents {
+    state(map: Record<string, PerModuleState>): void;
+    "state-closed": (id: string) => void;
+  }
 }

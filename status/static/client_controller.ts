@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 
+import { TakeSnapshotResponse } from "../../client/client.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import { ErrorController } from "./error_controller.ts";
 
@@ -9,13 +10,6 @@ interface SavedClient {
   id: string;
   rect: number[];
   element: SVGElement;
-}
-
-interface SnapshotResponse {
-  id: string;
-  client: string;
-  data: ArrayBuffer;
-  width: number;
 }
 
 export class ClientController {
@@ -179,7 +173,7 @@ export class ClientController {
       }
     }
   }
-  takeSnapshotRes(res: SnapshotResponse) {
+  takeSnapshotRes(res: TakeSnapshotResponse) {
     // Is this a valid snapshot request?
     const validRequest = [...this.pendingSnapshots].find((s) => s.id == res.id);
     if (validRequest) {
@@ -231,8 +225,8 @@ export class ClientController {
       } else {
         const data = new ImageData(
           buffer,
-          res.width,
-          buffer.length / 4 / res.width,
+          res.width!,
+          buffer.length / 4 / res.width!,
         );
         const canvas = document.createElement("canvas");
         canvas.width = data.width;
