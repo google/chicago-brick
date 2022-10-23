@@ -16,39 +16,16 @@ limitations under the License.
 import * as monitor from "./monitoring/monitor.ts";
 import * as network from "./network/network.ts";
 import * as stateManager from "./network/state_manager.ts";
-import {
-  isStringWithOptions,
-  makeConsoleLogger,
-} from "../lib/console_logger.ts";
+import { makeConsoleLogger } from "../lib/console_logger.ts";
 import { addLogger } from "../lib/log.ts";
 import * as time from "../lib/adjustable_time.ts";
 import { errorLogger } from "./util/error_logger.ts";
 import { ClientModulePlayer } from "./modules/client_module_player.ts";
 import { ClientModule } from "./modules/module.ts";
 import { LoadModuleEvent } from "../server/modules/module.ts";
+import { consoleLogger } from "./util/console_logger.ts";
 
-addLogger(makeConsoleLogger((...strings) => {
-  const processedStrs = [];
-  const css = [];
-  for (const str of strings) {
-    if (isStringWithOptions(str)) {
-      processedStrs.push(str.str);
-      if (str.options.bold) {
-        css.push("font-weight: bolder");
-      }
-      if (str.options.backgroundColor) {
-        css.push(`background-color: ${str.options.backgroundColor}`);
-      }
-    } else {
-      processedStrs.push(str);
-      if (css.length) {
-        // Only add a '' css if we already have something in the css box.
-        css.push("");
-      }
-    }
-  }
-  console.log(...processedStrs, ...css);
-}, time.now));
+addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(errorLogger);
 
 // Open our socket to the server.

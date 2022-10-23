@@ -19,37 +19,14 @@ import { ErrorController } from "./error_controller.ts";
 import { PlaylistCreator } from "./playlist_creator.ts";
 import { WS } from "../../lib/websocket.ts";
 import { addLogger } from "../../lib/log.ts";
-import {
-  isStringWithOptions,
-  makeConsoleLogger,
-} from "../../lib/console_logger.ts";
+import { makeConsoleLogger } from "../../lib/console_logger.ts";
 import { library } from "./library.ts";
 import { BrickJson, LayoutConfig } from "../../server/playlist/playlist.ts";
 import { RecordErrorMessage } from "../../client/util/error_logger.ts";
 import { TransitionData } from "../../server/playlist/playlist_driver.ts";
+import { consoleLogger } from "../../client/util/console_logger.ts";
 
-addLogger(makeConsoleLogger((...strings) => {
-  const processedStrs = [];
-  const css = [];
-  for (const str of strings) {
-    if (isStringWithOptions(str)) {
-      processedStrs.push(str.str);
-      if (str.options.bold) {
-        css.push("font-weight: bolder");
-      }
-      if (str.options.backgroundColor) {
-        css.push(`background-color: ${str.options.backgroundColor}`);
-      }
-    } else {
-      processedStrs.push(str);
-      if (css.length) {
-        // Only add a '' css if we already have something in the css box.
-        css.push("");
-      }
-    }
-  }
-  console.log(...processedStrs, ...css);
-}, () => performance.now()));
+addLogger(makeConsoleLogger(consoleLogger, () => performance.now()));
 
 let lastUpdateFromServer = 0;
 let timeOfLastUpdateFromServer = window.performance.now();

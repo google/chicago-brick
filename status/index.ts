@@ -50,6 +50,7 @@ app.addHandler(
 );
 app.addHandler("/lib/:path*", serveDirectory(path.join(cwd, "lib")));
 app.addHandler("/server/:path*", serveDirectory(path.join(cwd, "server")));
+app.addHandler("/client/:path*", serveDirectory(path.join(cwd, "client")));
 app.addHandler("/:path*", serveDirectory(path.join(staticDir, "static")));
 app.addHandler("/", serveFile(path.join(staticDir, "static/index.html")));
 
