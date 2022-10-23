@@ -37,7 +37,6 @@ import { captureLog } from "./util/last_n_errors_logger.ts";
 import { addLogger, easyLog } from "../lib/log.ts";
 import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
 import * as time from "../lib/adjustable_time.ts";
-import { DispatchServer, DispatchServerOptions } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
 import { flags } from "./flags.ts";
 
@@ -119,22 +118,11 @@ const playlist = await loadPlaylistFromFile(
   flags.module_duration || 0,
 );
 
-// Create an serve that can describes the routes that serve the files the client
-// needs to run.
-const options: DispatchServerOptions = { port: flags.port };
-if (flags.https_cert) {
-  options.ssl = {
-    certFile: flags.https_cert,
-    keyFile: flags.https_key,
-  };
-}
-const server = new DispatchServer(options);
+// Add websocket routes to the server.
+network.init();
 
 // Add module serving routes to the server.
-moduleServing.addRoutes(server);
-
-// Add websocket routes to the server.
-network.init(server);
+moduleServing.addRoutes(network.server);
 
 // Initialize routes for peer connectivity.
 peer.initPeer();
@@ -153,10 +141,10 @@ if (flags.enable_monitoring) {
 
 // Initialize a set of routes that communicate with the control server.
 const control = new Control(driver, playlist);
-control.installHandlers(server);
+control.installHandlers(network.server);
 
 // Start the server with the routes installed.
-server.start();
+network.server.start();
 
 // We are good to go: start the playlist!
 log(`Loaded ${library.size} modules`);

@@ -55,7 +55,7 @@ export class Control {
       transitionData = data;
       wss.sendToAllClients("transition", data);
     });
-    network.on("new-client", (client) => {
+    network.wss.on("new-client", (client) => {
       wss.sendToAllClients("new-client", client.rect.serialize());
       client.socket.on("takeSnapshotRes", (res: unknown) => {
         log("Got snapshot result.");

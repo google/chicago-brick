@@ -49,7 +49,7 @@ readonly STATUS_PID="$!"
   --window-size=960,540 \
   --user-data-dir="/tmp/brick-client" \
   --no-first-run \
-  http://localhost:3000/ &
+  http://localhost:3000/ 2>/dev/null &
 readonly CLIENT_PID="$!"
 
 "$CHROME" \
@@ -57,7 +57,7 @@ readonly CLIENT_PID="$!"
   --window-size=960,540 \
   --user-data-dir="/tmp/brick-status" \
   --no-first-run \
-  http://localhost:3001/ &
+  http://localhost:3001/ 2>/dev/null &
 readonly STATUS_CLIENT_PID="$!"
 
 function clean_up {

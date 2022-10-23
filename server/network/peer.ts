@@ -27,7 +27,7 @@ function relayMessage(msg: string, payload: CommonPayloadFields) {
 }
 
 export function initPeer() {
-  network.on("connection", (client: WS) => {
+  network.wss.on("connection", (client: WS) => {
     client.on("peer-register", (id: string) => {
       // What do we need to store about a peer? Anything?
       knownPeers.set(id, { socket: client });

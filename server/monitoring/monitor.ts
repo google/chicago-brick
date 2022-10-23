@@ -21,26 +21,30 @@ const sendCurrentState = (socket: WS) => {
   socket.send("monitor", currentStatus);
 };
 
-const monitoringSockets: WS[] = [];
-network.on("connection", (socket) => {
-  // Listen for a msg indicating that it would like some monitoring.
-  socket.on("enable-monitoring", () => {
-    monitoringSockets.push(socket);
-    sendCurrentState(socket);
-  });
-  socket.on("disable-monitoring", () => {
-    const i = monitoringSockets.indexOf(socket);
-    if (i != -1) {
-      monitoringSockets.splice(i, 1);
-    }
-  });
-});
+let connectionHandlersInstalled = false;
 
+const monitoringSockets: WS[] = [];
 let enabled = false;
 export function isEnabled() {
   return enabled;
 }
 export function enable() {
+  if (!connectionHandlersInstalled) {
+    network.wss.on("connection", (socket) => {
+      // Listen for a msg indicating that it would like some monitoring.
+      socket.on("enable-monitoring", () => {
+        monitoringSockets.push(socket);
+        sendCurrentState(socket);
+      });
+      socket.on("disable-monitoring", () => {
+        const i = monitoringSockets.indexOf(socket);
+        if (i != -1) {
+          monitoringSockets.splice(i, 1);
+        }
+      });
+    });
+    connectionHandlersInstalled = true;
+  }
   enabled = true;
   monitoringSockets.forEach(sendCurrentState);
 }

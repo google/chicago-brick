@@ -28,8 +28,8 @@ import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.ts";
 import inject from "../../lib/inject.ts";
 import { WS } from "../../lib/websocket.ts";
-import { CreditJson } from "../playlist/playlist.ts";
 import { Point } from "../../lib/math/vector2d.ts";
+import { CreditJson } from "../../client/title_card.ts";
 
 const log = easyLog("wall:module");
 
@@ -130,7 +130,6 @@ export class RunningModule {
         `${getGeo().extents.serialize()}-${this.deadline}`;
       this.network = network.forModule(INSTANTIATION_ID);
       this.stateManager = stateManager.forModule(
-        network.getSocket(),
         INSTANTIATION_ID,
       );
     } else {
