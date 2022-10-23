@@ -30,7 +30,7 @@ import LoadLocalStrategy from './load_local.js';
 import LoadFromFlickrStrategy from './load_from_flickr.js';
 import FullscreenDisplayStrategy from './fullscreen_display_client.js';
 import {Surface} from '/client/surface/surface.ts';
-import {Client} from '/lib/module_interface.ts';
+import {Client} from '/client/modules/module_interface.ts';
 
 export function load(wallGeometry, debug, network, assert, asset) {
   // DISPATCH TABLES

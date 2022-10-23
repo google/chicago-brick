@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {Server} from '../../lib/module_interface.ts';
+import {Server} from '../../server/modules/module_interface.ts';
 
 export function load(state, network, wallGeometry) {
   var NUM_BALLS = 10;

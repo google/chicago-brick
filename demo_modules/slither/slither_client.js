@@ -2,7 +2,7 @@ import {CanvasSurface} from '/client/surface/canvas_surface.ts';
 import {NumberLerpInterpolator, ValueNearestInterpolator} from '/client/network/state_manager.ts';
 
 import {rotCCW, scale, add} from '/lib/math/vector2d.ts';
-import { Client } from '/lib/module_interface.ts';
+import { Client } from '/client/modules/module_interface.ts';
 
 export function load(debug, state, wallGeometry) {
   // TODO(applmak): Use a real color object/library.

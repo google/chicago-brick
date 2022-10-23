@@ -27,7 +27,7 @@ import * as stateManager from "../network/state_manager.ts";
 import { CreditJson, TitleCard } from "../title_card.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
-import { Client } from "../../lib/module_interface.ts";
+import { Client } from "../../client/modules/module_interface.ts";
 import { LoadModuleEvent } from "../../server/modules/module.ts";
 import { WS } from "../../lib/websocket.ts";
 

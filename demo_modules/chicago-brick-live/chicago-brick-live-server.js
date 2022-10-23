@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import socketIoClient from 'socket.io-client';
-import { Server } from '/lib/module_interface.ts';
+import { Server } from '/server/modules/module_interface.ts';
 
 export function load(debug, network) {
   //

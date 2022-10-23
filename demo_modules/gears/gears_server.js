@@ -1,7 +1,7 @@
 import {GOOGLE_COLORS} from './colors.js';
 import {Rectangle} from '../../lib/math/rectangle.ts';
 import randomjs from 'random-js';
-import {Server} from '../../lib/module_interface.ts';
+import {Server} from '../../server/modules/module_interface.ts';
 
 const random = new randomjs.Random();
 

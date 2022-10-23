@@ -18,7 +18,7 @@ import {GOOGLE_COLORS, BALL_RADIUS, NUM_BALLS} from './constants.js';
 import {Rectangle} from '../../lib/math/rectangle.ts';
 import {add, sub, scale, copy, flip} from '../../lib/math/vector2d.ts';
 import * as randomjs from 'https://esm.sh/random-js@2.1.0';
-import { Server } from '../../lib/module_interface.ts';
+import { Server } from '../../server/modules/module_interface.ts';
 
 const random = new randomjs.Random();
 

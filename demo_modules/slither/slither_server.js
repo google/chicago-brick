@@ -1,5 +1,5 @@
 import {sub} from '../../lib/math/vector2d.ts';
-import { Server } from '../../lib/module_interface.ts';
+import { Server } from '../../server/modules/module_interface.ts';
 
 export function load(debug, state, wallGeometry) {
   const COLORS = [

@@ -43,7 +43,7 @@ import randomjs from 'random-js';
 import sharp from 'sharp';
 import * as polygon2d from '../../lib/math/polygon2d.ts';
 import * as vector2d from '../../lib/math/vector2d.ts';
-import { Server } from '../../lib/module_interface.ts';
+import { Server } from '../../server/modules/module_interface.ts';
 
 const {Polygon} = polygon2d;
 const {sub, add, scale} = vector2d;

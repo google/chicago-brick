@@ -16,7 +16,7 @@ limitations under the License.
 import * as monitor from "../monitoring/monitor.ts";
 import { easyLog } from "../../lib/log.ts";
 import * as time from "../../lib/adjustable_time.ts";
-import { Client } from "../../lib/module_interface.ts";
+import { Client } from "../../client/modules/module_interface.ts";
 
 const log = easyLog("wall:module_ticker");
 
