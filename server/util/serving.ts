@@ -10,7 +10,7 @@ async function transpile(tsPath: string): Promise<string> {
   const now = performance.now();
   const url = new URL(tsPath, import.meta.url);
   const result = await emit(url);
-  log(`transpiled ${tsPath} in ${performance.now() - now} ms`);
+  log.debugAt(1, `transpiled ${tsPath} in ${performance.now() - now} ms`);
   return result[url.href];
 }
 
