@@ -25,7 +25,7 @@ const peers = new Map();
 const myPeerid = `${info.virtualOffset.x},${info.virtualOffset.y}`;
 const handlers = new Map();
 
-function addChannelEventListeners(channel: any, peerid: string) {
+function addChannelEventListeners(channel: RTCDataChannel, peerid: string) {
   channel.addEventListener("open", () => {
     log("Open channel with peer:", peerid);
     const peer = peers.get(peerid);
@@ -35,7 +35,7 @@ function addChannelEventListeners(channel: any, peerid: string) {
     }
     fire("connection", peerid, peerid);
   });
-  channel.addEventListener("message", (event: any) => {
+  channel.addEventListener("message", (event: MessageEvent) => {
     log(`Received message from ${peerid}`);
     const { data } = event;
     try {
@@ -43,6 +43,7 @@ function addChannelEventListeners(channel: any, peerid: string) {
       fire(msgType, payload, peerid);
     } catch (e) {
       log.error(`Invalid message from peer: ${peerid}`);
+      log.error(e);
     }
   });
   channel.addEventListener("close", () => {
@@ -50,19 +51,23 @@ function addChannelEventListeners(channel: any, peerid: string) {
     peers.delete(peerid);
     fire("disconnect", peerid, peerid);
   });
-  channel.addEventListener("error", (event: any) => {
-    log.error(`Error with peer: ${peerid}`, event.error);
+  channel.addEventListener("error", (event: Event) => {
+    const error = (event as RTCErrorEvent).error;
+    log.error(`Error with peer: ${peerid}`, error);
   });
 }
 
-function addIceEventListeners(connection: any, peerid: string) {
-  connection.addEventListener("icecandidate", (event: any) => {
-    network.socket.send("peer-icecandidate", {
-      from: myPeerid,
-      to: peerid,
-      candidate: event.candidate,
-    });
-  });
+function addIceEventListeners(connection: RTCPeerConnection, peerid: string) {
+  connection.addEventListener(
+    "icecandidate",
+    (event: RTCPeerConnectionIceEvent) => {
+      network.socket.send("peer-icecandidate", {
+        from: myPeerid,
+        to: peerid,
+        candidate: event.candidate,
+      });
+    },
+  );
 }
 
 async function connect(peerid: string) {
@@ -109,6 +114,7 @@ export function init() {
       await peer.connection.addIceCandidate(candidate);
     } catch (e) {
       log.error(`Error adding ice candidate from: ${from}`);
+      log.error(e);
     }
     log(`peer-icecandidate accepted from: ${from}`);
   });
