@@ -15,7 +15,7 @@ limitations under the License.
 
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 
-const creds: Record<string, string> = {};
+const creds: Record<string, unknown> = {};
 
 export function get(name: string) {
   return creds[name];
