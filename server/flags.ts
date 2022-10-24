@@ -17,6 +17,12 @@ const FLAG_DEFS = [
     description: "The path to the playlist to run.",
   },
   {
+    name: "module",
+    type: String,
+    alias: "m",
+    description: "If provided, runs only this module on repeat.",
+  },
+  {
     name: "layout_duration",
     type: Number,
     description: "The default layout duration in seconds.",
@@ -89,6 +95,7 @@ export interface Flags {
   help?: boolean;
   port: number;
   playlist: string;
+  module?: string;
   layout_duration?: number;
   module_duration?: number;
   assets_dir: string[];
