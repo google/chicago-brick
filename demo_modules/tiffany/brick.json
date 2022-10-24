@@ -1,7 +1,7 @@
 {
   "name": "tiffany",
-  "client_path": "./tiffany_client.js",
-  "server_path": "./tiffany_server.js",
+  "client_path": "./tiffany_client.ts",
+  "server_path": "./tiffany_server.ts",
   "credit": {
     "title": "Tiffany Stained Glass",
     "author": "John Otto"

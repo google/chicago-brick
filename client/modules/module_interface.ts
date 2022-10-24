@@ -24,7 +24,7 @@ import { Surface } from "../surface/surface.ts";
 // data, but should not do any drawing/file/network operations in the
 // constructor.
 class Client {
-  constructor(_config: unknown) {}
+  constructor(_config?: unknown) {}
 
   // Notification that your module has been selected next in the queue. You now
   // have 60 seconds to load whatever content you'd like to load.

@@ -30,6 +30,8 @@ type SketchClass = {
   new (p5: P5, surface: P5Surface, sketchConstructorArgs: unknown): Sketch;
 };
 
+type ModdedP5 = Exclude<P5, "draw"> & { draw(...args: unknown[]): void };
+
 // Sets up the sizes and scaling factors. The P5 library will take care of creating a canvas.
 // sketch is the actual p5.js code that will be executed.  sketch.setup() will be called at
 // the end of the wall-provided setup() method and draw() will be invoked as well.
@@ -38,14 +40,14 @@ export class P5Surface extends Surface {
   readonly realPixelScalingFactors: Point;
   readonly startTime: number;
   sketch: Sketch | null;
-  p5: P5;
+  p5: ModdedP5;
 
   constructor(
     container: HTMLElement,
     wallGeometry: Polygon,
     providedSketchClass: SketchClass,
     startTime: number,
-    sketchConstructorArgs: unknown,
+    sketchConstructorArgs?: unknown,
   ) {
     super(container, wallGeometry);
 
@@ -72,7 +74,7 @@ export class P5Surface extends Surface {
     this.sketch = null;
 
     // p5 must be a P5.js instance.  new P5(...) below takes care of this.
-    const scaffolding = (p5: P5) => {
+    const scaffolding = (p5: ModdedP5) => {
       this.sketch = new providedSketchClass(
         p5,
         this,
