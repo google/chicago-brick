@@ -27,12 +27,12 @@ export function load(network, debug) {
 
       this.gameBoard = new Array(NUM_COLUMNS);
       this.tmpBoard = new Array(NUM_COLUMNS);
-      for (var i = 0; i < NUM_COLUMNS; i++) {
+      for (let i = 0; i < NUM_COLUMNS; i++) {
         this.gameBoard[i] = new Array(NUM_ROWS);
         this.tmpBoard[i] = new Array(NUM_ROWS);
       }
-      for (i = 0; i < NUM_COLUMNS; i++) {
-        for (var j = 0; j < NUM_ROWS; j++) {
+      for (let i = 0; i < NUM_COLUMNS; i++) {
+        for (let j = 0; j < NUM_ROWS; j++) {
           // Lining the edges with 0s
           if (i === 0 || j === 0 || i == NUM_COLUMNS-1 || j == NUM_ROWS-1) {
             this.gameBoard[i][j] = 0;
@@ -54,12 +54,12 @@ export function load(network, debug) {
 
       // Update the board and emit it.
       // Loop through every spot in our 2D array and check spots neighbors
-      for (var x = 1; x < NUM_COLUMNS - 1; x++) {
-        for (var y = 1; y < NUM_ROWS - 1; y++) {
+      for (let x = 1; x < NUM_COLUMNS - 1; x++) {
+        for (let y = 1; y < NUM_ROWS - 1; y++) {
           // Add up all the states in a 3x3 surrounding grid
-          var neighbors = 0;
-          for (var i = -1; i <= 1; i++) {
-            for (var j = -1; j <= 1; j++) {
+          let neighbors = 0;
+          for (let i = -1; i <= 1; i++) {
+            for (let j = -1; j <= 1; j++) {
               neighbors += this.gameBoard[x+i][y+j];
             }
           }
@@ -85,11 +85,11 @@ export function load(network, debug) {
       }
 
       // Swap!
-      var temp = this.gameBoard;
+      const temp = this.gameBoard;
       this.gameBoard = this.tmpBoard;
       this.tmpBoard = temp;
 
-      network.send('board', {
+      network.sendToAllClients('board', {
         board : this.gameBoard,
       });
     }
