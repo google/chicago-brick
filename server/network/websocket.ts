@@ -2,6 +2,7 @@ import { EventEmitter, Handler } from "../../lib/event.ts";
 import { Exact, WS } from "../../lib/websocket.ts";
 import { easyLog } from "../../lib/log.ts";
 import { DispatchServer } from "../util/serving.ts";
+import { EmitOptions } from "https://deno.land/x/emit@0.9.0/mod.ts";
 
 const log = easyLog("wall:websocket");
 
@@ -67,7 +68,7 @@ export class WSS extends EventEmitter {
     ...payload: Exact<V, Parameters<EmittedEvents[K]>>
   ) {
     for (const websocket of this.clientSockets) {
-      websocket.send(msg, ...payload);
+      websocket.sendWithRoom("", msg, ...payload);
     }
   }
   createRoom(room: string) {
@@ -79,18 +80,31 @@ export class WSS extends EventEmitter {
   }
 }
 
+type ParametersWithSocket<T extends (...args: unknown[]) => void> = T extends
+  (...args: infer P) => void ? [...P, WS] : never;
+
+type HandlerWithSocket<T extends (...args: any[]) => void> = (
+  ...args: ParametersWithSocket<T>
+) => void;
+
 export class WSSWrapper {
   readonly savedHandlers = new Set<{ type: string; fn: Handler }>();
   constructor(readonly wss: WSS, readonly room: string) {}
-  on(type: string, fn: Handler): void {
-    this.savedHandlers.add({ type, fn });
-    type = `${this.room || "global"}:${type}`;
-    this.wss.on(type, fn);
+  on<K extends keyof EmittedEvents>(
+    type: K,
+    fn: HandlerWithSocket<EmittedEvents[K]>,
+  ): void {
+    this.savedHandlers.add({ type: type as string, fn: fn as Handler });
+    const msg = `${this.room || "global"}:${type}`;
+    this.wss.on(msg, fn as Handler);
   }
-  once(type: string, fn: Handler): void {
-    this.savedHandlers.add({ type, fn });
-    type = `${this.room || "global"}:${type}`;
-    this.wss.once(type, fn);
+  once<K extends keyof EmittedEvents>(
+    type: K,
+    fn: HandlerWithSocket<EmittedEvents[K]>,
+  ): void {
+    this.savedHandlers.add({ type: type as string, fn: fn as Handler });
+    const msg = `${this.room || "global"}:${type}`;
+    this.wss.once(msg, fn as Handler);
   }
   sendToAllClients<K extends keyof EmittedEvents, V>(
     type: K,
@@ -128,15 +142,21 @@ export class WSSWrapper {
 export class WSWrapper {
   readonly savedHandlers = new Set<{ type: string; fn: Handler }>();
   constructor(readonly ws: WS, readonly room: string) {}
-  on(type: string, fn: Handler): void {
-    this.savedHandlers.add({ type, fn });
-    type = `${this.room || "global"}:${type}`;
-    this.ws.on(type, fn);
+  on<K extends keyof EmittedEvents>(
+    type: K,
+    fn: HandlerWithSocket<EmittedEvents[K]>,
+  ): void {
+    this.savedHandlers.add({ type, fn: fn as Handler });
+    const msg = `${this.room || "global"}:${type}`;
+    this.ws.on(msg as keyof EmittedEvents, fn as Handler);
   }
-  once(type: string, fn: Handler): void {
-    this.savedHandlers.add({ type, fn });
-    type = `${this.room || "global"}:${type}`;
-    this.ws.once(type, fn);
+  once<K extends keyof EmittedEvents>(
+    type: K,
+    fn: HandlerWithSocket<EmittedEvents[K]>,
+  ): void {
+    this.savedHandlers.add({ type, fn: fn as Handler });
+    const msg = `${this.room || "global"}:${type}`;
+    this.ws.once(msg as keyof EmittedEvents, fn as Handler);
   }
   send<K extends keyof EmittedEvents, V>(
     type: K,

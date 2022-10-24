@@ -14,9 +14,6 @@ function serializeMessage(type: string, payload: unknown[]): string {
 
 type RetryStrategy = (signal: AbortSignal) => Promise<WebSocket>;
 
-type NeverHandler = (...args: never[]) => void;
-type Events = Record<string, NeverHandler>;
-
 export type Exact<T, Goal> = T extends Goal
   ? Exclude<keyof T, keyof Goal> extends never ? T : never
   : never;
@@ -124,12 +121,12 @@ export class WS extends EventEmitter {
     msg: K,
     ...payload: Exact<V, Parameters<EmittedEvents[K]>>
   ) {
-    this.sendWithRoom(this.room, msg, ...payload);
+    this.sendWithRoom(this.room, msg as string, ...payload);
   }
-  sendWithRoom<K extends keyof EmittedEvents>(
+  sendWithRoom(
     room: string,
-    msg: K,
-    ...payload: Parameters<EmittedEvents[K]>
+    msg: string,
+    ...payload: Parameters<Handler>
   ) {
     const typeWithRoom = `${room || "global"}:${msg}`;
     if (this.isOpen) {
@@ -148,7 +145,7 @@ export class WS extends EventEmitter {
   }
   emit(type: string, ...payload: unknown[]): void {
     const typeWithRoom = `${this.room || "global"}:${type}`;
-    super.emit(typeWithRoom, ...payload);
+    super.emit(typeWithRoom, ...payload, this);
   }
   close() {
     this.isOpen = false;
@@ -167,7 +164,8 @@ export class WS extends EventEmitter {
 }
 
 declare global {
-  interface EmittedEvents extends Events {
+  interface EmittedEvents {
     connect(socket: WS): void;
+    disconnect(code: number, reason: string): void;
   }
 }
