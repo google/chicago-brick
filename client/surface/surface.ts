@@ -28,7 +28,7 @@ export class Surface {
   readonly virtualRectNoBezel: Rectangle;
   readonly virtualOffset: Rectangle;
 
-  constructor(readonly container: Element, readonly wallGeometry: Polygon) {
+  constructor(readonly container: HTMLElement, readonly wallGeometry: Polygon) {
     this.container = container;
 
     this.wallGeometry = wallGeometry;
