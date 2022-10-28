@@ -43,7 +43,7 @@ import * as polygon2d from "../../lib/math/polygon2d.ts";
 import * as vector2d from "../../lib/math/vector2d.ts";
 import { Server } from "../../server/modules/module_interface.ts";
 import { Logger } from "../../lib/log.ts";
-import { WSSWrapper } from "../../server/network/websocket.ts";
+import { ModuleWSS } from "../../server/network/websocket.ts";
 import { Color, TiffanyPoint, TiffanyPolygon } from "./types.ts";
 import {
   ImageMagick,
@@ -119,7 +119,7 @@ await initializeImageMagick(); // make sure to initialize first!
 export function load(
   debug: Logger,
   wallGeometry: polygon2d.Polygon,
-  network: WSSWrapper,
+  network: ModuleWSS,
 ) {
   /** Convert an image to grayscale. */
   function grayscale(image_u8c4: JsFeatImage) {
@@ -701,7 +701,7 @@ export function load(
           polygonsToSend.length,
         );
 
-        network.sendToAllClients("polygons", {
+        network.send("polygons", {
           polygons: polygonsToSend,
         });
       }

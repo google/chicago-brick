@@ -172,9 +172,3 @@ export function load(wallGeometry: Polygon, debug: Logger, network: WS) {
 
   return { client: TiffanyClient };
 }
-
-declare global {
-  interface EmittedEvents {
-    polygons(data: { polygons: TiffanyPolygon[] }): void;
-  }
-}

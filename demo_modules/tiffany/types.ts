@@ -42,3 +42,9 @@ export class TiffanyPolygon extends Polygon {
     };
   }
 }
+
+declare global {
+  interface EmittedEvents {
+    polygons(data: { polygons: TiffanyPolygon[] }): void;
+  }
+}

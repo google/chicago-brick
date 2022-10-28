@@ -123,7 +123,7 @@ export function load(network, wallGeometry) {
       // Send information about the layout of the wall to the clients.
       if (time > this.oldsend + (1000)) {
         this.oldsend = time;
-        network.sendToAllClients('chaos', {
+        network.send('chaos', {
           time: this.build,
           shapes : this.shapes,
         });
