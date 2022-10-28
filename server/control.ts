@@ -21,7 +21,7 @@ import { WSS } from "./network/websocket.ts";
 import { easyLog } from "../lib/log.ts";
 import { PlaylistDriver, TransitionData } from "./playlist/playlist_driver.ts";
 import { Layout } from "./modules/layout.ts";
-import { WS } from "../lib/websocket.ts";
+import { TypedWebsocketLike } from "../lib/websocket.ts";
 import { DispatchServer } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
 import { loadLayoutsFromConfig } from "./playlist/playlist_loader.ts";
@@ -52,27 +52,27 @@ export class Control {
     let transitionData = {} as TransitionData;
     this.playlistDriver.on("transition", (data: TransitionData) => {
       transitionData = data;
-      wss.sendToAllClients("transition", data);
+      wss.send("transition", data);
     });
     network.wss.on("new-client", (client: network.ClientInfo) => {
-      wss.sendToAllClients("new-client", client.rect.serialize());
+      wss.send("control:new-client", client.rect.serialize());
       client.socket.on(
         "takeSnapshotRes",
         (
           res: { client: string; id: string; data?: number[]; width?: number },
         ) => {
           log("Got snapshot result.");
-          wss.sendToAllClients("takeSnapshotRes", res);
+          wss.send("takeSnapshotRes", res);
         },
       );
       client.socket.on("record-error", (err: RecordErrorMessage) => {
-        wss.sendToAllClients("error", err);
+        wss.send("error", err);
       });
       client.socket.on("disconnect", () => {
-        wss.sendToAllClients("lost-client", client.rect.serialize());
+        wss.send("lost-client", client.rect.serialize());
       });
     });
-    wss.on("connection", (socket: WS) => {
+    wss.on("connection", (socket: TypedWebsocketLike) => {
       // When we transition to a new module, let this guy know.
       socket.send("time", time.now());
       socket.send("transition", transitionData);
@@ -107,16 +107,16 @@ export class Control {
         this.playlistDriver.setPlaylist(this.initialPlaylist);
       });
     });
-    wss.sendToAllClients("time", time.now());
+    wss.send("time", time.now());
     setInterval(() => {
-      wss.sendToAllClients("time", time.now());
+      wss.send("time", time.now());
     }, 20000);
   }
 }
 
 declare global {
   interface EmittedEvents {
-    "new-client": (rect: string) => void;
+    "control:new-client": (rect: string) => void;
     "lost-client": (rect: string) => void;
     transition(data: TransitionData): void;
     error(error: RecordErrorMessage): void;
@@ -124,5 +124,6 @@ declare global {
     clients(clients: string[]): void;
     wallGeometry(points: Point[]): void;
     newPlaylist(req: NewPlaylistRequest): void;
+    resetPlaylist(): void;
   }
 }

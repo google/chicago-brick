@@ -1,8 +1,13 @@
 import { EventEmitter, Handler } from "../../lib/event.ts";
-import { Exact, WS } from "../../lib/websocket.ts";
+import {
+  Exact,
+  HandlerWithSocket,
+  ModuleWS,
+  TypedWebsocketLike,
+  WS,
+} from "../../lib/websocket.ts";
 import { easyLog } from "../../lib/log.ts";
 import { DispatchServer } from "../util/serving.ts";
-import { EmitOptions } from "https://deno.land/x/emit@0.9.0/mod.ts";
 
 const log = easyLog("wall:websocket");
 
@@ -45,9 +50,12 @@ export class WebSocketServer extends EventEmitter {
   }
 }
 
-export class WSS extends EventEmitter {
+export class WSS extends EventEmitter implements TypedWebsocketLike {
   webSocketServer: WebSocketServer;
   clientSockets: Set<WS>;
+  /** A set of handlers that should be dynamically added when clients join. */
+  readonly clientMessageHandlers = new Map<string, Handler[]>();
+
   constructor(options: WSSOptions) {
     super();
     this.webSocketServer = options.existingWSS ?? new WebSocketServer(options);
@@ -55,6 +63,12 @@ export class WSS extends EventEmitter {
     this.webSocketServer.on("connection", (websocket: WebSocket) => {
       const ws = WS.serverWrapper(websocket);
       this.clientSockets.add(ws);
+      for (const [msg, fns] of this.clientMessageHandlers) {
+        console.log("adding dynamic handler for", msg);
+        for (const fn of fns) {
+          ws.on(msg as keyof EmittedEvents, fn);
+        }
+      }
       ws.on("disconnect", (code: number, reason: string) => {
         log.error(`Lost client: ${code} Reason: ${reason}`);
         this.clientSockets.delete(ws);
@@ -63,16 +77,58 @@ export class WSS extends EventEmitter {
       this.emit("connection", ws);
     });
   }
-  sendToAllClients<K extends keyof EmittedEvents, V>(
+  addDynamicHandler<K extends keyof EmittedEvents>(
+    msg: K,
+    fn: HandlerWithSocket<EmittedEvents[K]>,
+  ) {
+    console.log(
+      "registering dynamic handler for",
+      msg,
+      "on",
+      this.clientSockets.size,
+    );
+    for (const ws of this.clientSockets) {
+      ws.on(msg, fn);
+    }
+    const fns = this.clientMessageHandlers.get(msg) || [];
+    fns.push(fn as Handler);
+    this.clientMessageHandlers.set(msg, fns);
+  }
+  removeDynamicHandler(msg: string, fn: Handler) {
+    const fns = this.clientMessageHandlers.get(msg) || [];
+    const i = fns.indexOf(fn);
+    if (i === -1) {
+      return;
+    }
+    fns.splice(i, 1);
+    if (!fns.length) {
+      this.clientMessageHandlers.delete(msg);
+    }
+  }
+  removeDynamicHandlers(msg: string) {
+    this.clientMessageHandlers.delete(msg);
+  }
+
+  on<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ) {
+    super.on(msg, handler as Handler);
+  }
+  once<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ): void {
+    super.once(msg, handler as Handler);
+  }
+
+  send<K extends keyof EmittedEvents, V>(
     msg: K,
     ...payload: Exact<V, Parameters<EmittedEvents[K]>>
   ) {
     for (const websocket of this.clientSockets) {
-      websocket.sendWithRoom("", msg, ...payload);
+      websocket.send(msg, ...payload as any);
     }
-  }
-  createRoom(room: string) {
-    return new WSSWrapper(this, room);
   }
   close() {
     this.handlers.clear();
@@ -80,103 +136,59 @@ export class WSS extends EventEmitter {
   }
 }
 
-type ParametersWithSocket<T extends (...args: unknown[]) => void> = T extends
-  (...args: infer P) => void ? [...P, WS] : never;
+export class ModuleWSS implements TypedWebsocketLike {
+  readonly savedTypes = new Set<string>();
+  readonly moduleWSCache = new Map<WS, ModuleWS>();
+  constructor(readonly wss: WSS, readonly moduleId: string) {}
 
-type HandlerWithSocket<T extends (...args: any[]) => void> = (
-  ...args: ParametersWithSocket<T>
-) => void;
+  private lookUpModuleWS(ws: WS) {
+    let moduleWs = this.moduleWSCache.get(ws);
+    if (!moduleWs) {
+      moduleWs = new ModuleWS(ws, this.moduleId);
+      this.moduleWSCache.set(ws, moduleWs);
+    }
+    return moduleWs;
+  }
 
-export class WSSWrapper {
-  readonly savedHandlers = new Set<{ type: string; fn: Handler }>();
-  constructor(readonly wss: WSS, readonly room: string) {}
-  on<K extends keyof EmittedEvents>(
-    type: K,
-    fn: HandlerWithSocket<EmittedEvents[K]>,
-  ): void {
-    this.savedHandlers.add({ type: type as string, fn: fn as Handler });
-    const msg = `${this.room || "global"}:${type}`;
-    this.wss.on(msg, fn as Handler);
-  }
-  once<K extends keyof EmittedEvents>(
-    type: K,
-    fn: HandlerWithSocket<EmittedEvents[K]>,
-  ): void {
-    this.savedHandlers.add({ type: type as string, fn: fn as Handler });
-    const msg = `${this.room || "global"}:${type}`;
-    this.wss.once(msg, fn as Handler);
-  }
-  sendToAllClients<K extends keyof EmittedEvents, V>(
-    type: K,
-    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  on<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
   ) {
-    // Send to sockets with our current room.
-    for (const websocket of this.wss.clientSockets) {
-      websocket.sendWithRoom(this.room, type, ...payload);
-    }
+    // When a module listens for a message, they really want to listen for any client
+    // listening to a message.
+
+    this.wss.addDynamicHandler(
+      `${this.moduleId}:${msg}` as keyof EmittedEvents,
+      (...payload) => {
+        // Swap the last argument from a normal WS to a ModuleWS.
+        const ws = payload.pop() as WS;
+        const moduleWs = this.lookUpModuleWS(ws);
+        payload.push(moduleWs);
+        handler(...payload as any);
+      },
+    );
   }
-  removeListener(type: string, fn: Handler): void {
-    for (const saved of [...this.savedHandlers]) {
-      if (saved.type === type && saved.fn === fn) {
-        this.savedHandlers.delete(saved);
-      }
-    }
-    this.wss.removeListener(type, fn);
+  once() {
+    throw new Error("Once not implemented for ModuleWSS");
   }
+  send<K extends keyof EmittedEvents, V>(
+    msg: K,
+    ...payload: Parameters<EmittedEvents[K]>
+  ) {
+    // Send to all clients.
+    this.wss.send(msg, ...payload as any);
+  }
+
   clients() {
     const clients = [];
     for (const ws of this.wss.clientSockets) {
-      clients.push(new WSWrapper(ws, this.room));
+      clients.push(this.lookUpModuleWS(ws));
     }
     return clients;
   }
   close() {
-    // Unregister all of the handlers that this guy registered.
-    for (const saved of this.savedHandlers) {
-      this.wss.removeListener(saved.type, saved.fn);
+    for (const msg of this.savedTypes) {
+      this.wss.removeDynamicHandlers(msg);
     }
-    this.savedHandlers.clear();
-  }
-}
-
-export class WSWrapper {
-  readonly savedHandlers = new Set<{ type: string; fn: Handler }>();
-  constructor(readonly ws: WS, readonly room: string) {}
-  on<K extends keyof EmittedEvents>(
-    type: K,
-    fn: HandlerWithSocket<EmittedEvents[K]>,
-  ): void {
-    this.savedHandlers.add({ type, fn: fn as Handler });
-    const msg = `${this.room || "global"}:${type}`;
-    this.ws.on(msg as keyof EmittedEvents, fn as Handler);
-  }
-  once<K extends keyof EmittedEvents>(
-    type: K,
-    fn: HandlerWithSocket<EmittedEvents[K]>,
-  ): void {
-    this.savedHandlers.add({ type, fn: fn as Handler });
-    const msg = `${this.room || "global"}:${type}`;
-    this.ws.once(msg as keyof EmittedEvents, fn as Handler);
-  }
-  send<K extends keyof EmittedEvents, V>(
-    type: K,
-    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
-  ) {
-    this.ws.sendWithRoom(this.room, type, ...payload);
-  }
-  removeListener(type: string, fn: Handler): void {
-    for (const saved of [...this.savedHandlers]) {
-      if (saved.type === type && saved.fn === fn) {
-        this.savedHandlers.delete(saved);
-      }
-    }
-    this.ws.removeListener(type, fn);
-  }
-  close() {
-    // Unregister all of the handlers that this guy registered.
-    for (const saved of this.savedHandlers) {
-      this.ws.removeListener(saved.type, saved.fn);
-    }
-    this.savedHandlers.clear();
   }
 }

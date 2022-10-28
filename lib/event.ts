@@ -22,6 +22,9 @@ export class EventEmitter {
       this.handlers.delete(type);
     }
   }
+  remoteAllListeners(type: string) {
+    this.handlers.delete(type);
+  }
   _addListener(type: string, fn: Handler, once: boolean) {
     const handlers = this.handlers.get(type) || [];
     if (once) {

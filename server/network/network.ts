@@ -31,7 +31,7 @@ import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { WSS } from "./websocket.ts";
-import { WS } from "../../lib/websocket.ts";
+import { TypedWebsocketLike, WS } from "../../lib/websocket.ts";
 import { DispatchServer, DispatchServerOptions } from "../util/serving.ts";
 import { flags } from "../flags.ts";
 
@@ -46,7 +46,7 @@ export class ClientInfo {
   constructor(
     readonly offset: Point,
     readonly rect: Rectangle,
-    readonly socket: WS,
+    readonly socket: TypedWebsocketLike,
   ) {
   }
 }
@@ -77,7 +77,7 @@ export const wss = new WSS({ server });
  * Initializes the networking layer, given an httpserver instance.
  */
 export function init() {
-  wss.on("connection", (socket: WS) => {
+  wss.on("connection", (socket: TypedWebsocketLike) => {
     const clientId = nextClientId++;
     // When the client boots, it sends a start message that includes the rect
     // of the client. We listen for that message and register that client info.
@@ -100,7 +100,7 @@ export function init() {
       }
       clients[clientId] = client;
       log(`New client: ${client.rect.serialize()}`);
-      socket.emit("new-client", client);
+      (socket as WS).emit("new-client", client);
       // Tell the client the current time.
       socket.send("time", time.now());
     });
@@ -139,6 +139,13 @@ export function init() {
 
   // Set up a timer to send the current time to clients every 10 seconds.
   setInterval(() => {
-    wss.sendToAllClients("time", time.now());
+    wss.send("time", time.now());
   }, 10000);
+}
+
+declare global {
+  interface EmittedEvents {
+    connection(): void;
+    "new-client": (client: ClientInfo) => void;
+  }
 }
