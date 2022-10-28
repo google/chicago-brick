@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { delay, delayThenReject } from "./promise.ts";
-import { WS } from "./websocket.ts";
+import { TypedWebsocketLike } from "./websocket.ts";
 import { easyLog, Logger } from "./log.ts";
 import * as time from "./adjustable_time.ts";
 
@@ -29,7 +29,7 @@ export interface Module {
   finishTransitionOut(): void;
   finishTransitionIn(): void;
   dispose(): void;
-  tellClientToPlay(socket: WS): void;
+  tellClientToPlay(socket: TypedWebsocketLike): void;
 }
 
 export interface ModuleMonitor {
