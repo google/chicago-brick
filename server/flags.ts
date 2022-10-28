@@ -19,6 +19,7 @@ const FLAG_DEFS = [
   {
     name: "module",
     type: String,
+    multiple: true,
     alias: "m",
     description: "If provided, runs only this module on repeat.",
   },
@@ -95,7 +96,7 @@ export interface Flags {
   help?: boolean;
   port: number;
   playlist: string;
-  module?: string;
+  module: string[];
   layout_duration?: number;
   module_duration?: number;
   assets_dir: string[];
