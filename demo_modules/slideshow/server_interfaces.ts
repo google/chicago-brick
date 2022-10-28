@@ -1,0 +1,29 @@
+import { TypedWebsocketLike } from "../../lib/websocket.ts";
+import { ContentPage } from "./interfaces.ts";
+
+// Here, we specify the interfaces for the load and display strategies. There is
+// a separate interface for the server and the client.
+export interface ServerLoadStrategy {
+  /**
+   * Return a promise of a result with the following properties:
+   *  - paginationToken: An opaque token that will be passed to the next
+   *    invocation of loadMoreContent if there is more content to download.
+   *  - content: An array of content, suitable for transmission to the client.
+   */
+  loadMoreContent(paginationToken?: string): ContentPage | Promise<ContentPage>;
+}
+
+export interface ServerDisplayStrategy {
+  /** Coordinate with the clients about what should be shown. */
+  tick(time: number, delta: number): void;
+  /** Called when content with a duration has finished. */
+  contentEnded(contentId: string, socket: TypedWebsocketLike): void;
+
+  /** Called whenever new content is available for display. */
+  newContentArrived?: () => void;
+  /**
+   * Called whenever all the content has been downloaded.
+   * Some loading strategies don't necessarily have an end, and can load forever.
+   */
+  allContentArrived?: () => void;
+}

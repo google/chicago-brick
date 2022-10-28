@@ -13,10 +13,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {ServerLoadStrategy, ClientLoadStrategy} from './interfaces.js';
-import {delay} from '../../lib/promise.ts';
+import { ClientLoadStrategy, ServerLoadStrategy } from "./interfaces.js";
+import { delay } from "../../lib/promise.ts";
 
-export default function({debug, assert, fetch}) {
+export default function ({ debug, assert, fetch }) {
   // LOAD FROM FLICKR STRATEGY
   // Here, we specify the server & client strategies that can load images from a
   // flickr search. We require a valid API key to access the images, which is not
@@ -29,46 +29,46 @@ export default function({debug, assert, fetch}) {
       this.config = config;
     }
     async init() {
-      const credentials = await import('../../server/util/credentials.js');
-      this.apiKey = credentials.get('flickr');
+      const credentials = await import("../../server/util/credentials.js");
+      this.apiKey = credentials.get("flickr");
     }
     async loadMoreContent() {
-      assert(this.apiKey, 'Missing Flickr API key!');
+      assert(this.apiKey, "Missing Flickr API key!");
       let query = new URLSearchParams({
-        method: 'flickr.photos.search',
+        method: "flickr.photos.search",
         api_key: this.apiKey,
-        format: 'json',
+        format: "json",
         nojsoncallback: 1,
         text: this.config.query,
-        sort: 'relevance',
+        sort: "relevance",
         per_page: 500,
-        extras: 'url_l',
+        extras: "url_l",
       });
       const url = `https://api.flickr.com/services/rest/?${query}`;
       let response;
       try {
         response = await fetch(url);
       } catch (e) {
-        debug('Failed to download flickr content! Delay a bit...');
+        debug("Failed to download flickr content! Delay a bit...");
         await delay(Math.random() * 4000 + 1000);
         return this.loadMoreContent();
       }
       if (!response.ok) {
-        throw new Error('Flickr query failed with status: ' + response.status + ': ' + response.statusText);
+        throw new Error(
+          "Flickr query failed with status: " + response.status + ": " +
+            response.statusText,
+        );
       }
 
       const json = await response.json();
       if (!(json.photos && json.photos.photo && json.photos.photo.length > 0)) {
-        debug('Invalid flickr query response!', json);
-        throw new Error('Invalid flickr query response!');
+        debug("Invalid flickr query response!", json);
+        throw new Error("Invalid flickr query response!");
       }
 
-      const content = json.photos.photo.map(p => p.url_l).filter(u => u);
-      debug('Downloaded ' + content.length + ' more content ids.');
-      return {content};
-    }
-    serializeForClient() {
-      return {flickr: this.config};
+      const content = json.photos.photo.map((p) => p.url_l).filter((u) => u);
+      debug("Downloaded " + content.length + " more content ids.");
+      return { content };
     }
   }
 
@@ -79,17 +79,17 @@ export default function({debug, assert, fetch}) {
     }
     loadContent(url) {
       return new Promise((resolve, reject) => {
-        var img = document.createElement('img');
+        var img = document.createElement("img");
         img.src = url;
         // Don't report that we've loaded the image until onload fires.
-        img.addEventListener('load', () => resolve({element: img}));
-        img.addEventListener('error', () => reject(new Error));
+        img.addEventListener("load", () => resolve({ element: img }));
+        img.addEventListener("error", () => reject(new Error()));
       });
     }
   }
 
   return {
     Server: LoadFromFlickrServerStrategy,
-    Client: LoadFromFlickrClientStrategy
+    Client: LoadFromFlickrClientStrategy,
   };
 }

@@ -1,10 +1,76 @@
 [
   {
     "name": "slideshow",
-    "client_path": "./slideshow_client.js",
-    "server_path": "./slideshow_server.js",
+    "client_path": "./slideshow_client.ts",
+    "server_path": "./slideshow_server.ts",
     "credit": {
       "title": "Slideshow"
+    },
+    "testonly": true
+  },
+  {
+    "name": "slideshow_local_test",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "local": {
+          "files": ["fractal.gif"]
+        }
+      },
+      "display": {
+        "fullscreen": {}
+      }
+    },
+    "testonly": true
+  },
+  {
+    "name": "slideshow_local_video_test",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "local": {
+          "directories": ["video/cobra/"]
+        }
+      },
+      "display": {
+        "fullscreen": {}
+      }
+    },
+    "testonly": true
+  },
+  {
+    "name": "slideshow_local_test_fit",
+    "extends": "slideshow_local_test",
+    "config": {
+      "display": {
+        "fullscreen": {
+          "scale": "fit"
+        }
+      }
+    },
+    "testonly": true
+  },
+  {
+    "name": "slideshow_local_test_full",
+    "extends": "slideshow_local_test",
+    "config": {
+      "display": {
+        "fullscreen": {
+          "scale": "full"
+        }
+      }
+    },
+    "testonly": true
+  },
+  {
+    "name": "slideshow_local_test_stretch",
+    "extends": "slideshow_local_test",
+    "config": {
+      "display": {
+        "fullscreen": {
+          "scale": "stretch"
+        }
+      }
     },
     "testonly": true
   },
@@ -82,7 +148,7 @@
         "fullscreen": {
           "period": 3000,
           "image": {
-            "scale": "full",
+            "scale": "full"
           }
         }
       }
