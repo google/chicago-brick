@@ -119,6 +119,10 @@ export interface FullscreenDisplayConfig {
    * However, it's not possible to mix pre-split and not-presplit content yet.
    */
   presplit?: boolean;
+  /**
+   * When true, chooses the next content to display randomly. Otherwise, chooses the next sequentially.
+   */
+  shuffle?: boolean;
 }
 
 declare global {

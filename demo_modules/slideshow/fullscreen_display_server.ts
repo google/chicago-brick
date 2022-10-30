@@ -55,6 +55,9 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
   // If we are in pre-split mode, we have a single 'global' playing content. Remember that id here.
   globalContentId = "";
 
+  /** The offset into the content to walk through next sequentially. */
+  nextContentIndex = 0;
+
   // If there are any late-comers to the party (like a refresh in the middle of our period), remember
   // the content we picked for each screen.
   readonly offsetToContentMapping = new Map<string, string>();
@@ -88,7 +91,13 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
         path.dirname(contentId) + "|" + path.extname(contentId),
       );
     }
-    this.globalContentId = random.pick([...possibleContent]);
+    if (this.config.shuffle) {
+      this.globalContentId = random.pick([...possibleContent]);
+    } else {
+      this.globalContentId = [...possibleContent][this.nextContentIndex];
+      this.nextContentIndex = (this.nextContentIndex + 1) %
+        possibleContent.size;
+    }
     this.nextDeadline = time.now();
   }
   async sendContentToClient(offset: Point, socket: TypedWebsocketLike) {
@@ -107,7 +116,13 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
         `${offset.x},${offset.y}`,
       );
       if (!chosenId) {
-        chosenId = random.pick(this.contentBag.contentIds);
+        if (this.config.shuffle) {
+          chosenId = random.pick(this.contentBag.contentIds);
+        } else {
+          chosenId = this.contentBag.contentIds[this.nextContentIndex];
+          this.nextContentIndex = (this.nextContentIndex + 1) %
+            this.contentBag.contentIds.length;
+        }
         this.offsetToContentMapping.set(
           `${offset.x},${offset.y}`,
           chosenId,
