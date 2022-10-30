@@ -145,9 +145,7 @@
       "display": {
         "fullscreen": {
           "period": 3000,
-          "image": {
-            "scale": "full"
-          }
+          "scale": "fit"
         }
       }
     }

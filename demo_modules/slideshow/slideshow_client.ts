@@ -39,6 +39,7 @@ import {
   ClientLoadStrategy,
 } from "./client_interfaces.ts";
 import { WS } from "../../lib/websocket.ts";
+import { LoadFromFlickrClientStrategy } from "./load_from_flickr_client.ts";
 
 const log = easyLog("slideshow");
 
@@ -60,8 +61,8 @@ export function load(wallGeometry: Polygon, network: WS) {
         network,
         deadline,
       );
-      // } else if (loadConfig.flickr) {
-      //   return new LoadFromFlickrClientStrategy(loadConfig.flickr);
+    } else if (loadConfig.flickr) {
+      return new LoadFromFlickrClientStrategy();
     }
     throw new Error(
       "Could not parse display config: " + Object.keys(loadConfig).join(", "),

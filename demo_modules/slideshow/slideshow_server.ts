@@ -42,6 +42,7 @@ import {
 } from "./server_interfaces.ts";
 import { FullscreenServerDisplayStrategy } from "./fullscreen_display_server.ts";
 import { easyLog } from "../../lib/log.ts";
+import { LoadFromFlickrServerStrategy } from "./load_from_flickr_server.ts";
 
 const log = easyLog("slideshow");
 
@@ -60,10 +61,9 @@ export function load(
     // } else
     if (loadConfig.local) {
       return new LoadLocalServerStrategy(loadConfig.local);
+    } else if (loadConfig.flickr) {
+      return new LoadFromFlickrServerStrategy(loadConfig.flickr);
     }
-    //  else if (loadConfig.flickr) {
-    //   return new LoadFromFlickrServerStrategy(loadConfig.flickr);
-    // }
 
     throw new Error(
       "Could not parse load config: " + Object.keys(loadConfig).join(", "),
