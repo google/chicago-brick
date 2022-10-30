@@ -29,11 +29,17 @@
     "config": {
       "load": {
         "local": {
-          "directories": ["video/cobra/"]
+          "files": ["videoplayback.webm"],
+          "video": {
+            "sync": true,
+            "loop": true,
+            "syncDebug": true
+          }
         }
       },
       "display": {
-        "fullscreen": {}
+        "fullscreen": {
+        }
       }
     },
     "testonly": true

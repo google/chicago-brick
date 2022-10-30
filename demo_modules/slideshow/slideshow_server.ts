@@ -74,12 +74,14 @@ export function load(
     displayConfig: DisplayConfig,
     contentBag: ContentBag,
     network: ModuleWSS,
+    deadline: number,
   ): ServerDisplayStrategy {
     if (displayConfig.fullscreen) {
       return new FullscreenServerDisplayStrategy(
         displayConfig.fullscreen,
         contentBag,
         network,
+        deadline,
       );
     }
     throw new Error(
@@ -93,9 +95,9 @@ export function load(
     /** The content loaded so far by the loading strategy. */
     readonly contentIds: string[] = [];
     /** The load strategy for this run of the module. */
-    readonly loadStrategy: ServerLoadStrategy;
+    loadStrategy!: ServerLoadStrategy;
     /** The display strategy for this run of the module. */
-    readonly displayStrategy: ServerDisplayStrategy;
+    displayStrategy!: ServerDisplayStrategy;
     /**
      * Caches used by the loading strategy when clipping images. The exact
      * format of keys is determined by the loading strategy.
@@ -104,16 +106,17 @@ export function load(
 
     constructor(readonly config: SlideshowConfig) {
       super(config);
-
-      this.loadStrategy = parseServerLoadStrategy(config.load);
-      this.displayStrategy = parseServerDisplayStrategy(
-        config.display,
-        this,
-        network,
-      );
     }
 
-    async willBeShownSoon() {
+    async willBeShownSoon(deadline: number) {
+      this.loadStrategy = parseServerLoadStrategy(this.config.load);
+      this.displayStrategy = parseServerDisplayStrategy(
+        this.config.display,
+        this,
+        network,
+        deadline,
+      );
+
       log("Waiting for clients to init...");
       // When the clients ask for the init, we tell them.
       network.on("slideshow:init", (socket: TypedWebsocketLike) => {
@@ -123,26 +126,19 @@ export function load(
 
       network.on(
         "slideshow:content_ended",
-        (content, socket: TypedWebsocketLike) => {
-          this.displayStrategy.contentEnded(content, socket);
+        (content, offset, socket: TypedWebsocketLike) => {
+          this.displayStrategy.contentEnded(content, offset, socket);
         },
       );
 
       // Start the strategies initing.
-      await this.startLoadingContent();
+      await this.loadContent();
     }
 
     tick(time: number, delta: number) {
       this.displayStrategy.tick(time, delta);
     }
 
-    /**
-     * Asks the load strategy to load some content and also starts a loop to
-     * load the rest of the content.
-     */
-    async startLoadingContent() {
-      await this.loadContent();
-    }
     /**
      * Loads any remaining content starting with the specified paginationToken.
      */

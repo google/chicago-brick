@@ -34,7 +34,7 @@ export interface Content {
   /** Some Element that refers to the content itself. */
   element: HTMLElement;
   /** Some pieces of content have a draw function. */
-  draw?: (time: number, delta: number) => void;
+  draw?: (startTime: number, time: number, delta: number) => void;
 }
 
 export interface ContentPage {
@@ -67,12 +67,6 @@ export interface LocalLoadConfig {
   files?: string[];
   /** A list of local directories (relative to the asset directory). */
   directories?: string[];
-  /**
-   * If true, the assets are pre-split, meaning that they are already tiled for the screens
-   * in the wall and named according to a specific format. For video files, the screens' playback
-   * will be sync'd.
-   */
-  presplit?: boolean;
   /** Options related to video files. */
   video?: {
     /** If true, video files should start at a random timestamp. */
@@ -82,6 +76,10 @@ export interface LocalLoadConfig {
      * Otherwise, changes to the next video.
      */
     loop?: boolean;
+    /** If true, sync multiple files across the wall. */
+    sync?: boolean;
+    /** If true, show some debugging information about the synced videos. */
+    syncDebug?: boolean;
   };
 }
 
@@ -112,15 +110,27 @@ export interface FullscreenDisplayConfig {
    * - fit: Scales the content uniformly to the edges of the screen.
    */
   scale?: "stretch" | "full" | "fit";
+  /**
+   * When true, the files have already been stored in a specific format (rNcN.ext).
+   * These numbers should be used when assigning content to different screens on the wall.
+   * If a screen has position 0,1, we should send the content with the name r1c0.ext.
+   * When this is true, the wall chooses content among the paths with the last path part stripped.
+   * If multiple content, all pre-split is specified, these will be rendered correctly.
+   * However, it's not possible to mix pre-split and not-presplit content yet.
+   */
+  presplit?: boolean;
 }
 
 declare global {
   interface EmittedEvents {
     "slideshow:init_res": (config: SlideshowConfig) => void;
     "slideshow:init": () => void;
-    "slideshow:content_ended": (contentId: string) => void;
+    "slideshow:content_ended": (contentId: string, offset: Point) => void;
 
-    "slideshow:fullscreen:content_req": () => void;
-    "slideshow:fullscreen:content": (chosenId: string) => void;
+    "slideshow:fullscreen:content_req": (virtualOffset: Point) => void;
+    "slideshow:fullscreen:content": (
+      chosenId: string,
+      deadline: number,
+    ) => void;
   }
 }

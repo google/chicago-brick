@@ -21,6 +21,8 @@ import {
   ClientLoadStrategy,
 } from "./client_interfaces.ts";
 import { Content, FullscreenDisplayConfig } from "./interfaces.ts";
+import * as time from "../../lib/adjustable_time.ts";
+import { delay } from "../../lib/promise.ts";
 
 function makeInfoElement() {
   const info = document.createElement("div");
@@ -61,6 +63,7 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
   // The fullscreen display strategy only shows one piece of content at a time.
   content?: Content;
   readonly infoEl = makeInfoElement();
+  nextDeadline = 0;
   constructor(
     readonly config: FullscreenDisplayConfig,
     readonly loadStrategy: ClientLoadStrategy,
@@ -68,11 +71,18 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
     readonly surface: Surface,
   ) {
     this.surface.container.appendChild(this.infoEl);
-    network.on("slideshow:fullscreen:content", async (contentId) => {
+    network.on("slideshow:fullscreen:content", async (contentId, deadline) => {
       this.infoEl.style.color = "white";
       this.infoEl.textContent = `Loading ${contentId}...`;
 
-      // Load the content.
+      this.nextDeadline = deadline;
+
+      if (this.config.presplit) {
+        const [dir, ext] = contentId.split("|");
+        contentId =
+          `${dir}/r${this.surface.virtualOffset.y}c${this.surface.virtualOffset.x}${ext}`;
+      }
+
       let content;
       try {
         content = await this.loadStrategy.loadContent(contentId);
@@ -85,7 +95,6 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
       // Given the config, figure out where this might be positioned.
       const rect = this.calculateContentPosition(content);
 
-      clearElement(this.surface.container);
       const el = content.element;
 
       // Create a transform that maps the content to the calculated rect (and then onto the surface).
@@ -111,14 +120,20 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
           scaleXContentToRect * scaleXVirtualToReal
         }, ${scaleYContentToRect * scaleYVirtualToReal})`;
 
+      await delay(time.until(deadline));
+
+      clearElement(this.surface.container);
       this.surface.container.appendChild(el);
 
       this.content = content;
     });
-    network.send("slideshow:fullscreen:content_req");
+    network.send(
+      "slideshow:fullscreen:content_req",
+      this.surface.virtualOffset,
+    );
   }
   draw(time: number, delta: number) {
-    this.content?.draw?.(time, delta);
+    this.content?.draw?.(this.nextDeadline, time, delta);
   }
 
   calculateContentPosition(content: Content): Rectangle {

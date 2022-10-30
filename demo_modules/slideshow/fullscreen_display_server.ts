@@ -21,6 +21,9 @@ import { ContentBag } from "./interfaces.ts";
 import { ServerDisplayStrategy } from "./server_interfaces.ts";
 import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
+import { Point } from "../../lib/math/vector2d.ts";
+import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import * as time from "../../lib/adjustable_time.ts";
 
 // FULLSCREEN DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
@@ -38,31 +41,82 @@ import { ModuleWSS } from "../../server/network/websocket.ts";
 //           server refreshing a random client's content. If this is 0 or
 //           undefined, the content will never refresh.
 export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
-  // The time we last updated a display.
+  newContentArrived: () => void = () => {};
+  readonly contentReadyPromise = new Promise<void>((resolve) => {
+    this.newContentArrived = resolve;
+  });
+
+  // The time we last chose new content.
   lastUpdate = 0;
+
+  // If we are in pre-split mode, we have a single 'global' playing content. Remember that id here.
+  globalContentId = "";
+
+  // If there are any late-comers to the party (like a refresh in the middle of our period), remember
+  // the content we picked for each screen.
+  readonly offsetToContentMapping = new Map<string, string>();
+
+  /** The next time the content on the wall should change at. */
+  nextDeadline = 0;
 
   constructor(
     readonly config: FullscreenDisplayConfig,
     readonly contentBag: ContentBag,
     readonly network: ModuleWSS,
+    readonly initialDeadline: number,
   ) {
+    this.nextDeadline = initialDeadline;
     // Tell the clients about content when it arrives.
-    network.on("slideshow:fullscreen:content_req", (socket) => {
-      this.sendContentToClient(socket);
+    network.on("slideshow:fullscreen:content_req", (virtualOffset, socket) => {
+      this.sendContentToClient(virtualOffset, socket);
     });
   }
   contentEnded(): void {
-    // Choose new content for this content, maybe.
+    // When content ends, we don't do anything, because we let the period restart things.
   }
-  sendContentToClient(socket: TypedWebsocketLike) {
-    const contentIds = this.contentBag.contentIds;
+  async chooseNewGlobalContent() {
+    if (!this.config.presplit) {
+      throw new Error(`Asked to choose global content is non-presplit mode`);
+    }
+    await this.contentReadyPromise;
+    const possibleContent = new Set<string>();
+    for (const contentId of this.contentBag.contentIds) {
+      possibleContent.add(
+        path.dirname(contentId) + "|" + path.extname(contentId),
+      );
+    }
+    this.globalContentId = random.pick([...possibleContent]);
+    this.nextDeadline = time.now();
+  }
+  async sendContentToClient(offset: Point, socket: TypedWebsocketLike) {
     // Now, depending on the config, select the right content.
-    // TODO(applmak): Implement the tiled display one.
-    if (contentIds.length) {
-      const chosenId = random.pick(contentIds);
+    if (this.config.presplit) {
+      if (!this.globalContentId) {
+        await this.chooseNewGlobalContent();
+      }
+      socket.send(
+        "slideshow:fullscreen:content",
+        this.globalContentId,
+        this.nextDeadline,
+      );
+    } else {
+      let chosenId = this.offsetToContentMapping.get(
+        `${offset.x},${offset.y}`,
+      );
+      if (!chosenId) {
+        chosenId = random.pick(this.contentBag.contentIds);
+        this.offsetToContentMapping.set(
+          `${offset.x},${offset.y}`,
+          chosenId,
+        );
+      }
 
       // Send it to the specified client.
-      socket.send("slideshow:fullscreen:content", chosenId);
+      socket.send(
+        "slideshow:fullscreen:content",
+        chosenId,
+        this.nextDeadline,
+      );
     }
     // Otherwise... we have no content!
   }
@@ -70,10 +124,21 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     if (this.config.period) {
       // We should update the content every so often.
       if (time - this.lastUpdate >= this.config.period) {
-        // Pick a random client.
-        const client = random.pick(Object.values(this.network.clients()));
-        if (client) {
-          this.sendContentToClient(client);
+        this.nextDeadline = time + 5000;
+        if (this.config.presplit) {
+          // Update _all_ the content.
+          this.chooseNewGlobalContent();
+          // Tell all the clients to update at a specific time. Give them 5 seconds.
+          for (const [offset, socket] of this.network.clients()) {
+            this.sendContentToClient(offset, socket);
+          }
+        } else {
+          // Pick a random client.
+          const clients = this.network.clients();
+          const clientOffset = random.pick([...clients.keys()]);
+          if (clientOffset) {
+            this.sendContentToClient(clientOffset, clients.get(clientOffset)!);
+          }
         }
         this.lastUpdate = time;
       }

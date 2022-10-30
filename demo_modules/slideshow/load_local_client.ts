@@ -20,6 +20,7 @@ import { ClientLoadStrategy } from "./client_interfaces.ts";
 import { Surface } from "../../client/surface/surface.ts";
 import mime from "https://esm.sh/v96/mime@3.0.0/deno/mime.js";
 import { WS } from "../../lib/websocket.ts";
+import { now } from "../../lib/adjustable_time.ts";
 
 const log = easyLog("slideshow:local");
 
@@ -90,44 +91,106 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
           video.setAttribute("loop", "loop");
         } else {
           video.addEventListener("ended", () => {
-            this.network.send("slideshow:content_ended", contentId);
+            log(`Content ${contentId} ended`);
+            this.network.send(
+              "slideshow:content_ended",
+              contentId,
+              this.surface.virtualOffset,
+            );
           });
         }
-        let drawFn: ((time: number, delta: number) => void) | undefined =
-          undefined;
-        if (this.config.presplit) {
+        let drawFn:
+          | ((startTime: number, time: number, delta: number) => void)
+          | undefined = undefined;
+        if (this.config.video?.sync) {
+          let didTryToSync = false;
           // We need to sync the video.
-          drawFn = (time: number, delta: number) => {
+          drawFn = (startTime: number, time: number, delta: number) => {
             // When restarting a server, time can wind backwards. If we ever see
             // this case, just flip out.
             if (delta <= 0) {
               return;
             }
 
-            const durationMs = video.duration * 1000.0;
+            const duration = video.duration * 1000.0;
 
             // We want the videos to be sync'd to some ideal clock. We use the
             // server's clock, as guessed by the client.
-            const correctTime =
-              ((time - this.startTime) % durationMs + durationMs) %
-              durationMs;
+            const correctTime = this.config.video?.loop
+              ? (((time - startTime) % duration) + duration) % duration
+              : time - startTime;
 
             // The video is currently here:
-            const actualTime = video.currentTime * 1000.0;
+            let actualTime = video.currentTime * 1000.0;
 
-            // If these times are off by a lot, we should seek to the right time.
-            // We can't always seek, because the HTML5 video spec doesn't specify
-            // the granuality of seeking, and browsers round by as much as 250ms
-            // in practice!
-            if (Math.abs(actualTime - correctTime) > 3000) {
-              log(`Seek from ${actualTime} to ${correctTime}`);
+            if (this.config.video?.loop) {
+              if (Math.abs(actualTime - correctTime) > duration / 2) {
+                log(
+                  "Off by a period. Adjusting from",
+                  actualTime.toFixed(0),
+                  "to",
+                  (actualTime - Math.sign(actualTime - correctTime) * duration)
+                    .toFixed(0),
+                );
+                actualTime -= Math.sign(actualTime - correctTime) * duration;
+              }
+            }
+
+            if (!didTryToSync && Math.abs(actualTime - correctTime) > 2000) {
               video.currentTime = correctTime / 1000.0;
+              didTryToSync = true;
+              log(
+                `Attempted to jump video to ${correctTime} (it's currently at ${actualTime})`,
+              );
+            }
+
+            const rateFactor = 2.0;
+            let rate;
+            if (
+              0 <= actualTime - correctTime &&
+              actualTime - correctTime < 1000 / 60 / 2
+            ) {
+              rate = 1;
+            } else if (actualTime > correctTime) {
+              rate = 1 / rateFactor;
             } else {
-              // The time difference is too small to rely on seeking, so let's
-              // adjust the playback speed of the video in order to gradually
-              // sync the videos.
-              const msOff = correctTime - actualTime;
-              const rate = msOff >= 33 ? 2 : msOff <= -33 ? 0.5 : 1.0;
+              rate = rateFactor;
+            }
+
+            if (this.config.video?.syncDebug) {
+              let el = video.parentElement?.querySelector(
+                ".test",
+              ) as HTMLDivElement;
+              if (!el) {
+                el = document.createElement("div")!;
+                el.classList.add("test");
+                el.style.position = "absolute";
+                el.style.left = "0";
+                el.style.right = "0";
+                el.style.top = "0";
+                el.style.bottom = "0";
+                el.style.textAlign = "center";
+                el.style.font = "36px sans-serif";
+                el.style.color = "white";
+                video.parentElement?.appendChild(el);
+              }
+
+              el.textContent = `${(actualTime).toFixed(0)} | ${
+                (correctTime).toFixed(0)
+              } | ${rate}x | ${now().toFixed(0)}`;
+            }
+
+            if (video.playbackRate !== rate) {
+              log(
+                "Adjusting playback rate to",
+                rate,
+                "because our delta is",
+                (actualTime - correctTime).toFixed(0),
+                "we are at",
+                actualTime.toFixed(0),
+                "and we should be at",
+                correctTime.toFixed(0),
+              );
               video.playbackRate = rate;
             }
           };
