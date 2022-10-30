@@ -24,6 +24,9 @@ import { ModuleWSS } from "../../server/network/websocket.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import * as time from "../../lib/adjustable_time.ts";
+import { easyLog } from "../../lib/log.ts";
+
+const log = easyLog("slideshow:fullscreen");
 
 // FULLSCREEN DISPLAY STRATEGY
 // This display strategy shows a single element per screen, updating at a rate
@@ -124,6 +127,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     if (this.config.period) {
       // We should update the content every so often.
       if (time - this.lastUpdate >= this.config.period) {
+        log("Period expired. Choosing new content.");
         this.nextDeadline = time + 5000;
         if (this.config.presplit) {
           // Update _all_ the content.
@@ -133,10 +137,13 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
             this.sendContentToClient(offset, socket);
           }
         } else {
-          // Pick a random client.
+          // Pick a random client. Remove its cached content.
           const clients = this.network.clients();
           const clientOffset = random.pick([...clients.keys()]);
           if (clientOffset) {
+            this.offsetToContentMapping.delete(
+              `${clientOffset.x},${clientOffset.y}`,
+            );
             this.sendContentToClient(clientOffset, clients.get(clientOffset)!);
           }
         }

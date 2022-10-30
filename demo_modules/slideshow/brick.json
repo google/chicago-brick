@@ -45,6 +45,23 @@
     "testonly": true
   },
   {
+    "name": "slideshow_local_period_test",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "local": {
+          "directories": ["."]
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "period": 5000
+        }
+      }
+    },
+    "testonly": true
+  },
+  {
     "name": "slideshow_local_test_fit",
     "extends": "slideshow_local_test",
     "config": {
