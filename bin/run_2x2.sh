@@ -23,12 +23,21 @@ else
   INSPECT=''
 fi
 
-node \
+deno run \
   $INSPECT \
-  --experimental_modules \
-  server/server.js \
+  --allow-read --allow-net --allow-env --allow-write \
+  server/server.ts \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \
   --use_geometry '[{"right":2},{"down":2},{"left":2},{"up":2}]' \
   --assets_dir demo_assets \
-  "$@"
+  "$@" &
+readonly BRICK_PID="$!"
+
+function clean_up {
+  kill "$BRICK_PID";
+  exit
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM
+wait $BRICK_PID;
