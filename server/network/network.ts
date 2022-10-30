@@ -70,7 +70,7 @@ if (flags.https_cert) {
   };
 }
 export const server = new DispatchServer(options);
-export const wss = new WSS({ server });
+export const wss = new WSS({ server }, clients);
 
 /**
  * Main entry point for networking.

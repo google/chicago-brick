@@ -8,6 +8,8 @@ import {
 } from "../../lib/websocket.ts";
 import { easyLog } from "../../lib/log.ts";
 import { DispatchServer } from "../util/serving.ts";
+import type { ClientInfo } from "./network.ts";
+import { Point } from "../../lib/math/vector2d.ts";
 
 const log = easyLog("wall:websocket");
 
@@ -56,7 +58,10 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
   /** A set of handlers that should be dynamically added when clients join. */
   readonly clientMessageHandlers = new Map<string, Handler[]>();
 
-  constructor(options: WSSOptions) {
+  constructor(
+    options: WSSOptions,
+    readonly clients?: Record<string, ClientInfo>,
+  ) {
     super();
     this.webSocketServer = options.existingWSS ?? new WebSocketServer(options);
     this.clientSockets = new Set();
@@ -180,9 +185,11 @@ export class ModuleWSS implements TypedWebsocketLike {
   }
 
   clients() {
-    const clients = [];
-    for (const ws of this.wss.clientSockets) {
-      clients.push(this.lookUpModuleWS(ws));
+    const clients = new Map<Point, TypedWebsocketLike>();
+    if (this.wss.clients) {
+      for (const info of Object.values(this.wss.clients)) {
+        clients.set(info.offset, this.lookUpModuleWS(info.socket as WS));
+      }
     }
     return clients;
   }
