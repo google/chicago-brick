@@ -103,7 +103,11 @@ export class LoadLocalServerStrategy implements ServerLoadStrategy {
   async loadMoreContent(): Promise<ContentPage> {
     await this.configParsingComplete;
     return {
-      contentIds: this.paths,
+      contentIds: this.paths.map((p) => {
+        return {
+          id: p,
+        };
+      }),
     };
   }
 }

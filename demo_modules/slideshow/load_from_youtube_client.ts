@@ -13,11 +13,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/* globals YT */
+/// <reference types="https://esm.sh/v96/@types/youtube@0.0.47/index.d.ts" />
 
-import { ClientLoadStrategy, ServerLoadStrategy } from "./interfaces.js";
-import { loadYoutubeApi } from "./load_youtube_api.js";
-import { delay } from "../../lib/promise.ts";
+import { easyLog } from "../../lib/log.ts";
+import { Rectangle } from "../../lib/math/rectangle.ts";
+import { ClientLoadStrategy } from "./client_interfaces.ts";
+import { Content, ContentId } from "./interfaces.ts";
+
+const log = easyLog("slideshow:youtube");
 
 // LOAD YOUTUBE PLAYLIST STRATEGY
 // Config:
@@ -29,107 +32,73 @@ import { delay } from "../../lib/promise.ts";
 //                        playlist.
 //   sync: boolean - If true, keep the videos sync'd across their displays.
 
-export class LoadYouTubePlaylistClientStrategy extends ClientLoadStrategy {
-  constructor(config) {
-    super();
-    this.config = config;
+type RealWindow = typeof globalThis;
 
-    debug("Loading YouTube API");
-    this.apiLoaded = loadYoutubeApi().then(() => {
-      debug("YouTube API ready");
-    });
+interface YTIFrameAPI extends RealWindow {
+  YT: typeof YT;
+  onYouTubeIframeAPIReady?(): void;
+}
+
+function getYTAPI(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const ytwindow = globalThis as YTIFrameAPI;
+    if (ytwindow.YT) {
+      resolve();
+      return;
+    }
+
+    ytwindow.onYouTubeIframeAPIReady = () => {
+      resolve();
+    };
+    const el = document.createElement("script");
+    el.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName("script")[0];
+    firstScriptTag.parentNode!.insertBefore(el, firstScriptTag);
+  });
+}
+
+export class LoadYouTubeClientStrategy implements ClientLoadStrategy {
+  apiLoaded: Promise<void>;
+
+  constructor() {
+    this.apiLoaded = getYTAPI();
   }
-  init(surface, startTime) {
-    this.surface = surface;
-    this.startTime = startTime;
-  }
-  loadContent(content) {
-    return this.apiLoaded.then(() => {
-      debug("Loading video " + content.videoId);
-      let container = document.createElement("div");
-      let player = new YT.Player(container, {
-        width: this.surface.container.offsetWidth,
-        height: this.surface.container.offsetHeight,
-        videoId: content.videoId,
-        playerVars: {
-          listType: this.config.playThroughPlaylist ? "playlist" : undefined,
-          list: this.config.playThroughPlaylist
-            ? this.config.playlistId
-            : undefined,
-          iv_load_policy: 3, // Disable annotations.
-          controls: 0,
-          showinfo: 0,
-          loop: 1,
-          start: this.config.seekTo,
-          autoplay: true,
+  async loadContent(
+    contentId: ContentId,
+    virtualRect: Rectangle,
+  ): Promise<Content> {
+    await this.apiLoaded;
+    log(`Loading video: ${contentId}`);
+    const container = document.createElement("div");
+    const player = new YT.Player(container, {
+      videoId: contentId.id,
+      width: virtualRect.w,
+      height: virtualRect.h,
+      playerVars: {
+        iv_load_policy: YT.IvLoadPolicy.Hide, // Disable annotations.
+        controls: YT.Controls.Hide,
+        showinfo: YT.ShowInfo.Hide,
+        autoplay: YT.AutoPlay.AutoPlay,
+      },
+      events: {
+        onReady: () => {
+          player.setPlaybackQuality("hd1080");
+          player.mute();
         },
-        events: {
-          onReady: () => {
-            player.setPlaybackQuality("hd1080");
-            player.mute();
-          },
-          onError: (e) => {
-            debug(e);
-          },
-          onStateChange: (e) => {
-            debug("state", e.data);
-            if (
-              !this.config.playThroughPlaylist &&
-              e.data == YT.PlayerState.ENDED
-            ) {
-              // Restart the video. The loop=1 parameter should cause this to
-              // happen automatically when playing a single video, but it
-              // doesn't work!
-              player.seekTo(0);
-            }
-          },
+        onError: (e) => {
+          log.error(e);
         },
-      });
-
-      let video = player.getIframe();
-      if (this.config.sync) {
-        video.draw = (time, delta) => {
-          // When restarting a server, time can wind backwards. If we ever see
-          // this case, just flip out.
-          if (delta <= 0 || !player.getDuration) {
-            return;
-          }
-
-          let duration = player.getDuration() * 1000.0;
-
-          // We want the videos to be sync'd to some ideal clock. We use the
-          // server's clock, as guessed by the client.
-          let correctTime = ((time - this.startTime) % duration + duration) %
-            duration;
-
-          // The video is currently here:
-          let actualTime = player.getCurrentTime() * 1000.0;
-
-          // If these times are off by a lot, we should seek to the right time.
-          // We can't always seek, because the HTML5 video spec doesn't specify
-          // the granuality of seeking, and browsers round by as much as 250ms
-          // in practice!
-          if (Math.abs(actualTime - correctTime) > 3000) {
-            video.lastSeekTime = video.lastSeekTime || time;
-            // Don't seek too often! YouTube doesn't like that!
-            if (time - video.lastSeekTime > 3000) {
-              debug("seek", actualTime, correctTime);
-              player.seekTo(correctTime / 1000.0, true);
-              video.lastSeekTime = time;
-            }
-          } else {
-            // The time difference is too small to rely on seeking, so let's
-            // adjust the playback speed of the video in order to gradually
-            // sync the videos.
-            let msOff = correctTime - actualTime;
-
-            let rate = msOff >= 33 ? 2.0 : msOff <= -33 ? 0.5 : 1.0;
-            player.setPlaybackRate(rate);
-          }
-        };
-      }
-
-      return { element: video };
+      },
     });
+
+    const video = player.getIframe();
+
+    return {
+      width: contentId.width!,
+      height: contentId.height!,
+      element: video,
+      size: contentId.width! * contentId.height!,
+      type: "video",
+    };
   }
 }

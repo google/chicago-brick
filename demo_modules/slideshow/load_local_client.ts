@@ -15,7 +15,7 @@ limitations under the License.
 
 import asset from "../../client/asset/asset.ts";
 import { easyLog } from "../../lib/log.ts";
-import { Content, LocalLoadConfig } from "./interfaces.ts";
+import { Content, ContentId, LocalLoadConfig } from "./interfaces.ts";
 import { ClientLoadStrategy } from "./client_interfaces.ts";
 import { Surface } from "../../client/surface/surface.ts";
 import mime from "https://esm.sh/v96/mime@3.0.0/deno/mime.js";
@@ -58,17 +58,17 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
     readonly startTime: number,
   ) {
   }
-  loadContent(contentId: string): Promise<Content> {
+  loadContent(contentId: ContentId): Promise<Content> {
     // The display strategy has requested some content for the provided rectangle (and screen).
 
     // Check to see if the content is an image or a video.
-    const type: string = mime.getType(extname(contentId));
+    const type: string = mime.getType(extname(contentId.id));
     if (type.startsWith("image")) {
       // I need to make an Image.
       return new Promise((resolve, reject) => {
         const img = document.createElement("img");
         img.addEventListener("load", () => {
-          log(`Loaded image: ${contentId}`);
+          log(`Loaded image: ${contentId.id}`);
           const content: Content = {
             type: "image" as const,
             width: img.width,
@@ -79,10 +79,10 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
           resolve(content);
         });
         img.addEventListener("error", (err) => {
-          log(`Error loading image: ${contentId} ${err.message}`);
+          log(`Error loading image: ${contentId.id} ${err.message}`);
           reject(err);
         });
-        img.src = asset(contentId);
+        img.src = asset(contentId.id);
       });
     } else if (type.startsWith("video")) {
       return new Promise((resolve, reject) => {
@@ -196,11 +196,11 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
           };
         }
         video.addEventListener("error", (err) => {
-          log(`Error loading video: ${contentId} ${err.message}`);
+          log(`Error loading video: ${contentId.id} ${err.message}`);
           reject(video.error!);
         });
         video.addEventListener("loadedmetadata", () => {
-          log(`Video loaded: ${contentId}`);
+          log(`Video loaded: ${contentId.id}`);
           if (this.config.video?.randomize_start) {
             video.currentTime = Math.random() * video.duration;
           }
@@ -216,11 +216,11 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
             draw: drawFn,
           });
         });
-        video.src = asset(contentId);
+        video.src = asset(contentId.id);
         video.load();
       });
     } else {
-      throw new Error(`Unrecognized asset type: ${contentId}`);
+      throw new Error(`Unrecognized asset type: ${contentId.id}`);
     }
   }
 }

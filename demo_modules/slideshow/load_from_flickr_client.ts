@@ -14,18 +14,18 @@ limitations under the License.
 ==============================================================================*/
 
 import { ClientLoadStrategy } from "./client_interfaces.ts";
-import { Content } from "./interfaces.ts";
+import { Content, ContentId } from "./interfaces.ts";
 import { easyLog } from "../../lib/log.ts";
 
 const log = easyLog("slideshow:flickr");
 
 export class LoadFromFlickrClientStrategy implements ClientLoadStrategy {
-  loadContent(contentId: string): Promise<Content> {
+  loadContent(contentId: ContentId): Promise<Content> {
     return new Promise((resolve, reject) => {
       const img = document.createElement("img");
       // Don't report that we've loaded the image until onload fires.
       img.addEventListener("load", () => {
-        log(`Loaded image`, contentId);
+        log(`Loaded image`, contentId.id);
         resolve({
           element: img,
           height: img.naturalHeight,
@@ -37,7 +37,7 @@ export class LoadFromFlickrClientStrategy implements ClientLoadStrategy {
       img.addEventListener("error", (e) => {
         reject(e);
       });
-      img.src = contentId;
+      img.src = contentId.id;
     });
   }
 }

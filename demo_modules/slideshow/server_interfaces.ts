@@ -1,6 +1,6 @@
 import { Point } from "../../lib/math/vector2d.ts";
 import { TypedWebsocketLike } from "../../lib/websocket.ts";
-import { ContentPage } from "./interfaces.ts";
+import { ContentId, ContentPage } from "./interfaces.ts";
 
 // Here, we specify the interfaces for the load and display strategies. There is
 // a separate interface for the server and the client.
@@ -19,7 +19,7 @@ export interface ServerDisplayStrategy {
   tick(time: number, delta: number): void;
   /** Called when content with a duration has finished. */
   contentEnded(
-    contentId: string,
+    contentId: ContentId,
     offset: Point,
     socket: TypedWebsocketLike,
   ): void;

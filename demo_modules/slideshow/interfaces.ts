@@ -15,11 +15,19 @@ limitations under the License.
 
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import { Point } from "../../lib/math/vector2d.ts";
-import { DriveConfig } from "./load_from_drive_server.ts";
 
 export interface ClientInfo {
   virtualOffset: Point;
   virtualRect: Rectangle;
+}
+
+export interface ContentId {
+  /** If known, the width of the content when loaded. */
+  readonly width?: number;
+  /** If known, the height of the content when loaded. */
+  readonly height?: number;
+  /** A unique identifier for this content. */
+  id: string;
 }
 
 export interface Content {
@@ -39,11 +47,11 @@ export interface Content {
 
 export interface ContentPage {
   paginationToken?: string;
-  contentIds: string[];
+  contentIds: ContentId[];
 }
 
 export interface ContentBag {
-  contentIds: string[];
+  contentIds: ContentId[];
 }
 
 export interface SlideshowConfig {
@@ -83,7 +91,20 @@ export interface LocalLoadConfig {
   };
 }
 
+export interface DriveConfig {
+  /** The name of the credential file in the credentials dir. */
+  creds: string;
+  /** The ids of the Google Drive folders that contains the content. */
+  folderIds?: string[];
+  /** The ids of the Google Drive files that are the content. */
+  fileIds?: string[];
+  /** If true, if the module should automatically split the content to fix the screens. */
+  split?: boolean;
+}
+
 export interface YouTubeLoadConfig {
+  /** The credentials file. */
+  creds: string;
   /** A list of YouTube video ids. */
   videos?: string[];
   /** A list of YouTube playlists that each contain videos. */
@@ -129,12 +150,15 @@ declare global {
   interface EmittedEvents {
     "slideshow:init_res": (config: SlideshowConfig) => void;
     "slideshow:init": () => void;
-    "slideshow:content_ended": (contentId: string, offset: Point) => void;
+    "slideshow:content_ended": (contentId: ContentId, offset: Point) => void;
 
     "slideshow:fullscreen:content_req": (virtualOffset: Point) => void;
     "slideshow:fullscreen:content": (
-      chosenId: string,
+      chosenId: ContentId,
       deadline: number,
     ) => void;
+
+    "slideshow:drive:init": () => void;
+    "slideshow:drive:credentials": (headers: Record<string, string>) => void;
   }
 }

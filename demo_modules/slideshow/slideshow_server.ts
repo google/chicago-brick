@@ -31,6 +31,7 @@ import { ModuleWSS } from "../../server/network/websocket.ts";
 import {
   Content,
   ContentBag,
+  ContentId,
   DisplayConfig,
   LoadConfig,
   SlideshowConfig,
@@ -43,6 +44,8 @@ import {
 import { FullscreenServerDisplayStrategy } from "./fullscreen_display_server.ts";
 import { easyLog } from "../../lib/log.ts";
 import { LoadFromFlickrServerStrategy } from "./load_from_flickr_server.ts";
+import { LoadYouTubeServerStrategy } from "./load_from_youtube_server.ts";
+import { LoadFromDriveServerStrategy } from "./load_from_drive_server.ts";
 
 const log = easyLog("slideshow");
 
@@ -54,12 +57,11 @@ export function load(
   // strategies. New strategies should be added to these methods.
 
   function parseServerLoadStrategy(loadConfig: LoadConfig): ServerLoadStrategy {
-    // if (loadConfig.drive) {
-    //   return new LoadFromDriveServerStrategy(loadConfig.drive, network);
-    // } else if (loadConfig.youtube) {
-    //   return new LoadFromYouTubeServerStrategy(loadConfig.youtube);
-    // } else
-    if (loadConfig.local) {
+    if (loadConfig.drive) {
+      return new LoadFromDriveServerStrategy(loadConfig.drive, network);
+    } else if (loadConfig.youtube) {
+      return new LoadYouTubeServerStrategy(loadConfig.youtube);
+    } else if (loadConfig.local) {
       return new LoadLocalServerStrategy(loadConfig.local);
     } else if (loadConfig.flickr) {
       return new LoadFromFlickrServerStrategy(loadConfig.flickr);
@@ -93,7 +95,7 @@ export function load(
   // MODULE DEFINTIONS
   class SlideshowServer extends Server implements ContentBag {
     /** The content loaded so far by the loading strategy. */
-    readonly contentIds: string[] = [];
+    readonly contentIds: ContentId[] = [];
     /** The load strategy for this run of the module. */
     loadStrategy!: ServerLoadStrategy;
     /** The display strategy for this run of the module. */
@@ -146,7 +148,9 @@ export function load(
       do {
         const response = await this.loadStrategy.loadMoreContent(token);
         this.contentIds.push(...response.contentIds);
-        this.displayStrategy.newContentArrived?.();
+        if (this.contentIds.length) {
+          this.displayStrategy.newContentArrived?.();
+        }
         token = response.paginationToken;
       } while (token);
       this.displayStrategy.allContentArrived?.();

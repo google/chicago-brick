@@ -40,6 +40,8 @@ import {
 } from "./client_interfaces.ts";
 import { WS } from "../../lib/websocket.ts";
 import { LoadFromFlickrClientStrategy } from "./load_from_flickr_client.ts";
+import { LoadYouTubeClientStrategy } from "./load_from_youtube_client.ts";
+import { LoadFromDriveClientStrategy } from "./load_from_drive_client.ts";
 
 const log = easyLog("slideshow");
 
@@ -49,12 +51,11 @@ export function load(wallGeometry: Polygon, network: WS) {
     surface: Surface,
     deadline: number,
   ): ClientLoadStrategy {
-    // if (loadConfig.drive) {
-    //   return new LoadFromDriveClientStrategy(network);
-    // } else if (loadConfig.youtube) {
-    //   return new LoadFromYouTubeClientStrategy(loadConfig.youtube);
-    // } else
-    if (loadConfig.local) {
+    if (loadConfig.drive) {
+      return new LoadFromDriveClientStrategy(network);
+    } else if (loadConfig.youtube) {
+      return new LoadYouTubeClientStrategy();
+    } else if (loadConfig.local) {
       return new LoadLocalClientStrategy(
         loadConfig.local,
         surface,

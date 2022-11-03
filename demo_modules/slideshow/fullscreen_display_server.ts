@@ -16,7 +16,7 @@ limitations under the License.
 import * as randomjs from "https://esm.sh/random-js@2.1.0";
 const random = new randomjs.Random();
 
-import { FullscreenDisplayConfig } from "./interfaces.ts";
+import { ContentId, FullscreenDisplayConfig } from "./interfaces.ts";
 import { ContentBag } from "./interfaces.ts";
 import { ServerDisplayStrategy } from "./server_interfaces.ts";
 import { TypedWebsocketLike } from "../../lib/websocket.ts";
@@ -60,7 +60,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
 
   // If there are any late-comers to the party (like a refresh in the middle of our period), remember
   // the content we picked for each screen.
-  readonly offsetToContentMapping = new Map<string, string>();
+  readonly offsetToContentMapping = new Map<string, ContentId>();
 
   /** The next time the content on the wall should change at. */
   nextDeadline = 0;
@@ -73,9 +73,13 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
   ) {
     this.nextDeadline = initialDeadline;
     // Tell the clients about content when it arrives.
-    network.on("slideshow:fullscreen:content_req", (virtualOffset, socket) => {
-      this.sendContentToClient(virtualOffset, socket);
-    });
+    network.on(
+      "slideshow:fullscreen:content_req",
+      async (virtualOffset, socket) => {
+        await this.contentReadyPromise;
+        this.sendContentToClient(virtualOffset, socket);
+      },
+    );
   }
   contentEnded(): void {
     // When content ends, we don't do anything, because we let the period restart things.
@@ -88,7 +92,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     const possibleContent = new Set<string>();
     for (const contentId of this.contentBag.contentIds) {
       possibleContent.add(
-        path.dirname(contentId) + "|" + path.extname(contentId),
+        path.dirname(contentId.id) + "|" + path.extname(contentId.id),
       );
     }
     if (this.config.shuffle) {
@@ -106,9 +110,12 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
       if (!this.globalContentId) {
         await this.chooseNewGlobalContent();
       }
+      if (!this.globalContentId) {
+        log.error(`Global content not ready, but asked to display some.`);
+      }
       socket.send(
         "slideshow:fullscreen:content",
-        this.globalContentId,
+        { id: this.globalContentId },
         this.nextDeadline,
       );
     } else {
@@ -126,6 +133,12 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
         this.offsetToContentMapping.set(
           `${offset.x},${offset.y}`,
           chosenId,
+        );
+      }
+
+      if (!chosenId) {
+        log.error(
+          `Content not ready for screen ${offset.x},${offset.y}, but asked to display some.`,
         );
       }
 
@@ -154,12 +167,19 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
         } else {
           // Pick a random client. Remove its cached content.
           const clients = this.network.clients();
-          const clientOffset = random.pick([...clients.keys()]);
-          if (clientOffset) {
-            this.offsetToContentMapping.delete(
-              `${clientOffset.x},${clientOffset.y}`,
-            );
-            this.sendContentToClient(clientOffset, clients.get(clientOffset)!);
+          if (clients.size) {
+            const clientOffset = random.pick([...clients.keys()]);
+            if (clientOffset) {
+              this.offsetToContentMapping.delete(
+                `${clientOffset.x},${clientOffset.y}`,
+              );
+              this.sendContentToClient(
+                clientOffset,
+                clients.get(clientOffset)!,
+              );
+            }
+          } else {
+            log("No clients yet registered. Waiting for the next period");
           }
         }
         this.lastUpdate = time;

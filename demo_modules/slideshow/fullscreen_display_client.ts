@@ -73,19 +73,22 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
     this.surface.container.appendChild(this.infoEl);
     network.on("slideshow:fullscreen:content", async (contentId, deadline) => {
       this.infoEl.style.color = "white";
-      this.infoEl.textContent = `Loading ${contentId}...`;
+      this.infoEl.textContent = `Loading ${contentId.id}...`;
 
       this.nextDeadline = deadline;
 
       if (this.config.presplit) {
-        const [dir, ext] = contentId.split("|");
-        contentId =
+        const [dir, ext] = contentId.id.split("|");
+        contentId.id =
           `${dir}/r${this.surface.virtualOffset.y}c${this.surface.virtualOffset.x}${ext}`;
       }
 
       let content;
       try {
-        content = await this.loadStrategy.loadContent(contentId);
+        content = await this.loadStrategy.loadContent(
+          contentId,
+          this.surface.virtualRect,
+        );
       } catch (e) {
         this.infoEl.style.color = "red";
         this.infoEl.textContent = e.stack;

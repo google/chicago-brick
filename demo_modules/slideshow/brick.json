@@ -98,21 +98,35 @@
     "testonly": true
   },
   {
+    "name": "drive-test",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "drive": {
+          "creds": "googleserviceaccountkey",
+          "folderIds": ["0B5y6dZ4o9OjcSi1YeXY4TVVTWWM"]
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "period": 1000
+        }
+      }
+    }
+  },
+  {
     "name": "cta",
     "extends": "slideshow",
     "config": {
       "load": {
         "youtube": {
-          "playlistId": "PLCJZjGFB_wA72YhaYl5XtuRVqC9q4EwG-",
-          "seekTo": 47,
-          "playThroughPlaylist": true
+          "creds": "googleserviceaccountkey",
+          "playlists": ["PLCJZjGFB_wA72YhaYl5XtuRVqC9q4EwG-"],
+          "shuffle": true
         }
       },
       "display": {
-        "fullscreen": {
-          "period": 0,
-          "gravity": 100
-        }
+        "fullscreen": {}
       }
     }
   },
