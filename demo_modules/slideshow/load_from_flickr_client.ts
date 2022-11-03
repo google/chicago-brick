@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { ClientLoadStrategy } from "./client_interfaces.ts";
-import { Content, ContentId } from "./interfaces.ts";
+import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
+import { ContentId } from "./interfaces.ts";
 import { easyLog } from "../../lib/log.ts";
 
 const log = easyLog("slideshow:flickr");

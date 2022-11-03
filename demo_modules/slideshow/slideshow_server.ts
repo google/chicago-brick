@@ -25,11 +25,9 @@ limitations under the License.
  */
 
 import { LoadLocalServerStrategy } from "./load_local_server.ts";
-import { SizeLimitedCache } from "../../lib/size_limited_cache.ts";
 import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
 import {
-  Content,
   ContentBag,
   ContentId,
   DisplayConfig,
@@ -100,11 +98,6 @@ export function load(
     loadStrategy!: ServerLoadStrategy;
     /** The display strategy for this run of the module. */
     displayStrategy!: ServerDisplayStrategy;
-    /**
-     * Caches used by the loading strategy when clipping images. The exact
-     * format of keys is determined by the loading strategy.
-     */
-    readonly contentCache = new SizeLimitedCache<string, Content>(2 ** 30);
 
     constructor(readonly config: SlideshowConfig) {
       super(config);

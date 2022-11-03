@@ -13,13 +13,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Content, ContentId, ContentPage, DriveConfig } from "./interfaces.ts";
-import { PromiseCache } from "../../lib/promise_cache.ts";
+import { ContentId, ContentPage, DriveConfig } from "./interfaces.ts";
 import {
-  Drive,
-  File,
   FileList,
-  FilesGetOptions,
   FilesListOptions,
 } from "https://googleapis.deno.dev/v1/drive:v3.ts";
 import * as credentials from "../../server/util/credentials.ts";
@@ -31,34 +27,6 @@ import { ModuleWSS } from "../../server/network/websocket.ts";
 import { GoogleAuth } from "./authenticate_google_api.ts";
 
 const log = easyLog("slideshow:drive");
-
-interface FilesGetOptionsWithFields extends FilesGetOptions {
-  fields?: string;
-}
-
-async function drivefilesGet(
-  client: GoogleAuth,
-  fileId: string,
-  opts: FilesGetOptionsWithFields = {},
-): Promise<File> {
-  const url = new URL(`https://www.googleapis.com/drive/v3/files/${fileId}`);
-  if (opts.fields !== undefined) {
-    url.searchParams.append("fields", opts.fields);
-  }
-  const res = await fetch(url, {
-    headers: new Headers(await client.getRequestHeaders()),
-    method: "GET",
-  });
-  if (!res.ok) {
-    const s = await res.json();
-    throw new Error(
-      `Error when getting info about drive file: ${res.statusText}: ${
-        JSON.stringify(s, undefined, 2)
-      }`,
-    );
-  }
-  return await res.json() as File;
-}
 
 async function driveFilesList(
   client: GoogleAuth,
@@ -87,7 +55,6 @@ class DriveItemsDownloader {
   readonly driveIdStream: ReadableStream<ContentId[]>;
   constructor(
     readonly config: DriveConfig,
-    readonly drive: Drive,
     readonly client: GoogleAuth,
   ) {
     this.driveIdStream = new ReadableStream({
@@ -131,7 +98,7 @@ class DriveItemsDownloader {
     });
   }
   start() {
-    return this.driveIdStream;
+    return this.driveIdStream.getReader();
   }
 }
 
@@ -149,12 +116,6 @@ class DriveItemsDownloader {
 //   fileId: string - Drive file ID that is the file to download.
 //       Can't be specified with folderId.
 export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
-  readonly drive: Drive;
-  readonly inflightCache = new PromiseCache<string, Content>();
-  // In-flight content cache: A cache for content in-flight. Note that as
-  // soon as the data is downloaded, it's removed from this cache.
-  readonly inflightContent = new Map<string, Promise<Uint8Array>>();
-
   readonly driveItemsDownloader: DriveItemsDownloader;
   driveItemReader?: ReadableStreamReader<ContentId[]>;
 
@@ -164,11 +125,9 @@ export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
     ) as JWTInput;
     const client = new GoogleAuth(creds);
     client.setScopes(["https://www.googleapis.com/auth/drive.readonly"]);
-    this.drive = new Drive(client);
 
     this.driveItemsDownloader = new DriveItemsDownloader(
       config,
-      this.drive,
       client,
     );
 
@@ -184,7 +143,7 @@ export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
   }
   async loadMoreContent(): Promise<ContentPage> {
     if (!this.driveItemReader) {
-      this.driveItemReader = this.driveItemsDownloader.start().getReader();
+      this.driveItemReader = this.driveItemsDownloader.start();
     }
 
     const { done, value } = await this.driveItemReader.read();

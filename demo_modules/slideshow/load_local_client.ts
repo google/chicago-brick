@@ -15,8 +15,8 @@ limitations under the License.
 
 import asset from "../../client/asset/asset.ts";
 import { easyLog } from "../../lib/log.ts";
-import { Content, ContentId, LocalLoadConfig } from "./interfaces.ts";
-import { ClientLoadStrategy } from "./client_interfaces.ts";
+import { ContentId, LocalLoadConfig } from "./interfaces.ts";
+import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
 import { Surface } from "../../client/surface/surface.ts";
 import mime from "https://esm.sh/v96/mime@3.0.0/deno/mime.js";
 import { WS } from "../../lib/websocket.ts";

@@ -19,8 +19,9 @@ import { WS } from "../../lib/websocket.ts";
 import {
   ClientDisplayStrategy,
   ClientLoadStrategy,
+  Content,
 } from "./client_interfaces.ts";
-import { Content, FullscreenDisplayConfig } from "./interfaces.ts";
+import { FullscreenDisplayConfig } from "./interfaces.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 

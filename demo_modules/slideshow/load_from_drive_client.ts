@@ -15,8 +15,8 @@ limitations under the License.
 
 import { easyLog } from "../../lib/log.ts";
 import { WS } from "../../lib/websocket.ts";
-import { ClientLoadStrategy } from "./client_interfaces.ts";
-import { Content, ContentId } from "./interfaces.ts";
+import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
+import { ContentId } from "./interfaces.ts";
 
 const log = easyLog("wall:slideshow:drive");
 const API_BASE_URL = "https://www.googleapis.com/drive/v3";

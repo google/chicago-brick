@@ -17,8 +17,8 @@ limitations under the License.
 
 import { easyLog } from "../../lib/log.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
-import { ClientLoadStrategy } from "./client_interfaces.ts";
-import { Content, ContentId } from "./interfaces.ts";
+import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
+import { ContentId } from "./interfaces.ts";
 
 const log = easyLog("slideshow:youtube");
 
