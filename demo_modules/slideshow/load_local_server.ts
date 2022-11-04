@@ -23,28 +23,6 @@ import { flags } from "../../server/flags.ts";
 
 const log = easyLog("slideshow:local");
 
-// LOAD LOCAL FILES STRATEGY
-// This loading strategy knows how to load both images and videos from the local file
-// system, actually it's a proxy, but whatever.
-// Config:
-//   image: an object denoting references to images, containing sub-keys:
-//     file: string - A local asset name (like 'cobra.ext'), which will get rewritten
-//         to $ASSET_PATH/cobra.ext. The name must contain a file extension.
-//     presplit: boolean - If true, assumes that the asset has been presplit by an
-//         offline process into multiple files under a directory. A
-//         file ending with, say cobra.webm, must have presplit files at
-//         cobra/r${R}c${C}.webm.
-//   video: an object denoting references to videos, containing sub-fields:
-//     file: string - A local asset name (like 'cobra.ext'), which will get rewritten
-//         to $ASSET_PATH/cobra.ext. The name must contain a file extension.
-//     presplit: boolean - If true, assumes that the asset has been presplit by an
-//         offline process into multiple files under a directory. A
-//         file ending with, say cobra.webm, must have presplit files at
-//         cobra/r${R}c${C}.webm.
-//     sync: boolean - If true, keep the videos sync'd across their displays.
-//     randomize_start: boolean - If true, pick a random time to start the videos.
-//   Note: only 1 of image or video can be specified when using the presplit strategy.
-
 interface LocalContentPaths {
   image?: string;
   video?: string;

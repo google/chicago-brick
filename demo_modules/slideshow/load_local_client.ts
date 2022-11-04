@@ -20,31 +20,9 @@ import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
 import { Surface } from "../../client/surface/surface.ts";
 import mime from "https://esm.sh/v96/mime@3.0.0/deno/mime.js";
 import { WS } from "../../lib/websocket.ts";
-import { now } from "../../lib/adjustable_time.ts";
+import { DrawFn, setUpVideo } from "./video_content_utils.ts";
 
 const log = easyLog("slideshow:local");
-
-// LOAD LOCAL FILES STRATEGY
-// This loading strategy knows how to load both images and videos from the local file
-// system, actually it's a proxy, but whatever.
-// Config:
-//   image: an object denoting references to images, containing sub-keys:
-//     file: string - A local asset name (like 'cobra.ext'), which will get rewritten
-//         to $ASSET_PATH/cobra.ext. The name must contain a file extension.
-//     presplit: boolean - If true, assumes that the asset has been presplit by an
-//         offline process into multiple files under a directory. A
-//         file ending with, say cobra.webm, must have presplit files at
-//         cobra/r${R}c${C}.webm.
-//   video: an object denoting references to videos, containing sub-fields:
-//     file: string - A local asset name (like 'cobra.ext'), which will get rewritten
-//         to $ASSET_PATH/cobra.ext. The name must contain a file extension.
-//     presplit: boolean - If true, assumes that the asset has been presplit by an
-//         offline process into multiple files under a directory. A
-//         file ending with, say cobra.webm, must have presplit files at
-//         cobra/r${R}c${C}.webm.
-//     sync: boolean - If true, keep the videos sync'd across their displays.
-//     randomize_start: boolean - If true, pick a random time to start the videos.
-//   Note: only 1 of image or video can be specified when using the presplit strategy.
 
 function extname(path: string) {
   return path.substring(path.lastIndexOf("."));
@@ -99,101 +77,39 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
             );
           });
         }
-        let drawFn:
-          | ((startTime: number, time: number, delta: number) => void)
-          | undefined = undefined;
-        if (this.config.video?.sync) {
-          let didTryToSync = false;
-          // We need to sync the video.
-          drawFn = (startTime: number, time: number, delta: number) => {
-            // When restarting a server, time can wind backwards. If we ever see
-            // this case, just flip out.
-            if (delta <= 0) {
-              return;
-            }
-
-            const duration = video.duration * 1000.0;
-
-            // We want the videos to be sync'd to some ideal clock. We use the
-            // server's clock, as guessed by the client.
-            const correctTime = this.config.video?.loop
-              ? (((time - startTime) % duration) + duration) % duration
-              : time - startTime;
-
-            // The video is currently here:
-            let actualTime = video.currentTime * 1000.0;
-
-            if (this.config.video?.loop) {
-              if (Math.abs(actualTime - correctTime) > duration / 2) {
-                log(
-                  "Off by a period. Adjusting from",
-                  actualTime.toFixed(0),
-                  "to",
-                  (actualTime - Math.sign(actualTime - correctTime) * duration)
-                    .toFixed(0),
-                );
-                actualTime -= Math.sign(actualTime - correctTime) * duration;
-              }
-            }
-
-            if (!didTryToSync && Math.abs(actualTime - correctTime) > 2000) {
-              video.currentTime = correctTime / 1000.0;
-              didTryToSync = true;
-              log(
-                `Attempted to jump video to ${correctTime} (it's currently at ${actualTime})`,
-              );
-            }
-
-            const rateFactor = 2.0;
-            let rate;
-            if (
-              0 <= actualTime - correctTime &&
-              actualTime - correctTime < 1000 / 60 / 2
-            ) {
-              rate = 1;
-            } else if (actualTime > correctTime) {
-              rate = 1 / rateFactor;
-            } else {
-              rate = rateFactor;
-            }
-
-            if (this.config.video?.syncDebug) {
-              let el = video.parentElement?.querySelector(
-                ".test",
-              ) as HTMLDivElement;
-              if (!el) {
-                el = document.createElement("div")!;
-                el.classList.add("test");
-                el.style.position = "absolute";
-                el.style.left = "0";
-                el.style.right = "0";
-                el.style.top = "0";
-                el.style.bottom = "0";
-                el.style.textAlign = "center";
-                el.style.font = "36px sans-serif";
-                el.style.color = "white";
-                video.parentElement?.appendChild(el);
-              }
-
-              el.textContent = `${(actualTime).toFixed(0)} | ${
-                (correctTime).toFixed(0)
-              } | ${rate}x | ${now().toFixed(0)}`;
-            }
-
+        let drawFn: DrawFn | undefined = undefined;
+        if (this.config.video) {
+          drawFn = setUpVideo(this.config.video, () => {
+            return video.duration * 1000;
+          }, () => {
+            return video.currentTime * 1000;
+          }, (time) => {
+            video.currentTime = time / 1000;
+          }, (rate) => {
             if (video.playbackRate !== rate) {
-              log(
-                "Adjusting playback rate to",
-                rate,
-                "because our delta is",
-                (actualTime - correctTime).toFixed(0),
-                "we are at",
-                actualTime.toFixed(0),
-                "and we should be at",
-                correctTime.toFixed(0),
-              );
+              log("Adjusting playback rate to", rate);
               video.playbackRate = rate;
             }
-          };
+          }, (str) => {
+            let el = video.parentElement?.querySelector(
+              ".test",
+            ) as HTMLDivElement;
+            if (!el) {
+              el = document.createElement("div")!;
+              el.classList.add("test");
+              el.style.position = "absolute";
+              el.style.left = "0";
+              el.style.right = "0";
+              el.style.top = "0";
+              el.style.bottom = "0";
+              el.style.textAlign = "center";
+              el.style.font = "36px sans-serif";
+              el.style.color = "white";
+              video.parentElement?.appendChild(el);
+            }
+
+            el.textContent = str;
+          }, log);
         }
         video.addEventListener("error", (err) => {
           log(`Error loading video: ${contentId.id} ${err.message}`);
@@ -201,7 +117,7 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
         });
         video.addEventListener("loadedmetadata", () => {
           log(`Video loaded: ${contentId.id}`);
-          if (this.config.video?.randomize_start) {
+          if (this.config.video?.randomizeStart) {
             video.currentTime = Math.random() * video.duration;
           }
           video.muted = true;

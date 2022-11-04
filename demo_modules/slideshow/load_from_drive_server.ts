@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { ContentId, ContentPage, DriveConfig } from "./interfaces.ts";
+import { ContentId, ContentPage, DriveLoadConfig } from "./interfaces.ts";
 import {
   FileList,
   FilesListOptions,
@@ -54,7 +54,7 @@ async function driveFilesList(
 class DriveItemsDownloader {
   readonly driveIdStream: ReadableStream<ContentId[]>;
   constructor(
-    readonly config: DriveConfig,
+    readonly config: DriveLoadConfig,
     readonly client: GoogleAuth,
   ) {
     this.driveIdStream = new ReadableStream({
@@ -102,24 +102,11 @@ class DriveItemsDownloader {
   }
 }
 
-// LOAD FROM DRIVE STRATEGY
-// Here, we specify the server & client strategies that can load images from a
-// drive folder passed in the config. The drive folder should be shared
-// publicly or with the appropriate credentials.
-// TODO(applmak): Make the server-side filter out things the client can't
-// display.
-// TODO(applmak): Maybe make the server-side smarter about subfolders so as to
-// create collections that should play, rather than needing to change the config
-// every time.
-// Config:
-//   folderId: string - Drive folder ID from which to retrieve files.
-//   fileId: string - Drive file ID that is the file to download.
-//       Can't be specified with folderId.
 export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
   readonly driveItemsDownloader: DriveItemsDownloader;
   driveItemReader?: ReadableStreamReader<ContentId[]>;
 
-  constructor(readonly config: DriveConfig, network: ModuleWSS) {
+  constructor(readonly config: DriveLoadConfig, network: ModuleWSS) {
     const creds = credentials.get(
       this.config.creds || "googleserviceaccountkey",
     ) as JWTInput;

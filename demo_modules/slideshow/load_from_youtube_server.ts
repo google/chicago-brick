@@ -154,16 +154,6 @@ class VideoIdGenerator {
   }
 }
 
-// LOAD YOUTUBE PLAYLIST STRATEGY
-// Config:
-//   playlistId: string - Playlist ID that contains the videos we should show.
-//   seekTo: number - Number of seconds into which we should start playing the
-//                    video. This doesn't affect looping behavior.
-//   playThroughPlaylist: boolean - If true, don't just loop a single video, but
-//                        rather, continue playing the next video in the
-//                        playlist.
-//   sync: boolean - If true, keep the videos sync'd across their displays.
-
 export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
   nextPlaylistToLoad = 0;
   readonly youtube: YouTube;

@@ -45,21 +45,6 @@ function clearElement(el: Element) {
   }
 }
 
-// FULLSCREEN DISPLAY STRATEGY
-// This display strategy shows a single element per screen, updating at a rate
-// specified in the config. We wait for the corresponding element to load
-// before we show it.
-// Messages:
-//   display:init() - Sent by client when it is ready to receive content. This
-//       synchonizes a race between content loading on the server and the
-//       client being ready for that content.
-//   display:content(opaqueContentBlob) - Sent by server to inform the client
-//       of new content that has been loaded and that the client should begin
-//       showing.
-// Config:
-//   period: number - Number of millliseconds that should elapse between the
-//           server refreshing a random client's content. If this is 0 or
-//           undefined, the content will never refresh.
 export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
   // The fullscreen display strategy only shows one piece of content at a time.
   content?: Content;

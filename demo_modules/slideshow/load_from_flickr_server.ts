@@ -26,12 +26,6 @@ interface FlickrPhoto {
   url_l?: string;
 }
 
-// LOAD FROM FLICKR STRATEGY
-// Here, we specify the server & client strategies that can load images from a
-// flickr search. We require a valid API key to access the images, which is not
-// checked-in.
-// Config:
-//   query: string - The string to search for.
 export class LoadFromFlickrServerStrategy implements ServerLoadStrategy {
   constructor(readonly config: FlickrLoadConfig) {
     this.config = config;

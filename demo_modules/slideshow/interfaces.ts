@@ -45,7 +45,7 @@ export interface SlideshowConfig {
 }
 
 export interface LoadConfig {
-  drive?: DriveConfig;
+  drive?: DriveLoadConfig;
   youtube?: YouTubeLoadConfig;
   local?: LocalLoadConfig;
   flickr?: FlickrLoadConfig;
@@ -55,28 +55,30 @@ export interface DisplayConfig {
   fullscreen?: FullscreenDisplayConfig;
 }
 
+export interface VideoContentOptions {
+  /** If true, video files should start at a random timestamp. */
+  randomizeStart?: boolean;
+  /**
+   * If true, keeps the video looping.
+   * Otherwise, changes to the next video.
+   */
+  loop?: boolean;
+  /** If true, sync multiple files across the wall. */
+  sync?: boolean;
+  /** If true, show some debugging information about the synced videos. */
+  syncDebug?: boolean;
+}
+
 export interface LocalLoadConfig {
   /** A list of local files (relative to the asset directory). */
   files?: string[];
   /** A list of local directories (relative to the asset directory). */
   directories?: string[];
   /** Options related to video files. */
-  video?: {
-    /** If true, video files should start at a random timestamp. */
-    randomize_start?: boolean;
-    /**
-     * If true, keeps the video looping.
-     * Otherwise, changes to the next video.
-     */
-    loop?: boolean;
-    /** If true, sync multiple files across the wall. */
-    sync?: boolean;
-    /** If true, show some debugging information about the synced videos. */
-    syncDebug?: boolean;
-  };
+  video?: VideoContentOptions;
 }
 
-export interface DriveConfig {
+export interface DriveLoadConfig {
   /** The name of the credential file in the credentials dir. */
   creds: string;
   /** The ids of the Google Drive folders that contains the content. */
@@ -85,6 +87,8 @@ export interface DriveConfig {
   fileIds?: string[];
   /** If true, if the module should automatically split the content to fix the screens. */
   split?: boolean;
+  /** Options related to video files. */
+  video?: VideoContentOptions;
 }
 
 export interface YouTubeLoadConfig {
@@ -94,8 +98,8 @@ export interface YouTubeLoadConfig {
   videos?: string[];
   /** A list of YouTube playlists that each contain videos. */
   playlists?: string[];
-  /** If true, randomizes the order of the videos. */
-  shuffle?: boolean;
+  /** Options related to video files. */
+  video?: VideoContentOptions;
 }
 
 export interface FlickrLoadConfig {
@@ -121,8 +125,7 @@ export interface FullscreenDisplayConfig {
    * These numbers should be used when assigning content to different screens on the wall.
    * If a screen has position 0,1, we should send the content with the name r1c0.ext.
    * When this is true, the wall chooses content among the paths with the last path part stripped.
-   * If multiple content, all pre-split is specified, these will be rendered correctly.
-   * However, it's not possible to mix pre-split and not-presplit content yet.
+   * It's not possible to mix pre-split and not-presplit content.
    */
   presplit?: boolean;
   /**
