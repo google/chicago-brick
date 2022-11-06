@@ -18,7 +18,8 @@ limitations under the License.
 import { easyLog } from "../../lib/log.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
-import { ContentId } from "./interfaces.ts";
+import { ContentId, YouTubeLoadConfig } from "./interfaces.ts";
+import { DrawFn, setUpVideo } from "./video_content_utils.ts";
 
 const log = easyLog("slideshow:youtube");
 
@@ -50,7 +51,7 @@ function getYTAPI(): Promise<void> {
 export class LoadYouTubeClientStrategy implements ClientLoadStrategy {
   apiLoaded: Promise<void>;
 
-  constructor() {
+  constructor(readonly config: YouTubeLoadConfig) {
     this.apiLoaded = getYTAPI();
   }
   async loadContent(
@@ -83,12 +84,38 @@ export class LoadYouTubeClientStrategy implements ClientLoadStrategy {
 
     const video = player.getIframe();
 
+    let drawFn: DrawFn | undefined = undefined;
+    if (this.config.video) {
+      drawFn = setUpVideo(
+        this.config.video,
+        () => {
+          return player.getDuration() * 1000;
+        },
+        () => {
+          return player.getCurrentTime() * 1000.0;
+        },
+        (time: number) => {
+          return player.seekTo(time / 1000.0, true);
+        },
+        (newRate: number) => {
+          const rate = player.getPlaybackRate();
+          if (rate !== newRate) {
+            log(`Adjusting YT playback rate to ${newRate}`);
+            player.setPlaybackRate(newRate);
+          }
+        },
+        () => {},
+        log,
+      );
+    }
+
     return {
       width: contentId.width!,
       height: contentId.height!,
       element: video,
       size: contentId.width! * contentId.height!,
       type: "video",
+      draw: drawFn,
     };
   }
 }

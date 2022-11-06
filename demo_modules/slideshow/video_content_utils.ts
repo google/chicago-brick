@@ -82,3 +82,41 @@ export function setUpVideo(
     };
   }
 }
+
+export function setUpVideoElement(
+  config: VideoContentOptions,
+  video: HTMLVideoElement,
+  log: Logger,
+): DrawFn | undefined {
+  return setUpVideo(config, () => {
+    return video.duration * 1000;
+  }, () => {
+    return video.currentTime * 1000;
+  }, (time) => {
+    video.currentTime = time / 1000;
+  }, (rate) => {
+    if (video.playbackRate !== rate) {
+      log("Adjusting playback rate to", rate);
+      video.playbackRate = rate;
+    }
+  }, (str) => {
+    let el = video.parentElement?.querySelector(
+      ".test",
+    ) as HTMLDivElement;
+    if (!el) {
+      el = document.createElement("div")!;
+      el.classList.add("test");
+      el.style.position = "absolute";
+      el.style.left = "0";
+      el.style.right = "0";
+      el.style.top = "0";
+      el.style.bottom = "0";
+      el.style.textAlign = "center";
+      el.style.font = "36px sans-serif";
+      el.style.color = "white";
+      video.parentElement?.appendChild(el);
+    }
+
+    el.textContent = str;
+  }, log);
+}

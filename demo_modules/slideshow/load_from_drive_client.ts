@@ -16,14 +16,15 @@ limitations under the License.
 import { easyLog } from "../../lib/log.ts";
 import { WS } from "../../lib/websocket.ts";
 import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
-import { ContentId } from "./interfaces.ts";
+import { ContentId, DriveLoadConfig } from "./interfaces.ts";
+import { DrawFn, setUpVideoElement } from "./video_content_utils.ts";
 
 const log = easyLog("wall:slideshow:drive");
 const API_BASE_URL = "https://www.googleapis.com/drive/v3";
 
 export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
   headersPromise: Promise<Record<string, string>>;
-  constructor(network: WS) {
+  constructor(readonly config: DriveLoadConfig, network: WS) {
     this.headersPromise = new Promise((resolve) => {
       network.on("slideshow:drive:credentials", (headers) => {
         // If anyone is waiting for this promise to resolve, resolve it.
@@ -81,6 +82,12 @@ export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
         return await new Promise((resolve, reject) => {
           const video = document.createElement("video");
           video.autoplay = true;
+
+          let drawFn: DrawFn | undefined = undefined;
+          if (this.config.video) {
+            drawFn = setUpVideoElement(this.config.video, video, log);
+          }
+
           video.addEventListener("load", () => {
             resolve({
               width: video.videoWidth,
@@ -88,6 +95,7 @@ export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
               size: video.videoWidth * video.videoHeight * video.duration,
               element: video,
               type: "video",
+              draw: drawFn,
             });
           });
           video.addEventListener("error", (e) => {

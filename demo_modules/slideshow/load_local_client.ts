@@ -20,7 +20,7 @@ import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
 import { Surface } from "../../client/surface/surface.ts";
 import mime from "https://esm.sh/v96/mime@3.0.0/deno/mime.js";
 import { WS } from "../../lib/websocket.ts";
-import { DrawFn, setUpVideo } from "./video_content_utils.ts";
+import { DrawFn, setUpVideoElement } from "./video_content_utils.ts";
 
 const log = easyLog("slideshow:local");
 
@@ -79,37 +79,7 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
         }
         let drawFn: DrawFn | undefined = undefined;
         if (this.config.video) {
-          drawFn = setUpVideo(this.config.video, () => {
-            return video.duration * 1000;
-          }, () => {
-            return video.currentTime * 1000;
-          }, (time) => {
-            video.currentTime = time / 1000;
-          }, (rate) => {
-            if (video.playbackRate !== rate) {
-              log("Adjusting playback rate to", rate);
-              video.playbackRate = rate;
-            }
-          }, (str) => {
-            let el = video.parentElement?.querySelector(
-              ".test",
-            ) as HTMLDivElement;
-            if (!el) {
-              el = document.createElement("div")!;
-              el.classList.add("test");
-              el.style.position = "absolute";
-              el.style.left = "0";
-              el.style.right = "0";
-              el.style.top = "0";
-              el.style.bottom = "0";
-              el.style.textAlign = "center";
-              el.style.font = "36px sans-serif";
-              el.style.color = "white";
-              video.parentElement?.appendChild(el);
-            }
-
-            el.textContent = str;
-          }, log);
+          drawFn = setUpVideoElement(this.config.video, video, log);
         }
         video.addEventListener("error", (err) => {
           log(`Error loading video: ${contentId.id} ${err.message}`);
