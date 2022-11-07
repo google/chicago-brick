@@ -181,7 +181,10 @@ export class ModuleWSS implements TypedWebsocketLike {
     ...payload: Parameters<EmittedEvents[K]>
   ) {
     // Send to all clients.
-    this.wss.send(msg, ...payload as any);
+    this.wss.send(
+      `${this.moduleId}:${msg}` as any,
+      ...payload as any[],
+    );
   }
 
   clients() {
