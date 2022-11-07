@@ -2,7 +2,7 @@ import {
   CredentialsClient,
   JWTInput,
 } from "https://googleapis.deno.dev/_/base@v1/auth/mod.ts";
-import * as jose from "https://esm.sh/jose@4.10.4";
+import * as jose from "https://esm.sh/jose@4.10.4?no-dts";
 import { easyLog } from "../../lib/log.ts";
 
 const log = easyLog("slideshow:google_auth");
