@@ -128,6 +128,26 @@ export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
       }
     });
   }
+  async getBytes(contentId: ContentId): Promise<Uint8Array> {
+    // Download the bytes associated with this.
+    log(`Fetching bytes for: ${contentId.id}`);
+    const res = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${contentId.id}?alt=media`,
+      {
+        headers: new Headers(
+          await this.driveItemsDownloader.client.getRequestHeaders(),
+        ),
+      },
+    );
+    if (!res.ok) {
+      throw new Error(
+        `Error downloading drive item: ${contentId.id}: ${res.statusText}`,
+      );
+    }
+    const buf = await res.arrayBuffer();
+    log(`Fetch complete for: ${contentId.id}`);
+    return new Uint8Array(buf);
+  }
   async loadMoreContent(): Promise<ContentPage> {
     if (!this.driveItemReader) {
       this.driveItemReader = this.driveItemsDownloader.start();

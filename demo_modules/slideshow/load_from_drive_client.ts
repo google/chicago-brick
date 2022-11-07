@@ -39,16 +39,20 @@ export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
     contentId: ContentId,
   ): Promise<Content> {
     log(`Loading content: ${contentId.id}`);
-    const res = await fetch(`${API_BASE_URL}/files/${contentId.id}?alt=media`, {
-      headers: new Headers(await this.headersPromise),
-    });
+
+    const res = await fetch(
+      `${API_BASE_URL}/files/${contentId.id}?alt=media`,
+      {
+        headers: new Headers(await this.headersPromise),
+      },
+    );
     if (!res.ok) {
       throw new Error(
         `Failed to download ${contentId}! ${res.status} ${res.statusText}`,
       );
     }
 
-    const type = res.headers.get("content-type");
+    const type = res.headers.get("content-type") || "";
     const size = res.headers.get("content-length");
     log(`Downloading image ${contentId.id} (${type} size:${size})`);
     const blob = await res.blob();

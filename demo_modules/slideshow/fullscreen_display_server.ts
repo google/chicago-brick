@@ -18,13 +18,18 @@ const random = new randomjs.Random();
 
 import { ContentId, FullscreenDisplayConfig } from "./interfaces.ts";
 import { ContentBag } from "./interfaces.ts";
-import { ServerDisplayStrategy } from "./server_interfaces.ts";
+import {
+  ServerDisplayStrategy,
+  ServerLoadStrategy,
+} from "./server_interfaces.ts";
 import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { easyLog } from "../../lib/log.ts";
+import { makeTempDir } from "../../server/util/temp_directory.ts";
+import * as wallGeometry from "../../server/util/wall_geometry.ts";
 
 const log = easyLog("slideshow:fullscreen");
 
@@ -38,7 +43,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
   lastUpdate = 0;
 
   // If we are in pre-split mode, we have a single 'global' playing content. Remember that id here.
-  globalContentId = "";
+  globalContentId: ContentId | undefined = undefined;
 
   /** The offset into the content to walk through next sequentially. */
   nextContentIndex = 0;
@@ -52,6 +57,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
 
   constructor(
     readonly config: FullscreenDisplayConfig,
+    readonly loadStrategy: ServerLoadStrategy,
     readonly contentBag: ContentBag,
     readonly network: ModuleWSS,
     readonly initialDeadline: number,
@@ -69,17 +75,97 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
   contentEnded(): void {
     // When content ends, we don't do anything, because we let the period restart things.
   }
+  async splitGlobalContent() {
+    if (!this.config.split) {
+      throw new Error("Asked to split content when config is not set to split");
+    }
+    if (!this.globalContentId) {
+      throw new Error("No global content requested on split");
+    }
+
+    // Rather than spending my precious local JS CPU to do this, we'll use a different
+    // tool (imagemagick). Imagemagick lets us convert our single content into MxN tiles.
+    // Then, we can rename these into the presplit format and put them into the temporary
+    // directory.
+
+    // 0) Figure out the current MxN.
+    // Here's one approach using the current set of clients.
+    // const rect = new Polygon([...clients.keys()]).extents;
+    // This might not work if the clients aren't ready.
+    // Here's another approach using the wall geometry, but hardcodes HD size.
+    // TODO(applmak): Figure something out.
+    const rect = wallGeometry.getGeo().extents.scale(1 / 1920, 1 / 1080);
+    log(
+      `Splitting ${this.globalContentId.id}: Clients are currently occupying ${rect.w}x${rect.h}`,
+    );
+
+    // Make a temp directory
+    const temp = await makeTempDir(this.globalContentId.id);
+    log(`Splitting ${this.globalContentId.id}: Created temp ${temp}`);
+
+    // 1) Split the content into MxN tiles.
+    log(`Splitting ${this.globalContentId.id}: Downloading file...`);
+    // We need to download it locally.
+    const bytes = await this.loadStrategy.getBytes(this.globalContentId);
+    const tempFilePath = path.join(temp, this.globalContentId.id);
+    log(`Splitting ${this.globalContentId.id}: File path: ${tempFilePath}`);
+    await Deno.writeFile(tempFilePath, bytes);
+    this.globalContentId.id = tempFilePath;
+
+    const command = [
+      "convert",
+      this.globalContentId.id,
+      "-crop",
+      `${rect.w}x${rect.h}@`,
+      "+repage",
+      "+adjoin",
+      path.join(temp, "%d.png"),
+    ];
+    await Deno.run({ cmd: command }).status();
+    log(`Splitting ${this.globalContentId.id}: Invoked imagemagick.`);
+
+    // 2) Rename the content into the temp folder.
+    const promises = [];
+    for (let i = 0; i < rect.w * rect.h; ++i) {
+      const x = i % rect.w;
+      const y = Math.floor(i / rect.w);
+      const cmd = [
+        "mv",
+        path.join(temp, `${i}.png`),
+        path.join(temp, `r${y}c${x}.png`),
+      ];
+      promises.push(Deno.run({ cmd }).status());
+    }
+    await promises;
+    log(
+      `Splitting ${this.globalContentId.id}: Moved temp files to final locations.`,
+    );
+
+    // Replace the global content id with the path to the local file and mark the content as local.
+    this.globalContentId.id = `/tmp/${path.basename(temp)}|.png`;
+    this.globalContentId.local = true;
+    log(`New content id: ${this.globalContentId.id}`);
+
+    // Everything is split!
+  }
   async chooseNewGlobalContent() {
-    if (!this.config.presplit) {
-      throw new Error(`Asked to choose global content is non-presplit mode`);
-    }
     await this.contentReadyPromise;
-    const possibleContent = new Set<string>();
-    for (const contentId of this.contentBag.contentIds) {
-      possibleContent.add(
-        path.dirname(contentId.id) + "|" + path.extname(contentId.id),
-      );
+    const possibleContent = new Set<ContentId>();
+    if (this.config.split) {
+      // In split mode, we assume that every piece of content tiles the whole wall.
+      for (const contentId of this.contentBag.contentIds) {
+        possibleContent.add(contentId);
+      }
+    } else {
+      for (const contentId of this.contentBag.contentIds) {
+        possibleContent.add({
+          id: path.dirname(contentId.id) + "|" + path.extname(contentId.id),
+          width: contentId.width,
+          height: contentId.height,
+        });
+      }
     }
+
     if (this.config.shuffle) {
       this.globalContentId = random.pick([...possibleContent]);
     } else {
@@ -87,20 +173,27 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
       this.nextContentIndex = (this.nextContentIndex + 1) %
         possibleContent.size;
     }
+
+    if (this.config.split) {
+      await this.splitGlobalContent();
+    }
+
     this.nextDeadline = time.now();
   }
   async sendContentToClient(offset: Point, socket: TypedWebsocketLike) {
     // Now, depending on the config, select the right content.
-    if (this.config.presplit) {
+    if (this.config.presplit || this.config.split) {
       if (!this.globalContentId) {
         await this.chooseNewGlobalContent();
       }
       if (!this.globalContentId) {
         log.error(`Global content not ready, but asked to display some.`);
+        return;
       }
+
       socket.send(
         "slideshow:fullscreen:content",
-        { id: this.globalContentId },
+        this.globalContentId,
         this.nextDeadline,
       );
     } else {
@@ -142,7 +235,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
       if (time - this.lastUpdate >= this.config.period) {
         log("Period expired. Choosing new content.");
         this.nextDeadline = time + 5000;
-        if (this.config.presplit) {
+        if (this.config.presplit || this.config.split) {
           // Update _all_ the content.
           this.chooseNewGlobalContent();
           // Tell all the clients to update at a specific time. Give them 5 seconds.

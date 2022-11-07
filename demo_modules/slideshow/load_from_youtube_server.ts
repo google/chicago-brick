@@ -175,6 +175,9 @@ export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
     ]);
     this.youtube = new YouTube(this.client);
   }
+  getBytes(): Promise<Uint8Array> {
+    throw new Error("Method not implemented.");
+  }
 
   async loadMoreContent(): Promise<ContentPage> {
     if (!this.videoIdGenerator) {

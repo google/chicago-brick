@@ -115,6 +115,23 @@
     }
   },
   {
+    "name": "drive-split-test",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "drive": {
+          "creds": "googleserviceaccountkey",
+          "folderIds": ["0B5y6dZ4o9OjcSi1YeXY4TVVTWWM"]
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "split": true
+        }
+      }
+    }
+  },
+  {
     "name": "cta",
     "extends": "slideshow",
     "config": {

@@ -30,6 +30,9 @@ export class LoadFromFlickrServerStrategy implements ServerLoadStrategy {
   constructor(readonly config: FlickrLoadConfig) {
     this.config = config;
   }
+  getBytes(): Promise<Uint8Array> {
+    throw new Error("Method not implemented.");
+  }
 
   async loadMoreContent(): Promise<ContentPage> {
     const apiKey = credentials.get("flickr") as string;

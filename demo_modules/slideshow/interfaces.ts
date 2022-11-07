@@ -28,6 +28,11 @@ export interface ContentId {
   readonly height?: number;
   /** A unique identifier for this content. */
   id: string;
+  /**
+   * If true, the asset is local, and the id refers to an asset that can be served
+   * via the wall server (or via a client-local asset server).
+   */
+  local?: boolean;
 }
 
 export interface ContentPage {
@@ -85,8 +90,6 @@ export interface DriveLoadConfig {
   folderIds?: string[];
   /** The ids of the Google Drive files that are the content. */
   fileIds?: string[];
-  /** If true, if the module should automatically split the content to fix the screens. */
-  split?: boolean;
   /** Options related to video files. */
   video?: VideoContentOptions;
 }
@@ -132,6 +135,12 @@ export interface FullscreenDisplayConfig {
    * When true, chooses the next content to display randomly. Otherwise, chooses the next sequentially.
    */
   shuffle?: boolean;
+  /**
+   * When true, splits loaded images into individual image files that can be loaded by the
+   * clients. These files are written to a temporary cache directory that is able to be
+   * served up as an asset dir.
+   */
+  split?: boolean;
 }
 
 declare global {

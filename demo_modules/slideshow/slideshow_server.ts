@@ -72,6 +72,7 @@ export function load(
 
   function parseServerDisplayStrategy(
     displayConfig: DisplayConfig,
+    loadStrategy: ServerLoadStrategy,
     contentBag: ContentBag,
     network: ModuleWSS,
     deadline: number,
@@ -79,6 +80,7 @@ export function load(
     if (displayConfig.fullscreen) {
       return new FullscreenServerDisplayStrategy(
         displayConfig.fullscreen,
+        loadStrategy,
         contentBag,
         network,
         deadline,
@@ -107,6 +109,7 @@ export function load(
       this.loadStrategy = parseServerLoadStrategy(this.config.load);
       this.displayStrategy = parseServerDisplayStrategy(
         this.config.display,
+        this.loadStrategy,
         this,
         network,
         deadline,

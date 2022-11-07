@@ -49,18 +49,16 @@ export function load(wallGeometry: Polygon, network: WS) {
   function parseClientLoadStrategy(
     loadConfig: LoadConfig,
     surface: Surface,
-    deadline: number,
   ): ClientLoadStrategy {
     if (loadConfig.drive) {
-      return new LoadFromDriveClientStrategy(network);
+      return new LoadFromDriveClientStrategy(loadConfig.drive, network);
     } else if (loadConfig.youtube) {
-      return new LoadYouTubeClientStrategy();
+      return new LoadYouTubeClientStrategy(loadConfig.youtube);
     } else if (loadConfig.local) {
       return new LoadLocalClientStrategy(
         loadConfig.local,
         surface,
         network,
-        deadline,
       );
     } else if (loadConfig.flickr) {
       return new LoadFromFlickrClientStrategy();
@@ -91,7 +89,7 @@ export function load(wallGeometry: Polygon, network: WS) {
   class SlideshowClient extends Client {
     loadStrategy?: ClientLoadStrategy;
     displayStrategy?: ClientDisplayStrategy;
-    willBeShownSoon(container: HTMLElement, deadline: number) {
+    willBeShownSoon(container: HTMLElement) {
       this.surface = new Surface(container, wallGeometry);
       return new Promise<void>((resolve) => {
         log("Waiting for network init...");
@@ -100,7 +98,6 @@ export function load(wallGeometry: Polygon, network: WS) {
           this.loadStrategy = parseClientLoadStrategy(
             config.load,
             this.surface!,
-            deadline,
           );
           this.displayStrategy = parseClientDisplayStrategy(
             config.display,

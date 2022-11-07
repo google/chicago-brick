@@ -47,6 +47,10 @@ export class LoadLocalServerStrategy implements ServerLoadStrategy {
   constructor(readonly config: LocalLoadConfig) {
     this.configParsingComplete = this.parseConfig();
   }
+  getBytes(): Promise<Uint8Array> {
+    throw new Error("Method not implemented.");
+  }
+
   async parseConfig() {
     if (this.config.files) {
       this.paths.push(...this.config.files);
@@ -82,9 +86,7 @@ export class LoadLocalServerStrategy implements ServerLoadStrategy {
     await this.configParsingComplete;
     return {
       contentIds: this.paths.map((p) => {
-        return {
-          id: p,
-        };
+        return { id: p };
       }),
     };
   }

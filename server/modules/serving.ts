@@ -23,6 +23,7 @@ import {
 } from "../util/serving.ts";
 import { library } from "./library.ts";
 import { flags } from "../flags.ts";
+import { tempDirectories } from "../util/temp_directory.ts";
 
 const log = easyLog("wall:serving");
 
@@ -58,6 +59,18 @@ export function addRoutes(
   //   /lib => node_modules/brick/lib
   server.addHandler("/client/:path*", serveDirectory(path.join(cwd, "client")));
   server.addHandler("/lib/:path*", serveDirectory(path.join(cwd, "lib")));
+
+  server.addHandler("/{asset/}?tmp/:name/:path*", async (req, match) => {
+    // Find a temp directory with the same name
+    const foundDir = [...tempDirectories.values()].find((t) => {
+      return t.includes(match.pathname.groups.name);
+    });
+    if (foundDir) {
+      return await serveDirectory(foundDir)(req, match);
+    } else {
+      return notFound();
+    }
+  });
 
   // We support a global set of asset directories.
   for (const assets_dir of flags.assets_dir) {

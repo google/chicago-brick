@@ -20,5 +20,8 @@ export default function asset(name: string) {
     return `${LOCAL_ASSET_PATH}${name}`;
   }
   // By default, we pass the pass-through.
+  if (name.startsWith("/")) {
+    return `/asset${name}`;
+  }
   return `/asset/${name}`;
 }

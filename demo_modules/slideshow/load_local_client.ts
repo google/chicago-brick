@@ -33,7 +33,6 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
     readonly config: LocalLoadConfig,
     readonly surface: Surface,
     readonly network: WS,
-    readonly startTime: number,
   ) {
   }
   loadContent(contentId: ContentId): Promise<Content> {

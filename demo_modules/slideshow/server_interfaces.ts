@@ -12,6 +12,12 @@ export interface ServerLoadStrategy {
    *  - content: An array of content, suitable for transmission to the client.
    */
   loadMoreContent(paginationToken?: string): ContentPage | Promise<ContentPage>;
+
+  /**
+   * Returns the bytes associated with the provided content.
+   * Used when we need to write some remote content locally.
+   */
+  getBytes(contentId: ContentId): Promise<Uint8Array>;
 }
 
 export interface ServerDisplayStrategy {

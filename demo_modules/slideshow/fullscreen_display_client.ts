@@ -24,6 +24,7 @@ import {
 import { FullscreenDisplayConfig } from "./interfaces.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
+import { LoadLocalClientStrategy } from "./load_local_client.ts";
 
 function makeInfoElement() {
   const info = document.createElement("div");
@@ -50,12 +51,16 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
   content?: Content;
   readonly infoEl = makeInfoElement();
   nextDeadline = 0;
+
+  // If the server split content for us, we need the local client strategy to load them.
+  readonly localLoadStrategy: LoadLocalClientStrategy;
   constructor(
     readonly config: FullscreenDisplayConfig,
     readonly loadStrategy: ClientLoadStrategy,
     readonly network: WS,
     readonly surface: Surface,
   ) {
+    this.localLoadStrategy = new LoadLocalClientStrategy({}, surface, network);
     this.surface.container.appendChild(this.infoEl);
     network.on("slideshow:fullscreen:content", async (contentId, deadline) => {
       this.infoEl.style.color = "white";
@@ -63,7 +68,7 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
 
       this.nextDeadline = deadline;
 
-      if (this.config.presplit) {
+      if (this.config.presplit || this.config.split) {
         const [dir, ext] = contentId.id.split("|");
         contentId.id =
           `${dir}/r${this.surface.virtualOffset.y}c${this.surface.virtualOffset.x}${ext}`;
@@ -71,10 +76,15 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
 
       let content;
       try {
-        content = await this.loadStrategy.loadContent(
-          contentId,
-          this.surface.virtualRect,
-        );
+        if (contentId.local) {
+          // If it's local, use the local content strategy to load the content.
+          content = await this.localLoadStrategy.loadContent(contentId);
+        } else {
+          content = await this.loadStrategy.loadContent(
+            contentId,
+            this.surface.virtualRect,
+          );
+        }
       } catch (e) {
         this.infoEl.style.color = "red";
         this.infoEl.textContent = e.stack;
@@ -126,10 +136,15 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
   }
 
   calculateContentPosition(content: Content): Rectangle {
-    const scaleStrategy = this.config.scale || "fit";
+    let scaleStrategy = this.config.scale || "fit";
     const surfaceScale = this.surface.virtualRect.w /
       this.surface.virtualRect.h;
     const contentScale = content.width / content.height;
+
+    if (this.config.split) {
+      scaleStrategy = "stretch";
+    }
+
     switch (scaleStrategy) {
       case "fit":
       case "full": {
