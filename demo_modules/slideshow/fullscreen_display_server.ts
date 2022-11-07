@@ -27,7 +27,7 @@ import { ModuleWSS } from "../../server/network/websocket.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
 import * as time from "../../lib/adjustable_time.ts";
-import { easyLog, enable } from "../../lib/log.ts";
+import { easyLog } from "../../lib/log.ts";
 import { makeTempDir } from "../../server/util/temp_directory.ts";
 import * as wallGeometry from "../../server/util/wall_geometry.ts";
 
@@ -148,19 +148,21 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
       promises.push(Deno.run({ cmd }).status());
     }
     await promises;
+
     log.debugAt(
       1,
       `Splitting ${contentId.id}: Moved temp files to final locations.`,
     );
 
+    const newContentId = `/tmp/${path.basename(temp)}|.png`;
     // Replace the global content id with the path to the local file and mark the content as local.
-    log.debugAt(1, `New content id: ${contentId.id}`);
+    log.debugAt(1, `New content id: ${newContentId}`);
 
-    this.contentIdToSplitId.set(originalId, contentId.id);
+    this.contentIdToSplitId.set(originalId, newContentId);
 
     // Everything is split!
     return {
-      id: `/tmp/${path.basename(temp)}|.png`,
+      id: newContentId,
       local: true,
     };
   }

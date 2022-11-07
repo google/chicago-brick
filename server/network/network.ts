@@ -76,7 +76,6 @@ export const wss = new WSS({ server }, clients);
  * Main entry point for networking.
  */
 wss.on("connection", (socket: TypedWebsocketLike) => {
-  console.log("Adding connection handler");
   const clientId = nextClientId++;
   // When the client boots, it sends a start message that includes the rect
   // of the client. We listen for that message and register that client info.
