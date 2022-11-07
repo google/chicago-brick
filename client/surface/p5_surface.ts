@@ -16,21 +16,30 @@ limitations under the License.
 /// <reference lib="dom" />
 
 import { Surface } from "./surface.ts";
-import P5 from "https://cdn.skypack.dev/p5?dts";
+import P5, { p5InstanceExtensions } from "https://cdn.skypack.dev/p5?dts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 
 interface Sketch {
-  preload(p5: P5): void;
+  preload?(p5: P5): void;
   setup(p5: P5): void;
   draw(...args: unknown[]): void;
 }
 
 type SketchClass = {
-  new (p5: P5, surface: P5Surface, sketchConstructorArgs: unknown): Sketch;
+  new (
+    p5: P5Canvas,
+    surface: P5Surface,
+    sketchConstructorArgs: unknown,
+  ): Sketch;
 };
 
 type ModdedP5 = Exclude<P5, "draw"> & { draw(...args: unknown[]): void };
+
+export interface P5Canvas extends p5InstanceExtensions {
+  wallWidth: number;
+  wallHeight: number;
+}
 
 // Sets up the sizes and scaling factors. The P5 library will take care of creating a canvas.
 // sketch is the actual p5.js code that will be executed.  sketch.setup() will be called at
@@ -76,13 +85,13 @@ export class P5Surface extends Surface {
     // p5 must be a P5.js instance.  new P5(...) below takes care of this.
     const scaffolding = (p5: ModdedP5) => {
       this.sketch = new providedSketchClass(
-        p5,
+        p5 as unknown as P5Canvas,
         this,
         sketchConstructorArgs,
       );
 
-      (p5 as unknown as { wallWidth: number }).wallWidth = wallWidth;
-      (p5 as unknown as { wallHeight: number }).wallHeight = wallHeight;
+      (p5 as unknown as P5Canvas).wallWidth = wallWidth;
+      (p5 as unknown as P5Canvas).wallHeight = wallHeight;
 
       p5.preload = () => {
         if (typeof (this.sketch!.preload) == "function") {
