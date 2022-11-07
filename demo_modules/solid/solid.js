@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Client } from '/client/modules/module_interface.ts';
-import {CanvasSurface} from '/client/surface/canvas_surface.ts';
+import { Client } from '../../client/modules/module_interface.ts';
+import {CanvasSurface} from '../../client/surface/canvas_surface.ts';
 
 export function load(wallGeometry) {
   class SolidColorClient extends Client {
@@ -28,7 +28,7 @@ export function load(wallGeometry) {
         this.surface.destroy();
       }
     }
-    async willBeShownSoon(container) {
+    willBeShownSoon(container) {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.canvas = this.surface.context;
     }
