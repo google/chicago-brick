@@ -132,6 +132,7 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
     ...payload: Exact<V, Parameters<EmittedEvents[K]>>
   ) {
     for (const websocket of this.clientSockets) {
+      // deno-lint-ignore no-explicit-any
       websocket.send(msg, ...payload as any);
     }
   }
@@ -169,6 +170,7 @@ export class ModuleWSS implements TypedWebsocketLike {
         const ws = payload.pop() as WS;
         const moduleWs = this.lookUpModuleWS(ws);
         payload.push(moduleWs);
+        // deno-lint-ignore no-explicit-any
         handler(...payload as any);
       },
     );
@@ -182,7 +184,9 @@ export class ModuleWSS implements TypedWebsocketLike {
   ) {
     // Send to all clients.
     this.wss.send(
+      // deno-lint-ignore no-explicit-any
       `${this.moduleId}:${msg}` as any,
+      // deno-lint-ignore no-explicit-any
       ...payload as any[],
     );
   }
