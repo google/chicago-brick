@@ -60,9 +60,6 @@ const playlist = await loadPlaylistFromFile(
   flags.module_duration || 0,
 );
 
-// Add websocket routes to the server.
-network.init();
-
 // Add module serving routes to the server.
 moduleServing.addRoutes(network.server);
 
