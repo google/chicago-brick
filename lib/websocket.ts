@@ -1,5 +1,6 @@
 import { EventEmitter, Handler } from "./event.ts";
 import { easyLog } from "./log.ts";
+import { delay } from "./promise.ts";
 
 const log = easyLog("wall:websocket");
 
@@ -59,7 +60,7 @@ export class WS extends EventEmitter implements TypedWebsocketLike {
           newWebSocket.onerror = async (err) => {
             log.error(err);
             // Hmm, need to wait a bit, then retry.
-            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+            await delay(backoffMs);
             backoffMs *= 2;
             backoffMs = Math.min(backoffMs, 5000);
             if (signal.aborted) {
