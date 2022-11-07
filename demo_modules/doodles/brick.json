@@ -1,0 +1,8 @@
+{
+  "name": "doodles",
+  "client_path": "./doodles.ts",
+  "credit": {
+    "title": "Google Doodles",
+    "author": "Kenzley Alphonse & Matt Handley"
+  }
+}
