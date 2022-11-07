@@ -5,8 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "test": "deno test lib/",
-    "jshint": "node_modules/eslint/bin/eslint.js .",
-    "lint": "node_modules/eslint/bin/eslint.js .",
+    "lint": "deno lint lib client server",
     "release": "node_modules/.bin/release-it -n"
   },
   "engines": {
