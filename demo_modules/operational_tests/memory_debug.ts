@@ -13,25 +13,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Client } from "/client/modules/module_interface.ts";
+import { Client } from "../../client/modules/module_interface.ts";
+import { ModuleWS } from "../../lib/websocket.ts";
 
-export function load(network) {
+export function load(network: ModuleWS) {
   // This is a no-op module that shows what is leaking in the framework when we
   // switch modules.
   class MemoryDebugClient extends Client {
+    thing = 0;
     constructor() {
       super();
       // TODO(applmak): Send something this message, maybe?
       const memoryDebugHandler = () => {
-        this.thing = (this.thing || 0) + 1;
+        this.thing = this.thing + 1;
       };
-      network.on('_memory_debug', memoryDebugHandler);
+      network.on("_memory_debug", memoryDebugHandler);
     }
 
-    async willBeShownSoon(container) {
-      container.style.backgroundColor = 'black';
+    willBeShownSoon(container: HTMLElement) {
+      container.style.backgroundColor = "black";
     }
   }
 
-  return {client: MemoryDebugClient};
+  return { client: MemoryDebugClient };
+}
+
+declare global {
+  interface EmittedEvents {
+    _memory_debug(): void;
+  }
 }

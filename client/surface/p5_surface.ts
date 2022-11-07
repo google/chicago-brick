@@ -137,3 +137,5 @@ export class P5Surface extends Surface {
     );
   }
 }
+
+export { P5 };

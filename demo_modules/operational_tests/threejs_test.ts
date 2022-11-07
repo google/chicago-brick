@@ -14,36 +14,38 @@ limitations under the License.
 ==============================================================================*/
 
 import * as Three from "https://esm.sh/three@0.145.0";
-import {ThreeJsSurface} from '../../client/surface/threejs_surface.ts';
-import { Client } from '../../client/modules/module_interface.ts'; 
+import { ThreeJsSurface } from "../../client/surface/threejs_surface.ts";
+import { Client } from "../../client/modules/module_interface.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
 
-export function load(wallGeometry) {
+export function load(wallGeometry: Polygon) {
   class ThreeJsTestClient extends Client {
+    cube!: Three.Mesh<Three.BoxGeometry, Three.MeshBasicMaterial>;
     finishFadeOut() {
       if (this.surface) {
         this.surface.destroy();
       }
     }
 
-    async willBeShownSoon(container, deadline) {
-      this.startTime = deadline;
-      this.surface = new ThreeJsSurface(container, wallGeometry);
+    willBeShownSoon(container: HTMLElement) {
+      const surface = new ThreeJsSurface(container, wallGeometry, {});
+      this.surface = surface;
 
-      var geometry = new Three.BoxGeometry(3, 3, 3);
-      var material = new Three.MeshBasicMaterial({ color: 0x00ff00 });
+      const geometry = new Three.BoxGeometry(3, 3, 3);
+      const material = new Three.MeshBasicMaterial({ color: 0x00ff00 });
       this.cube = new Three.Mesh(geometry, material);
-      this.surface.scene.add(this.cube);
+      surface.scene.add(this.cube);
 
-      this.surface.camera.position.set(0, 0, 5);
-      this.surface.camera.updateProjectionMatrix();
+      surface.camera.position.set(0, 0, 5);
+      surface.camera.updateProjectionMatrix();
     }
 
-    draw(time) {
+    draw(time: number) {
       this.cube.rotation.x = time / 1000;
       this.cube.rotation.y = time * 1.1 / 1000;
-      this.surface.render();
+      (this.surface as ThreeJsSurface).render();
     }
   }
 
-  return {client: ThreeJsTestClient};
+  return { client: ThreeJsTestClient };
 }
