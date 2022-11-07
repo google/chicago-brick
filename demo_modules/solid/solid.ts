@@ -13,14 +13,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import { Client } from '../../client/modules/module_interface.ts';
-import {CanvasSurface} from '../../client/surface/canvas_surface.ts';
+import { Client } from "../../client/modules/module_interface.ts";
+import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
 
-export function load(wallGeometry) {
+interface Config {
+  color: string;
+}
+
+export function load(wallGeometry: Polygon) {
   class SolidColorClient extends Client {
-    constructor(config) {
+    color: string;
+    canvas!: CanvasRenderingContext2D;
+    constructor(config: Config) {
       super();
-      this.color = config.color || 'red';
+      this.color = config.color || "red";
     }
 
     finishFadeOut() {
@@ -28,15 +35,21 @@ export function load(wallGeometry) {
         this.surface.destroy();
       }
     }
-    willBeShownSoon(container) {
-      this.surface = new CanvasSurface(container, wallGeometry);
-      this.canvas = this.surface.context;
+    willBeShownSoon(container: HTMLElement) {
+      const surface = new CanvasSurface(container, wallGeometry);
+      this.surface = surface;
+      this.canvas = surface.context;
     }
     draw() {
       this.canvas.fillStyle = this.color;
-      this.canvas.fillRect(0, 0, this.surface.virtualRect.w, this.surface.virtualRect.h);
+      this.canvas.fillRect(
+        0,
+        0,
+        this.surface!.virtualRect.w,
+        this.surface!.virtualRect.h,
+      );
     }
   }
 
-  return {client: SolidColorClient};
+  return { client: SolidColorClient };
 }
