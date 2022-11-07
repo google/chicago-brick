@@ -1,0 +1,8 @@
+{
+  "name": "cubes",
+  "client_path": "./rotating_cubes.ts",
+  "credit": {
+    "title": "Cubes",
+    "author": "Matt Handley"
+  }
+}
