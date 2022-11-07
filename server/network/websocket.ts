@@ -69,7 +69,6 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
       const ws = WS.serverWrapper(websocket);
       this.clientSockets.add(ws);
       for (const [msg, fns] of this.clientMessageHandlers) {
-        console.log("adding dynamic handler for", msg);
         for (const fn of fns) {
           ws.on(msg as keyof EmittedEvents, fn);
         }
@@ -86,7 +85,8 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
     msg: K,
     fn: HandlerWithSocket<EmittedEvents[K]>,
   ) {
-    console.log(
+    log.debugAt(
+      2,
       "registering dynamic handler for",
       msg,
       "on",

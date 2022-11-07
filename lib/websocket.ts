@@ -121,7 +121,8 @@ export class WS extends EventEmitter implements TypedWebsocketLike {
       const { data } = message;
       try {
         const [type, payload] = parseMessage(data);
-        console.log(
+        log.debugAt(
+          2,
           `For message type: ${type} there are ${this.handlers.get(type)
             ?.length} handlers`,
         );
