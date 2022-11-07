@@ -13,37 +13,44 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {GOOGLE_COLORS} from './colors.js';
-import {Server} from '../../server/modules/module_interface.ts';
+import { GOOGLE_COLORS, Shape } from "./colors.ts";
+import { Server } from "../../server/modules/module_interface.ts";
+import { ModuleWSS } from "../../server/network/websocket.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
 
-export function load(network, wallGeometry) {
+// Returns true if circles defined by a and b overlap.
+function checkOverlap(
+  ax: number,
+  ay: number,
+  ar: number,
+  bx: number,
+  by: number,
+  br: number,
+): boolean {
+  const x = ax - bx;
+  const y = ay - by;
+  const dist = Math.sqrt(x * x + y * y);
+  return dist < ar + br;
+}
+
+export function load(network: ModuleWSS, wallGeometry: Polygon) {
   // Set to true to enable console spam!
   const VERBOSE = false;
 
   // Number of shapes to create each time we try to create shapes.
   const NUM_SHAPES = 40;
 
-  // Returns true if circles defined by a and b overlap.
-  function checkOverlap(ax, ay, ar, bx, by, br) {
-    const x = ax - bx;
-    const y = ay - by;
-    const dist = Math.sqrt(x*x + y*y);
-    return dist < ar + br;
-  }
-
   class ChaosServer extends Server {
-    willBeShownSoon() {
-      // The time we last tried to place a new shape.
-      this.oldtime = -Infinity;
-      // The time we last sent information to the clients about the shapes.
-      this.oldsend = -Infinity;
-      // The shape data.
-      this.shapes = [];
-      // A counter indicating how many times we've added shapes.
-      this.build = 0;
-    }
+    // The time we last tried to place a new shape.
+    oldtime = -Infinity;
+    // The time we last sent information to the clients about the shapes.
+    oldsend = -Infinity;
+    // The shape data.
+    shapes: Shape[] = [];
+    // A counter indicating how many times we've added shapes.
+    build = 0;
 
-    tick(time) {
+    tick(time: number) {
       if (time > this.oldtime + (1000 * 60)) {
         this.oldtime = time;
         // Reset shape data (effectively blanking the screen).
@@ -56,18 +63,21 @@ export function load(network, wallGeometry) {
         // TODO(applmak): This has the potential to run forever, and be the cause of the issues with
         // this module. Rather than running forever, switch it to try no more than 1000 times or
         // some such.
-        for (let shapeCount = 0; shapeCount < NUM_SHAPES; ) {
+        for (let shapeCount = 0; shapeCount < NUM_SHAPES;) {
           const posx = wallGeometry.extents.w * Math.random();
           const posy = wallGeometry.extents.h * Math.random();
-          let size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) * makeRadius;
+          let size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) *
+            makeRadius;
 
           // Presume that this is going to fit just fine, then try all the other shapes we made in
           // an attempt to find any overlap.
           let fit = true;
           for (let otherShape = 0; otherShape < shapeCount; ++otherShape) {
-            let shape = this.shapes[otherShape];
+            const shape = this.shapes[otherShape];
             // Check to ensure that our new shape isn't too close to any shape we made so far.
-            if (checkOverlap(posx, posy, size, shape.posx, shape.posy, shape.size)) {
+            if (
+              checkOverlap(posx, posy, size, shape.posx, shape.posy, shape.size)
+            ) {
               // If it is, we decrease our size, abort the overlap check, and try again.
               fit = false;
               makeRadius *= 0.99;
@@ -82,34 +92,46 @@ export function load(network, wallGeometry) {
             for (let count = 0; fit && count < 30; ++count) {
               if (VERBOSE) console.log("bigger " + count);
               makeRadius *= 1.05;
-              size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) * makeRadius;
+              size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) *
+                makeRadius;
               // TODO(applmak): This check against existing shapes is similar to the other one.
               // Extract it as a function.
               for (let otherShape = 0; otherShape < shapeCount; ++otherShape) {
-                let shape = this.shapes[otherShape];
-                if (checkOverlap(posx, posy, size, shape.posx, shape.posy, shape.size)) {
+                const shape = this.shapes[otherShape];
+                if (
+                  checkOverlap(
+                    posx,
+                    posy,
+                    size,
+                    shape.posx,
+                    shape.posy,
+                    shape.size,
+                  )
+                ) {
                   fit = false;
                   makeRadius /= 1.05;
-                  size = Math.min(wallGeometry.extents.w, wallGeometry.extents.h) * makeRadius;
+                  size =
+                    Math.min(wallGeometry.extents.w, wallGeometry.extents.h) *
+                    makeRadius;
                 }
               }
             }
 
             if (VERBOSE) console.log("Adding " + shapeCount);
-            var shape = {posx, posy, size};
-            this.shapes[shapeCount] = shape;
+            const shape = { posx, posy, size };
+            this.shapes[shapeCount] = shape as Shape;
             shapeCount++;
           }
         }
         // We placed NUM_SHAPES shapes!
         for (let shapeCount = 0; shapeCount < NUM_SHAPES; ++shapeCount) {
-          const myColorIndex = Math.floor((Math.random() * GOOGLE_COLORS.length));
+          const myColorIndex = Math.floor(Math.random() * GOOGLE_COLORS.length);
           const alpha = Math.random() * 360.0; // degrees of random rotation to add
           // Pick a number of points for this shape. 4 is a boring number of points (solid square), so
           // if we pick 4, try again.
           let points = 3;
           do {
-            points = 3 + Math.floor((Math.random() * 10));
+            points = 3 + Math.floor(Math.random() * 10);
           } while (points == 4);
 
           const shape = this.shapes[shapeCount];
@@ -123,13 +145,13 @@ export function load(network, wallGeometry) {
       // Send information about the layout of the wall to the clients.
       if (time > this.oldsend + (1000)) {
         this.oldsend = time;
-        network.send('chaos', {
+        network.send("chaos", {
           time: this.build,
-          shapes : this.shapes,
+          shapes: this.shapes,
         });
       }
     }
   }
 
-  return {server: ChaosServer};
+  return { server: ChaosServer };
 }

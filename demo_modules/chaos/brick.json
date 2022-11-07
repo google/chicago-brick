@@ -1,7 +1,7 @@
 {
   "name": "chaos",
-  "client_path": "./chaos_client.js",
-  "server_path": "./chaos_server.js",
+  "client_path": "./chaos_client.ts",
+  "server_path": "./chaos_server.ts",
   "credit": {
     "title": "Chaos Theory",
     "author": "Matt Cruikshank"
