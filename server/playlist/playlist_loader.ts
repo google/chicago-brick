@@ -77,9 +77,24 @@ export async function loadAllBrickJson(moduleDirs: string[]) {
  */
 export async function loadPlaylistFromFile(
   path: string,
+  module: string[],
   overrideLayoutDuration?: number,
   overrideModuleDuration?: number,
 ): Promise<Layout[]> {
+  if (module.length) {
+    for (const m of module) {
+      if (!library.has(m)) {
+        throw new Error(`Unknown module: ${m}`);
+      }
+    }
+    return [
+      new Layout({
+        duration: overrideLayoutDuration || 600,
+        moduleDuration: overrideModuleDuration || 30,
+        modules: module,
+      }),
+    ];
+  }
   const contents = await readTextFile<PlaylistJson>(path);
 
   let { collections, playlist, modules } = contents;

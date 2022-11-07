@@ -26,7 +26,7 @@ fi
 # Run brick:
 deno run \
   $INSPECT \
-  --allow-read --allow-net --allow-env --allow-write \
+  --allow-read --allow-net --allow-env --allow-write --allow-run \
   server/server.ts \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \

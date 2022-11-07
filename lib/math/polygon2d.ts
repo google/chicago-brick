@@ -60,23 +60,27 @@ export class Polygon {
       points.pop();
     }
     this.points = points;
-    this.extents = points.reduce<Rectangle>((agg, p) => {
-      if (p.x < agg.x) {
-        agg.w += agg.x - p.x;
-        agg.x = p.x;
-      }
-      if (p.y < agg.y) {
-        agg.h += agg.y - p.y;
-        agg.y = p.y;
-      }
-      if (p.x > agg.x + agg.w) {
-        agg.w = p.x - agg.x;
-      }
-      if (p.y > agg.y + agg.h) {
-        agg.h = p.y - agg.y;
-      }
-      return agg;
-    }, new Rectangle(points[0].x, points[0].y, 0, 0));
+    if (points.length) {
+      this.extents = points.reduce<Rectangle>((agg, p) => {
+        if (p.x < agg.x) {
+          agg.w += agg.x - p.x;
+          agg.x = p.x;
+        }
+        if (p.y < agg.y) {
+          agg.h += agg.y - p.y;
+          agg.y = p.y;
+        }
+        if (p.x > agg.x + agg.w) {
+          agg.w = p.x - agg.x;
+        }
+        if (p.y > agg.y + agg.h) {
+          agg.h = p.y - agg.y;
+        }
+        return agg;
+      }, new Rectangle(points[0].x, points[0].y, 0, 0));
+    } else {
+      this.extents = Rectangle.centeredAt(0, 0, 0, 0);
+    }
   }
   scale(xscale: number, yscale: number): Polygon {
     return new Polygon(this.points.map((pt) => ({

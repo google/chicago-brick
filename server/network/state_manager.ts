@@ -44,7 +44,7 @@ export function forModule(id: string) {
     },
     close() {
       delete stateMap[id];
-      wss.sendToAllClients("state-closed", id);
+      wss.send("state-closed", id);
     },
   };
 }
@@ -70,5 +70,5 @@ export function send() {
     justSentAnEmptyState = false;
   }
 
-  wss.sendToAllClients("state", stateToSend);
+  wss.send("state", stateToSend);
 }

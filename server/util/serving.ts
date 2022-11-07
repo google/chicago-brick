@@ -6,12 +6,82 @@ import { emit } from "https://deno.land/x/emit@0.9.0/mod.ts";
 
 const log = easyLog("wall:serving");
 
+// After we transpile files, keep them around in memory for about 5 seconds.
+class ExpiringCache extends Map<string, Promise<string>> {
+  readonly expiryTimes: Array<{ time: number; key: string }> = [];
+  timer = 0;
+  set(k: string, v: Promise<string>) {
+    if (!this.timer) {
+      this.timer = setInterval(() => {
+        this.expire(performance.now() - 5000);
+      });
+    }
+    super.set(k, v);
+    this.update(k);
+    return this;
+  }
+  get(k: string): Promise<string> | undefined {
+    this.update(k);
+    return super.get(k);
+  }
+  update(k: string) {
+    const i = this.expiryTimes.findIndex(({ key }) => k == key);
+    let pair;
+    if (i == -1) {
+      // No existing!
+      pair = { key: k, time: 0 };
+    } else {
+      pair = this.expiryTimes[i];
+      this.expiryTimes.splice(i, 1);
+    }
+    pair.time = performance.now();
+    this.expiryTimes.push(pair);
+  }
+  delete(k: string): boolean {
+    const i = this.expiryTimes.findIndex(({ key }) => k == key);
+    if (i === -1) {
+      // Don't exist.
+      return false;
+    }
+    this.expiryTimes.splice(i, 1);
+    return super.delete(k);
+  }
+  expire(oldestAllowed: number) {
+    const deleteMe = new Set<string>();
+    for (const { key, time } of this.expiryTimes) {
+      if (time < oldestAllowed) {
+        deleteMe.add(key);
+      }
+    }
+    for (const k of deleteMe) {
+      this.delete(k);
+    }
+  }
+}
+
+const fileCache = new ExpiringCache();
+
 async function transpile(tsPath: string): Promise<string> {
   const now = performance.now();
   const url = new URL(tsPath, import.meta.url);
-  const result = await emit(url);
-  log.debugAt(1, `transpiled ${tsPath} in ${performance.now() - now} ms`);
-  return result[url.href];
+  const inflightFile = fileCache.get(url.href);
+  let result;
+  if (inflightFile) {
+    result = await inflightFile;
+  } else {
+    const load = async (url: URL) => {
+      const sources = await emit(url);
+      for (const [file, source] of Object.entries(sources)) {
+        fileCache.set(file, Promise.resolve(source));
+      }
+      return sources[url.href];
+    };
+    const inflightEmit = load(url);
+    fileCache.set(url.href, inflightEmit);
+    result = await inflightEmit;
+    log.debugAt(1, `transpiled ${tsPath} in ${performance.now() - now} ms`);
+  }
+  return result;
 }
 
 export function serveFile(filePath: string): Handler {
@@ -33,7 +103,6 @@ export function serveDirectory(dir: string): Handler {
     const filePath = match.pathname.groups.path || "index.html";
     const fullPath = path.join(absDir, filePath);
     const type = mime.getType(path.extname(filePath)) || "text/plain";
-    log(req.url, fullPath, type);
     try {
       if (filePath.endsWith(".ts")) {
         const jsCode = await transpile(fullPath);
@@ -122,11 +191,14 @@ export class DispatchServer {
       const match = p.exec(url);
       if (match) {
         // We got one!
+        const startHandler = performance.now();
         try {
           return await handler(req, match);
         } catch (e) {
           console.error(e);
           return error(e);
+        } finally {
+          log(`${url}: ${(performance.now() - startHandler).toFixed(0)}ms`);
         }
       }
     }

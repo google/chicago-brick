@@ -21,7 +21,7 @@ import { Surface } from "./surface.ts";
 export class CanvasSurface extends Surface {
   readonly canvas: HTMLCanvasElement;
   readonly context: CanvasRenderingContext2D;
-  constructor(container: Element, wallGeometry: Polygon) {
+  constructor(container: HTMLElement, wallGeometry: Polygon) {
     super(container, wallGeometry);
 
     this.canvas = document.createElement("canvas");

@@ -29,7 +29,7 @@ import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../client/modules/module_interface.ts";
 import { LoadModuleEvent } from "../../server/modules/module.ts";
-import { WS } from "../../lib/websocket.ts";
+import { ModuleWS } from "../../lib/websocket.ts";
 
 function createNewContainer(name: string) {
   const newContainer = document.createElement("div");
@@ -69,7 +69,7 @@ export const FadeTransition = {
 export class ClientModule {
   container: HTMLElement | null;
   instance: Client | null;
-  network: WS | null;
+  network: ModuleWS | null;
   stateManager: { open: any; close(): void } | null;
   constructor(
     readonly name: string,
@@ -164,7 +164,7 @@ export class ClientModule {
     }
 
     const INSTANTIATION_ID = `${this.geo.extents.serialize()}-${this.deadline}`;
-    this.network = network.socket.createRoom(INSTANTIATION_ID);
+    this.network = new ModuleWS(network.socket, INSTANTIATION_ID);
     this.stateManager = stateManager.forModule(
       INSTANTIATION_ID,
     );

@@ -44,7 +44,7 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
-STANDARD_FLAGS="--enable-gpu-rasterization --ignore-gpu-blacklist --no-default-browser-check --disable-translate --no-first-run"
+STANDARD_FLAGS="--ignore-gpu-blacklist --no-default-browser-check --disable-translate --no-first-run"
 if [[ ${verbose} == 1 ]]
 then
   STANDARD_FLAGS="${STANDARD_FLAGS} --show-fps-counter"

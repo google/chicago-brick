@@ -82,7 +82,7 @@ export function load(debug, network) {
         this.clients[key] = data;
 
         // Forward code to clients.
-        network.emit(`code(${key})`, data);
+        network.send(`code(${key})`, data);
       });
 
       // Handle connections from clients.

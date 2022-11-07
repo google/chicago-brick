@@ -55,12 +55,10 @@ await loadAllBrickJson(flags.module_dir);
 // Load the playlist. If the playlist is malformed, we throw and abort.
 const playlist = await loadPlaylistFromFile(
   flags.playlist,
+  flags.module,
   flags.layout_duration || 0,
   flags.module_duration || 0,
 );
-
-// Add websocket routes to the server.
-network.init();
 
 // Add module serving routes to the server.
 moduleServing.addRoutes(network.server);

@@ -1,8 +1,10 @@
+export interface SizeableValue {
+  readonly size: number;
+}
+
 // A cache that knows the size of its values and tries to limit the stuff it has
 // a pointer to.
-
-export class SizeLimitedCache<K, V extends ArrayLike<unknown>>
-  extends Map<K, V> {
+export class SizeLimitedCache<K, V extends SizeableValue> extends Map<K, V> {
   readonly maxSize: number;
   currentSize: number;
   constructor(size: number) {
@@ -10,16 +12,16 @@ export class SizeLimitedCache<K, V extends ArrayLike<unknown>>
     this.maxSize = size;
     this.currentSize = 0;
   }
-  set(key: K, buffer: V) {
+  set(key: K, value: V) {
     this.delete(key);
-    this.currentSize += buffer.length;
+    this.currentSize += value.size;
     this.evict();
-    return super.set(key, buffer);
+    return super.set(key, value);
   }
   delete(key: K) {
-    const buffer = this.get(key);
-    if (buffer) {
-      this.currentSize -= buffer.length;
+    const value = this.get(key);
+    if (value) {
+      this.currentSize -= value.size;
       return super.delete(key);
     }
     return false;

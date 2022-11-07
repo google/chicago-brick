@@ -27,10 +27,10 @@ import { Server } from "../../server/modules/module_interface.ts";
 import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.ts";
 import inject from "../../lib/inject.ts";
-import { WS } from "../../lib/websocket.ts";
+import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import { CreditJson } from "../../client/title_card.ts";
-import { WSSWrapper } from "../network/websocket.ts";
+import { ModuleWSS } from "../network/websocket.ts";
 
 const log = easyLog("wall:module");
 
@@ -57,7 +57,7 @@ export class RunningModule {
   readonly loaded: Promise<void>;
   valid = false;
 
-  network?: WSSWrapper;
+  network?: ModuleWSS;
   stateManager?: PerModuleDep;
 
   instance?: Server;
@@ -129,7 +129,7 @@ export class RunningModule {
       // Only instantiate support objects for valid module defs.
       const INSTANTIATION_ID =
         `${getGeo().extents.serialize()}-${this.deadline}`;
-      this.network = network.wss.createRoom(INSTANTIATION_ID);
+      this.network = new ModuleWSS(network.wss, INSTANTIATION_ID);
       this.stateManager = stateManager.forModule(
         INSTANTIATION_ID,
       );
@@ -154,7 +154,7 @@ export class RunningModule {
     }
   }
 
-  tellClientToPlay(socket: WS) {
+  tellClientToPlay(socket: TypedWebsocketLike) {
     const config: LoadModuleEvent = {
       module: {
         name: this.moduleDef.name,
@@ -207,7 +207,7 @@ export class RunningModule {
 
   async willBeShownSoon() {
     if (this.instance) {
-      await this.instance.willBeShownSoon();
+      await this.instance.willBeShownSoon(this.deadline);
     }
   }
 }

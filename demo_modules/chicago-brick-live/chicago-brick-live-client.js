@@ -189,7 +189,7 @@ export function load(debug, network, wallGeometry) {
       network.on(this.newCodeEvent, this.setClientCode.bind(this));
 
       // Ask for some code to run.
-      network.emit('requestCode', { client: this.client });
+      network.send('requestCode', { client: this.client });
     }
 
     extendCanvas(canvas) {

@@ -1,17 +1,17 @@
 [
   {
     "name": "registration",
-    "client_path": "./registration.js",
+    "client_path": "./registration.ts",
     "testonly": true
   },
   {
     "name": "p5_test",
-    "client_path": "./p5_test.js",
+    "client_path": "./p5_test.ts",
     "testonly": true
   },
   {
     "name": "memory-debug",
-    "client_path": "./memory_debug.js",
+    "client_path": "./memory_debug.ts",
     "testonly": true,
     "credit": {
       "title": "Super Long Title That Will Totally Cause Wrapping",
@@ -20,12 +20,12 @@
   },
   {
     "name": "genlock-test",
-    "client_path": "./genlock_test.js",
+    "client_path": "./genlock_test.ts",
     "testonly": true
   },
   {
     "name": "threejs",
-    "client_path": "./threejs_test.js",
+    "client_path": "./threejs_test.ts",
     "testonly": true
   }
 ]

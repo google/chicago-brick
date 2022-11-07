@@ -1,5 +1,6 @@
 import { EventEmitter, Handler } from "./event.ts";
 import { easyLog } from "./log.ts";
+import { delay } from "./promise.ts";
 
 const log = easyLog("wall:websocket");
 
@@ -14,16 +15,38 @@ function serializeMessage(type: string, payload: unknown[]): string {
 
 type RetryStrategy = (signal: AbortSignal) => Promise<WebSocket>;
 
-type NeverHandler = (...args: never[]) => void;
-type Events = Record<string, NeverHandler>;
-
 export type Exact<T, Goal> = T extends Goal
   ? Exclude<keyof T, keyof Goal> extends never ? T : never
   : never;
 
-export class WS extends EventEmitter {
+export interface TypedWebsocketLike {
+  on<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ): void;
+  once<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ): void;
+  send<K extends keyof EmittedEvents, V>(
+    msg: K,
+    ...payload: Parameters<EmittedEvents[K]>
+  ): void;
+  close(): void;
+}
+
+type ParametersWithSocket<T extends (...args: unknown[]) => void> = [
+  ...Parameters<T>,
+  TypedWebsocketLike,
+];
+
+export type HandlerWithSocket<T extends (...args: any[]) => void> = (
+  ...args: ParametersWithSocket<T>
+) => void;
+
+export class WS extends EventEmitter implements TypedWebsocketLike {
   static serverWrapper(websocket: WebSocket) {
-    return new WS(websocket, null, "");
+    return new WS(websocket, null);
   }
   static clientWrapper(href: string) {
     return new WS(new WebSocket(href), async (signal: AbortSignal) => {
@@ -37,7 +60,7 @@ export class WS extends EventEmitter {
           newWebSocket.onerror = async (err) => {
             log.error(err);
             // Hmm, need to wait a bit, then retry.
-            await new Promise((resolve) => setTimeout(resolve, backoffMs));
+            await delay(backoffMs);
             backoffMs *= 2;
             backoffMs = Math.min(backoffMs, 5000);
             if (signal.aborted) {
@@ -48,7 +71,7 @@ export class WS extends EventEmitter {
         });
       };
       return await tryReconnect();
-    }, "");
+    });
   }
 
   websocket!: WebSocket;
@@ -59,7 +82,6 @@ export class WS extends EventEmitter {
   constructor(
     websocket: WebSocket,
     readonly retryStrategy: RetryStrategy | null,
-    readonly room: string,
   ) {
     super();
     this._bindToWebsocket(websocket);
@@ -71,11 +93,12 @@ export class WS extends EventEmitter {
       this.websocket.addEventListener("open", () => {
         this.sendBufferedMessages();
         this.isOpen = true;
-        this.emit("connect", this);
+        this.emit("connect");
       });
       this.isOpen = false;
     } else {
       this.isOpen = true;
+      this.emit("connect");
     }
     this.websocket.addEventListener("error", (err) => {
       log.error(err);
@@ -92,17 +115,20 @@ export class WS extends EventEmitter {
         const newWebsocket = await this.retryStrategy(
           this.stopRetryingSignal.signal,
         );
-        // This won't fire the 'connect' event, because it's already connected.
         this._bindToWebsocket(newWebsocket);
-        this.emit("connect", this);
       }
     });
     this.websocket.addEventListener("message", (message) => {
       const { data } = message;
       try {
         const [type, payload] = parseMessage(data);
+        log.debugAt(
+          2,
+          `For message type: ${type} there are ${this.handlers.get(type)
+            ?.length} handlers`,
+        );
         // Use the event emitter because type is already prefixed.
-        super.emit(type, ...payload);
+        super.emit(type, ...payload, this);
       } catch (e) {
         log.error("Failed to parse message:", e);
         return;
@@ -120,35 +146,33 @@ export class WS extends EventEmitter {
     }
     this.buffer.length = 0;
   }
+  on<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ) {
+    super.on(msg, handler as Handler);
+  }
+  once<K extends keyof EmittedEvents, V>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ) {
+    super.once(msg, handler as Handler);
+  }
+  emit<K extends keyof EmittedEvents, V>(
+    msg: K,
+    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  ) {
+    super.emit(msg, ...payload, this);
+  }
   send<K extends keyof EmittedEvents, V>(
     msg: K,
     ...payload: Exact<V, Parameters<EmittedEvents[K]>>
   ) {
-    this.sendWithRoom(this.room, msg, ...payload);
-  }
-  sendWithRoom<K extends keyof EmittedEvents>(
-    room: string,
-    msg: K,
-    ...payload: Parameters<EmittedEvents[K]>
-  ) {
-    const typeWithRoom = `${room || "global"}:${msg}`;
     if (this.isOpen) {
-      this.websocket.send(serializeMessage(typeWithRoom, payload));
+      this.websocket.send(serializeMessage(msg, payload));
     } else {
-      this.buffer.push(serializeMessage(typeWithRoom, payload));
+      this.buffer.push(serializeMessage(msg, payload));
     }
-  }
-  on<K extends keyof EmittedEvents>(type: K, fn: EmittedEvents[K]) {
-    const typeWithRoom = `${this.room || "global"}:${type}`;
-    super.on(typeWithRoom, fn as Handler);
-  }
-  once<K extends keyof EmittedEvents>(type: K, fn: EmittedEvents[K]) {
-    const typeWithRoom = `${this.room || "global"}:${type}`;
-    super.once(typeWithRoom, fn as Handler);
-  }
-  emit(type: string, ...payload: unknown[]): void {
-    const typeWithRoom = `${this.room || "global"}:${type}`;
-    super.emit(typeWithRoom, ...payload);
   }
   close() {
     this.isOpen = false;
@@ -157,17 +181,59 @@ export class WS extends EventEmitter {
     }
     this.handlers.clear();
   }
-  /**
-   * Returns a new websocket with a different 'room' that has an
-   * entirely different set of handlers.
-   */
-  createRoom(room: string): WS {
-    return new WS(this.websocket, this.retryStrategy, room);
+}
+
+export class ModuleWS implements TypedWebsocketLike {
+  readonly registeredMsgTypes = new Set<string>();
+  constructor(readonly ws: WS, readonly moduleId: string) {}
+  on<K extends keyof EmittedEvents>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ) {
+    const type = `${this.moduleId}:${msg}`;
+    this.registeredMsgTypes.add(type);
+    this.ws.on(
+      type as keyof EmittedEvents,
+      (...payload) => {
+        // Replace the non-module socket at the end of this list (added by WS emit) with this.
+        payload.pop();
+        payload.push(this);
+        handler(...payload as any);
+      },
+    );
+  }
+  once<K extends keyof EmittedEvents>(
+    msg: K,
+    handler: HandlerWithSocket<EmittedEvents[K]>,
+  ) {
+    const type = `${this.moduleId}:${msg}`;
+    this.registeredMsgTypes.add(type);
+    this.ws.once(
+      type as keyof EmittedEvents,
+      (...payload) => {
+        payload.pop();
+        payload.push(this);
+        handler(...payload as any);
+      },
+    );
+  }
+  send<K extends keyof EmittedEvents, V>(
+    msg: K,
+    ...payload: Exact<V, Parameters<EmittedEvents[K]>>
+  ): void {
+    const type = `${this.moduleId}:${msg}`;
+    this.ws.send(type as any, ...payload as any[]);
+  }
+  close(): void {
+    for (const type of this.registeredMsgTypes) {
+      this.ws.remoteAllListeners(type);
+    }
   }
 }
 
 declare global {
-  interface EmittedEvents extends Events {
-    connect(socket: WS): void;
+  interface EmittedEvents {
+    connect(): void;
+    disconnect(code: number, reason: string): void;
   }
 }

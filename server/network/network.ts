@@ -31,7 +31,7 @@ import * as monitor from "../monitoring/monitor.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { WSS } from "./websocket.ts";
-import { WS } from "../../lib/websocket.ts";
+import { TypedWebsocketLike, WS } from "../../lib/websocket.ts";
 import { DispatchServer, DispatchServerOptions } from "../util/serving.ts";
 import { flags } from "../flags.ts";
 
@@ -46,7 +46,7 @@ export class ClientInfo {
   constructor(
     readonly offset: Point,
     readonly rect: Rectangle,
-    readonly socket: WS,
+    readonly socket: TypedWebsocketLike,
   ) {
   }
 }
@@ -70,75 +70,79 @@ if (flags.https_cert) {
   };
 }
 export const server = new DispatchServer(options);
-export const wss = new WSS({ server });
+export const wss = new WSS({ server }, clients);
 
 /**
  * Main entry point for networking.
- * Initializes the networking layer, given an httpserver instance.
  */
-export function init() {
-  wss.on("connection", (socket: WS) => {
-    const clientId = nextClientId++;
-    // When the client boots, it sends a start message that includes the rect
-    // of the client. We listen for that message and register that client info.
-    socket.on("client-start", (config: SerializedClientConfig) => {
-      const clientRect = Rectangle.deserialize(config.rect);
-      if (!clientRect) {
-        log.error(`Bad client configuration: `, config);
-        // Close the connection with this client.
-        socket.close();
-        return;
-      }
-      const client = new ClientInfo(config.offset, clientRect, socket);
+wss.on("connection", (socket: TypedWebsocketLike) => {
+  const clientId = nextClientId++;
+  // When the client boots, it sends a start message that includes the rect
+  // of the client. We listen for that message and register that client info.
+  socket.on("client-start", (config: SerializedClientConfig) => {
+    const clientRect = Rectangle.deserialize(config.rect);
+    if (!clientRect) {
+      log.error(`Bad client configuration: `, config);
+      // Close the connection with this client.
+      socket.close();
+      return;
+    }
+    const client = new ClientInfo(config.offset, clientRect, socket);
+    if (monitor.isEnabled()) {
+      monitor.update({
+        layout: {
+          time: time.now(),
+          event: `newClient: ${client.rect.serialize()}`,
+        },
+      });
+    }
+    clients[clientId] = client;
+    log(`New client: ${client.rect.serialize()}`);
+    (socket as WS).emit("new-client", client);
+    // Tell the client the current time.
+    socket.send("time", time.now());
+  });
+
+  // When the client disconnects, we tell our listeners that we lost the client.
+  socket.once("disconnect", () => {
+    if (clientId in clients) {
+      const { rect } = clients[clientId];
       if (monitor.isEnabled()) {
         monitor.update({
           layout: {
             time: time.now(),
-            event: `newClient: ${client.rect.serialize()}`,
+            event: `dropClient: ${rect.serialize()}`,
           },
         });
       }
-      clients[clientId] = client;
-      log(`New client: ${client.rect.serialize()}`);
-      socket.emit("new-client", client);
-      // Tell the client the current time.
-      socket.send("time", time.now());
-    });
-
-    // When the client disconnects, we tell our listeners that we lost the client.
-    socket.once("disconnect", () => {
-      if (clientId in clients) {
-        const { rect } = clients[clientId];
-        if (monitor.isEnabled()) {
-          monitor.update({
-            layout: {
-              time: time.now(),
-              event: `dropClient: ${rect.serialize()}`,
-            },
-          });
-        }
-        log(`Lost client: ${rect.serialize()}`);
-      } else {
-        if (monitor.isEnabled()) {
-          monitor.update({
-            layout: {
-              time: time.now(),
-              event: `dropClient: id ${clientId}`,
-            },
-          });
-        }
+      log(`Lost client: ${rect.serialize()}`);
+    } else {
+      if (monitor.isEnabled()) {
+        monitor.update({
+          layout: {
+            time: time.now(),
+            event: `dropClient: id ${clientId}`,
+          },
+        });
       }
-      delete clients[clientId];
-    });
-
-    // If the client notices an exception, it can send us that information to
-    // the server via this channel. The framework might choose to respond to
-    // this by, say, moving on to the next module.
-    // socket.on("record-error", ...);
+    }
+    delete clients[clientId];
   });
 
-  // Set up a timer to send the current time to clients every 10 seconds.
-  setInterval(() => {
-    wss.sendToAllClients("time", time.now());
-  }, 10000);
+  // If the client notices an exception, it can send us that information to
+  // the server via this channel. The framework might choose to respond to
+  // this by, say, moving on to the next module.
+  // socket.on("record-error", ...);
+});
+
+// Set up a timer to send the current time to clients every 10 seconds.
+setInterval(() => {
+  wss.send("time", time.now());
+}, 10000);
+
+declare global {
+  interface EmittedEvents {
+    connection(): void;
+    "new-client": (client: ClientInfo) => void;
+  }
 }
