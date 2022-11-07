@@ -25,6 +25,9 @@ import { FullscreenDisplayConfig } from "./interfaces.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { LoadLocalClientStrategy } from "./load_local_client.ts";
+import { easyLog } from "../../lib/log.ts";
+
+const log = easyLog("slideshow:fullscreen");
 
 function makeInfoElement() {
   const info = document.createElement("div");
@@ -63,6 +66,7 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
     this.localLoadStrategy = new LoadLocalClientStrategy({}, surface, network);
     this.surface.container.appendChild(this.infoEl);
     network.on("slideshow:fullscreen:content", async (contentId, deadline) => {
+      log(`Loading ${contentId.id}`);
       this.infoEl.style.color = "white";
       this.infoEl.textContent = `Loading ${contentId.id}...`;
 

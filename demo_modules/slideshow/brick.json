@@ -126,7 +126,8 @@
       },
       "display": {
         "fullscreen": {
-          "split": true
+          "split": true,
+          "period": 5000
         }
       }
     }

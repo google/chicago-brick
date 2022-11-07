@@ -37,7 +37,6 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
   }
   loadContent(contentId: ContentId): Promise<Content> {
     // The display strategy has requested some content for the provided rectangle (and screen).
-
     // Check to see if the content is an image or a video.
     const type: string = mime.getType(extname(contentId.id));
     if (type.startsWith("image")) {
@@ -68,7 +67,7 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
           video.setAttribute("loop", "loop");
         } else {
           video.addEventListener("ended", () => {
-            log(`Content ${contentId} ended`);
+            log(`Content ${contentId.id} ended`);
             this.network.send(
               "slideshow:content_ended",
               contentId,

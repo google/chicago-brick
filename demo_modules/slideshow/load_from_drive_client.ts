@@ -48,7 +48,7 @@ export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
     );
     if (!res.ok) {
       throw new Error(
-        `Failed to download ${contentId}! ${res.status} ${res.statusText}`,
+        `Failed to download ${contentId.id}! ${res.status} ${res.statusText}`,
       );
     }
 

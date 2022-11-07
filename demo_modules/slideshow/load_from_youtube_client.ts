@@ -59,7 +59,7 @@ export class LoadYouTubeClientStrategy implements ClientLoadStrategy {
     virtualRect: Rectangle,
   ): Promise<Content> {
     await this.apiLoaded;
-    log(`Loading video: ${contentId}`);
+    log(`Loading video: ${contentId.id}`);
     const container = document.createElement("div");
     const player = new YT.Player(container, {
       videoId: contentId.id,
