@@ -13,37 +13,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {NUM_ROWS, NUM_COLUMNS} from './constants.js';
-import {Server} from '../../server/modules/module_interface.ts';
+import { NUM_COLUMNS, NUM_ROWS } from "./constants.ts";
+import { Server } from "../../server/modules/module_interface.ts";
+import { ModuleWSS } from "../../server/network/websocket.ts";
+import { _format } from "https://deno.land/std@0.132.0/path/_util.ts";
 
-export function load(network, debug) {
+export function load(network: ModuleWSS) {
   class P5GameOfLifeServer extends Server {
-    constructor(config) {
-      super(config);
-      debug('P5GameOfLife Server!', config);
-
-      this.numTicks = 0;
-      this.numTicksBetweenIterations = 2;
-
-      this.gameBoard = new Array(NUM_COLUMNS);
-      this.tmpBoard = new Array(NUM_COLUMNS);
-      for (let i = 0; i < NUM_COLUMNS; i++) {
-        this.gameBoard[i] = new Array(NUM_ROWS);
-        this.tmpBoard[i] = new Array(NUM_ROWS);
-      }
-      for (let i = 0; i < NUM_COLUMNS; i++) {
-        for (let j = 0; j < NUM_ROWS; j++) {
-          // Lining the edges with 0s
-          if (i === 0 || j === 0 || i == NUM_COLUMNS-1 || j == NUM_ROWS-1) {
-            this.gameBoard[i][j] = 0;
+    numTicks = 0;
+    numTicksBetweenIterations = 2;
+    gameBoard: Array<number[]> = Array.from(
+      { length: NUM_COLUMNS },
+      (_, i) => {
+        return Array.from({ length: NUM_ROWS }, (_, j) => {
+          if (i === 0 || j === 0 || i == NUM_COLUMNS - 1 || j == NUM_ROWS - 1) {
+            return 0;
           } else {
             // Filling the rest randomly
-            this.gameBoard[i][j] = Math.round(Math.random());
+            return Math.round(Math.random());
           }
-          this.tmpBoard[i][j] = 0;
-        }
-      }
-    }
+        });
+      },
+    );
+    tmpBoard: Array<number[]> = Array.from({ length: NUM_COLUMNS }, () => {
+      return Array.from({ length: NUM_ROWS }, () => 0);
+    });
 
     tick() {
       this.numTicks++;
@@ -60,7 +54,7 @@ export function load(network, debug) {
           let neighbors = 0;
           for (let i = -1; i <= 1; i++) {
             for (let j = -1; j <= 1; j++) {
-              neighbors += this.gameBoard[x+i][y+j];
+              neighbors += this.gameBoard[x + i][y + j];
             }
           }
 
@@ -68,10 +62,10 @@ export function load(network, debug) {
           // we added it in the above loop
           neighbors -= this.gameBoard[x][y];
           // Rules of Life
-          if (this.gameBoard[x][y] == 1 && neighbors <  2) {
+          if (this.gameBoard[x][y] == 1 && neighbors < 2) {
             // Died of loneliness.
             this.tmpBoard[x][y] = 0;
-          } else if (this.gameBoard[x][y] == 1 && neighbors >  3) {
+          } else if (this.gameBoard[x][y] == 1 && neighbors > 3) {
             // Died of overpopulation.
             this.tmpBoard[x][y] = 0;
           } else if (this.gameBoard[x][y] === 0 && neighbors == 3) {
@@ -89,11 +83,11 @@ export function load(network, debug) {
       this.gameBoard = this.tmpBoard;
       this.tmpBoard = temp;
 
-      network.send('board', {
-        board : this.gameBoard,
+      network.send("board", {
+        board: this.gameBoard,
       });
     }
   }
 
-  return {server: P5GameOfLifeServer};
+  return { server: P5GameOfLifeServer };
 }

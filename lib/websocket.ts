@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-explicit-any
 import { EventEmitter, Handler } from "./event.ts";
 import { easyLog } from "./log.ts";
 import { delay } from "./promise.ts";

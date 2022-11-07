@@ -5,12 +5,8 @@
   "main": "server/server.js",
   "scripts": {
     "test": "deno test lib/",
-    "jshint": "node_modules/eslint/bin/eslint.js .",
-    "lint": "node_modules/eslint/bin/eslint.js .",
+    "lint": "deno lint lib client server",
     "release": "node_modules/.bin/release-it -n"
-  },
-  "engines": {
-    "node": ">=12.7.0"
   },
   "type": "module",
   "repository": "github:google/chicago-brick",
@@ -23,8 +19,6 @@
     }
   },
   "devDependencies": {
-    "babel-eslint": "^8.2.6",
-    "eslint": "^5.16.0",
     "husky": "^2.7.0",
     "release-it": "^15.5.0"
   }

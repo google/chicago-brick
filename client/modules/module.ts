@@ -70,7 +70,10 @@ export class ClientModule {
   container: HTMLElement | null;
   instance: Client | null;
   network: ModuleWS | null;
-  stateManager: { open: any; close(): void } | null;
+  stateManager: {
+    open(): stateManager.ModuleState;
+    close(): void;
+  } | null;
   constructor(
     readonly name: string,
     readonly path: string,
