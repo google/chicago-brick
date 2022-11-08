@@ -13,27 +13,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+import { Mask } from "./mask.ts";
+import { Bounds, isValue, Particle } from "./util.ts";
+import * as randomjs from "https://esm.sh/random-js@2.1.0";
+import { ForecastGrid } from "./forecast_grid.ts";
+import { Color, extendedSinebowColor } from "./color.ts";
+import { easyLog } from "../../lib/log.ts";
+import * as d3 from "https://deno.land/x/d3_4_deno@v6.2.0.9/src/mod.js";
+
+const debug = easyLog("wind:vector_field");
+
+const random = new randomjs.Random();
 // Most of this code borrowed or derived from the awesome weather visualization
 // at https://earth.nullschool.net and its open source code:
 // https://github.com/cambecc/earth.
 
-const d3 = require('d3');
-const debug = require('debug');
-const wallGeometry = require('wallGeometry');
-
-const color = require('./color');
-const util = require('./util');
-
-const floorMod = util.floorMod;
-const isValue = util.isValue;
-
 const τ = 2 * Math.PI;
-const H = 0.0000360;  // 0.0000360°φ ~= 4m
-const NULL_VECTOR = [NaN, NaN, null];  // singleton for undefined location outside the vector field [u, v, mag]
-const HOLE_VECTOR = [NaN, NaN, null];  // singleton that signifies a hole in the vector field
-const TRANSPARENT_BLACK = [0, 0, 0, 0];  // singleton 0 rgba
-const OVERLAY_ALPHA = Math.floor(0.4*255);  // overlay transparency (on scale [0, 255])
-const VELOCITY_SCALE = 1/300000
+const H = 0.0000360; // 0.0000360°φ ~= 4m
+const NULL_VECTOR = [NaN, NaN, null]; // singleton for undefined location outside the vector field [u, v, mag]
+const HOLE_VECTOR = [NaN, NaN, null]; // singleton that signifies a hole in the vector field
+const TRANSPARENT_BLACK: Color = [0, 0, 0, 0]; // singleton 0 rgba
+const OVERLAY_ALPHA = Math.floor(0.4 * 255); // overlay transparency (on scale [0, 255])
+const VELOCITY_SCALE = 1 / 300000;
 
 /**
  * Returns the distortion introduced by the specified projection at the given point.
@@ -58,11 +59,17 @@ const VELOCITY_SCALE = 1/300000
  *
  * @returns {Array} array of scaled derivatives [dx/dλ, dy/dλ, dx/dφ, dy/dφ]
  */
-function distortion(projection, λ, φ, x, y) {
+function distortion(
+  projection: d3.GeoProjection,
+  λ: number,
+  φ: number,
+  x: number,
+  y: number,
+): [number, number, number, number] {
   const hλ = λ < 0 ? H : -H;
   const hφ = φ < 0 ? H : -H;
-  const pλ = projection([λ + hλ, φ]);
-  const pφ = projection([λ, φ + hφ]);
+  const pλ = projection([λ + hλ, φ])!;
+  const pφ = projection([λ, φ + hφ])!;
 
   // Meridian scale factor (see Snyder, equation 4-3), where R = 1. This handles issue where length of 1° λ
   // changes depending on φ. Without this, there is a pinching effect at the poles.
@@ -72,7 +79,7 @@ function distortion(projection, λ, φ, x, y) {
     (pλ[0] - x) / hλ / k,
     (pλ[1] - y) / hλ / k,
     (pφ[0] - x) / hφ,
-    (pφ[1] - y) / hφ
+    (pφ[1] - y) / hφ,
   ];
 }
 
@@ -80,7 +87,15 @@ function distortion(projection, λ, φ, x, y) {
  * Calculate distortion of the vector caused by the shape of the projection at point (x, y). The
  * vector is modified in place and returned by this function.
  */
-function distort(projection, λ, φ, x, y, scale, vector) {
+function distort<T extends [number, number] | [number, number, number]>(
+  projection: d3.GeoProjection,
+  λ: number,
+  φ: number,
+  x: number,
+  y: number,
+  scale: number,
+  vector: T,
+): T {
   const u = vector[0] * scale;
   const v = vector[1] * scale;
   const d = distortion(projection, λ, φ, x, y);
@@ -91,10 +106,13 @@ function distort(projection, λ, φ, x, y, scale, vector) {
   return vector;
 }
 
-class VectorField {
-  constructor(columns, bounds, mask) {
-    this.columns = columns;
-    this.bounds = bounds;
+export class VectorField {
+  overlay: ImageData;
+  constructor(
+    public columns: [number, number, number][][],
+    readonly bounds: Bounds,
+    mask: Mask,
+  ) {
     this.overlay = mask.imageData;
   }
 
@@ -102,7 +120,7 @@ class VectorField {
    * @returns {Array} wind vector [u, v, magnitude] at the point (x, y), or [NaN, NaN, null] if wind
    *          is undefined at that point.
    */
-  vector(x, y) {
+  vector(x: number, y: number): [number, number, number] | typeof NULL_VECTOR {
     const column = this.columns[Math.round(x)];
     return column && column[Math.round(y)] || NULL_VECTOR;
   }
@@ -110,8 +128,8 @@ class VectorField {
   /**
    * @returns {boolean} true if the field is valid at the point (x, y)
    */
-  isDefined(x, y) {
-    return this.vector(x, y)[2] !== null;
+  isDefined(x?: number, y?: number) {
+    return this.vector(x ?? 0, y ?? 0)[2] !== null;
   }
 
   /**
@@ -119,7 +137,7 @@ class VectorField {
    *          the vector field has a hole (is undefined) at that point, such as at an island in a field of
    *          ocean currents.
    */
-  isInsideBoundary(x, y) {
+  isInsideBoundary(x: number, y: number) {
     return this.vector(x, y) !== NULL_VECTOR;
   }
 
@@ -131,41 +149,55 @@ class VectorField {
   }
 
   // TODO: Eliminate the loop.
-  randomize(o) {
-    var x, y;
-    var safetyNet = 0;
+  randomize(o: Particle) {
+    let x, y;
+    let safetyNet = 0;
     do {
-      x = Math.round(_.random(this.bounds.x, this.bounds.xMax));
-      y = Math.round(_.random(this.bounds.y, this.bounds.yMax));
+      x = Math.round(random.real(this.bounds.x, this.bounds.xMax));
+      y = Math.round(random.real(this.bounds.y, this.bounds.yMax));
     } while (!this.isDefined(x, y) && safetyNet++ < 30);
     o.x = x;
     o.y = y;
     return o;
   }
 
-  static create(projection, mask, bounds, forecastGrid) {
+  static create(
+    projection: d3.GeoProjection,
+    mask: Mask,
+    bounds: Bounds,
+    forecastGrid: ForecastGrid,
+  ) {
     // TODO(bmt): This probably belongs at a different level.
     // How fast particles move on the screen (arbitrary value chosen for aesthetics).
     const velocityScale = bounds.height * VELOCITY_SCALE;
 
-    const columns = [];
-    const point = [];
+    const columns: [number, number, number][][] = [];
+    const point: [number, number] = [0, 0];
 
-    function interpolateColumn(x) {
+    function interpolateColumn(x: number) {
       const column = [];
-      for (var y = bounds.y; y <= bounds.yMax; y += 2) {
+      for (let y = bounds.y; y <= bounds.yMax; y += 2) {
         if (mask.isVisible(x, y)) {
-          point[0] = x; point[1] = y;
-          const coord = projection.invert(point);
-          var overlayColor = TRANSPARENT_BLACK;
-          var vector = null;
+          point[0] = x;
+          point[1] = y;
+          const coord = projection.invert!(point);
+          let overlayColor = TRANSPARENT_BLACK;
+          let vector = null;
           if (coord) {
             const λ = coord[0], φ = coord[1];
-            if (_.isFinite(λ)) {
+            if (isFinite(λ)) {
               vector = forecastGrid.interpolate(λ, φ);
-              var scalar = null;
+              let scalar = null;
               if (vector) {
-                vector = distort(projection, λ, φ, x, y, velocityScale, vector);
+                vector = distort(
+                  projection,
+                  λ,
+                  φ,
+                  x,
+                  y,
+                  velocityScale,
+                  vector,
+                );
                 scalar = vector[2];
               }
 
@@ -174,22 +206,24 @@ class VectorField {
               if (isValue(scalar)) {
                 // TODO(bmt): Better color scheme for the wind speed.
                 // TODO(bmt): Revisit wind speed range here.
-                overlayColor = color.extendedSinebowColor(
-                    Math.min(scalar, 75) / 75, OVERLAY_ALPHA);
+                overlayColor = extendedSinebowColor(
+                  Math.min(scalar, 75) / 75,
+                  OVERLAY_ALPHA,
+                );
               }
             }
           }
-          column[y+1] = column[y] = vector || HOLE_VECTOR;
+          column[y + 1] = column[y] = vector! || HOLE_VECTOR;
           mask.set(x, y, overlayColor)
-            .set(x+1, y, overlayColor)
-            .set(x, y+1, overlayColor)
-            .set(x+1, y+1, overlayColor);
+            .set(x + 1, y, overlayColor)
+            .set(x, y + 1, overlayColor)
+            .set(x + 1, y + 1, overlayColor);
         }
       }
-      columns[x+1] = columns[x] = column;
+      columns[x + 1] = columns[x] = column;
     }
 
-    var x = bounds.x;
+    let x = bounds.x;
     while (x < bounds.xMax) {
       interpolateColumn(x);
       x += 2;
@@ -199,5 +233,3 @@ class VectorField {
     return new VectorField(columns, bounds, mask);
   }
 }
-
-module.exports = VectorField;

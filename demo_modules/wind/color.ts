@@ -19,11 +19,18 @@ limitations under the License.
 
 const tau = 2 * Math.PI;
 
-function colorInterpolator(start, end) {
+export type Color = [number, number, number] | [number, number, number, number];
+
+function colorInterpolator(start: Color, end: Color) {
   const r = start[0], g = start[1], b = start[2];
   const Δr = end[0] - r, Δg = end[1] - g, Δb = end[2] - b;
-  return function(i, a) {
-    return [Math.floor(r + i * Δr), Math.floor(g + i * Δg), Math.floor(b + i * Δb), a];
+  return function (i: number, a: number): Color {
+    return [
+      Math.floor(r + i * Δr),
+      Math.floor(g + i * Δg),
+      Math.floor(b + i * Δb),
+      a,
+    ];
   };
 }
 
@@ -35,11 +42,11 @@ function colorInterpolator(start, end) {
  * @param a the alpha value in the range [0, 255]
  * @returns {Array} [r, g, b, a]
  */
-function sinebowColor(hue, a) {
+function sinebowColor(hue: number, a: number): Color {
   // Map hue [0, 1] to radians [0, 5/6τ]. Don't allow a full rotation because that keeps hue == 0 and
   // hue == 1 from mapping to the same color.
-  var rad = hue * tau * 5/6;
-  rad *= 0.75;  // increase frequency to 2/3 cycle per rad
+  let rad = hue * tau * 5 / 6;
+  rad *= 0.75; // increase frequency to 2/3 cycle per rad
 
   const s = Math.sin(rad);
   const c = Math.cos(rad);
@@ -59,29 +66,34 @@ const fadeToWhite = colorInterpolator(sinebowColor(1.0, 0), [255, 255, 255]);
  * @param a alpha value in range [0, 255]
  * @returns {Array} [r, g, b, a]
  */
-function extendedSinebowColor(i, a) {
-  return i <= BOUNDARY ?
-    sinebowColor(i / BOUNDARY, a) :
-    fadeToWhite((i - BOUNDARY) / (1 - BOUNDARY), a);
+export function extendedSinebowColor(i: number, a: number): Color {
+  return i <= BOUNDARY
+    ? sinebowColor(i / BOUNDARY, a)
+    : fadeToWhite((i - BOUNDARY) / (1 - BOUNDARY), a);
 }
 
-function asColorStyle(r, g, b, a) {
+function asColorStyle(r: number, g: number, b: number, a: number): string {
   return "rgba(" + r + ", " + g + ", " + b + ", " + a + ")";
+}
+
+export interface ColorScale extends Array<string> {
+  indexFor(speed: number): number;
 }
 
 /**
  * @returns {Array} of wind colors and a method, indexFor, that maps wind magnitude to an index on the color scale.
  */
-function windIntensityColorScale(step, maxWind, minRgb) {
-  var result = [];
-  for (var j = minRgb; j <= 255; j += step) {
+export function windIntensityColorScale(
+  step: number,
+  maxWind: number,
+  minRgb: number,
+): ColorScale {
+  const result = [] as unknown as ColorScale;
+  for (let j = minRgb; j <= 255; j += step) {
     result.push(asColorStyle(j, j, j, 1.0));
   }
-  result.indexFor = function(m) {  // map wind speed to a style
+  result.indexFor = function (m) { // map wind speed to a style
     return Math.floor(Math.min(m, maxWind) / maxWind * (result.length - 1));
   };
   return result;
 }
-
-exports.windIntensityColorScale = windIntensityColorScale;
-exports.extendedSinebowColor = extendedSinebowColor;
