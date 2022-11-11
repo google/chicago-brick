@@ -19,7 +19,7 @@ import { Polygon } from "../../lib/math/polygon2d.ts";
 
 export class ThreeJsSurface extends Surface {
   renderer: Three.WebGLRenderer;
-  camera: Three.PerspectiveCamera;
+  camera: Three.Camera;
   scene: Three.Scene;
 
   constructor(
@@ -35,15 +35,16 @@ export class ThreeJsSurface extends Surface {
     );
     container.appendChild(this.renderer.domElement);
 
-    this.camera = new Three.PerspectiveCamera(
+    const camera = new Three.PerspectiveCamera(
       45,
       this.wallRect.w / this.wallRect.h,
       0.1,
       1000,
     );
+    this.camera = camera;
     this.scene = new Three.Scene();
 
-    this.camera.setViewOffset(
+    camera.setViewOffset(
       this.wallRect.w,
       this.wallRect.h,
       this.virtualRect.x,
@@ -95,3 +96,5 @@ export class ThreeJsSurface extends Surface {
     );
   }
 }
+
+export { Three };

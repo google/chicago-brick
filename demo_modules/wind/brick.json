@@ -1,0 +1,8 @@
+{
+  "name": "wind",
+  "client_path": "./wind_client.ts",
+  "credit": {
+    "title": "Wind",
+    "author": "Brian Turnbull"
+  }
+}

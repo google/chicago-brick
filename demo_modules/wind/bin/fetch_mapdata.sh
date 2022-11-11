@@ -18,10 +18,10 @@ echo "Downloading map data to: $OUT"
 
 # Get the map data
 curl -o "$TMPDIR/ne_50m_coastline.zip" \
-  'http://naciscdn.org/naturalearth/50m/physical/ne_50m_coastline.zip'
+  'https://naciscdn.org/naturalearth/50m/physical/ne_50m_coastline.zip'
 
 curl -o "$TMPDIR/ne_50m_lakes.zip" \
-  'http://naciscdn.org/naturalearth/50m/physical/ne_50m_lakes.zip'
+  'https://naciscdn.org/naturalearth/50m/physical/ne_50m_lakes.zip'
 
 pushd $TMPDIR
 unzip ne_50m_coastline.zip

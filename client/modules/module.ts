@@ -74,6 +74,8 @@ export class ClientModule {
     open(): stateManager.ModuleState;
     close(): void;
   } | null;
+  peerNetwork: peerNetwork.ModulePeer | null;
+
   constructor(
     readonly name: string,
     readonly path: string,
@@ -122,6 +124,7 @@ export class ClientModule {
     this.network = null;
 
     this.stateManager = null;
+    this.peerNetwork = null;
   }
 
   tellClientToPlay() {}
@@ -171,6 +174,7 @@ export class ClientModule {
     this.stateManager = stateManager.forModule(
       INSTANTIATION_ID,
     );
+    this.peerNetwork = peerNetwork.forModule(INSTANTIATION_ID);
     const fakeEnv = {
       asset,
       debug: easyLog("wall:module:" + this.name),
@@ -179,7 +183,7 @@ export class ClientModule {
       titleCard: this.titleCard.getModuleAPI(),
       state: this.stateManager.open(),
       wallGeometry: this.geo,
-      peerNetwork,
+      peerNetwork: this.peerNetwork,
       assert,
     };
     try {
@@ -274,6 +278,7 @@ export class ClientModule {
     moduleTicker.remove(this.instance!);
 
     if (this.network) {
+      this.peerNetwork?.close();
       this.stateManager!.close();
       this.stateManager = null;
       this.network.close();

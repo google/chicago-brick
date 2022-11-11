@@ -73,6 +73,7 @@ export class Control {
       });
     });
     wss.on("connection", (socket: TypedWebsocketLike) => {
+      log("Control connected.");
       // When we transition to a new module, let this guy know.
       socket.send("time", time.now());
       socket.send("transition", transitionData);

@@ -127,7 +127,7 @@ control.on("errors", (es: RecordErrorMessage[]) => {
     errorController.error(e);
   });
 });
-control.on("new-client", (c) => {
+control.on("control:new-client", (c) => {
   clientController.newClient(c);
 });
 control.on("lost-client", (c) => {

@@ -1,53 +1,67 @@
 import { easyLog } from "../../lib/log.ts";
-import { WS } from "../../lib/websocket.ts";
+import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import * as network from "./network.ts";
 
 const log = easyLog("wall:peer");
 
-// The only thing we remember about a peer right now it its socket.
 interface PeerInfo {
-  socket: WS;
-}
-
-interface CommonPayloadFields {
-  to: string;
+  socket: TypedWebsocketLike;
+  serializedRect: string;
 }
 
 const knownPeers = new Map<string, PeerInfo>();
 
-function relayMessage(msg: string, payload: CommonPayloadFields) {
-  const { to } = payload;
+type PeerMessages =
+  | "peer-offer"
+  | "peer-icecandidate"
+  | "peer-answer";
+
+function relayMessage<T extends PeerMessages>(
+  msg: T,
+  ...payload: Parameters<EmittedEvents[T]>
+) {
+  const { to, from } = payload[0];
   const toPeer = knownPeers.get(to);
   if (!toPeer) {
-    log.error(`Unknown peer: ${to}`);
+    log.error(`Unknown peer for msg ${msg}: ${to}`);
     return;
   }
+  log(`Forwarding ${msg} message from ${from} to ${to}`);
   // Forward this along to the destination peer so it can connect.
-  toPeer.socket.send(msg, payload as never);
+  toPeer.socket.send(msg, ...payload);
 }
 
 export function initPeer() {
-  network.wss.on("connection", (client: WS) => {
-    client.on("peer-register", ({ id }) => {
+  network.wss.on("connection", (client: TypedWebsocketLike) => {
+    client.on("peer-register", ({ id, rect }) => {
+      log(`Peer registered with id ${id} and rect ${rect}`);
       // What do we need to store about a peer? Anything?
-      knownPeers.set(id, { socket: client });
-
-      client.send("peer-list", {
-        knownPeers: [...knownPeers.keys()],
-      });
+      knownPeers.set(id, { socket: client, serializedRect: rect });
     });
     client.on(
       "peer-offer",
-      (data: CommonPayloadFields) => relayMessage("peer-offer", data),
+      (data) => relayMessage("peer-offer", data),
     );
     client.on(
       "peer-icecandidate",
-      (data: CommonPayloadFields) => relayMessage("peer-icecandidate", data),
+      (data) => relayMessage("peer-icecandidate", data),
     );
     client.on(
       "peer-answer",
-      (data: CommonPayloadFields) => relayMessage("peer-answer", data),
+      (data) => relayMessage("peer-answer", data),
     );
+    client.on("disconnect", () => {
+      const foundPeerEntry = [...knownPeers].find(([, peer]) => {
+        return peer.socket === client;
+      });
+      if (!foundPeerEntry) {
+        log.error(`Lost peer socket, but couldn't find peer entry!`);
+        return;
+      }
+      const [peerid] = foundPeerEntry;
+      log(`Lost peer ${peerid}`);
+      knownPeers.delete(peerid);
+    });
   });
   log("peer relay registered");
 }
