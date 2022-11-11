@@ -75,12 +75,6 @@ export class Surface {
     y = (y + 0.5) * this.virtualRect.h;
     return this.wallRect.isInside({ x, y });
   }
-  wallExtentLineTest(ax: number, ay: number, bx: number, by: number) {
-    return this.wallGeometry.intersectionWithSegment({ x: ax, y: ay }, {
-      x: bx,
-      y: by,
-    });
-  }
   // Destroys a surface.
   destroy() {}
   // Returns an ImageData of pixel values for the canvas.
