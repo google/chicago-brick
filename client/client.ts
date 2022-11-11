@@ -24,6 +24,7 @@ import { ClientModulePlayer } from "./modules/client_module_player.ts";
 import { ClientModule } from "./modules/module.ts";
 import { LoadModuleEvent } from "../server/modules/module.ts";
 import { consoleLogger } from "./util/console_logger.ts";
+import "./network/peer.ts";
 
 addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(errorLogger);
