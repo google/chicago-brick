@@ -55,7 +55,6 @@ export function initPeer() {
         return peer.socket === client;
       });
       if (!foundPeerEntry) {
-        log.error(`Lost peer socket, but couldn't find peer entry!`);
         return;
       }
       const [peerid] = foundPeerEntry;
