@@ -1,0 +1,7 @@
+{
+  "name": "mandelbrot",
+  "client_path": "./mandelbrot_client.ts",
+  "server_path": "./mandelbrot_server.ts",
+  "title": "Mandelbrot",
+  "author": "Don Schwarz"
+}
