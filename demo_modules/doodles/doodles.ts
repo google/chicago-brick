@@ -1,4 +1,3 @@
-import { indexOfNeedle } from "https://deno.land/std@0.140.0/bytes/mod.ts";
 import { Client } from "../../client/modules/module_interface.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import doodles from "./doodles.clean.json" assert { type: "json" };
