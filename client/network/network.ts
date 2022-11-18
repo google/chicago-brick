@@ -18,7 +18,11 @@ import * as info from "../util/info.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 
-export const socket = WS.clientWrapper(`ws://${location.host}/websocket`);
+export const socket = WS.clientWrapper(
+  `${
+    location.protocol === "https:" ? "wss" : "ws"
+  }://${location.host}/websocket`,
+);
 let ready: () => void;
 const readyPromise = new Promise<void>((r) => ready = r);
 

@@ -1,5 +1,8 @@
+import { indexOfNeedle } from "https://deno.land/std@0.140.0/bytes/mod.ts";
 import { Client } from "../../client/modules/module_interface.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
 import doodles from "./doodles.clean.json" assert { type: "json" };
+import * as info from "../../client/util/info.ts";
 
 interface Doodle {
   hiResUrl: string;
@@ -12,7 +15,7 @@ const DOODLE_URLS = [
   "www.google.com/logos/doodles",
 ];
 
-export function load() {
+export function load(wallGeometry: Polygon) {
   class DoodleClient extends Client {
     readonly doodles: Doodle[] = [];
     readonly elements: HTMLImageElement[] = [];
@@ -61,8 +64,17 @@ export function load() {
       this.container.appendChild(img);
     }
     draw(time: number) {
-      if (time - this.lastUpdate > 1000) {
-        this.updateImageAtIndex(Math.floor(Math.random() * 4));
+      if (
+        time - this.lastUpdate > 1000
+      ) {
+        // Only do an update if we are chosen as one of the wall tiles.
+        if (
+          Math.random() <
+            info.virtualRect.w * info.virtualRect.h / wallGeometry.extents.w /
+              wallGeometry.extents.h
+        ) {
+          this.updateImageAtIndex(Math.floor(Math.random() * 4));
+        }
         this.lastUpdate = time;
       }
     }
