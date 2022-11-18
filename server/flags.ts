@@ -19,6 +19,7 @@ const FLAG_DEFS = [
   {
     name: "module",
     type: String,
+    defaultValue: [],
     multiple: true,
     alias: "m",
     description: "If provided, runs only this module on repeat.",
