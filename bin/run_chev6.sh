@@ -23,9 +23,21 @@ else
   INSPECT=''
 fi
 
-NODE_PATH='.:node_modules' node $INSPECT server/server.js \
+deno run \
+  $INSPECT \
+  --allow-read --allow-net --allow-env --allow-write --allow-run \
+  server/server.ts \
   --module_dir 'node_modules/*' \
   --module_dir 'demo_modules/*' \
   --use_geometry '[{"right":2},{"down":1},{"right":1},{"down":1},{"left":1},{"down":1},{"left":2},{"up":1},{"right":1},{"up":1},{"left":1},{"up":1}]' \
   --assets_dir demo_assets \
-  "$@"
+  "$@" &
+readonly BRICK_PID="$!"
+
+function clean_up {
+  kill "$BRICK_PID";
+  exit
+}
+
+trap clean_up SIGHUP SIGINT SIGTERM
+wait $BRICK_PID;

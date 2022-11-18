@@ -41,7 +41,7 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
-STANDARD_FLAGS="--enable-gpu-rasterization --ignore-gpu-blacklist --no-default-browser-check --disable-translate --no-first-run"
+STANDARD_FLAGS="--ignore-gpu-blacklist --no-default-browser-check --disable-translate --no-first-run"
 if [[ ${verbose} == 1 ]]
 then
   STANDARD_FLAGS="${STANDARD_FLAGS} --show-fps-counter"
@@ -51,7 +51,7 @@ fi
         --app="http://localhost:3000/?config=1920,2160,1920,1080" --user-data-dir=/tmp/clientx10 &
 "$CHROME" $STANDARD_FLAGS --window-position=100,640 --window-size=480,270 \
         --app="http://localhost:3000/?config=0,2160,1920,1080" --user-data-dir=/tmp/clientx00 &
-sleep 1080
+sleep 3
 "$CHROME" $STANDARD_FLAGS --window-position=1060,370 --window-size=480,270 \
         --app="http://localhost:3000/?config=3840,1080,1920,1080" --user-data-dir=/tmp/clientx11 &
 "$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=480,270 \
