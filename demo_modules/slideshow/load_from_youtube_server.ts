@@ -17,83 +17,14 @@ import { ContentId, ContentPage, YouTubeLoadConfig } from "./interfaces.ts";
 import { ServerLoadStrategy } from "./server_interfaces.ts";
 import {
   PlaylistItemListResponse,
-  PlaylistItemsListOptions,
-  VideoListResponse,
-  VideosListOptions,
   YouTube,
 } from "https://googleapis.deno.dev/v1/youtube:v3.ts";
 import * as credentials from "../../server/util/credentials.ts";
 import { easyLog } from "../../lib/log.ts";
 import { GoogleAuth } from "./authenticate_google_api.ts";
+import { JWTInput } from "https://googleapis.deno.dev/_/base@v1/auth/jwt.ts";
 
 const log = easyLog("slideshow:youtube");
-
-async function fetchYoutubePlaylistItemsList(
-  params: PlaylistItemsListOptions,
-  headers: Headers,
-): Promise<PlaylistItemListResponse> {
-  const url = new URL("https://youtube.googleapis.com/v3/playlistItems");
-  if (params.id) {
-    url.searchParams.set("id", params.id);
-  }
-  if (params.maxResults) {
-    url.searchParams.set("maxResults", String(params.maxResults));
-  }
-  if (params.pageToken) {
-    url.searchParams.set("pageToken", params.pageToken);
-  }
-  if (params.part) {
-    url.searchParams.set("part", params.part);
-  }
-  if (params.playlistId) {
-    url.searchParams.set("playlistId", params.playlistId);
-  }
-
-  const key = headers.get("X-goog-api-key");
-  if (key) {
-    headers.delete("X-goog-api-key");
-    url.searchParams.set("key", key);
-  }
-
-  console.log(url);
-
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    throw new Error(`Bad YT response: ${res.statusText}`);
-  }
-  return await res.json();
-}
-
-async function fetchYoutubeVideosList(
-  params: VideosListOptions,
-  headers: Headers,
-): Promise<VideoListResponse> {
-  const url = new URL("https://youtube.googleapis.com/v3/videos");
-  if (params.id) {
-    url.searchParams.set("id", params.id);
-  }
-  if (params.maxResults) {
-    url.searchParams.set("maxResults", String(params.maxResults));
-  }
-  if (params.pageToken) {
-    url.searchParams.set("pageToken", params.pageToken);
-  }
-  if (params.part) {
-    url.searchParams.set("part", params.part);
-  }
-
-  const key = headers.get("X-goog-api-key");
-  if (key) {
-    headers.delete("X-goog-api-key");
-    url.searchParams.set("key", key);
-  }
-
-  const res = await fetch(url, { headers });
-  if (!res.ok) {
-    throw new Error(`Bad YT response: ${res.statusText}`);
-  }
-  return await res.json();
-}
 
 class VideoIdGenerator {
   readonly loadVideoIds: ReadableStream<string[]>;
@@ -165,7 +96,7 @@ export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
     if (!config.creds) {
       throw new Error("YouTube loading strategy requires credentials");
     }
-    const creds = credentials.get(config.creds) as any;
+    const creds = credentials.get(config.creds) as JWTInput;
     if (!creds) {
       throw new Error("Unable to load youtube creds!");
     }

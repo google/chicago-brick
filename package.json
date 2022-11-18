@@ -5,7 +5,7 @@
   "main": "server/server.js",
   "scripts": {
     "test": "deno test lib/",
-    "lint": "deno lint lib client server",
+    "lint": "deno lint lib client server demo_modules",
     "release": "node_modules/.bin/release-it -n"
   },
   "type": "module",
