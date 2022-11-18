@@ -58,8 +58,10 @@ export function load(
       }
 
       // Let's put one ball every so often on the screen.
-      const NUM_BALLS = wallGeometry.extents.w * wallGeometry.extents.h / 100 /
-        100;
+      const NUM_BALLS = Math.min(
+        wallGeometry.extents.w * wallGeometry.extents.h / 100 / 100,
+        1000,
+      );
 
       for (let b = 0; b < NUM_BALLS; ++b) {
         this.balls.push(
