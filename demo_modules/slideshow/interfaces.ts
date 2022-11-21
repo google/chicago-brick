@@ -79,6 +79,14 @@ export interface LocalLoadConfig {
   files?: string[];
   /** A list of local directories (relative to the asset directory). */
   directories?: string[];
+  /**
+   * Set if the assets are stored on the clients and served via an asset server.
+   * See client/asset/asset.ts for more details.
+   */
+  clientOnly?: {
+    /** The extension of the files stored on the clients, including the initial '.'*/
+    extension: string;
+  };
   /** Options related to video files. */
   video?: VideoContentOptions;
 }

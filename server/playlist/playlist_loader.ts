@@ -81,6 +81,13 @@ export async function loadPlaylistFromFile(
   overrideLayoutDuration?: number,
   overrideModuleDuration?: number,
 ): Promise<Layout[]> {
+  const contents = await readTextFile<PlaylistJson>(path);
+
+  let { collections, playlist, modules } = contents;
+  if (modules) {
+    library.loadAllModules(modules);
+  }
+
   if (module.length) {
     for (const m of module) {
       if (!library.has(m)) {
@@ -95,18 +102,12 @@ export async function loadPlaylistFromFile(
       }),
     ];
   }
-  const contents = await readTextFile<PlaylistJson>(path);
 
-  let { collections, playlist, modules } = contents;
   if (playlist.length === 0) {
     throw new Error(`No Layouts specified in playlist: ${path}!`);
   }
 
   collections = collections ?? {};
-
-  if (modules) {
-    library.loadAllModules(modules);
-  }
 
   return loadLayoutsFromConfig(
     playlist,

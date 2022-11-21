@@ -58,6 +58,14 @@ export class LoadLocalServerStrategy implements ServerLoadStrategy {
 
     if (this.config.directories) {
       for (const dir of this.config.directories) {
+        if (this.config.clientOnly) {
+          // These are client-only files. This means that we can't just look them up here on the server.
+          // Instead, set the path to a dummy file in the directory with the right extension.
+          this.paths.push(
+            path.join(dir, `dummy${this.config.clientOnly.extension}`),
+          );
+          continue;
+        }
         // Try to find the dir in the asset directories.
         let absDir = "";
         for (const assetDir of flags.assets_dir) {

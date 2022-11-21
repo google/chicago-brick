@@ -68,10 +68,9 @@ export class LoadFromFlickrServerStrategy implements ServerLoadStrategy {
       throw new Error("Invalid flickr query response!");
     }
 
-    const contentIds = json.photos.photo.map((p: FlickrPhoto) => p.url_l)
-      .filter((
-        u?: string,
-      ) => u);
+    const photos = json.photos.photo as FlickrPhoto[];
+    const contentIds = photos.map((p: FlickrPhoto) => p.url_l)
+      .filter((u?: string) => u).map((u) => ({ id: u! }));
     log("Downloaded " + contentIds.length + " flickr images.");
     return { contentIds };
   }

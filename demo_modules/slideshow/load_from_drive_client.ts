@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { easyLog } from "../../lib/log.ts";
+import { rateLimit403Responses } from "../../lib/rate_limit.ts";
 import { WS } from "../../lib/websocket.ts";
 import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
 import { ContentId, DriveLoadConfig } from "./interfaces.ts";
@@ -24,7 +25,11 @@ const API_BASE_URL = "https://www.googleapis.com/drive/v3";
 
 export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
   headersPromise: Promise<Record<string, string>>;
-  constructor(readonly config: DriveLoadConfig, network: WS) {
+  constructor(
+    readonly config: DriveLoadConfig,
+    network: WS,
+    readonly abortSignal: AbortSignal,
+  ) {
     this.headersPromise = new Promise((resolve) => {
       network.on("slideshow:drive:credentials", (headers) => {
         // If anyone is waiting for this promise to resolve, resolve it.
@@ -40,12 +45,14 @@ export class LoadFromDriveClientStrategy implements ClientLoadStrategy {
   ): Promise<Content> {
     log(`Loading content: ${contentId.id}`);
 
-    const res = await fetch(
-      `${API_BASE_URL}/files/${contentId.id}?alt=media`,
-      {
-        headers: new Headers(await this.headersPromise),
-      },
-    );
+    const res = await rateLimit403Responses(async () => {
+      return await fetch(
+        `${API_BASE_URL}/files/${contentId.id}?alt=media`,
+        {
+          headers: new Headers(await this.headersPromise),
+        },
+      );
+    }, this.abortSignal);
     if (!res.ok) {
       throw new Error(
         `Failed to download ${contentId.id}! ${res.status} ${res.statusText}`,

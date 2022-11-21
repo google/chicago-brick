@@ -49,9 +49,14 @@ export function load(wallGeometry: Polygon, network: WS) {
   function parseClientLoadStrategy(
     loadConfig: LoadConfig,
     surface: Surface,
+    abortSignal: AbortSignal,
   ): ClientLoadStrategy {
     if (loadConfig.drive) {
-      return new LoadFromDriveClientStrategy(loadConfig.drive, network);
+      return new LoadFromDriveClientStrategy(
+        loadConfig.drive,
+        network,
+        abortSignal,
+      );
     } else if (loadConfig.youtube) {
       return new LoadYouTubeClientStrategy(loadConfig.youtube);
     } else if (loadConfig.local) {
@@ -89,6 +94,7 @@ export function load(wallGeometry: Polygon, network: WS) {
   class SlideshowClient extends Client {
     loadStrategy?: ClientLoadStrategy;
     displayStrategy?: ClientDisplayStrategy;
+    readonly abortController = new AbortController();
     willBeShownSoon(container: HTMLElement) {
       this.surface = new Surface(container, wallGeometry);
       return new Promise<void>((resolve) => {
@@ -98,6 +104,7 @@ export function load(wallGeometry: Polygon, network: WS) {
           this.loadStrategy = parseClientLoadStrategy(
             config.load,
             this.surface!,
+            this.abortController.signal,
           );
           this.displayStrategy = parseClientDisplayStrategy(
             config.display,
@@ -110,6 +117,7 @@ export function load(wallGeometry: Polygon, network: WS) {
       });
     }
     finishFadeOut() {
+      this.abortController.abort();
       this.surface?.destroy();
     }
     draw(time: number, delta: number) {

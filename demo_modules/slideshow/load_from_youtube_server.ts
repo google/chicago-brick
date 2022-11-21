@@ -29,7 +29,11 @@ const log = easyLog("slideshow:youtube");
 class VideoIdGenerator {
   readonly loadVideoIds: ReadableStream<string[]>;
   readonly loadVideos: TransformStream<string[], ContentId[]>;
-  constructor(readonly config: YouTubeLoadConfig, youtube: YouTube) {
+  constructor(
+    readonly config: YouTubeLoadConfig,
+    youtube: YouTube,
+    readonly abortSignal: AbortSignal,
+  ) {
     this.loadVideoIds = new ReadableStream({
       async start(controller) {
         if (config.videos) {
@@ -56,7 +60,7 @@ class VideoIdGenerator {
                 }));
               }
               pageToken = result.nextPageToken;
-            } while (pageToken);
+            } while (pageToken && !abortSignal.aborted);
           }
         }
         log("Done loading YT videos");
@@ -92,7 +96,10 @@ export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
   readonly loadedContentIds: ContentId[] = [];
   contentIdReader?: ReadableStreamReader<ContentId[]>;
   client: GoogleAuth;
-  constructor(readonly config: YouTubeLoadConfig) {
+  constructor(
+    readonly config: YouTubeLoadConfig,
+    readonly abortSignal: AbortSignal,
+  ) {
     if (!config.creds) {
       throw new Error("YouTube loading strategy requires credentials");
     }
@@ -112,7 +119,11 @@ export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
 
   async loadMoreContent(): Promise<ContentPage> {
     if (!this.videoIdGenerator) {
-      this.videoIdGenerator = new VideoIdGenerator(this.config, this.youtube);
+      this.videoIdGenerator = new VideoIdGenerator(
+        this.config,
+        this.youtube,
+        this.abortSignal,
+      );
       const contentIds = this.videoIdGenerator.loadVideoIds.pipeThrough(
         this.videoIdGenerator.loadVideos,
       );
