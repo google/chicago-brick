@@ -140,8 +140,14 @@ export function load(
         },
       );
 
-      // Start the strategies initing.
-      await this.loadContent();
+      // Load 1 page of content.
+      const token = await this.loadOneContentPage();
+      if (token) {
+        // If there is more, load this async.
+        this.loadContent(token);
+      } else {
+        this.displayStrategy.allContentArrived?.();
+      }
     }
 
     dispose(): void {
@@ -157,14 +163,18 @@ export function load(
      */
     async loadContent(token?: string) {
       do {
-        const response = await this.loadStrategy.loadMoreContent(token);
-        this.contentIds.push(...response.contentIds);
-        if (this.contentIds.length) {
-          this.displayStrategy.newContentArrived?.();
-        }
-        token = response.paginationToken;
+        token = await this.loadOneContentPage(token);
       } while (token && !this.abortController.signal.aborted);
       this.displayStrategy.allContentArrived?.();
+    }
+
+    async loadOneContentPage(token?: string) {
+      const response = await this.loadStrategy.loadMoreContent(token);
+      this.contentIds.push(...response.contentIds);
+      if (this.contentIds.length) {
+        this.displayStrategy.newContentArrived?.();
+      }
+      return response.paginationToken;
     }
   }
 
