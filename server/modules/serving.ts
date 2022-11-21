@@ -91,5 +91,6 @@ export function addRoutes(
     }
   });
 
+  server.addHandler("/favicon.ico", serveFile(path.join(brickPath, "client/favicon.ico")));
   server.addHandler("/", serveFile(path.join(brickPath, "client/index.html")));
 }
