@@ -56,6 +56,7 @@ class DriveItemsDownloader {
   constructor(
     readonly config: DriveLoadConfig,
     readonly client: GoogleAuth,
+    readonly abortSignal: AbortSignal,
   ) {
     this.driveIdStream = new ReadableStream({
       async start(controller) {
@@ -89,7 +90,7 @@ class DriveItemsDownloader {
                 };
               }));
               paginationToken = response.nextPageToken || "";
-            } while (paginationToken);
+            } while (paginationToken && !abortSignal.aborted);
           }
         }
         // All done!
@@ -106,7 +107,11 @@ export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
   readonly driveItemsDownloader: DriveItemsDownloader;
   driveItemReader?: ReadableStreamReader<ContentId[]>;
 
-  constructor(readonly config: DriveLoadConfig, network: ModuleWSS) {
+  constructor(
+    readonly config: DriveLoadConfig,
+    network: ModuleWSS,
+    readonly abortSignal: AbortSignal,
+  ) {
     const creds = credentials.get(
       this.config.creds || "googleserviceaccountkey",
     ) as JWTInput;
@@ -116,6 +121,7 @@ export class LoadFromDriveServerStrategy implements ServerLoadStrategy {
     this.driveItemsDownloader = new DriveItemsDownloader(
       config,
       client,
+      abortSignal,
     );
 
     network.on("slideshow:drive:init", async (socket: TypedWebsocketLike) => {

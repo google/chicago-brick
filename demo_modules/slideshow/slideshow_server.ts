@@ -54,11 +54,18 @@ export function load(
   // These methods convert a load or display config to specific server or client
   // strategies. New strategies should be added to these methods.
 
-  function parseServerLoadStrategy(loadConfig: LoadConfig): ServerLoadStrategy {
+  function parseServerLoadStrategy(
+    loadConfig: LoadConfig,
+    abortSignal: AbortSignal,
+  ): ServerLoadStrategy {
     if (loadConfig.drive) {
-      return new LoadFromDriveServerStrategy(loadConfig.drive, network);
+      return new LoadFromDriveServerStrategy(
+        loadConfig.drive,
+        network,
+        abortSignal,
+      );
     } else if (loadConfig.youtube) {
-      return new LoadYouTubeServerStrategy(loadConfig.youtube);
+      return new LoadYouTubeServerStrategy(loadConfig.youtube, abortSignal);
     } else if (loadConfig.local) {
       return new LoadLocalServerStrategy(loadConfig.local);
     } else if (loadConfig.flickr) {
@@ -100,13 +107,17 @@ export function load(
     loadStrategy!: ServerLoadStrategy;
     /** The display strategy for this run of the module. */
     displayStrategy!: ServerDisplayStrategy;
+    readonly abortController = new AbortController();
 
     constructor(readonly config: SlideshowConfig) {
       super(config);
     }
 
     async willBeShownSoon(deadline: number) {
-      this.loadStrategy = parseServerLoadStrategy(this.config.load);
+      this.loadStrategy = parseServerLoadStrategy(
+        this.config.load,
+        this.abortController.signal,
+      );
       this.displayStrategy = parseServerDisplayStrategy(
         this.config.display,
         this.loadStrategy,
@@ -133,6 +144,10 @@ export function load(
       await this.loadContent();
     }
 
+    dispose(): void {
+      this.abortController.abort();
+    }
+
     tick(time: number, delta: number) {
       this.displayStrategy.tick(time, delta);
     }
@@ -148,7 +163,7 @@ export function load(
           this.displayStrategy.newContentArrived?.();
         }
         token = response.paginationToken;
-      } while (token);
+      } while (token && !this.abortController.signal.aborted);
       this.displayStrategy.allContentArrived?.();
     }
   }
