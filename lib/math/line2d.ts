@@ -9,6 +9,11 @@ import {
   sub,
 } from "./vector2d.ts";
 
+export interface Segment {
+  a: Point;
+  b: Point;
+}
+
 export function onSegment(p: Point, q: Point, x: Point) {
   return x.x >= Math.min(p.x, q.x) &&
     x.x <= Math.max(p.x, q.x) &&
@@ -62,16 +67,18 @@ export function intersection(
   b: Point,
   c: Point,
   d: Point,
+  UEPSILON: number,
+  VEPSILON: number,
 ): IntersectionReport | null {
   const det = crossMag(sub(b, a), sub(d, c));
   // Nearly 0:
-  if (Math.abs(det) < 0.0001) {
+  if (Math.abs(det) < 0.00001) {
     // Lines are parallel.
     return null;
   }
 
   const u = crossMag(sub(d, c), sub(a, c)) / det;
-  if (u < 0 || u > 1) {
+  if (u < UEPSILON || u > 1 - UEPSILON) {
     // Lines intersect; segments don't.
     return null;
   }
@@ -80,7 +87,7 @@ export function intersection(
   //var v = ((ax - cx) + u*(bx - ax))/(dx - cx);
   // Slow way by solving equations above for u, setting equal, then resolving for v.
   const v = crossMag(sub(c, a), sub(b, a)) / det;
-  if (v < 0 || v > 1) {
+  if (v < VEPSILON || v > 1 - VEPSILON) {
     // Lines intersect; segments don't.
     return null;
   }
@@ -91,7 +98,7 @@ export function intersection(
 
 /** Returns true if the line segments ab and cd intersect. */
 export function intersects(a: Point, b: Point, c: Point, d: Point): boolean {
-  return !!intersection(a, b, c, d);
+  return !!intersection(a, b, c, d, 0, 0);
 }
 
 /** Returns the distance to the segment xy from the point p. */
@@ -113,4 +120,32 @@ export function distanceToSegment(x: Point, y: Point, p: Point): number {
   }
 
   return dist(p, lerp(x, y, t));
+}
+
+export interface IntersectionSegmentReport extends IntersectionReport {
+  segment: Segment;
+}
+
+export function collectIntersections(
+  p1: Point,
+  p2: Point,
+  segments: Segment[],
+  UEPSILON: number,
+  VEPSILON: number,
+): IntersectionSegmentReport[] {
+  const intersections: IntersectionSegmentReport[] = [];
+  for (const segment of segments) {
+    const report = intersection(
+      p1,
+      p2,
+      segment.a,
+      segment.b,
+      UEPSILON,
+      VEPSILON,
+    );
+    if (report) {
+      intersections.push({ ...report, segment });
+    }
+  }
+  return intersections;
 }

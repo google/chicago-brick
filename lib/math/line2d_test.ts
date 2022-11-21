@@ -22,31 +22,59 @@ describe("onSegment", () => {
 
 describe("intersection", () => {
   it("returns null when lines are parallel", () => {
-    const r = intersection({ x: 5, y: 6 }, { x: 6, y: 7 }, { x: -3, y: 0 }, {
-      x: -4,
-      y: -1,
-    });
+    const r = intersection(
+      { x: 5, y: 6 },
+      { x: 6, y: 7 },
+      { x: -3, y: 0 },
+      {
+        x: -4,
+        y: -1,
+      },
+      0,
+      0,
+    );
     expect(r).to.be.null;
   });
   it("returns null when lines are the same", () => {
-    const r = intersection({ x: 5, y: 6 }, { x: 6, y: 7 }, { x: 5, y: 6 }, {
-      x: 6,
-      y: 7,
-    });
+    const r = intersection(
+      { x: 5, y: 6 },
+      { x: 6, y: 7 },
+      { x: 5, y: 6 },
+      {
+        x: 6,
+        y: 7,
+      },
+      0,
+      0,
+    );
     expect(r).to.be.null;
   });
   it("returns null when lines intersect, but segments do not", () => {
-    const r = intersection({ x: 5, y: 6 }, { x: 6, y: 7 }, { x: 6, y: 8 }, {
-      x: 7,
-      y: 7,
-    });
+    const r = intersection(
+      { x: 5, y: 6 },
+      { x: 6, y: 7 },
+      { x: 6, y: 8 },
+      {
+        x: 7,
+        y: 7,
+      },
+      0,
+      0,
+    );
     expect(r).to.be.null;
   });
   it("returns a valid intersection point when lines intersect", () => {
-    const r = intersection({ x: 5, y: 6 }, { x: 6, y: 7 }, { x: 5, y: 7 }, {
-      x: 6,
-      y: 6,
-    });
+    const r = intersection(
+      { x: 5, y: 6 },
+      { x: 6, y: 7 },
+      { x: 5, y: 7 },
+      {
+        x: 6,
+        y: 6,
+      },
+      0,
+      0,
+    );
     expect(r).to.deep.equal({ p: { x: 5.5, y: 6.5 }, u: 0.5, v: 0.5 });
   });
 });
