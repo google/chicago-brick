@@ -1,4 +1,7 @@
+import { easyLog } from "./log.ts";
 import { delay } from "./promise.ts";
+
+const log = easyLog("wall:rate_limit");
 
 type RateLimitedFn<T> = () => Promise<T>;
 
@@ -50,6 +53,7 @@ export function rateLimit403Responses(
     const res = await fetch();
     if (!res.ok) {
       if (res.status === 403) {
+        log(`Retrying operationw with 403 return code.`);
         // 403 error! Try again.
         throw new Error("Please continue");
       }
@@ -62,6 +66,7 @@ export function rateLimit403Responses(
       throw err;
     }
     if (err.message === "Please continue") {
+      log(`Retrying operation ${retryCount} tries left`);
       // I'm going to handle this. Wait some time.
       await delay(retry());
       // Now try again with the same fetch operation.
