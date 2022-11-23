@@ -384,19 +384,3 @@ export const PALETTE = [
   0x7e0103,
   0x7f0001,
 ];
-
-export function red(color: number) {
-  return color % 256;
-}
-
-export function green(color: number) {
-  return color / 256 % 256;
-}
-
-export function blue(color: number) {
-  return color / 256 / 256 % 256;
-}
-
-export const RED_PALETTE = PALETTE.map(red);
-export const GREEN_PALETTE = PALETTE.map(green);
-export const BLUE_PALETTE = PALETTE.map(blue);

@@ -3,9 +3,3 @@ export interface Destination {
   y: number;
   r: number;
 }
-
-declare global {
-  interface EmittedEvents {
-    "mandelbrot:points": (d: Destination[]) => void;
-  }
-}
