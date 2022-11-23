@@ -171,14 +171,17 @@ export class Polygon {
 
     // Step 1: Check our test line against each segment of the polygon.
     const intersectionResults = [...this.pairs()]
-      .map(([a, b]) => intersection(a, b, p, TEST_POINT));
+      .map(([a, b]) => intersection(a, b, p, TEST_POINT, 0, 0));
 
     // Step 2: Check the u values of our intersections, if any are ≈0, then we
     // hit a vertex, which means that we'll double-count our crossings.
     // This boundary is arbitrarily chosen; we should probably make this
-    // more numerically stable.
+    // more numerically stable. Also, if our r.v is quite small, we'll have a similar problem.
     const numberOfCrossings = intersectionResults
-      .reduce((agg, r) => agg + (r && r.u > 0.00001 ? 1 : 0), 0);
+      .reduce(
+        (agg, r) => agg + (r && r.u > 0.00001 && r.v > 0.00001 ? 1 : 0),
+        0,
+      );
 
     // Even crossings? Not inside. Odd crossings? Inside.
     return !!(numberOfCrossings % 2);
@@ -209,7 +212,7 @@ export class Polygon {
     y: Point,
   ): PolygonIntersectionReport | null {
     for (const [a, b] of this.pairs()) {
-      const isect = intersection(a, b, x, y);
+      const isect = intersection(a, b, x, y, 0, 0);
       if (isect) {
         return { a, b, ...isect, x, y };
       }
@@ -258,7 +261,7 @@ export class Polygon {
 
       // Ah, next point is on the OTHER side (or on the line).
       // Find the intersection point of the cutline and the current line.
-      const point = intersection(x, y, a, b);
+      const point = intersection(x, y, a, b, 0, 0);
       // There HAS to be a point.
       if (!point) {
         throw new Error(`Whoa, no point! ${x}, ${y}, ${a}, ${b}`);

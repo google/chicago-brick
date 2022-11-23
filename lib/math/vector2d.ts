@@ -3,6 +3,10 @@ export interface Point {
   y: number;
 }
 
+export function equal(p: Point, q: Point): boolean {
+  return p.x === q.x && p.y === q.y;
+}
+
 export function copy(dst: Point, src: Point) {
   dst.x = src.x;
   dst.y = src.y;

@@ -128,7 +128,7 @@ describe("Polygon.centroid", () => {
 describe("Polygon.isOn", () => {
   it("returns true when a point is on the polygon", () => {
     const p = new Polygon(SQUARE_POINTS);
-    expect(p.isOn({ x: 5, y: -0.1 })).to.be.true;
+    expect(p.isOn({ x: 5, y: 0 })).to.be.true;
   });
   it("returns false when a point is not on the polygon", () => {
     const p = new Polygon(SQUARE_POINTS);
@@ -145,9 +145,9 @@ describe("Polygon.isInside", () => {
     const p = new Polygon(SQUARE_POINTS);
     expect(p.isInside({ x: 5.1, y: -0.1 })).to.be.false;
   });
-  it("returns false when a point is on the polygon", () => {
+  it("returns true when a point is on the polygon", () => {
     const p = new Polygon(SQUARE_POINTS);
-    expect(p.isInside({ x: 5, y: -0.1 })).to.be.false;
+    expect(p.isInside({ x: 5, y: -0.1 })).to.be.true;
   });
 });
 
