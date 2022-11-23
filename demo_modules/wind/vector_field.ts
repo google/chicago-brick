@@ -229,6 +229,12 @@ export class VectorField {
       x += 2;
     }
 
+    for (let i = 0; i < columns.length; ++i) {
+      if (!columns[i]) {
+        columns[i] = [];
+      }
+    }
+
     debug(`Vector field cols:${columns.length} rows:${columns[0].length}`);
     return new VectorField(columns, bounds, mask);
   }

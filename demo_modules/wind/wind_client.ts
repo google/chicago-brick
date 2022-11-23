@@ -99,7 +99,7 @@ export function load(wallGeometry: Polygon) {
       this.virtualRect = this.mapSurface.virtualRect;
       this.globalRect = wallGeometry.extents;
 
-      this.scale = 2.5 * (wallGeometry.extents.w / 3);
+      this.scale = wallGeometry.extents.h * 1.2;
 
       this.projection = d3.geoOrthographic()
         .scale(this.scale)
