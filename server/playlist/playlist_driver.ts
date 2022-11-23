@@ -181,7 +181,11 @@ export class PlaylistDriver extends EventEmitter {
       });
     }
 
-    log(`Next Layout: ${this.layoutIndex}`);
+    log(
+      `Next Layout: ${this.layoutIndex} of ${
+        this.playlist!.length
+      }. Duration: ${layout.duration}`,
+    );
 
     // If the wall isn't already faded out, fade it out:
     const concurrentWork = [];
@@ -205,10 +209,14 @@ export class PlaylistDriver extends EventEmitter {
   nextModule() {
     this.moduleIndex = (this.moduleIndex + 1) % this.modules.length;
 
-    log(`Next module: ${this.modules[this.moduleIndex]}`);
-
     // The current layout.
     const layout = this.playlist![this.layoutIndex];
+
+    log(
+      `Next module: ${
+        this.modules[this.moduleIndex]
+      } of ${this.modules.length}. Duraiton: ${layout.moduleDuration}`,
+    );
 
     // The time that we'll switch to the next module.
     this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
@@ -235,6 +243,12 @@ export class PlaylistDriver extends EventEmitter {
     }
 
     const nextDeadline = Math.min(this.newLayoutTime, this.newModuleTime);
+
+    log(
+      `Playing module: ${moduleName} with duration ${
+        this.playlist![this.layoutIndex].moduleDuration
+      }`,
+    );
 
     const data: TransitionData = {
       deadline: this.lastDeadline_,
