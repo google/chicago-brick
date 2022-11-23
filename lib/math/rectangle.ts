@@ -101,4 +101,12 @@ export class Rectangle {
       this.h * sy,
     );
   }
+  inset(left: number, top: number, right: number, bottom: number): Rectangle {
+    return new Rectangle(
+      this.x - left,
+      this.y - top,
+      this.w - left - right,
+      this.h - top - bottom,
+    );
+  }
 }
