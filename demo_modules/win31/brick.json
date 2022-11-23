@@ -1,0 +1,9 @@
+{
+  "name": "win31",
+  "client_path": "./win31_client.ts",
+  "server_path": "./win31_server.ts",
+  "credit": {
+    "title": "Win31 Screensaver",
+    "author": "Jacob Lee"
+  }
+}
