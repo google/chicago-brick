@@ -138,7 +138,6 @@
     "config": {
       "load": {
         "youtube": {
-          "creds": "googleserviceaccountkey",
           "playlists": ["PLCJZjGFB_wA72YhaYl5XtuRVqC9q4EwG-"],
           "shuffle": true
         }
@@ -154,13 +153,12 @@
     "config": {
       "load": {
         "youtube": {
-          "playlistId": "PLF4DCD1EE19D50969",
-          "playThroughPlaylist": true
+          "playlists": ["PLF4DCD1EE19D50969"],
+          "shuffle": true
         }
       },
       "display": {
         "fullscreen": {
-          "period": 0
         }
       }
     }

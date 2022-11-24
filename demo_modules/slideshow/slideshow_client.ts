@@ -58,7 +58,7 @@ export function load(wallGeometry: Polygon, network: WS) {
         abortSignal,
       );
     } else if (loadConfig.youtube) {
-      return new LoadYouTubeClientStrategy(loadConfig.youtube);
+      return new LoadYouTubeClientStrategy(loadConfig.youtube, network);
     } else if (loadConfig.local) {
       return new LoadLocalClientStrategy(
         loadConfig.local,

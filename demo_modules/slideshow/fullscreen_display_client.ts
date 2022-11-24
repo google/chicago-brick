@@ -86,7 +86,7 @@ export class FullscreenDisplayStrategyClient implements ClientDisplayStrategy {
         } else {
           content = await this.loadStrategy.loadContent(
             contentId,
-            this.surface.virtualRect,
+            this.surface,
           );
         }
       } catch (e) {
