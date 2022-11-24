@@ -14,6 +14,9 @@ limitations under the License.
 ==============================================================================*/
 
 import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import { easyLog } from "../../lib/log.ts";
+
+const log = easyLog("wall:credentials");
 
 const creds: Record<string, unknown> = {};
 
@@ -34,4 +37,5 @@ export function loadFromDir(dir: string) {
     const cred = JSON.parse(decoder.decode(contents));
     creds[p.name.replace(".json", "")] = cred;
   }
+  log(`Loaded credentials:`, Object.keys(creds).join(", "));
 }
