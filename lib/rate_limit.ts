@@ -16,7 +16,7 @@ export async function rateLimit<T>(
 ): Promise<T> {
   const tryIt: (fn: RateLimitedFn<T>) => Promise<T> = async () => {
     try {
-      return fn();
+      return await fn();
       // We are good!
     } catch (e) {
       // Hmm. Didn't work! Ask the retry strategy what to do.
