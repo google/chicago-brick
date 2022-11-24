@@ -71,6 +71,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     readonly initialDeadline: number,
   ) {
     this.nextDeadline = initialDeadline;
+    this.lastUpdate = initialDeadline;
     // Tell the clients about content when it arrives.
     network.on(
       "slideshow:fullscreen:content_req",
