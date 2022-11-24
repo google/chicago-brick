@@ -77,6 +77,10 @@ export class ModulePlayer {
   // player has tried to transition to your module, which is perfect for
   // tests.
   async playModule(module: Module) {
+    if (this.oldModule.name === "_empty" && module.name === "_empty") {
+      // We are already playing empty! Don't do anything.
+      return;
+    }
     this.nextModule = module;
     if (this.monitor.isEnabled()) {
       this.monitor.update({
