@@ -95,14 +95,15 @@ export function load(wallGeometry: Polygon, peerNetwork: ModulePeer) {
       peerNetwork.sendToAllPeers("trails", this.trails_);
     }
     spawn(time: number) {
-      const maxTrailsRightNow = 330 +
+      const maxTrailsRightNow = wallGeometry.extents.w / CHAR_WIDTH +
         20 * Math.sin(time / 1000 * Math.PI * 2 / 30);
       if (this.trails_.length < maxTrailsRightNow) {
         // Make a new trail!
+        const y = Math.random() * -wallGeometry.extents.h / CHAR_HEIGHT;
         const newTrail: Trail = {
           headX: Math.floor(Math.random() * (this.width_ / CHAR_WIDTH)),
-          headY: 0,
-          y: 0,
+          headY: Math.floor(y),
+          y,
           seed: 13 + Math.floor(time * 10 % 17),
           idealLength: Math.floor(Math.random() * 20 + 8),
         };
