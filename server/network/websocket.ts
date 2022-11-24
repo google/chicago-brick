@@ -74,7 +74,7 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
         }
       }
       ws.on("disconnect", (code: number, reason: string) => {
-        log.error(`Lost client: ${code} Reason: ${reason}`);
+        log.debugAt(1, `Lost client: ${code} Reason: ${reason}`);
         this.clientSockets.delete(ws);
         this.emit("disconnect", ws);
       });
