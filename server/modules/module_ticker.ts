@@ -45,7 +45,9 @@ function tick() {
   const tickTime = time.now() - start;
   if (tickTime > interval) {
     log.warn(
-      `Module tick() took too long: ${tickTime} ms out of ${interval} ms.`,
+      `Module tick() took too long: ${tickTime} ms out of ${interval} ms: ${
+        modulesToTick.map((m) => m.name).join(", ")
+      }`,
     );
   }
   setTimeout(tick, Math.max(interval - tickTime, 0));
@@ -59,7 +61,7 @@ export function add(module: RunningModule) {
     log.debugAt(
       1,
       "Add: We are now ticking " + modulesToTick.length + " modules:",
-      modulesToTick.map((m) => m.moduleDef.name).join(", "),
+      modulesToTick.map((m) => m.name).join(", "),
     );
     if (modulesToTick.length > 2) {
       log.error("Ticking more than 2 modules!");
@@ -79,6 +81,6 @@ export function remove(module: RunningModule) {
   log.debugAt(
     1,
     "Remove: We are now ticking " + modulesToTick.length + " modules",
-    modulesToTick.map((m) => m.moduleDef.name).join(", "),
+    modulesToTick.map((m) => m.name).join(", "),
   );
 }
