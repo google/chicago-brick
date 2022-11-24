@@ -33,7 +33,7 @@ export async function rateLimit<T>(
 }
 
 export function exponential() {
-  let backoffMs = Math.random() * 500 + 100;
+  let backoffMs = Math.random() * 500 + 500;
   return () => {
     const ret = backoffMs;
     backoffMs *= 2;
