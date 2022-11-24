@@ -15,8 +15,9 @@ limitations under the License.
 
 /// <reference types="https://esm.sh/v96/@types/youtube@0.0.47/index.d.ts" />
 
+import { Surface } from "../../client/surface/surface.ts";
 import { easyLog } from "../../lib/log.ts";
-import { Rectangle } from "../../lib/math/rectangle.ts";
+import { ModuleWS } from "../../lib/websocket.ts";
 import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
 import { ContentId, YouTubeLoadConfig } from "./interfaces.ts";
 import { DrawFn, setUpVideo } from "./video_content_utils.ts";
@@ -51,33 +52,46 @@ function getYTAPI(): Promise<void> {
 export class LoadYouTubeClientStrategy implements ClientLoadStrategy {
   apiLoaded: Promise<void>;
 
-  constructor(readonly config: YouTubeLoadConfig) {
+  constructor(readonly config: YouTubeLoadConfig, readonly network: ModuleWS) {
     this.apiLoaded = getYTAPI();
   }
   async loadContent(
     contentId: ContentId,
-    virtualRect: Rectangle,
+    surface: Surface,
   ): Promise<Content> {
     await this.apiLoaded;
     log(`Loading video: ${contentId.id}`);
     const container = document.createElement("div");
+    // Pass actual surface size, not the virtual size, because we don't rescale the player.
     const player = new YT.Player(container, {
       videoId: contentId.id,
-      width: virtualRect.w,
-      height: virtualRect.h,
+      width: surface.container.offsetWidth,
+      height: surface.container.offsetHeight,
       playerVars: {
-        iv_load_policy: YT.IvLoadPolicy.Hide, // Disable annotations.
-        controls: YT.Controls.Hide,
-        showinfo: YT.ShowInfo.Hide,
-        autoplay: YT.AutoPlay.AutoPlay,
+        iv_load_policy: 3 as YT.IvLoadPolicy.Hide, // Disable annotations.
+        controls: 0 as YT.Controls.Hide,
+        showinfo: 0 as YT.ShowInfo.Hide,
+        autoplay: 1 as YT.AutoPlay.AutoPlay,
+        modestbranding: 1,
       },
       events: {
         onReady: () => {
           player.setPlaybackQuality("hd1080");
           player.mute();
+          player.playVideo();
         },
         onError: (e) => {
           log.error(e);
+        },
+        onStateChange: (e: YT.OnStateChangeEvent) => {
+          if (e.data === 0) { // ended
+            log(`Content ${contentId.id} ended`);
+            this.network.send(
+              "slideshow:content_ended",
+              contentId,
+              surface.virtualOffset,
+            );
+          }
         },
       },
     });

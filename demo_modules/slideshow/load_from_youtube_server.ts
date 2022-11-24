@@ -53,7 +53,7 @@ class VideoIdGenerator {
                 });
               if (result.items) {
                 log(
-                  `Loaded ${result.items} YT videos from playlist ${playlistId}`,
+                  `Loaded ${result.items.length} YT videos from playlist ${playlistId}`,
                 );
                 controller.enqueue(result.items.map((item) => {
                   return item.contentDetails!.videoId!;
@@ -69,21 +69,28 @@ class VideoIdGenerator {
     });
     this.loadVideos = new TransformStream({
       async transform(chunk, controller) {
-        const videos = await youtube.videosList({
-          id: chunk.join(","),
-          part: "fileDetails",
-        });
-        if (!videos.items) {
-          return;
+        try {
+          const videos = await youtube.videosList({
+            id: chunk.join(","),
+            part: "fileDetails",
+          });
+          if (!videos.items) {
+            return;
+          }
+          log(`Loaded data about ${videos.items.length}`);
+          controller.enqueue(videos.items.map((video) => {
+            return {
+              id: video.id!,
+              width: video.fileDetails?.videoStreams![0].widthPixels,
+              height: video.fileDetails?.videoStreams![0].heightPixels,
+            };
+          }));
+        } catch {
+          // Can't load the video details.
+          controller.enqueue(chunk.map((i) => {
+            return { id: i };
+          }));
         }
-        log(`Loaded data about ${videos.items.length}`);
-        controller.enqueue(videos.items.map((video) => {
-          return {
-            id: video.id!,
-            width: video.fileDetails?.videoStreams![0].widthPixels,
-            height: video.fileDetails?.videoStreams![0].heightPixels,
-          };
-        }));
       },
     });
   }
@@ -92,7 +99,7 @@ class VideoIdGenerator {
 export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
   nextPlaylistToLoad = 0;
   readonly youtube: YouTube;
-  videoIdGenerator?: VideoIdGenerator;
+  readonly videoIdGenerator: VideoIdGenerator;
   readonly loadedContentIds: ContentId[] = [];
   contentIdReader?: ReadableStreamReader<ContentId[]>;
   client: GoogleAuth;
@@ -100,30 +107,28 @@ export class LoadYouTubeServerStrategy implements ServerLoadStrategy {
     readonly config: YouTubeLoadConfig,
     readonly abortSignal: AbortSignal,
   ) {
-    if (!config.creds) {
-      throw new Error("YouTube loading strategy requires credentials");
-    }
-    const creds = credentials.get(config.creds) as JWTInput;
+    const credsKey = config.creds || "googleserviceaccountkey";
+    const creds = credentials.get(credsKey) as JWTInput;
     if (!creds) {
-      throw new Error("Unable to load youtube creds!");
+      throw new Error(`Unable to load youtube creds: ${credsKey}`);
     }
     this.client = new GoogleAuth(creds);
     this.client.setScopes([
       "https://www.googleapis.com/auth/youtube.readonly",
     ]);
     this.youtube = new YouTube(this.client);
+    this.videoIdGenerator = new VideoIdGenerator(
+      this.config,
+      this.youtube,
+      this.abortSignal,
+    );
   }
   getBytes(): Promise<Uint8Array> {
     throw new Error("Method not implemented.");
   }
 
   async loadMoreContent(): Promise<ContentPage> {
-    if (!this.videoIdGenerator) {
-      this.videoIdGenerator = new VideoIdGenerator(
-        this.config,
-        this.youtube,
-        this.abortSignal,
-      );
+    if (!this.contentIdReader) {
       const contentIds = this.videoIdGenerator.loadVideoIds.pipeThrough(
         this.videoIdGenerator.loadVideos,
       );

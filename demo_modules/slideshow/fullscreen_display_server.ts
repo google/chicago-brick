@@ -71,6 +71,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     readonly initialDeadline: number,
   ) {
     this.nextDeadline = initialDeadline;
+    this.lastUpdate = initialDeadline;
     // Tell the clients about content when it arrives.
     network.on(
       "slideshow:fullscreen:content_req",
@@ -79,8 +80,22 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
       },
     );
   }
-  contentEnded(): void {
-    // When content ends, we don't do anything, because we let the period restart things.
+  contentEnded(
+    _contentId: ContentId,
+    offset: Point,
+    socket: TypedWebsocketLike,
+  ): void {
+    if (this.config.period) {
+      // When content ends, we don't do anything, because we let the period restart things.
+      return;
+    }
+
+    log(`Content ended on ${offset.x},${offset.y}`);
+    // When the content ends, pick some new content.
+    this.offsetToContentMapping.delete(
+      `${offset.x},${offset.y}`,
+    );
+    this.sendContentToClient(offset, socket);
   }
   async splitGlobalContent(contentId: ContentId): Promise<ContentId> {
     if (!this.config.split) {

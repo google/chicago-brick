@@ -1,6 +1,6 @@
 /// <reference lib="dom" />
 
-import { Rectangle } from "../../lib/math/rectangle.ts";
+import { Surface } from "../../client/surface/surface.ts";
 import { ContentId } from "./interfaces.ts";
 
 export interface ClientLoadStrategy {
@@ -9,7 +9,7 @@ export interface ClientLoadStrategy {
    * from the server version of this strategy by way of the display
    * strategy. The promise is expected to resolve to an Element.
    */
-  loadContent(contentId: ContentId, virtualRect: Rectangle): Promise<Content>;
+  loadContent(contentId: ContentId, surface: Surface): Promise<Content>;
 }
 
 export interface ClientDisplayStrategy {
