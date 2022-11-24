@@ -119,21 +119,30 @@ export function serveDirectory(dir: string): Handler {
 
 export function notFound(): Response {
   return new Response("Not Found", {
-    headers: new Headers({ "content-type": "text/plain" }),
+    headers: new Headers({
+      "content-type": "text/plain",
+      "cache-control": "no-cache",
+    }),
     status: 404,
   });
 }
 
 export function error(e: Error): Response {
   return new Response(`Error: ${e.stack}`, {
-    headers: new Headers({ "content-type": "text/plain" }),
+    headers: new Headers({
+      "content-type": "text/plain",
+      "cache-control": "no-cache",
+    }),
     status: 500,
   });
 }
 
 export function plain(str: string | Uint8Array, type: string): Response {
   return new Response(str, {
-    headers: new Headers({ "content-type": type }),
+    headers: new Headers({
+      "content-type": type,
+      "cache-control": "no-cache",
+    }),
     status: 200,
   });
 }

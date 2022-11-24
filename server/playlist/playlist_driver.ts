@@ -199,8 +199,7 @@ export class PlaylistDriver extends EventEmitter {
     // TODO(applmak): Wait for conncurrentWork here?
 
     // Shuffle the module list:
-    this.modules = Array.from(layout.modules);
-    shuffle(this.modules);
+    this.modules = shuffle(layout.modules);
     this.nextModule();
   }
   // Advances to the next module in the current layout. If there is only 1

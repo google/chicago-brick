@@ -47,7 +47,7 @@ export function load(state: ModuleState) {
       let outsideAcc: Point = add(insideAcc, delta);
 
       // Now, with a limit, try to find a point on the edge.
-      for (let i = 0; i < 20; ++i) {
+      for (let i = 0; i < 15; ++i) {
         // Pick the point between inside and outside.
         const test = scale(add(insideAcc, outsideAcc), 0.5);
 

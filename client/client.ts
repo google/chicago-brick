@@ -17,7 +17,7 @@ import * as monitor from "./monitoring/monitor.ts";
 import * as network from "./network/network.ts";
 import * as stateManager from "./network/state_manager.ts";
 import { makeConsoleLogger } from "../lib/console_logger.ts";
-import { addLogger } from "../lib/log.ts";
+import { addLogger, easyLog } from "../lib/log.ts";
 import * as time from "../lib/adjustable_time.ts";
 import { errorLogger } from "./util/error_logger.ts";
 import { ClientModulePlayer } from "./modules/client_module_player.ts";
@@ -25,6 +25,8 @@ import { ClientModule } from "./modules/module.ts";
 import { LoadModuleEvent } from "../server/modules/module.ts";
 import { consoleLogger } from "./util/console_logger.ts";
 import "./network/peer.ts";
+
+const log = easyLog("wall:client");
 
 addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(errorLogger);
@@ -38,6 +40,12 @@ if (new URL(window.location.href).searchParams.get("monitor")) {
 }
 
 const modulePlayer = new ClientModulePlayer();
+
+// If we disconnect, go to _empty.
+network.socket.on("disconnect", () => {
+  log("Client disconnected. Going to empty module.");
+  modulePlayer.playModule(ClientModule.newEmptyModule(time.now()));
+});
 
 // Server has asked us to load a new module.
 network.socket.on(

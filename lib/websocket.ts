@@ -59,7 +59,7 @@ export class WS extends EventEmitter implements TypedWebsocketLike {
             resolve(newWebSocket);
           };
           newWebSocket.onerror = async (err) => {
-            log.error(err);
+            log.debugAt(1, `Reconnect error`, err);
             // Hmm, need to wait a bit, then retry.
             await delay(backoffMs);
             backoffMs *= 2;
