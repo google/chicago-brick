@@ -170,7 +170,14 @@ export class WS extends EventEmitter implements TypedWebsocketLike {
     ...payload: Exact<V, Parameters<EmittedEvents[K]>>
   ) {
     if (this.isOpen) {
-      this.websocket.send(serializeMessage(msg, payload));
+      if (this.websocket.readyState != 1) {
+        log.warn(
+          `Websocket open state does not match ready state: ${this.websocket.readyState}`,
+        );
+        this.buffer.push(serializeMessage(msg, payload));
+      } else {
+        this.websocket.send(serializeMessage(msg, payload));
+      }
     } else {
       this.buffer.push(serializeMessage(msg, payload));
     }
