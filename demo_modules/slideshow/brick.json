@@ -45,6 +45,27 @@
     "testonly": true
   },
   {
+    "name": "slideshow_local_video_presplit_test",
+    "extends": "slideshow",
+    "config": {
+      "load": {
+        "local": {
+          "directories": ["video/cobra"],
+          "video": {
+            "sync": true,
+            "syncDebug": true
+          }
+        }
+      },
+      "display": {
+        "fullscreen": {
+          "presplit": true
+        }
+      }
+    },
+    "testonly": true
+  },
+  {
     "name": "slideshow_local_period_test",
     "extends": "slideshow",
     "config": {

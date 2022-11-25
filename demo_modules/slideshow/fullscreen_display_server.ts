@@ -41,10 +41,10 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
 
   splittingOperationPromise?: Promise<void>;
 
-  // The time we last chose new content when updating due to a period.
+  // The time we last chose new content.
   lastUpdate = 0;
 
-  // If we are in pre-split mode, we have a single 'global' playing content. Remember that id here.
+  // The id of content played over the whole wall, when in presplit or split mode.
   globalContentId: ContentId | undefined = undefined;
 
   /** The offset into the content to walk through next sequentially. */
@@ -81,7 +81,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     );
   }
   contentEnded(
-    _contentId: ContentId,
+    contentId: ContentId,
     offset: Point,
     socket: TypedWebsocketLike,
   ): void {
@@ -89,8 +89,44 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
       // When content ends, we don't do anything, because we let the period restart things.
       return;
     }
+    if (this.config.presplit || this.config.split) {
+      if (!this.globalContentId) {
+        // We are in the middle of choosing new content.
+        return;
+      }
+      // If we are in global mode, figure out if we should pick new content.
+      // Check if everything but the last path component matches our global id.
+      const globalContentPrefix = this.config.presplit
+        ? this.globalContentId.id.split("|")[0]
+        : this.globalContentId.id;
 
-    log(`Content ended on ${offset.x},${offset.y}`);
+      const messageContentPrefix = this.config.presplit
+        ? path.dirname(contentId.id)
+        : contentId.id;
+
+      // As a failsafe against some edge cases (e.g. 1 item in the content bag), we
+      // don't allow content to be updated by end events more often than every 5 seconds.
+      if (time.now() - this.lastUpdate < 5000) {
+        // We _just_ refreshed. Ignore this end event.
+        return;
+      }
+      if (globalContentPrefix === messageContentPrefix) {
+        log(`Global content ended. Picking new content.`);
+        // The content we were playing has come to an end. Pick some new content.
+        this.globalContentId = undefined;
+        for (const [offset, socket] of this.network.clients()) {
+          this.sendContentToClient(offset, socket);
+        }
+      } else {
+        // This content isn't the one we were currently playing. Tell this guy to play the new thing!
+        this.sendContentToClient(offset, socket);
+      }
+      // Update our timer for when we updated content.
+      this.lastUpdate = time.now();
+      return;
+    }
+
+    log(`Content ended on ${offset.x},${offset.y}: ${contentId.id}`);
     // When the content ends, pick some new content.
     this.offsetToContentMapping.delete(
       `${offset.x},${offset.y}`,
