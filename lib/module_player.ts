@@ -183,8 +183,14 @@ export class ModulePlayer {
         timestamp: time.now(),
         timestampSinceModuleStart: time.now() - module.deadline,
       });
-      module.dispose();
-      return;
+      if (err.message === "Timeout") {
+        // This was just a timeout. It could be that this one screen was slow. Don't stop
+        // the whole module from continuing. We won't wait for willBeShownSoon to finish
+        // before trying to tick/draw the module, though!
+      } else {
+        module.dispose();
+        return;
+      }
     }
     // While we were getting all of that together, which might have taken a bit
     // of time, we should check to make sure that we are still trying to be
