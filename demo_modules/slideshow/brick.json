@@ -133,7 +133,8 @@
           "period": 1000
         }
       }
-    }
+    },
+    "testonly": true
   },
   {
     "name": "drive-split-test",
@@ -151,7 +152,8 @@
           "period": 5000
         }
       }
-    }
+    },
+    "testonly": true
   },
   {
     "name": "cta",
