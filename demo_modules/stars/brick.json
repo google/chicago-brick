@@ -1,0 +1,9 @@
+{
+  "name": "stars",
+  "client_path": "./stars_client.ts",
+  "server_path": "./stars_server.ts",
+  "credit": {
+    "author": "Matt Handley",
+    "title": "Stars"
+  }
+}
