@@ -20,7 +20,6 @@ import { getErrors } from "./util/last_n_errors_logger.ts";
 import { WSS } from "./network/websocket.ts";
 import { easyLog } from "../lib/log.ts";
 import { PlaylistDriver, TransitionData } from "./playlist/playlist_driver.ts";
-import { Layout } from "./modules/layout.ts";
 import { TypedWebsocketLike } from "../lib/websocket.ts";
 import { DispatchServer } from "./util/serving.ts";
 import { library } from "./modules/library.ts";
@@ -41,10 +40,7 @@ export interface NewPlaylistRequest {
 // This is just for demonstration purposes, since the real server
 // will not have the ability to listen over http.
 export class Control {
-  constructor(
-    readonly playlistDriver: PlaylistDriver,
-    readonly initialPlaylist: Layout[],
-  ) {
+  constructor(readonly playlistDriver: PlaylistDriver) {
   }
 
   installHandlers(server: DispatchServer) {
@@ -109,7 +105,7 @@ export class Control {
         this.playlistDriver.setPlaylist(layouts);
       });
       socket.on("resetPlaylist", () => {
-        this.playlistDriver.setPlaylist(this.initialPlaylist);
+        this.playlistDriver.resetPlaylist();
       });
     });
     wss.send("time", time.now());

@@ -21,7 +21,7 @@ import {
 } from "https://googleapis.deno.dev/v1/youtube:v3.ts";
 import * as credentials from "../../server/util/credentials.ts";
 import { easyLog } from "../../lib/log.ts";
-import { GoogleAuth } from "./authenticate_google_api.ts";
+import { GoogleAuth } from "../../server/util/authenticate_google_api.ts";
 import { JWTInput } from "https://googleapis.deno.dev/_/base@v1/auth/jwt.ts";
 
 const log = easyLog("slideshow:youtube");

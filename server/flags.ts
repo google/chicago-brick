@@ -91,6 +91,12 @@ const FLAG_DEFS = [
     defaultValue: "",
     description: "Path to a SSL key file. Often has extension key.",
   },
+  {
+    name: "calendar_id",
+    type: String,
+    defaultValue: "",
+    description: "Id of a Google Calendar used to configure the wall.",
+  },
 ];
 
 export interface Flags {
@@ -109,6 +115,7 @@ export interface Flags {
   enable_monitoring?: boolean;
   https_cert: string;
   https_key: string;
+  calendar_id: string;
 }
 
 export const flags = commandLineArgs(FLAG_DEFS) as Flags;
