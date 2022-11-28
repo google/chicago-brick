@@ -133,7 +133,10 @@ function sleepAndPlayNextEvent(
       }s)`,
     );
     timerUntilNextStartCheck = setTimeout(() => {
-      if (playlistDriver.modulePlayer.oldModule.name === originalName) {
+      if (
+        playlistDriver.modulePlayer.oldModule.name === originalName ||
+        playlistDriver.modulePlayer.oldModule.name === "_from_calendar"
+      ) {
         // We already told the module to play.
         return;
       }
