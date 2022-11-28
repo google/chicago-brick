@@ -38,6 +38,7 @@ export interface TransitionData {
   layouts: LayoutConfig[];
   layoutIndex: number;
   configMap: Record<string, BrickJson>;
+  suspendPlaylist: boolean;
 }
 
 export class PlaylistDriver extends EventEmitter {
@@ -64,8 +65,12 @@ export class PlaylistDriver extends EventEmitter {
   /** Timestamp of the last deadline we used to play a module. */
   lastDeadline_ = 0;
 
+  /** True if the normal playlist is playing. */
+  playlistPlaying = false;
+
   constructor(
     readonly modulePlayer: ModulePlayer,
+    readonly initialPlaylist: Layout[],
   ) {
     super();
 
@@ -78,6 +83,15 @@ export class PlaylistDriver extends EventEmitter {
         nextModule.tellClientToPlay(socket);
       }
     });
+  }
+  async resetPlaylist() {
+    if (this.playlistPlaying) {
+      log(`Asked to reset playlist, but we're already playing`);
+      // If we are already playing the initial playlist, don't skip ahead.
+      return;
+    }
+    log(`Resetting playlist back to initial`);
+    await this.setPlaylist(this.initialPlaylist);
   }
   async setPlaylist(newPlaylist: Layout[]) {
     if (this.modulePlayer.oldModule.name != "_empty") {
@@ -138,7 +152,7 @@ export class PlaylistDriver extends EventEmitter {
   // Plays a module by name, regardless of whether or not the module is
   // actually in the current playlist.
   // NOTE: This module will play for the moduleDuration of the current layout.
-  playModule(moduleName: string) {
+  playModule(moduleName: string, suspendPlaylist = false) {
     // Force a specific module to play. Now, this particular module doesn't
     // necessarily exist in any kind of playlist, which presents us with a
     // choice as to how long to play this module. We'll choose to play it for
@@ -155,7 +169,7 @@ export class PlaylistDriver extends EventEmitter {
     // Ensure that we won't change layouts until this module is done.
     this.newLayoutTime = Math.max(this.newModuleTime, this.newLayoutTime);
     // Now play this module.
-    this.playModule_(moduleName);
+    this.playModule_(moduleName, suspendPlaylist);
   }
   // Advances to the next layout in the playlist, fading out between them.
   nextLayout() {
@@ -220,11 +234,11 @@ export class PlaylistDriver extends EventEmitter {
     // The time that we'll switch to the next module.
     this.newModuleTime = time.inFuture(layout.moduleDuration * 1000);
 
-    this.playModule_(this.modules[this.moduleIndex]);
+    this.playModule_(this.modules[this.moduleIndex], false);
   }
   // Private helper function that does the work of going to a module by name
   // and scheduling the next module to play after a certain duration.
-  playModule_(moduleName: string) {
+  playModule_(moduleName: string, suspendPlaylist: boolean) {
     // Play a module until the next transition.
     // Give the wall 5 seconds to prep the new module and inform the clients.
     this.lastDeadline_ = time.now() + 5000;
@@ -265,26 +279,33 @@ export class PlaylistDriver extends EventEmitter {
       }) || [],
       layoutIndex: this.layoutIndex,
       configMap: library.serialize(),
+      suspendPlaylist,
     };
 
     this.emit("transition", data);
 
-    // Now, in so many seconds, we'll need to switch to another module
-    // or another layout. How much time do we have?
-    if (this.newLayoutTime < this.newModuleTime) {
-      this.timer = setTimeout(
-        () => this.nextLayout(),
-        time.until(this.newLayoutTime),
-      );
+    if (suspendPlaylist) {
+      this.playlistPlaying = false;
+      this.resetTimer_();
     } else {
-      // Only schedule the next module to play if:
-      // a) There are multiple modules in the current layout, or
-      // b) The module we are now playing is not in the current layout, and so
-      //    we wish to return to that layout.
-      this.timer = setTimeout(
-        () => this.nextModule(),
-        time.until(this.newModuleTime),
-      );
+      this.playlistPlaying = true;
+      // Now, in so many seconds, we'll need to switch to another module
+      // or another layout. How much time do we have?
+      if (this.newLayoutTime < this.newModuleTime) {
+        this.timer = setTimeout(
+          () => this.nextLayout(),
+          time.until(this.newLayoutTime),
+        );
+      } else {
+        // Only schedule the next module to play if:
+        // a) There are multiple modules in the current layout, or
+        // b) The module we are now playing is not in the current layout, and so
+        //    we wish to return to that layout.
+        this.timer = setTimeout(
+          () => this.nextModule(),
+          time.until(this.newModuleTime),
+        );
+      }
     }
   }
 }

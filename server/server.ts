@@ -35,6 +35,7 @@ import * as time from "../lib/adjustable_time.ts";
 import { library } from "./modules/library.ts";
 import { flags } from "./flags.ts";
 import { consoleLogger } from "./util/console_logger.ts";
+import { startSchedule } from "./playlist/calendar_playlist.ts";
 
 addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(captureLog, "wall");
@@ -70,7 +71,7 @@ peer.initPeer();
 const modulePlayer = new ServerModulePlayer();
 
 // Create a driver, which walks through a playlist one step at a time.
-const driver = new PlaylistDriver(modulePlayer);
+const driver = new PlaylistDriver(modulePlayer, playlist);
 
 // Optionally enable the monitoring mode, which shows debug and performance
 // information on the client screens.
@@ -79,7 +80,7 @@ if (flags.enable_monitoring) {
 }
 
 // Initialize a set of routes that communicate with the control server.
-const control = new Control(driver, playlist);
+const control = new Control(driver);
 control.installHandlers(network.server);
 
 // Start the server with the routes installed.
@@ -89,3 +90,12 @@ network.server.start();
 log(`Loaded ${library.size} modules`);
 log("Running playlist of " + playlist.length + " layouts");
 driver.start(playlist);
+
+if (flags.calendar_id) {
+  log(`Starting events for calendar: ${flags.calendar_id}`);
+  await startSchedule(
+    flags.calendar_id,
+    "googleserviceaccountkey",
+    driver,
+  );
+}

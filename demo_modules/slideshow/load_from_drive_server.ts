@@ -24,7 +24,7 @@ import { easyLog } from "../../lib/log.ts";
 import { ServerLoadStrategy } from "./server_interfaces.ts";
 import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
-import { GoogleAuth } from "./authenticate_google_api.ts";
+import { GoogleAuth } from "../../server/util/authenticate_google_api.ts";
 
 const log = easyLog("slideshow:drive");
 
