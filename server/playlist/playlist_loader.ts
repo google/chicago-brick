@@ -130,7 +130,9 @@ export function loadLayoutsFromConfig(
     let moduleNames;
     if (collection) {
       if (collection == "__ALL__") {
-        moduleNames = [...library.values()].map((d) => d.name);
+        moduleNames = [...library.values()]
+          .filter((def) => !def.testonly)
+          .map((d) => d.name);
       } else {
         assert(
           collections[collection],
