@@ -31,8 +31,6 @@ const log = easyLog("wall:client");
 addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(errorLogger);
 
-// Open our socket to the server.
-network.init();
 stateManager.init();
 
 if (new URL(window.location.href).searchParams.get("monitor")) {

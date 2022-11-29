@@ -79,7 +79,6 @@ const handleModelChange = (change: MonitoringChange) => {
 };
 
 const watchForModelChanges = () => {
-  // Open connection to the server, monitor for updates to the model.
   network.socket.send("enable-monitoring");
   network.socket.on("monitor", handleModelChange);
 };
@@ -743,14 +742,14 @@ export function isEnabled() {
 }
 export function enable() {
   enabled = true;
-  network.whenReady.then(watchForModelChanges);
+  watchForModelChanges();
   monitoringElement = createMonitoringLayer();
   document.body.appendChild(monitoringElement);
   updateUI();
 }
 export function disable() {
   enabled = false;
-  network.whenReady.then(stopWatchingModelChanges);
+  stopWatchingModelChanges();
   monitoringElement.remove();
 }
 
@@ -763,4 +762,11 @@ export function update(change: MonitoringChange) {
 }
 export function markDrawnModules(modulesToDraw: string[]) {
   clientState.modulesToDraw = modulesToDraw;
+}
+
+declare global {
+  interface EmittedEvents {
+    "enable-monitoring": () => void;
+    "disable-monitoring": () => void;
+  }
 }
