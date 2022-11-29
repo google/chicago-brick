@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import { VideoContentOptions } from "./interfaces.ts";
 import { Logger } from "../../lib/log.ts";
 

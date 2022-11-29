@@ -3,7 +3,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.159.0/testing/bdd.ts";
+} from "https://deno.land/std@0.166.0/testing/bdd.ts";
 import { SizeLimitedCache } from "./size_limited_cache.ts";
 
 const expect = chai.expect;

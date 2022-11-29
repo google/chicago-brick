@@ -17,8 +17,6 @@ limitations under the License.
 // at https://earth.nullschool.net and its open source code:
 // https://github.com/cambecc/earth.
 
-/// <reference lib="dom" />
-
 import * as d3 from "https://deno.land/x/d3_4_deno@v6.2.0.9/src/mod.js";
 import { easyLog } from "../../lib/log.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";

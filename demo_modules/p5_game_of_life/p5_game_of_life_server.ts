@@ -16,7 +16,6 @@ limitations under the License.
 import { NUM_COLUMNS, NUM_ROWS } from "./constants.ts";
 import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
-import { _format } from "https://deno.land/std@0.132.0/path/_util.ts";
 
 export function load(network: ModuleWSS) {
   class P5GameOfLifeServer extends Server {

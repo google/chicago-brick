@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import { Surface } from "../../client/surface/surface.ts";
 import { ContentId } from "./interfaces.ts";
 

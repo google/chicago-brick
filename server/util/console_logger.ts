@@ -1,4 +1,4 @@
-import * as colors from "https://deno.land/std@0.123.0/fmt/colors.ts";
+import * as colors from "https://deno.land/std@0.166.0/fmt/colors.ts";
 import {
   isStringWithOptions,
   StringWithOptions,

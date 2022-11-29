@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import { TakeSnapshotResponse } from "../../client/client.ts";
 import { Point } from "../../lib/math/vector2d.ts";
 import { ErrorController } from "./error_controller.ts";

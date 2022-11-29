@@ -17,8 +17,8 @@ import { easyLog } from "../../lib/log.ts";
 import { ContentPage, LocalLoadConfig } from "./interfaces.ts";
 import { ServerLoadStrategy } from "./server_interfaces.ts";
 import mime from "https://esm.sh/mime@3.0.0?no-dts";
-import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import { walk } from "https://deno.land/std@0.166.0/fs/walk.ts";
+import * as path from "https://deno.land/std@0.166.0/path/mod.ts";
 import { flags } from "../../server/flags.ts";
 
 const log = easyLog("slideshow:local");

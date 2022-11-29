@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import { RecordErrorMessage } from "../../client/util/error_logger.ts";
 
 interface SavedError {

@@ -1,5 +1,5 @@
 import chai from "https://cdn.skypack.dev/chai@4.3.4?dts";
-import { describe, it } from "https://deno.land/std@0.159.0/testing/bdd.ts";
+import { describe, it } from "https://deno.land/std@0.166.0/testing/bdd.ts";
 import {
   add,
   crossMag,

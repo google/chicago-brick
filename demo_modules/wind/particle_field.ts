@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/// <reference lib="dom" />
-
 import { ColorScale, windIntensityColorScale } from "./color.ts";
 import { ForecastGrid } from "./forecast_grid.ts";
 import { Bounds, Particle } from "./util.ts";

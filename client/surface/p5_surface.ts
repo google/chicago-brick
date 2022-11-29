@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/// <reference lib="dom" />
-
 import { Surface } from "./surface.ts";
 import P5, { p5InstanceExtensions } from "https://cdn.skypack.dev/p5?dts";
 import { Polygon } from "../../lib/math/polygon2d.ts";

@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import * as path from "https://deno.land/std@0.166.0/path/mod.ts";
 import { easyLog } from "../../lib/log.ts";
 
 const log = easyLog("wall:credentials");
