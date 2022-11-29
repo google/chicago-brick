@@ -318,8 +318,8 @@ export function init() {
   network.socket.on("state", (stateFromServer) => {
     for (const id in stateFromServer) {
       if (stateMap[id] && isClosedOrStale(stateMap[id])) {
-        // Skip closed states.
-        continue;
+        // If this state is closed or stale, we need to re-open it!
+        delete stateMap[id];
       }
       if (!stateMap[id]) {
         stateMap[id] = new StateRecord();
@@ -344,7 +344,7 @@ export function init() {
           }
         }
       }
-      stateMap[id].lastUpdatedTime = time.now();
+      stateMap[id].lastUpdatedTime = Math.max(mostRecentTime, time.now());
     }
   });
   network.socket.on("state-closed", (id) => {
