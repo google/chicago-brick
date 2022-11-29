@@ -51,9 +51,7 @@ export class ClientInfo {
   }
 }
 
-export const clients: Record<string, ClientInfo> = {};
-
-let nextClientId = 1;
+export const clients = new Map<TypedWebsocketLike, ClientInfo>();
 
 interface SerializedClientConfig {
   rect: string;
@@ -76,7 +74,6 @@ export const wss = new WSS({ server }, clients);
  * Main entry point for networking.
  */
 wss.on("connection", (socket: TypedWebsocketLike) => {
-  const clientId = nextClientId++;
   // When the client boots, it sends a start message that includes the rect
   // of the client. We listen for that message and register that client info.
   socket.on("client-start", (config: SerializedClientConfig) => {
@@ -96,7 +93,7 @@ wss.on("connection", (socket: TypedWebsocketLike) => {
         },
       });
     }
-    clients[clientId] = client;
+    clients.set(socket, client);
     log(`New client: ${client.rect.serialize()}`);
     (socket as WS).emit("new-client", client);
     // Tell the client the current time.
@@ -105,8 +102,8 @@ wss.on("connection", (socket: TypedWebsocketLike) => {
 
   // When the client disconnects, we tell our listeners that we lost the client.
   socket.once("disconnect", () => {
-    if (clientId in clients) {
-      const { rect } = clients[clientId];
+    if (clients.has(socket)) {
+      const { rect } = clients.get(socket)!;
       if (monitor.isEnabled()) {
         monitor.update({
           layout: {
@@ -121,12 +118,12 @@ wss.on("connection", (socket: TypedWebsocketLike) => {
         monitor.update({
           layout: {
             time: time.now(),
-            event: `dropClient: id ${clientId}`,
+            event: `dropClient: unknown`,
           },
         });
       }
     }
-    delete clients[clientId];
+    clients.delete(socket);
   });
 
   // If the client notices an exception, it can send us that information to

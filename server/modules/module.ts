@@ -138,8 +138,8 @@ export class RunningModule {
       this.stateManager = undefined;
     }
     // Tell clients to get ready to play this module at the deadline.
-    for (const id in clients) {
-      this.tellClientToPlay(clients[id].socket);
+    for (const client of clients.values()) {
+      this.tellClientToPlay(client.socket);
     }
     if (this.network) {
       if (this.moduleDef.serverPath) {
@@ -209,5 +209,11 @@ export class RunningModule {
     if (this.instance) {
       await this.instance.willBeShownSoon(this.deadline);
     }
+  }
+}
+
+declare global {
+  interface EmittedEvents {
+    "loadModule": (msg: LoadModuleEvent) => void;
   }
 }

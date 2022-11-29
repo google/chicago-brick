@@ -75,13 +75,13 @@ export class Control {
       socket.send("transition", transitionData);
       socket.send(
         "clients",
-        Object.values(network.clients).map((c) => c.rect.serialize()),
+        [...network.clients.values()].map((c) => c.rect.serialize()),
       );
       socket.send("wallGeometry", wallGeometry.getGeo().points);
       socket.send("errors", getErrors());
 
       socket.on("takeSnapshot", (req: TakeSnapshotRequest) => {
-        const client = Object.values(network.clients).find((c) =>
+        const client = [...network.clients.values()].find((c) =>
           c.rect.serialize() == req.client
         );
         if (client) {

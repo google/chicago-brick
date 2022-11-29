@@ -60,7 +60,7 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
 
   constructor(
     options: WSSOptions,
-    readonly clients?: Record<string, ClientInfo>,
+    readonly clients?: Map<unknown, ClientInfo>,
   ) {
     super();
     this.webSocketServer = options.existingWSS ?? new WebSocketServer(options);
@@ -194,7 +194,7 @@ export class ModuleWSS implements TypedWebsocketLike {
   clients() {
     const clients = new Map<Point, TypedWebsocketLike>();
     if (this.wss.clients) {
-      for (const info of Object.values(this.wss.clients)) {
+      for (const info of this.wss.clients.values()) {
         clients.set(info.offset, this.lookUpModuleWS(info.socket as WS));
       }
     }
