@@ -211,3 +211,9 @@ export class RunningModule {
     }
   }
 }
+
+declare global {
+  interface EmittedEvents {
+    "loadModule": (msg: LoadModuleEvent) => void;
+  }
+}
