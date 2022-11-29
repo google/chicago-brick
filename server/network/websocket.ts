@@ -66,6 +66,7 @@ export class WSS extends EventEmitter implements TypedWebsocketLike {
     this.webSocketServer = options.existingWSS ?? new WebSocketServer(options);
     this.clientSockets = new Set();
     this.webSocketServer.on("connection", (websocket: WebSocket) => {
+      log.debugAt(1, `Got client`, this.clientSockets.size);
       const ws = WS.serverWrapper(websocket);
       this.clientSockets.add(ws);
       for (const [msg, fns] of this.clientMessageHandlers) {
