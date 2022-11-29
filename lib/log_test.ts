@@ -5,7 +5,7 @@ import {
   beforeEach,
   describe,
   it,
-} from "https://deno.land/std@0.159.0/testing/bdd.ts";
+} from "https://deno.land/std@0.166.0/testing/bdd.ts";
 import { addLogger, disable, enable, log, Logger, reset } from "./log.ts";
 
 chai.use(sinonChai);

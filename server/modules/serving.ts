@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import { easyLog } from "../../lib/log.ts";
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import * as path from "https://deno.land/std@0.166.0/path/mod.ts";
 import {
   DispatchServer,
   notFound,
@@ -91,6 +91,9 @@ export function addRoutes(
     }
   });
 
-  server.addHandler("/favicon.ico", serveFile(path.join(brickPath, "client/favicon.ico")));
+  server.addHandler(
+    "/favicon.ico",
+    serveFile(path.join(brickPath, "client/favicon.ico")),
+  );
   server.addHandler("/", serveFile(path.join(brickPath, "client/index.html")));
 }

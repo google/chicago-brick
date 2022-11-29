@@ -22,7 +22,7 @@ import * as stateManager from "../network/state_manager.ts";
 import { delay } from "../../lib/promise.ts";
 import { getGeo } from "../util/wall_geometry.ts";
 import { clients } from "../network/network.ts";
-import * as path from "https://deno.land/std@0.129.0/path/mod.ts";
+import * as path from "https://deno.land/std@0.166.0/path/mod.ts";
 import { Server } from "../../server/modules/module_interface.ts";
 import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.ts";

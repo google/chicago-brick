@@ -16,8 +16,8 @@ limitations under the License.
 import { assert } from "../../lib/assert.ts";
 import { Layout } from "../modules/layout.ts";
 import { easyLog } from "../../lib/log.ts";
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
-import { walk } from "https://deno.land/std@0.132.0/fs/walk.ts";
+import * as path from "https://deno.land/std@0.166.0/path/mod.ts";
+import { walk } from "https://deno.land/std@0.166.0/fs/walk.ts";
 import { readTextFile } from "../util/read_file.ts";
 import { library } from "../modules/library.ts";
 import { BrickJson, LayoutConfig, PlaylistJson } from "./playlist.ts";
