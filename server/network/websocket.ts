@@ -204,5 +204,10 @@ export class ModuleWSS implements TypedWebsocketLike {
     for (const msg of this.savedTypes) {
       this.wss.removeDynamicHandlers(msg);
     }
+    this.savedTypes.clear();
+    for (const moduleWs of this.moduleWSCache.values()) {
+      moduleWs.close();
+    }
+    this.moduleWSCache.clear();
   }
 }
