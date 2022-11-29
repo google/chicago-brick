@@ -1,8 +1,8 @@
 import * as network from "../network/network.ts";
-import { WS } from "../../lib/websocket.ts";
+import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import { RecordErrorMessage } from "../../client/util/error_logger.ts";
 
-network.wss.on("connection", (socket: WS) => {
+network.wss.on("connection", (socket: TypedWebsocketLike) => {
   socket.on("record-error", (err: RecordErrorMessage) => {
     addToBuffer(err);
   });
