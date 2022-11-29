@@ -4,16 +4,67 @@ import * as credentials from "../util/credentials.ts";
 import { JWTInput } from "https://googleapis.deno.dev/_/base@v1/auth/jwt.ts";
 import { PlaylistDriver } from "./playlist_driver.ts";
 import { library } from "../modules/library.ts";
-import { BrickJson } from "./playlist.ts";
+import { BrickJson, ExtendsBrickJson } from "./playlist.ts";
 import { easyLog } from "../../lib/log.ts";
+import { CreditAuthorTitleJson } from "../../client/title_card.ts";
 
 const log = easyLog("wall:calendar");
 
-interface Event {
-  start: Date;
-  end: Date;
+interface ModuleDescription {
   moduleDef?: BrickJson;
   moduleName: string;
+}
+
+interface Event extends ModuleDescription {
+  start: Date;
+  end: Date;
+}
+
+function parseDescription(desc: string): ModuleDescription {
+  // First, check if there's a {.
+  if (desc.includes("{")) {
+    try {
+      const moduleDef = JSON.parse(desc);
+      return { moduleDef, moduleName: moduleDef.name };
+    } catch (e) {
+      log.error(`Error parsing module def:`, desc);
+      log.error(e);
+      throw e;
+    }
+  }
+  // Next, check if there's a :.
+  if (desc.includes(":")) {
+    // It's a "simple" brickjson, designed to extend the slideshow
+    // module.
+    const credit: CreditAuthorTitleJson = { title: "" };
+    const config = {
+      load: {},
+      display: {
+        fullscreen: {},
+      },
+      // deno-lint-ignore no-explicit-any
+    } as any;
+    const brickjson = {
+      name: "",
+      credit,
+      extends: "slideshow",
+      config,
+    } as ExtendsBrickJson;
+    for (const line of desc.split(/\n+/g)) {
+      const [key, value] = line.split(/\s*:\s*/);
+      if (key === "name") {
+        brickjson.name = value;
+      } else if (key === "title") {
+        credit.title = value;
+      } else if (key === "drive-folder") {
+        config.load.drive = { folderIds: value.split(",") };
+        config.display.fullscreen.split = true;
+      }
+    }
+    return { moduleDef: brickjson, moduleName: brickjson.name };
+  }
+  // Last, it's a module name.
+  return { moduleName: desc };
 }
 
 // Load and periodically refresh events for events within now + 1 day.
@@ -35,20 +86,11 @@ async function loadEvents(id: string, calendar: Calendar) {
     if (!item.start?.dateTime || !item.end?.dateTime || !item.description) {
       continue;
     }
-    const module: { moduleDef?: BrickJson; moduleName: string } = {
-      moduleName: "",
-    };
-    if (item.description.includes("{")) {
-      try {
-        module.moduleDef = JSON.parse(item.description);
-        module.moduleName = module.moduleDef!.name;
-      } catch (e) {
-        log.error(`Error loading module def: `, item.description);
-        log.error(e);
-        continue;
-      }
-    } else {
-      module.moduleName = item.description;
+    let module;
+    try {
+      module = parseDescription(item.description);
+    } catch {
+      continue;
     }
     events.push({
       start: item.start.dateTime,
