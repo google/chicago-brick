@@ -23,32 +23,18 @@ export const socket = WS.clientWrapper(
     location.protocol === "https:" ? "wss" : "ws"
   }://${location.host}/websocket`,
 );
-let ready: () => void;
-const readyPromise = new Promise<void>((r) => ready = r);
 
-/**
- * Initializes the connection with the server & sets up the network layer.
- */
-export function init() {
-  function sendHello() {
-    socket.send("client-start", {
-      offset: info.virtualOffset,
-      rect: info.virtualRectNoBezel.serialize(),
-    });
-  }
-
-  // When we reconnect after a disconnection, we need to tell the server
-  // about who we are all over again.
-  socket.on("connect", () => {
-    sendHello();
-    ready();
+// When we reconnect after a disconnection, we need to tell the server
+// about who we are all over again.
+socket.on("connect", () => {
+  socket.send("client-start", {
+    offset: info.virtualOffset,
+    rect: info.virtualRectNoBezel.serialize(),
   });
+});
 
-  // Install our time listener.
-  socket.on("time", time.adjustTimeByReference);
-}
-
-export const whenReady = readyPromise;
+// Install our time listener.
+socket.on("time", time.adjustTimeByReference);
 
 declare global {
   interface EmittedEvents {
