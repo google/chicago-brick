@@ -14,17 +14,17 @@ limitations under the License.
 ==============================================================================*/
 
 import { MonitoringChange } from "../../client/monitoring/monitor.ts";
-import { WS } from "../../lib/websocket.ts";
+import { TypedWebsocketLike } from "../../lib/websocket.ts";
 import * as network from "../network/network.ts";
 
 const currentStatus: MonitoringChange = {};
-const sendCurrentState = (socket: WS) => {
+const sendCurrentState = (socket: TypedWebsocketLike) => {
   socket.send("monitor", currentStatus);
 };
 
 let connectionHandlersInstalled = false;
 
-const monitoringSockets: WS[] = [];
+const monitoringSockets: TypedWebsocketLike[] = [];
 let enabled = false;
 export function isEnabled() {
   return enabled;
