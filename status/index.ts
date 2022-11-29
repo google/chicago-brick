@@ -1,6 +1,6 @@
-import commandLineArgs from "https://esm.sh/command-line-args";
-import commandLineUsage from "https://esm.sh/command-line-usage";
-import * as path from "https://deno.land/std@0.132.0/path/mod.ts";
+import commandLineArgs from "https://esm.sh/command-line-args@5.2.1";
+import commandLineUsage from "https://esm.sh/command-line-usage@6.1.3";
+import * as path from "https://deno.land/std@0.166.0/path/mod.ts";
 import {
   DispatchServer,
   serveDirectory,

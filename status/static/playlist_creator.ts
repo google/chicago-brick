@@ -1,5 +1,3 @@
-/// <reference lib="dom" />
-
 import { library } from "./library.ts";
 import {
   ExtendsBrickJson,

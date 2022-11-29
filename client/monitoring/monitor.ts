@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/// <reference lib="dom" />
-
 import * as network from "../network/network.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { Point } from "../../lib/math/vector2d.ts";

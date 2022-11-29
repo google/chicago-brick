@@ -13,8 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/// <reference lib="dom" />
-
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { Surface } from "./surface.ts";
 

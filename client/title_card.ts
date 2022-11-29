@@ -65,8 +65,6 @@ limitations under the License.
  *     }
  */
 
-/// <reference lib="dom" />
-
 import asset from "./asset/asset.ts";
 
 export interface CreditAuthorTitleJson {
