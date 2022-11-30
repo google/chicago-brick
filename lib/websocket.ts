@@ -102,7 +102,7 @@ export class WS extends EventEmitter implements TypedWebsocketLike {
       this.emit("connect");
     }
     this.websocket.addEventListener("error", (err) => {
-      log.error(err);
+      log.debugAt(1, `Error: ${err}`);
     });
     this.websocket.addEventListener("close", async (event) => {
       if (this.isOpen) {
