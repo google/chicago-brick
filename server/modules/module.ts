@@ -160,7 +160,7 @@ export class RunningModule {
         name: this.moduleDef.name,
         path: this.moduleDef.name == "_empty" ? "" : path.join(
           "/module/",
-          this.moduleDef.baseName,
+          this.moduleDef.baseName || this.moduleDef.name,
           this.moduleDef.clientPath,
         ),
         config: this.moduleDef.config,
