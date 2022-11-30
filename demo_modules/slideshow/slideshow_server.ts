@@ -129,7 +129,9 @@ export function load(
       log("Waiting for clients to init...");
       // When the clients ask for the init, we tell them.
       network.on("slideshow:init", (socket: TypedWebsocketLike) => {
-        log("Client inited.");
+        const offset = [...network.clients()].find(([, s]) => s === socket)
+          ?.[0];
+        log(`Client inited: ${offset?.x}, ${offset?.y}`);
         socket.send("slideshow:init_res", this.config);
       });
 
@@ -142,6 +144,7 @@ export function load(
 
       // Load 1 page of content.
       const token = await this.loadOneContentPage();
+      log(`Loaded initial batch of ${this.contentIds.length}`);
       if (token) {
         // If there is more, load this async.
         this.loadContent(token);
