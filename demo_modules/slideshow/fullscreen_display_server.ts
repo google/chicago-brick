@@ -312,7 +312,6 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
     if (this.config.period) {
       // We should update the content every so often.
       if (time - this.lastUpdate >= this.config.period) {
-        log("Period expired. Choosing new content.");
         this.nextDeadline = time + 5000;
         if (this.config.presplit || this.config.split) {
           if (this.splittingOperationPromise) {
@@ -320,6 +319,7 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
               "Inflight split still in progress, but period has expired.",
             );
           }
+          log(`Period expired: refreshing global content`);
           this.globalContentId = undefined;
           // Tell all the clients to update at a specific time. Give them 5 seconds.
           for (const [offset, socket] of this.network.clients()) {
@@ -333,6 +333,9 @@ export class FullscreenServerDisplayStrategy implements ServerDisplayStrategy {
             if (clientOffset) {
               this.offsetToContentMapping.delete(
                 `${clientOffset.x},${clientOffset.y}`,
+              );
+              log(
+                `Period expired: refreshing content on ${clientOffset.x}, ${clientOffset.x}`,
               );
               this.sendContentToClient(
                 clientOffset,
