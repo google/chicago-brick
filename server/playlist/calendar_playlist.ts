@@ -59,6 +59,9 @@ function parseDescription(desc: string): ModuleDescription {
       } else if (key === "drive-folder") {
         config.load.drive = { folderIds: value.split(",") };
         config.display.fullscreen.split = true;
+      } else if (key === "drive-file") {
+        config.load.drive = { fileIds: value.split(",") };
+        config.display.fullscreen.split = true;
       }
     }
     return { moduleDef: brickjson, moduleName: brickjson.name };
