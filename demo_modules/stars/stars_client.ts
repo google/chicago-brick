@@ -79,6 +79,7 @@ export function load(network: ModuleWS, wallGeometry: Polygon) {
         side: Three.DoubleSide,
         vertexShader: vsText,
         fragmentShader: fsText,
+        blending: Three.AdditiveBlending,
       });
 
       this.mesh = new Three.Mesh(this.starGeo, this.starMat);
@@ -93,19 +94,18 @@ export function load(network: ModuleWS, wallGeometry: Polygon) {
         if (!star) {
           continue;
         }
-        const { x, y, z, index, spawnTime } = star;
+        const { x, y, z, index, spawnTime, size } = star;
 
         // 2 triangles forming a quad: 6 points in TRIANGLES draw mode.
         // We need to rotate the quads so that their normal is pointed toward the center of the screen.
         const startZ = z + V * this.warpFactor * (time - spawnTime);
-        const endZ = startZ + 20 * V * this.warpFactor;
+        const endZ = startZ + 40 * V * this.warpFactor;
 
         // When the point is at (x, 0), we should not rotate.
         // Otherwise, we need to rotate our quad by Math.atan2(y, x).
-        const WIDTH = 0.0015;
         const angle = Math.atan2(y, x);
-        const dx = -Math.sin(angle) * WIDTH / 2;
-        const dy = Math.cos(angle) * WIDTH / 2;
+        const dx = -Math.sin(angle) * size / 2;
+        const dy = Math.cos(angle) * size / 2;
 
         // Point 0
         this.positions[18 * index + 0] = x + dx;

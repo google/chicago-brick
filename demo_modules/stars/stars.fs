@@ -3,6 +3,7 @@ uniform float time;
 varying float startTimeV;
 varying float z;
 varying float index;
+varying float startOrEnd;
 
 const float TIME = 500.0f;
 const float FADE_OUT_DISTANCE = 0.1;
@@ -21,6 +22,6 @@ void main() {
 
   vec4 fadeOutColor = mix(fadeInColor, vec4(0.0), fadeOutAlpha);
 
-  // Set color
-  gl_FragColor = fadeOutColor;
+  // Fade out as we get to the end of the trail.
+  gl_FragColor = mix(vec4(0.0), fadeOutColor, startOrEnd);
 }
