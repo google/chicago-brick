@@ -10,6 +10,7 @@ const log = easyLog("slideshow:google_auth");
 export class GoogleAuth implements CredentialsClient {
   requestedScopes: string[] = [];
   accessToken = "";
+  inflightRefresh: Promise<void> | undefined = undefined;
   expiryDate = 0;
 
   newTokenRequested: () => void = () => {};
@@ -22,7 +23,11 @@ export class GoogleAuth implements CredentialsClient {
     _url?: string | undefined,
   ): Promise<Record<string, string>> {
     if (Date.now() > this.expiryDate * 1000 || !this.accessToken) {
-      await this.refreshToken();
+      if (!this.inflightRefresh) {
+        this.inflightRefresh = this.refreshToken();
+      }
+      await this.inflightRefresh;
+      this.inflightRefresh = undefined;
     }
     return { "Authorization": `Bearer ${this.accessToken}` };
   }
