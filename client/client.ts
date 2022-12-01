@@ -22,9 +22,9 @@ import * as time from "../lib/adjustable_time.ts";
 import { errorLogger } from "./util/error_logger.ts";
 import { ClientModulePlayer } from "./modules/client_module_player.ts";
 import { ClientModule } from "./modules/module.ts";
-import { LoadModuleEvent } from "../server/modules/module.ts";
 import { consoleLogger } from "./util/console_logger.ts";
 import "./network/peer.ts";
+import { LoadModuleEvent } from "./modules/events.ts";
 
 const log = easyLog("wall:client");
 
@@ -48,7 +48,8 @@ network.socket.on("disconnect", () => {
 // Server has asked us to load a new module.
 network.socket.on(
   "loadModule",
-  (bits) => modulePlayer.playModule(ClientModule.deserialize(bits)),
+  (bits: LoadModuleEvent) =>
+    modulePlayer.playModule(ClientModule.deserialize(bits)),
 );
 
 network.socket.on("takeSnapshot", async (req) => {
@@ -101,6 +102,5 @@ declare global {
   interface EmittedEvents {
     takeSnapshot(req: TakeSnapshotRequest): void;
     takeSnapshotRes(res: TakeSnapshotResponse): void;
-    loadModule(config: LoadModuleEvent): void;
   }
 }

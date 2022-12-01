@@ -28,28 +28,14 @@ import { EmptyModuleDef, ModuleDef } from "./module_def.ts";
 import { easyLog } from "../../lib/log.ts";
 import inject from "../../lib/inject.ts";
 import { TypedWebsocketLike } from "../../lib/websocket.ts";
-import { Point } from "../../lib/math/vector2d.ts";
-import { CreditJson } from "../../client/title_card.ts";
 import { ModuleWSS } from "../network/websocket.ts";
+import { LoadModuleEvent } from "../../client/modules/events.ts";
 
 const log = easyLog("wall:module");
 
 interface PerModuleDep {
   open(): void;
   close(): void;
-}
-
-export interface SerializedModule {
-  name: string;
-  path: string;
-  credit: CreditJson;
-  config: unknown;
-}
-
-export interface LoadModuleEvent {
-  module: SerializedModule;
-  time: number;
-  geo: Point[];
 }
 
 export class RunningModule {
@@ -209,11 +195,5 @@ export class RunningModule {
     if (this.instance) {
       await this.instance.willBeShownSoon(this.deadline);
     }
-  }
-}
-
-declare global {
-  interface EmittedEvents {
-    "loadModule": (msg: LoadModuleEvent) => void;
   }
 }
