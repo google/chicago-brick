@@ -224,13 +224,13 @@ export function load(wallGeometry: Polygon) {
 
       function drawOutlines(context: CanvasRenderingContext2D) {
         context.beginPath();
-        context.lineWidth = 1;
+        context.lineWidth = 2;
         context.strokeStyle = "#FFF";
         projectedPath(coastline);
         context.stroke();
 
         context.beginPath();
-        context.lineWidth = 1;
+        context.lineWidth = 2;
         context.strokeStyle = "#FFF";
         projectedPath(lakes);
         context.stroke();
