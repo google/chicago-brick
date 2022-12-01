@@ -58,7 +58,13 @@ export class LoadLocalClientStrategy implements ClientLoadStrategy {
           log(`Error loading image: ${contentId.id} ${err.message}`);
           reject(err);
         });
-        img.src = asset(contentId.id);
+        if (contentId.local) {
+          // This content was forced to be local. It's probably only stored on the server.
+          // Don't use the 'asset' function for this case, then.
+          img.src = contentId.id;
+        } else {
+          img.src = asset(contentId.id);
+        }
       });
     } else if (type.startsWith("video")) {
       return new Promise((resolve, reject) => {
