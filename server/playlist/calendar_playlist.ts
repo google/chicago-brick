@@ -70,6 +70,8 @@ function parseDescription(desc: string): ModuleDescription {
   return { moduleName: desc };
 }
 
+const events: Event[] = [];
+
 // Load and periodically refresh events for events within now + 1 day.
 // Reload every hour.
 async function loadEvents(id: string, calendar: Calendar) {
@@ -77,14 +79,21 @@ async function loadEvents(id: string, calendar: Calendar) {
   const timeMax = new Date(timeMin);
   timeMax.setDate(timeMin.getDate() + 1);
 
-  const results = await calendar.eventsList(id, {
-    timeMin,
-    timeMax,
-    singleEvents: true,
-    orderBy: "startTime",
-  });
+  let results;
+  try {
+    results = await calendar.eventsList(id, {
+      timeMin,
+      timeMax,
+      singleEvents: true,
+      orderBy: "startTime",
+    });
+  } catch (e) {
+    log.error(`Got error when loading calendar events: ${e.message}`);
+    // Give up.
+    return;
+  }
 
-  const events: Event[] = [];
+  events.length = 0;
   for (const item of results.items || []) {
     if (!item.start?.dateTime || !item.end?.dateTime || !item.description) {
       continue;
@@ -101,8 +110,6 @@ async function loadEvents(id: string, calendar: Calendar) {
       ...module,
     });
   }
-
-  return events;
 }
 
 export async function startSchedule(
@@ -130,7 +137,6 @@ export async function startSchedule(
 
 let timerUntilNextStartCheck = 0;
 let timerUntilNextEndCheck = 0;
-let events: Event[] = [];
 
 function findNextEvent(now: Date): Event | undefined {
   for (const event of events) {
@@ -151,7 +157,7 @@ async function grabEvents(
 ) {
   const now = new Date();
 
-  events = await loadEvents(id, calendar);
+  await loadEvents(id, calendar);
   log(`Loaded ${events.length} calendar events`);
   sleepAndPlayNextEvent(now, playlistDriver);
 }
