@@ -6,6 +6,7 @@ export interface Star {
   y: number;
   z: number;
   index: number;
+  size: number;
   spawnTime: number;
 }
 

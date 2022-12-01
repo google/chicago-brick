@@ -24,12 +24,14 @@ export function load(network: ModuleWSS) {
       }
       const z = SPAWN_DISTANCE * (Math.random() - 1);
       const spawnTime = now();
+      const size = Math.random() * (0.005 - 0.0015) + 0.0015;
       this.stars[index] = {
         x,
         y,
         z,
         spawnTime,
         index,
+        size,
       };
     }
     willBeShownSoon() {
