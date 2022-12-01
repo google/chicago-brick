@@ -1,5 +1,5 @@
 export const V = 0.001;
-export const MAX_NEW_STARS = 100000;
+export const MAX_NEW_STARS = 10000;
 
 export interface Star {
   x: number;
