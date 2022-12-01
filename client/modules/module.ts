@@ -26,8 +26,8 @@ import { CreditJson, TitleCard } from "../title_card.ts";
 import * as time from "../../lib/adjustable_time.ts";
 import { delay } from "../../lib/promise.ts";
 import { Client } from "../../client/modules/module_interface.ts";
-import { LoadModuleEvent } from "../../server/modules/module.ts";
 import { ModuleWS } from "../../lib/websocket.ts";
+import { LoadModuleEvent } from "./events.ts";
 
 function createNewContainer(name: string) {
   const newContainer = document.createElement("div");
