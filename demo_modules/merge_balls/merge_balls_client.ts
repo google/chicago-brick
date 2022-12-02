@@ -81,7 +81,9 @@ export function load(
       for (let b = 0; b < balls.length; ++b) {
         const ball = balls[b];
 
-        if (ball.radius > 0) {
+        if (
+          ball.radius > 0 && ball.position.x != null && ball.position.y != null
+        ) {
           // Draw the ball
           this.canvas.fillStyle = ball.color.fill;
           this.canvas.beginPath();

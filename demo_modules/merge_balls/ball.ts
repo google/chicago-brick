@@ -1,3 +1,4 @@
+import { Rectangle } from "../../lib/math/rectangle.ts";
 import { dist, Point } from "../../lib/math/vector2d.ts";
 
 function shadeColor(color: string, percent: number) {
@@ -6,20 +7,17 @@ function shadeColor(color: string, percent: number) {
   let G = parseInt(color.substring(3, 5), 16);
   let B = parseInt(color.substring(5, 7), 16);
 
-  R = R * (100 + percent) / 100;
-  G = G * (100 + percent) / 100;
-  B = B * (100 + percent) / 100;
+  R = Math.floor(R * (100 + percent) / 100);
+  G = Math.floor(G * (100 + percent) / 100);
+  B = Math.floor(B * (100 + percent) / 100);
 
   R = (R < 255) ? R : 255;
   G = (G < 255) ? G : 255;
   B = (B < 255) ? B : 255;
 
-  const RR =
-    ((R.toString(16).length == 1) ? "0" + R.toString(16) : R.toString(16));
-  const GG =
-    ((G.toString(16).length == 1) ? "0" + G.toString(16) : G.toString(16));
-  const BB =
-    ((B.toString(16).length == 1) ? "0" + B.toString(16) : B.toString(16));
+  const RR = R.toString(16).padStart(2, "0");
+  const GG = G.toString(16).padStart(2, "0");
+  const BB = B.toString(16).padStart(2, "0");
 
   return "#" + RR + GG + BB;
 }
@@ -50,7 +48,15 @@ export class Ball {
     // distance between ball centers
     const distance = dist(this.position, ball.position);
 
-    return distance < (this.radius + ball.radius) * 0.75;
+    return distance < (this.radius + ball.radius) * 0.85;
+  }
+  get extents() {
+    return Rectangle.centeredAt(
+      this.position.x,
+      this.position.y,
+      2 * this.radius,
+      2 * this.radius,
+    );
   }
   merge(ball: Ball) {
     // Merge balls weighting by area.
@@ -65,6 +71,10 @@ export class Ball {
     };
 
     this.radius = Math.sqrt(newArea / Math.PI);
+
+    // Kill this ball.
     ball.radius = 0;
+    ball.position.x = NaN;
+    ball.position.y = NaN;
   }
 }

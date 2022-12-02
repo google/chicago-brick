@@ -14,9 +14,12 @@ limitations under the License.
 ==============================================================================*/
 
 import { Polygon } from "../../lib/math/polygon2d.ts";
+import { SpatialDatabase } from "../../lib/math/spatial_db.ts";
 import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import { Ball } from "./ball.ts";
+import { doPhysics } from "../../lib/math/collision.ts";
+import { dot, flip, norm, rotCCW, sub } from "../../lib/math/vector2d.ts";
 
 export function load(
   state: ModuleState,
@@ -24,6 +27,21 @@ export function load(
 ) {
   const INITIAL_RADIUS = 50;
 
+  const simpleWallPolygon = new Polygon([
+    { x: wallGeometry.extents.x, y: wallGeometry.extents.y },
+    {
+      x: wallGeometry.extents.x + wallGeometry.extents.w,
+      y: wallGeometry.extents.y,
+    },
+    {
+      x: wallGeometry.extents.x + wallGeometry.extents.w,
+      y: wallGeometry.extents.y + wallGeometry.extents.h,
+    },
+    {
+      x: wallGeometry.extents.x,
+      y: wallGeometry.extents.y + wallGeometry.extents.h,
+    },
+  ]);
   //
   // Helper types & functions.
   //
@@ -38,7 +56,11 @@ export function load(
   // Server Module
   //
   class MergeBallsServer extends Server {
-    balls: Ball[] = [];
+    readonly db = new SpatialDatabase<Ball>(
+      wallGeometry.extents,
+      INITIAL_RADIUS * 8,
+    );
+    readonly balls: Ball[] = [];
     willBeShownSoon() {
       function getInitialBallPosition(ballradius: number) {
         const rect = wallGeometry.extents;
@@ -64,66 +86,143 @@ export function load(
       );
 
       for (let b = 0; b < NUM_BALLS; ++b) {
-        this.balls.push(
-          new Ball(
-            // position
-            getInitialBallPosition(INITIAL_RADIUS),
-            // radius
-            INITIAL_RADIUS,
-            // color
-            makeRandomColor(),
-            // velocity
-            randomBallVelocity(Math.random() * 100 + 100),
-          ),
+        const ball = new Ball(
+          // position
+          getInitialBallPosition(INITIAL_RADIUS),
+          // radius
+          INITIAL_RADIUS,
+          // color
+          makeRandomColor(),
+          // velocity
+          randomBallVelocity(Math.random() * 100 + 100),
         );
+        this.balls.push(ball);
+        this.db.add(ball);
       }
     }
 
     tick(time: number, delta: number) {
+      console.time("physics");
       // Move to new location.
-      this.balls.map(function (ball) {
-        if (ball.dead()) return;
+      for (const ball of this.balls) {
+        if (ball.dead()) continue;
 
-        // New position (before bounding to display)
-        const x = ball.position.x + ball.velocity.x * delta / 1000;
-        const y = ball.position.y + ball.velocity.y * delta / 1000;
+        doPhysics(
+          ball.position,
+          ball.extents.translate({ x: -ball.position.x, y: -ball.position.y }),
+          delta / 1000,
+          simpleWallPolygon,
+          (pos, dt, newPos) => {
+            newPos.x = pos.x + ball.velocity.x * dt;
+            newPos.y = pos.y + ball.velocity.y * dt;
+          },
+          (pos, newPos, report) => {
+            const segment = (report.objectSegment || report.wallSegment)!;
 
-        if (x - ball.radius < wallGeometry.extents.x) {
-          ball.velocity.x = Math.abs(ball.velocity.x);
-        } else if (
-          x + ball.radius > wallGeometry.extents.x + wallGeometry.extents.w
-        ) {
-          ball.velocity.x = -Math.abs(ball.velocity.x);
-        }
+            // If our delta is in the same direction as the normal of the segment,
+            // then we should not flip.
+            const delta = sub(newPos, pos);
+            const segmentDelta = sub(segment.b, segment.a);
+            const normal = rotCCW(segmentDelta, Math.PI / 2);
+            if (dot(norm(delta), norm(normal)) <= 0) {
+              ball.velocity = flip(
+                { x: ball.velocity.x, y: ball.velocity.y },
+                segmentDelta,
+              );
+            }
+            ball.position.x = pos.x = newPos.x;
+            ball.position.y = pos.y = newPos.y;
+          },
+        );
 
-        if (y - ball.radius < wallGeometry.extents.y) {
-          ball.velocity.y = Math.abs(ball.velocity.y);
-        } else if (
-          y + ball.radius > wallGeometry.extents.y + wallGeometry.extents.h
-        ) {
-          ball.velocity.y = -Math.abs(ball.velocity.y);
-        }
-
-        ball.position = { x: x, y: y };
-      });
+        this.db.update(ball);
+      }
 
       // Merge balls
-      for (let b = 0; b < this.balls.length; ++b) {
-        const ballB = this.balls[b];
+      for (const ballB of this.balls) {
+        if (ballB.dead()) {
+          continue;
+        }
+        const nearbyBalls = this.db.get(ballB.extents);
 
         // Try to merge all remaining balls.
-        for (let t = b + 1; ballB.alive() && t < this.balls.length; ++t) {
-          const ballT = this.balls[t];
-
+        for (const ballT of nearbyBalls) {
+          if (ballT === ballB) {
+            continue;
+          }
           if (ballT.dead()) continue;
 
-          if (ballB.contains(ballT)) {
+          if (ballB.contains(ballT) && ballB.radius >= ballT.radius) {
             ballB.merge(ballT);
-          } else if (ballT.contains(ballB)) {
-            ballT.merge(ballB);
+            this.db.delete(ballT);
+
+            // Maybe ballB is too big, and we should split it!
+            if (
+              ballB.radius > wallGeometry.extents.h / 4 || Math.random() < 0.01
+            ) {
+              const p = (ballB.radius - wallGeometry.extents.h / 4) /
+                (wallGeometry.extents.h / 4);
+              if (Math.random() < Math.max(p, 0.01)) {
+                // Split the ball!
+                const numAdditionalToSplitInto = Math.random() * 5 + 1;
+                // Find some balls to split.
+                const deadBalls: Ball[] = [];
+                for (const ball of this.balls) {
+                  if (ball.dead()) {
+                    deadBalls.push(ball);
+                    if (deadBalls.length >= numAdditionalToSplitInto) {
+                      break;
+                    }
+                  }
+                }
+                const newBallRadius = Math.sqrt(
+                  ballB.radius ** 2 / (deadBalls.length + 1),
+                );
+                const offsetAngle = Math.random() * 2 * Math.PI;
+                // Pick some directions for the balls to go into.
+                for (let i = 0; i < deadBalls.length; ++i) {
+                  const angle = i / deadBalls.length * Math.PI * 2 +
+                    offsetAngle;
+                  const deadBall = deadBalls[i];
+                  const dirX = Math.cos(angle);
+                  const dirY = Math.sin(angle);
+                  deadBall.velocity.x = dirX * 100.0;
+                  deadBall.velocity.y = dirY * 100.0;
+                  deadBall.position.x = ballB.position.x + dirX * ballB.radius;
+                  deadBall.position.y = ballB.position.y + dirY * ballB.radius;
+                  // This makes the balls live again.
+                  deadBall.radius = newBallRadius;
+                  // It was deleted.. add it back in.
+                  this.db.add(deadBall);
+                }
+
+                ballB.radius = newBallRadius;
+              }
+            }
+
+            this.db.update(ballB);
           }
         }
       }
+
+      // Merging / splitting might move the balls in weird ways, like
+      // outside of our wall extents.
+      const wallCenter = wallGeometry.extents.center();
+      for (const ball of this.balls) {
+        // If we are not inside, force the ball v to move us closer to inside.
+        if (!wallGeometry.extents.isInside(ball.position)) {
+          // Move the ball velocity towards the center of the wall.
+          const delta = sub(wallCenter, ball.position);
+          if (Math.sign(delta.x) != Math.sign(ball.velocity.x)) {
+            ball.velocity.x *= -1;
+          }
+          if (Math.sign(delta.y) != Math.sign(ball.velocity.y)) {
+            ball.velocity.y *= -1;
+          }
+        }
+      }
+
+      console.timeEnd("physics");
 
       state.store("balls", time, this.balls);
     }
