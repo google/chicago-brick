@@ -24,6 +24,10 @@ export function len2(p: Point): number {
   return dot(p, p);
 }
 
+export function norm(p: Point): Point {
+  return scale(p, 1 / len(p));
+}
+
 export function dist(p: Point, q: Point): number {
   return len(sub(p, q));
 }
