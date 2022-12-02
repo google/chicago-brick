@@ -102,7 +102,6 @@ export function load(
     }
 
     tick(time: number, delta: number) {
-      console.time("physics");
       // Move to new location.
       for (const ball of this.balls) {
         if (ball.dead()) continue;
@@ -221,8 +220,6 @@ export function load(
           }
         }
       }
-
-      console.timeEnd("physics");
 
       state.store("balls", time, this.balls);
     }
