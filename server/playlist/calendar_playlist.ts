@@ -57,11 +57,19 @@ function parseDescription(desc: string): ModuleDescription {
       } else if (key === "title") {
         credit.title = value;
       } else if (key === "drive-folder") {
-        config.load.drive = { folderIds: value.split(",") };
-        config.display.fullscreen.split = true;
+        config.load.drive = config.load.drive || {};
+        config.load.drive.folderIds = config.load.drive.folderIds || [];
+        config.load.drive.folderIds.push(...value.split(","));
       } else if (key === "drive-file") {
-        config.load.drive = { fileIds: value.split(",") };
+        config.load.drive = config.load.drive || {};
+        config.load.drive.fileIds = config.load.drive.fileIds || [];
+        config.load.drive.fileIds.push(...value.split(","));
+      } else if (key === "period") {
+        config.display.fullscreen.period = Number(value);
+      } else if (key === "split" && value === "true") {
         config.display.fullscreen.split = true;
+      } else if (key === "shuffle" && value === "true") {
+        config.display.fullscreen.shuffle = true;
       }
     }
     return { moduleDef: brickjson, moduleName: brickjson.name };
