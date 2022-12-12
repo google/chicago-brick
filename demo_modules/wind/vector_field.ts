@@ -235,7 +235,7 @@ export class VectorField {
       }
     }
 
-    debug(`Vector field cols:${columns.length} rows:${columns[0].length}`);
+    debug(`Vector field cols:${columns.length} rows:${columns[0]?.length}`);
     return new VectorField(columns, bounds, mask);
   }
 }
