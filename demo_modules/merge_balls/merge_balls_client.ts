@@ -45,6 +45,7 @@ export function load(
       this.surface = surface;
       this.canvas = surface.context;
       this.ballsState = state.define("balls", [{
+        id: CurrentValueInterpolator,
         position: {
           x: NumberLerpInterpolator,
           y: NumberLerpInterpolator,
@@ -78,9 +79,7 @@ export function load(
       surface.pushOffset();
 
       // Draw the balls
-      for (let b = 0; b < balls.length; ++b) {
-        const ball = balls[b];
-
+      for (const ball of balls) {
         if (
           ball.radius > 0 && ball.position.x != null && ball.position.y != null
         ) {
@@ -103,7 +102,7 @@ export function load(
           this.canvas.fillStyle = ball.color.edge;
           this.canvas.textAlign = "center";
           this.canvas.textBaseline = "middle";
-          this.canvas.fillText(b.toString(), ball.position.x, ball.position.y);
+          this.canvas.fillText(ball.id, ball.position.x, ball.position.y);
         }
       }
 
