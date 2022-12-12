@@ -72,3 +72,13 @@ export function send() {
 
   wss.send("state", stateToSend);
 }
+
+export function getStateKeys(): string[] {
+  return Object.keys(stateMap).reduce((agg, o) => {
+    return agg.concat(
+      Object.keys(stateMap[o]).map((s) => {
+        return `${o}: ${s}`;
+      }),
+    );
+  }, [] as string[]);
+}
