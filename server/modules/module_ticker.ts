@@ -28,15 +28,15 @@ const interval = 1000.0 / 10.0; // 10 FPS
 
 function tick() {
   const start = time.now();
-  if (modulesToTick.length) {
-    stateManager.send();
-  }
   for (const module of modulesToTick) {
     try {
       module.tick(start, start - lastTime);
     } catch (e) {
       log.error(e);
     }
+  }
+  if (modulesToTick.length) {
+    stateManager.send();
   }
   lastTime = start;
 
