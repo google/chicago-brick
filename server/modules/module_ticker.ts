@@ -27,23 +27,32 @@ let lastTime = 0;
 const interval = 1000.0 / 10.0; // 10 FPS
 
 function tick() {
-  const start = time.now();
+  const startModuleTick = time.now();
   for (const module of modulesToTick) {
     try {
-      module.tick(start, start - lastTime);
+      module.tick(startModuleTick, startModuleTick - lastTime);
     } catch (e) {
       log.error(e);
     }
   }
+  const startStateSend = time.now();
   if (modulesToTick.length) {
     stateManager.send();
   }
-  lastTime = start;
+  lastTime = startModuleTick;
 
   // Set timeout for remaining tick time, or immediately if the module went
   // over.
-  const tickTime = time.now() - start;
+  const endTick = time.now();
+  const tickTime = endTick - startModuleTick;
   if (tickTime > interval) {
+    if (endTick - startStateSend > 50) {
+      log.warn(
+        `State sending took too long: ${endTick - startStateSend} ms: ${
+          stateManager.getStateKeys().join(" ")
+        }`,
+      );
+    }
     log.warn(
       `Module tick() took too long: ${tickTime} ms out of ${interval} ms: ${
         modulesToTick.map((m) => m.name).join(", ")
