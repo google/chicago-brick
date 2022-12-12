@@ -8,20 +8,22 @@ export const consoleLogger = (...strings: (string | StringWithOptions)[]) => {
   const css = [];
   for (const str of strings) {
     if (isStringWithOptions(str)) {
-      processedStrs.push(str.str);
+      const cssItem = [];
       if (str.options.bold) {
-        css.push("font-weight: bolder");
+        cssItem.push("font-weight: bolder");
       }
       if (str.options.backgroundColor) {
-        css.push(`background-color: ${str.options.backgroundColor}`);
+        cssItem.push(`background-color: ${str.options.backgroundColor}`);
       }
+      if (str.options.color) {
+        cssItem.push(`color: ${str.options.color}`);
+      }
+      processedStrs.push(`%c${str.str}%c`);
+      css.push(cssItem.join(" "));
+      css.push("");
     } else {
       processedStrs.push(str);
-      if (css.length) {
-        // Only add a '' css if we already have something in the css box.
-        css.push("");
-      }
     }
   }
-  console.log(...processedStrs, ...css);
+  console.log(processedStrs.join(" "), ...css);
 };
