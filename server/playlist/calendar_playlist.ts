@@ -103,7 +103,9 @@ async function loadEvents(id: string, calendar: Calendar) {
 
   events.length = 0;
   for (const item of results.items || []) {
-    if (!item.start?.dateTime || !item.end?.dateTime || !item.description) {
+    const startDate = item.start?.dateTime || item.start?.date;
+    const endDate = item.end?.dateTime || item.end?.date;
+    if (!startDate || !endDate || !item.description) {
       continue;
     }
     let module;
@@ -113,8 +115,8 @@ async function loadEvents(id: string, calendar: Calendar) {
       continue;
     }
     events.push({
-      start: item.start.dateTime,
-      end: item.end.dateTime,
+      start: startDate,
+      end: endDate,
       ...module,
     });
   }
