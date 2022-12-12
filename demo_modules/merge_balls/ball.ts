@@ -25,6 +25,7 @@ function shadeColor(color: string, percent: number) {
 export class Ball {
   color: { fill: string; edge: string };
   constructor(
+    public id: string,
     public position: Point,
     public radius: number,
     color: string,

@@ -87,6 +87,7 @@ export function load(
 
       for (let b = 0; b < NUM_BALLS; ++b) {
         const ball = new Ball(
+          String(b),
           // position
           getInitialBallPosition(INITIAL_RADIUS),
           // radius
@@ -221,7 +222,7 @@ export function load(
         }
       }
 
-      state.store("balls", time, this.balls);
+      state.store("balls", time, this.balls.filter((b) => b.alive()));
     }
   }
 
