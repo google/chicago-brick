@@ -79,7 +79,15 @@ class DriveItemsDownloader {
               if (paginationToken) {
                 req.pageToken = paginationToken;
               }
-              const response = await driveFilesList(client, req);
+              let response: FileList;
+              try {
+                response = await driveFilesList(client, req);
+              } catch (e) {
+                log.error(
+                  `Unable to download files in folder: ${folderId}: ${e.message}`,
+                );
+                break;
+              }
               itemCount += response.files?.length || 0;
               log(
                 `Downloaded ${itemCount} content ids in folder: ${folderId}`,
