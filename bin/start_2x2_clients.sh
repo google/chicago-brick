@@ -50,12 +50,20 @@ then
   STANDARD_FLAGS="${STANDARD_FLAGS} --show-fps-counter"
 fi
 
-"$CHROME" $STANDARD_FLAGS --window-position=100,370 --window-size=${WINDOW_SIZE} \
+"$CHROME" $STANDARD_FLAGS --window-position=100,364 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=0,1080,1920,1080" --user-data-dir=/tmp/client00 &
-"$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=${WINDOW_SIZE} \
+"$CHROME" $STANDARD_FLAGS --window-position=580,364 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=1920,1080,1920,1080" --user-data-dir=/tmp/client10 &
 sleep 3
 "$CHROME" $STANDARD_FLAGS --window-position=580,100 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=1920,0,1920,1080" --user-data-dir=/tmp/client11 &
 "$CHROME" $STANDARD_FLAGS --window-position=100,100 --window-size=${WINDOW_SIZE} \
         --app="http://localhost:3000/?config=0,0,1920,1080" --user-data-dir=/tmp/client01 &
+
+readonly CLIENT_PID="$!"
+function clean_up {
+  kill "$CLIENT_PID";
+  exit
+}
+trap clean_up SIGHUP SIGINT SIGTERM
+wait $CLIENT_PID;
