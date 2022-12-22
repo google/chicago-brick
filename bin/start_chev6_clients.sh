@@ -47,17 +47,25 @@ then
   STANDARD_FLAGS="${STANDARD_FLAGS} --show-fps-counter"
 fi
 
-"$CHROME" $STANDARD_FLAGS --window-position=580,640 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=580,584 --window-size=480,270 \
         --app="http://localhost:3000/?config=1920,2160,1920,1080" --user-data-dir=/tmp/clientx10 &
-"$CHROME" $STANDARD_FLAGS --window-position=100,640 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=100,584 --window-size=480,270 \
         --app="http://localhost:3000/?config=0,2160,1920,1080" --user-data-dir=/tmp/clientx00 &
 sleep 3
-"$CHROME" $STANDARD_FLAGS --window-position=1060,370 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=1060,342 --window-size=480,270 \
         --app="http://localhost:3000/?config=3840,1080,1920,1080" --user-data-dir=/tmp/clientx11 &
-"$CHROME" $STANDARD_FLAGS --window-position=580,370 --window-size=480,270 \
+"$CHROME" $STANDARD_FLAGS --window-position=580,342 --window-size=480,270 \
         --app="http://localhost:3000/?config=1920,1080,1920,1080" --user-data-dir=/tmp/clientx01 &
 sleep 3
 "$CHROME" $STANDARD_FLAGS --window-position=580,100 --window-size=480,270 \
         --app="http://localhost:3000/?config=1920,0,1920,1080" --user-data-dir=/tmp/clientx12 &
 "$CHROME" $STANDARD_FLAGS --window-position=100,100 --window-size=480,270 \
         --app="http://localhost:3000/?config=0,0,1920,1080" --user-data-dir=/tmp/clientx02 &
+
+readonly CLIENT_PID="$!"
+function clean_up {
+  kill "$CLIENT_PID";
+  exit
+}
+trap clean_up SIGHUP SIGINT SIGTERM
+wait $CLIENT_PID;
