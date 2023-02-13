@@ -21,9 +21,24 @@ export default function inject<R>(
   sandbox: Record<string, unknown>,
 ): R {
   const args = fn.toString()
+    // Extract argument block between the first parenthesis.
     .match(/\(([^)]*)/)![1]
+    // Remove comments.
+    .replaceAll(/\/\*[^]*\*\//mg, "")
+    .replaceAll(/\/\/.*\n/g, "")
+    // Collect valid argument names.
     .split(",")
+    .map((arg) => arg.trim())
     .filter((arg) => arg)
-    .map((arg) => arg.trim());
-  return fn.apply(null, args.map((a) => sandbox[a]));
+    // Assign values from sandbox.
+    .map((a) => {
+      if (!(a in sandbox)) {
+        console.warn(
+          `inject error: unknown argument '${a}', use one of: ${Object.keys(sandbox)}`,
+        );
+      }
+      return sandbox[a];
+    });
+
+  return fn.apply(null, args);
 }
