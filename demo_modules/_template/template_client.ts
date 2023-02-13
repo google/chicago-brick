@@ -1,20 +1,19 @@
+// deno-lint-ignore-file no-unused-vars
+
 import { Client } from "../../client/modules/module_interface.ts";
 import { ModuleWS } from "../../lib/websocket.ts";
-import { Logger } from "../../lib/log.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
 import { ModuleState } from "../../client/network/state_manager.ts";
 
 export function load(
-  // Default logging lib, with multiple levels.
-  _debug: Logger,
   // Websocket connected to the client used to send messages back and forth.
-  _network: ModuleWS,
+  network: ModuleWS,
   // Helper to get information about other clients.
-  _peerNetwork: ModulePeer,
+  peerNetwork: ModulePeer,
   // Shared state with module's server.
-  _state: ModuleState,
+  state: ModuleState,
   // Polygon representing the outer shape of the entire wall area.
   wallGeometry: Polygon,
 ) {
@@ -32,13 +31,13 @@ export function load(
     }
 
     // Notification that your module has started to fade in.
-    beginFadeIn(_time: number) {}
+    beginFadeIn(time: number) {}
 
     // Notification that your module has finished fading in.
     finishFadeIn() {}
 
     // Notification that your module should now draw.
-    draw(_time: number, _delta: number) {
+    draw(time: number, delta: number) {
       // Erase previous frame.
       this.ctx.clearRect(
         0, // start x
