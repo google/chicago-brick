@@ -31,13 +31,13 @@ export default function inject<R>(
     .map((arg) => arg.trim())
     .filter((arg) => arg)
     // Assign values from sandbox.
-    .map((a) => {
-      if (!(a in sandbox)) {
+    .map((arg) => {
+      if (!(arg in sandbox)) {
         console.warn(
-          `inject error: unknown argument '${a}', use one of: ${Object.keys(sandbox)}`,
+          `inject error: unknown argument '${arg}', use one of: ${Object.keys(sandbox)}`,
         );
       }
-      return sandbox[a];
+      return sandbox[arg];
     });
 
   return fn.apply(null, args);
