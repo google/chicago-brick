@@ -21,7 +21,7 @@ export default function inject<R>(
   sandbox: Record<string, unknown>,
 ): R {
   const args = fn.toString()
-    // Extract argument block between the first parenthesis.
+    // Extract argument block between the first parentheses.
     .match(/\(([^)]*)/)![1]
     // Remove comments.
     .replaceAll(/\/\*[^]*\*\//mg, "")
