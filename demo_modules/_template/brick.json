@@ -1,0 +1,7 @@
+{
+    "name": "template",
+    "testonly": true,
+    "client_path": "./template_client.ts",
+    "server_path": "./template_server.ts"
+  }
+  
