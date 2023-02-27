@@ -1,0 +1,9 @@
+{
+  "name": "sliced_cubes",
+  "client_path": "./sliced_cubes_client.ts",
+  "server_path": "./sliced_cubes_server.ts",
+  "credit": {
+    "title": "Sliced Cubes",
+    "author": "Luke Blanshard"
+  }
+}
