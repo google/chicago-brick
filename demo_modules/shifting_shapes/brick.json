@@ -1,0 +1,8 @@
+{
+  "name": "shifting-shapes",
+  "client_path": "./shifting_shapes.ts",
+  "credit": {
+    "title": "Shifting Shapes",
+    "author": "Philip Bell"
+  }
+}
