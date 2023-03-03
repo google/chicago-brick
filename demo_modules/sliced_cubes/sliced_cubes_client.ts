@@ -36,7 +36,7 @@ export function load(state: ModuleState, wallGeometry: Polygon) {
       return Promise.resolve();
     }
 
-    override draw(time: number, _delta: number): void {
+    override draw(time: number): void {
       const { sharedState, slices } = this;
       const x = ((2 * Math.PI) / 5000) * (time % 5000);
       const y = ((2 * Math.PI) / 6000) * (time % 6000);
