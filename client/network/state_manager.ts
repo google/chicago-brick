@@ -42,6 +42,8 @@ export class SharedState {
   readonly store_: StateDataPoint[];
   readonly maxSize_: number;
   readonly interpolator_: Interpolator<unknown>;
+  readonly dataPromise_: Promise<void>;
+  readonly resolveDataPromise_: () => void;
 
   constructor(
     name: string,
@@ -60,6 +62,12 @@ export class SharedState {
 
     // Strategy pattern: Defines a way to access the state.
     this.interpolator_ = interpolator;
+
+    let resolveDataPromise: () => void;
+    this.dataPromise_ = new Promise(resolve => {
+      resolveDataPromise = resolve;
+    })
+    this.resolveDataPromise_ = resolveDataPromise!;
   }
   earliest(): StateDataPoint | undefined {
     return this.store_[0];
@@ -73,6 +81,11 @@ export class SharedState {
   hasData(): boolean {
     return !!this.store_.length;
   }
+
+  waitForData(): Promise<void> {
+    return this.dataPromise_;
+  }
+
   *pairs(): Iterable<[StateDataPoint, StateDataPoint]> {
     for (let i = 0; i < this.store_.length - 1; i++) {
       yield [this.store_[i], this.store_[i + 1]];
@@ -111,6 +124,9 @@ export class SharedState {
   }
   // Sets the current value of the state.
   set(value: unknown, time: number) {
+    if (!this.store_.length) {
+      this.resolveDataPromise_();
+    }
     this.store_.push({
       time: time,
       value: value,
