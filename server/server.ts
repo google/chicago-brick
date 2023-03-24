@@ -36,6 +36,7 @@ import { library } from "./modules/library.ts";
 import { flags } from "./flags.ts";
 import { consoleLogger } from "./util/console_logger.ts";
 import { startSchedule } from "./playlist/calendar_playlist.ts";
+import { startSchedule as startScheduleV2 } from "./playlist/calendar/state.ts";
 
 addLogger(makeConsoleLogger(consoleLogger, time.now));
 addLogger(captureLog, "wall");
@@ -93,9 +94,19 @@ driver.start(playlist);
 
 if (flags.calendar_id) {
   log(`Starting events for calendar: ${flags.calendar_id}`);
-  await startSchedule(
-    flags.calendar_id,
-    "googleserviceaccountkey",
-    driver,
-  );
+
+  if (flags.calendar_v2) {
+    log(`Using calendar v2`);
+    await startScheduleV2(
+      flags.calendar_id,
+      "googleserviceaccountkey",
+      driver,
+    );
+  } else {
+    await startSchedule(
+      flags.calendar_id,
+      "googleserviceaccountkey",
+      driver,
+    );
+  }
 }

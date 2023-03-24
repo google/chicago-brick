@@ -97,6 +97,12 @@ const FLAG_DEFS = [
     defaultValue: "",
     description: "Id of a Google Calendar used to configure the wall.",
   },
+  {
+    name: "calendar_v2",
+    type: Boolean,
+    defaultValue: false,
+    description: "Use updated calendar strategy.",
+  },
 ];
 
 export interface Flags {
@@ -116,6 +122,7 @@ export interface Flags {
   https_cert: string;
   https_key: string;
   calendar_id: string;
+  calendar_v2: boolean;
 }
 
 export const flags = commandLineArgs(FLAG_DEFS) as Flags;
