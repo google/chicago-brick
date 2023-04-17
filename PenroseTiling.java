@@ -75,7 +75,7 @@ public class PenroseTiling extends JPanel {
     List<Tile> prototiles = new ArrayList<>();
 
     public PenroseTiling() {
-        int w = 700, h = 450;
+        int w = 960, h = 540;
         setPreferredSize(new Dimension(w, h));
         setBackground(Color.white);
         prototiles = setupPrototiles(w, h);
