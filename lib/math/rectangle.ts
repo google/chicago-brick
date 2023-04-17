@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-export interface Point {
+interface Point {
   x: number;
   y: number;
 }
