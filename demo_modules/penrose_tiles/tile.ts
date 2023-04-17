@@ -21,8 +21,32 @@ export class Tile {
   ) {
   }
 
+  static protoTiles(
+    center: Point,
+    size: number,
+  ): readonly Tile[] {
+    const protoTiles = [];
+
+    for (
+      let a = Math.PI / 2 + PI_OVER_5;
+      a < 3 * Math.PI;
+      a += 2 * PI_OVER_5
+    ) {
+      protoTiles.push(
+        new Tile(
+          center,
+          a,
+          size,
+          TileType.Kite,
+        ),
+      );
+    }
+
+    return protoTiles;
+  }
+
   // TODO(aarestad): make this clearer what we are doing
-  get vertices(): readonly [Point, Point, Point, Point] {
+  get vertices(): readonly Point[] {
     const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
     let angle = this.angle - PI_OVER_5;
 
@@ -33,11 +57,11 @@ export class Tile {
     for (let i = 0; i < 3; i++) {
       const x = this.origin.x + dist[ord][i] * this.size * Math.cos(angle);
       const y = this.origin.y - dist[ord][i] * this.size * Math.sin(angle);
-      vertices.push({x, y});
+      vertices.push({ x, y });
       angle += PI_OVER_5;
     }
 
-    return vertices as [Point, Point, Point, Point];
+    return vertices;
   }
 }
 
@@ -52,25 +76,37 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
     const size = tile.size / PHI;
 
     if (tile.type === TileType.Dart) {
-      newTiles.push(new Tile({x, y}, a + 5 * PI_OVER_5, size, TileType.Kite));
+      newTiles.push(new Tile({ x, y }, a + 5 * PI_OVER_5, size, TileType.Kite));
 
       for (let i = 0, sign = 1; i < 2; i++, sign *= -1) {
         const nx = x + Math.cos(a - 4 * PI_OVER_5 * sign) * PHI * tile.size;
         const ny = y - Math.sin(a - 4 * PI_OVER_5 * sign) * PHI * tile.size;
+
         newTiles.push(
-          new Tile({x: nx, y: ny}, a - 4 * PI_OVER_5 * sign, size, TileType.Dart),
+          new Tile(
+            { x: nx, y: ny },
+            a - 4 * PI_OVER_5 * sign,
+            size,
+            TileType.Dart,
+          ),
         );
       }
     } else {
       for (let i = 0, sign = 1; i < 2; i++, sign *= -1) {
         newTiles.push(
-          new Tile({x, y}, a - 4 * PI_OVER_5 * sign, size, TileType.Dart),
+          new Tile({ x, y }, a - 4 * PI_OVER_5 * sign, size, TileType.Dart),
         );
 
         const nx = x + Math.cos(a - PI_OVER_5 * sign) * PHI * tile.size;
         const ny = y - Math.sin(a - PI_OVER_5 * sign) * PHI * tile.size;
+        
         newTiles.push(
-          new Tile({x: nx, y: ny}, a + 3 * PI_OVER_5 * sign, size, TileType.Kite),
+          new Tile(
+            { x: nx, y: ny },
+            a + 3 * PI_OVER_5 * sign,
+            size,
+            TileType.Kite,
+          ),
         );
       }
     }

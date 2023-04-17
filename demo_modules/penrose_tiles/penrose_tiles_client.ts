@@ -22,7 +22,7 @@ export function load(
   class TemplateClient extends Client {
     surface: CanvasSurface | undefined = undefined;
     ctx!: CanvasRenderingContext2D;
-    readonly protoTiles: Tile[] = [];
+    readonly protoTiles?: Tile[] = [];
     displayedTiles: Tile[] = [];
     currentGeneration = 0;
     firstDraw = 0;
@@ -38,22 +38,7 @@ export function load(
 
       const center = wallGeometry.extents.center();
 
-      for (
-        let a = Math.PI / 2 + PI_OVER_5;
-        a < 3 * Math.PI;
-        a += 2 * PI_OVER_5
-      ) {
-        this.protoTiles.push(
-          new Tile(
-            center,
-            a,
-            wallGeometry.extents.w / 2.5,
-            TileType.Kite,
-          ),
-        );
-
-        this.displayedTiles = this.protoTiles;
-      }
+      this.displayedTiles.push(...Tile.protoTiles(center, wallGeometry.extents.w / 2.5));
     }
 
     // Notification that your module has started to fade in.
