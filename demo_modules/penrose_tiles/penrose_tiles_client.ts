@@ -1,21 +1,18 @@
-// deno-lint-ignore-file no-unused-vars
-
 import { Client } from "../../client/modules/module_interface.ts";
 import { ModuleWS } from "../../lib/websocket.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
 import { ModuleState } from "../../client/network/state_manager.ts";
-import { PHI, PI_OVER_5 } from "./constants.ts";
 import { deflateTiles, Tile, TileType } from "./tile.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
-  network: ModuleWS,
+  _network: ModuleWS,
   // Helper to get information about other clients.
-  peerNetwork: ModulePeer,
+  _peerNetwork: ModulePeer,
   // Shared state with module's server.
-  state: ModuleState,
+  _state: ModuleState,
   // Polygon representing the outer shape of the entire wall area.
   wallGeometry: Polygon,
 ) {
@@ -42,13 +39,13 @@ export function load(
     }
 
     // Notification that your module has started to fade in.
-    beginFadeIn(time: number) {}
+    beginFadeIn(_time: number) {}
 
     // Notification that your module has finished fading in.
     finishFadeIn() {}
 
     // Notification that your module should now draw.
-    draw(time: number, delta: number) {
+    draw(time: number, _delta: number) {
       if (this.previousGenTimeMs === 0) {
         this.previousGenTimeMs = time;
         this.firstDraw = time;
