@@ -111,8 +111,7 @@ export function load(
 
         // Cycle through the wheel every 10 seconds
         const cycleLength = 10_000;
-        const cyclePosition = (time - this.firstDraw) % cycleLength;
-        const hue = baseHue + cyclePosition / cycleLength;
+        const hue = baseHue + (time - this.firstDraw) / cycleLength;
 
         // hard-code saturation at 100% and lightness at 50% for now
         this.ctx.fillStyle = `hsl(${hue}turn, 100%, 50%)`;
