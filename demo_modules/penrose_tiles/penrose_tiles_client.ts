@@ -23,6 +23,9 @@ export function load(
     surface: CanvasSurface | undefined = undefined;
     ctx!: CanvasRenderingContext2D;
     readonly protoTiles: Tile[] = [];
+    displayedTiles: Tile[] = [];
+    currentGeneration = 0;
+    previousGenTimeMs = 0;
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -46,6 +49,8 @@ export function load(
             TileType.Kite,
           ),
         );
+
+        this.displayedTiles = this.protoTiles;
       }
     }
 
@@ -57,6 +62,16 @@ export function load(
 
     // Notification that your module should now draw.
     draw(time: number, delta: number) {
+      if (this.previousGenTimeMs === 0) {
+        this.previousGenTimeMs = time;
+      }
+
+      if (this.currentGeneration < 7 && time - this.previousGenTimeMs >= 10000) {
+        this.previousGenTimeMs = time;
+        this.currentGeneration += 1;
+        this.displayedTiles = deflateTiles(this.displayedTiles);
+      }
+
       this.ctx.clearRect(
         0,
         0,
@@ -67,7 +82,7 @@ export function load(
       // TODO(aarestad): make this clearer what we are doing
       const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
 
-      for (const tile of deflateTiles(this.protoTiles, 7)) {
+      for (const tile of this.displayedTiles) {
         let angle = tile.angle - PI_OVER_5;
         this.ctx.beginPath();
         this.ctx.moveTo(tile.x, tile.y);

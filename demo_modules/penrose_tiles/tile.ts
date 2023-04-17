@@ -16,11 +16,7 @@ class Tile {
   }
 }
 
-function deflateTiles(tiles: Tile[], generation: number): Tile[] {
-  if (generation <= 0) {
-    return tiles;
-  }
-
+function deflateTiles(tiles: Tile[]): Tile[] {
   const newTiles: Tile[] = [];
 
   for (const tile of tiles) {
@@ -56,7 +52,7 @@ function deflateTiles(tiles: Tile[], generation: number): Tile[] {
   // TODO remove duplicates
   // tls = next.stream().distinct().collect(toList());
 
-  return deflateTiles(newTiles, generation - 1);
+  return newTiles;
 }
 
 export { deflateTiles, PHI, PI_OVER_5, Tile, TileType };
