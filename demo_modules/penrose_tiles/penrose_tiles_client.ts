@@ -6,6 +6,8 @@ import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
 import { ModuleState } from "../../client/network/state_manager.ts";
+import { PHI, PI_OVER_5, } from "./constants.ts";
+import { Tile, TileType, deflateTiles } from "./tile.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
@@ -20,6 +22,7 @@ export function load(
   class TemplateClient extends Client {
     surface: CanvasSurface | undefined = undefined;
     ctx!: CanvasRenderingContext2D;
+    readonly protoTiles: Tile[] = [];
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -28,6 +31,22 @@ export function load(
     ): Promise<void> | void {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.ctx = this.surface.context;
+
+      const center = wallGeometry.extents.center();
+
+      for (
+        let a = Math.PI / 2 + PI_OVER_5; a < 3 * Math.PI; a += 2 * PI_OVER_5
+      ) {
+        this.protoTiles.push(
+          new Tile(
+            center.x,
+            center.y,
+            a,
+            wallGeometry.extents.w / 2.5,
+            TileType.Kite,
+          ),
+        );
+      }
     }
 
     // Notification that your module has started to fade in.
@@ -46,19 +65,51 @@ export function load(
         this.surface!.virtualRect.h, // height
       );
 
-      // Draw circle.
-      this.ctx.beginPath();
-      this.ctx.arc(
-        this.surface!.virtualRect.w / 2, // center x
-        this.surface!.virtualRect.h / 2, // center y
-        this.surface!.virtualRect.h / 3, // radius
-        0, // start angle
-        2 * Math.PI, // end angle
-        false, // counterClockwise
-      );
-      this.ctx.fillStyle = "red";
-      this.ctx.fill();
+      // TODO(aarestad): make this clearer what we are doing
+      const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
+
+      for (const tile of deflateTiles(this.protoTiles, 7)) {
+        let angle = tile.angle - PI_OVER_5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(tile.x, tile.y);
+
+        const ord = tile.type;
+
+        for (let i = 0; i < 3; i++) {
+          const x = tile.x + dist[ord][i] * tile.size * Math.cos(angle);
+          const y = tile.y - dist[ord][i] * tile.size * Math.sin(angle);
+          this.ctx.lineTo(x, y);
+          angle += PI_OVER_5;
+        }
+
+        this.ctx.closePath();
+        this.ctx.stroke();
+        this.ctx.fillStyle = ord === 0 ? "orange" : "yellow";
+        this.ctx.fill();
+      }
     }
+    // draw(time: number, delta: number) {
+    //   // Erase previous frame.
+    //   this.ctx.clearRect(
+    //     0, // start x
+    //     0, // start y
+    //     this.surface!.virtualRect.w, // width
+    //     this.surface!.virtualRect.h, // height
+    //   );
+
+    //   // Draw circle.
+    //   this.ctx.beginPath();
+    //   this.ctx.arc(
+    //     this.surface!.virtualRect.w / 2, // center x
+    //     this.surface!.virtualRect.h / 2, // center y
+    //     this.surface!.virtualRect.h / 3, // radius
+    //     0, // start angle
+    //     2 * Math.PI, // end angle
+    //     false, // counterClockwise
+    //   );
+    //   this.ctx.fillStyle = "red";
+    //   this.ctx.fill();
+    // }
 
     // Notification that your module has started to fade out.
     beginFadeOut() {}
