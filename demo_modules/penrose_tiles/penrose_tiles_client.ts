@@ -88,6 +88,10 @@ export function load(
       // TODO(aarestad): make this clearer what we are doing
       const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
 
+      // Cycle through the wheel every 10 seconds
+      const kiteHue = (time - this.firstDraw) / 10_000;
+      const dartHue = kiteHue + 1/4
+
       for (const tile of this.displayedTiles) {
         let angle = tile.angle - PI_OVER_5;
         this.ctx.beginPath();
@@ -105,16 +109,8 @@ export function load(
         this.ctx.closePath();
         this.ctx.stroke();
 
-        // h=0: red
-        // h=1/4: yellow-green
-        const baseHue = ord === 0 ? 0 : 1/4;
-
-        // Cycle through the wheel every 10 seconds
-        const cycleLength = 10_000;
-        const hue = baseHue + (time - this.firstDraw) / cycleLength;
-
         // hard-code saturation at 100% and lightness at 50% for now
-        this.ctx.fillStyle = `hsl(${hue}turn, 100%, 50%)`;
+        this.ctx.fillStyle = `hsl(${tile.type === TileType.Kite ? kiteHue : dartHue}turn, 100%, 50%)`;
         this.ctx.fill();
       }
     }
