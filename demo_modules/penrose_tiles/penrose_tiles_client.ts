@@ -72,9 +72,9 @@ export function load(
 
       for (const tile of this.displayedTiles) {
         this.ctx.beginPath();
-        this.ctx.moveTo(tile.origin.x, tile.origin.y);
+        this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
 
-        for (const p of tile.vertices.slice(1)) {
+        for (const p of tile.points.slice(1)) {
           this.ctx.lineTo(p.x, p.y);
         }
 

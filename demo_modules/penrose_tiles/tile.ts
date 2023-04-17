@@ -3,7 +3,8 @@
  */
 
 import { PHI, PI_OVER_5 } from "./constants.ts";
-import { Point } from "../../lib/math/rectangle.ts";
+import { Point } from "../../lib/math/vector2d.ts";
+import { Polygon } from "../../lib/math/polygon2d.ts";
 
 // The "P2" Penrose tile types
 export enum TileType {
@@ -12,13 +13,28 @@ export enum TileType {
 }
 
 // An individual tile
-export class Tile {
+export class Tile extends Polygon {
   constructor(
-    readonly origin: Point,
+    origin: Point,
     readonly angle: number,
     readonly size: number,
     readonly type: TileType,
   ) {
+    const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
+    let a = angle - PI_OVER_5;
+
+    const vertices = [origin];
+
+    const ord = type;
+
+    for (let i = 0; i < 3; i++) {
+      const x = origin.x + dist[ord][i] * size * Math.cos(a);
+      const y = origin.y - dist[ord][i] * size * Math.sin(a);
+      vertices.push({ x, y });
+      a += PI_OVER_5;
+    }
+
+    super(vertices);
   }
 
   static protoTiles(
@@ -44,25 +60,6 @@ export class Tile {
 
     return protoTiles;
   }
-
-  // TODO(aarestad): make this clearer what we are doing
-  get vertices(): readonly Point[] {
-    const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
-    let angle = this.angle - PI_OVER_5;
-
-    const vertices = [this.origin];
-
-    const ord = this.type;
-
-    for (let i = 0; i < 3; i++) {
-      const x = this.origin.x + dist[ord][i] * this.size * Math.cos(angle);
-      const y = this.origin.y - dist[ord][i] * this.size * Math.sin(angle);
-      vertices.push({ x, y });
-      angle += PI_OVER_5;
-    }
-
-    return vertices;
-  }
 }
 
 // "Deflate" the given tiles to the next generation
@@ -70,8 +67,8 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
   const newTiles: Tile[] = [];
 
   for (const tile of tiles) {
-    const x = tile.origin.x;
-    const y = tile.origin.y;
+    const x = tile.points[0].x;
+    const y = tile.points[0].y;
     const a = tile.angle;
     const size = tile.size / PHI;
 
@@ -99,7 +96,7 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
 
         const nx = x + Math.cos(a - PI_OVER_5 * sign) * PHI * tile.size;
         const ny = y - Math.sin(a - PI_OVER_5 * sign) * PHI * tile.size;
-        
+
         newTiles.push(
           new Tile(
             { x: nx, y: ny },
