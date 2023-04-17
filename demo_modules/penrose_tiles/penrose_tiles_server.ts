@@ -4,7 +4,8 @@ import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
-import { Tile, TileType, PI_OVER_5 } from "./tile.ts";
+import { Tile, TileType } from "./tile.ts";
+import { PI_OVER_5 } from "./constants.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
@@ -21,7 +22,7 @@ export function load(
       const center = wallGeometry.extents.center();
 
       for (let a = Math.PI / 2 + PI_OVER_5; a < 3 * Math.PI; a += 2 * PI_OVER_5) {
-        this.protoTiles.push(new Tile(center.x, center.y, a, wallGeometry.extents.w / 2.5, TileType.Kite));
+        this.protoTiles.push(new Tile(center, a, wallGeometry.extents.w / 2.5, TileType.Kite));
       }
     }
 

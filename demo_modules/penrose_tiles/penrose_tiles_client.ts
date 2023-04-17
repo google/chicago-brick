@@ -45,8 +45,7 @@ export function load(
       ) {
         this.protoTiles.push(
           new Tile(
-            center.x,
-            center.y,
+            center,
             a,
             wallGeometry.extents.w / 2.5,
             TileType.Kite,
@@ -85,25 +84,16 @@ export function load(
         this.surface!.virtualRect.h,
       );
 
-      // TODO(aarestad): make this clearer what we are doing
-      const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
-
       // Cycle through the wheel every 10 seconds
       const kiteHue = (time - this.firstDraw) / 10_000;
       const dartHue = kiteHue + 1/4
 
       for (const tile of this.displayedTiles) {
-        let angle = tile.angle - PI_OVER_5;
         this.ctx.beginPath();
-        this.ctx.moveTo(tile.x, tile.y);
+        this.ctx.moveTo(tile.origin.x, tile.origin.y);
 
-        const ord = tile.type;
-
-        for (let i = 0; i < 3; i++) {
-          const x = tile.x + dist[ord][i] * tile.size * Math.cos(angle);
-          const y = tile.y - dist[ord][i] * tile.size * Math.sin(angle);
-          this.ctx.lineTo(x, y);
-          angle += PI_OVER_5;
+        for (const p of tile.vertices.slice(1)) {
+          this.ctx.lineTo(p.x, p.y);
         }
 
         this.ctx.closePath();
