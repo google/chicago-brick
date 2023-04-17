@@ -1,10 +1,16 @@
+/**
+ * Code adapted from https://rosettacode.org/wiki/Penrose_tiling#Java
+ */
+
 import { PHI, PI_OVER_5 } from "./constants.ts";
 
+// The "P2" Penrose tile types
 enum TileType {
   Kite = 0,
   Dart,
 }
 
+// An individual tile
 class Tile {
   constructor(
     readonly x: number,
@@ -16,6 +22,7 @@ class Tile {
   }
 }
 
+// "Deflate" the given tiles to the next generation
 function deflateTiles(tiles: Tile[]): Tile[] {
   const newTiles: Tile[] = [];
 
@@ -49,8 +56,7 @@ function deflateTiles(tiles: Tile[]): Tile[] {
       }
     }
   }
-  // TODO remove duplicates
-  // tls = next.stream().distinct().collect(toList());
+  // TODO remove duplicates?
 
   return newTiles;
 }
