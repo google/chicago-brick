@@ -35,7 +35,9 @@ export function load(
 
       const center = wallGeometry.extents.center();
 
-      this.displayedTiles.push(...Tile.protoTiles(center, wallGeometry.extents.w / 2.5));
+      this.displayedTiles.push(
+        ...Tile.protoTiles(center, wallGeometry.extents.w / 2.5),
+      );
     }
 
     // Notification that your module has started to fade in.
@@ -68,7 +70,7 @@ export function load(
 
       // Cycle through the wheel every 10 seconds
       const kiteHue = (time - this.firstDraw) / 10_000;
-      const dartHue = kiteHue + 1/4
+      const dartHue = kiteHue + 1 / 4;
 
       for (const tile of this.displayedTiles) {
         this.ctx.beginPath();
@@ -82,7 +84,9 @@ export function load(
         this.ctx.stroke();
 
         // hard-code saturation at 100% and lightness at 50% for now
-        this.ctx.fillStyle = `hsl(${tile.type === TileType.Kite ? kiteHue : dartHue}turn, 100%, 50%)`;
+        this.ctx.fillStyle = `hsl(${
+          tile.type === TileType.Kite ? kiteHue : dartHue
+        }turn, 100%, 50%)`;
         this.ctx.fill();
       }
     }
