@@ -19,7 +19,7 @@ export function load(
   class TemplateClient extends Client {
     surface: CanvasSurface | undefined = undefined;
     ctx!: CanvasRenderingContext2D;
-    readonly protoTiles?: Tile[] = [];
+    readonly protoTiles: Tile[] = [];
     displayedTiles: Tile[] = [];
     currentGeneration = 0;
     firstDraw = 0;
