@@ -6,8 +6,8 @@ import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
 import { ModuleState } from "../../client/network/state_manager.ts";
-import { PHI, PI_OVER_5, } from "./constants.ts";
-import { Tile, TileType, deflateTiles } from "./tile.ts";
+import { PHI, PI_OVER_5 } from "./constants.ts";
+import { deflateTiles, Tile, TileType } from "./tile.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
@@ -25,6 +25,7 @@ export function load(
     readonly protoTiles: Tile[] = [];
     displayedTiles: Tile[] = [];
     currentGeneration = 0;
+    firstDraw = 0;
     previousGenTimeMs = 0;
 
     // Notification that your module has been selected next in the queue.
@@ -38,7 +39,9 @@ export function load(
       const center = wallGeometry.extents.center();
 
       for (
-        let a = Math.PI / 2 + PI_OVER_5; a < 3 * Math.PI; a += 2 * PI_OVER_5
+        let a = Math.PI / 2 + PI_OVER_5;
+        a < 3 * Math.PI;
+        a += 2 * PI_OVER_5
       ) {
         this.protoTiles.push(
           new Tile(
@@ -64,9 +67,12 @@ export function load(
     draw(time: number, delta: number) {
       if (this.previousGenTimeMs === 0) {
         this.previousGenTimeMs = time;
+        this.firstDraw = time;
       }
 
-      if (this.currentGeneration < 7 && time - this.previousGenTimeMs >= 10000) {
+      if (
+        this.currentGeneration < 7 && time - this.previousGenTimeMs >= 10000
+      ) {
         this.previousGenTimeMs = time;
         this.currentGeneration += 1;
         this.displayedTiles = deflateTiles(this.displayedTiles);
@@ -98,7 +104,18 @@ export function load(
 
         this.ctx.closePath();
         this.ctx.stroke();
-        this.ctx.fillStyle = ord === 0 ? "orange" : "yellow";
+
+        // h=0: red
+        // h=1/4: yellow-green
+        const baseHue = ord === 0 ? 0 : 1/4;
+
+        // Cycle through the wheel every 10 seconds
+        const cycleLength = 10_000;
+        const cyclePosition = (time - this.firstDraw) % cycleLength;
+        const hue = baseHue + cyclePosition / cycleLength;
+
+        // hard-code saturation at 100% and lightness at 50% for now
+        this.ctx.fillStyle = `hsl(${hue}turn, 100%, 50%)`;
         this.ctx.fill();
       }
     }
