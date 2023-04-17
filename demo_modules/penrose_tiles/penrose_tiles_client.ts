@@ -20,7 +20,7 @@ export function load(
   wallGeometry: Polygon,
 ) {
   class TemplateClient extends Client {
-    surface?: CanvasSurface;
+    surface: CanvasSurface | undefined = undefined;
     ctx!: CanvasRenderingContext2D;
     readonly protoTiles: Tile[] = [];
 
