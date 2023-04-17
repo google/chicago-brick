@@ -20,7 +20,7 @@ export function load(
   wallGeometry: Polygon,
 ) {
   class TemplateClient extends Client {
-    surface: CanvasSurface | undefined = undefined;
+    surface?: CanvasSurface;
     ctx!: CanvasRenderingContext2D;
     readonly protoTiles: Tile[] = [];
 
@@ -57,12 +57,11 @@ export function load(
 
     // Notification that your module should now draw.
     draw(time: number, delta: number) {
-      // Erase previous frame.
       this.ctx.clearRect(
-        0, // start x
-        0, // start y
-        this.surface!.virtualRect.w, // width
-        this.surface!.virtualRect.h, // height
+        0,
+        0,
+        this.surface!.virtualRect.w,
+        this.surface!.virtualRect.h,
       );
 
       // TODO(aarestad): make this clearer what we are doing
@@ -88,28 +87,6 @@ export function load(
         this.ctx.fill();
       }
     }
-    // draw(time: number, delta: number) {
-    //   // Erase previous frame.
-    //   this.ctx.clearRect(
-    //     0, // start x
-    //     0, // start y
-    //     this.surface!.virtualRect.w, // width
-    //     this.surface!.virtualRect.h, // height
-    //   );
-
-    //   // Draw circle.
-    //   this.ctx.beginPath();
-    //   this.ctx.arc(
-    //     this.surface!.virtualRect.w / 2, // center x
-    //     this.surface!.virtualRect.h / 2, // center y
-    //     this.surface!.virtualRect.h / 3, // radius
-    //     0, // start angle
-    //     2 * Math.PI, // end angle
-    //     false, // counterClockwise
-    //   );
-    //   this.ctx.fillStyle = "red";
-    //   this.ctx.fill();
-    // }
 
     // Notification that your module has started to fade out.
     beginFadeOut() {}
