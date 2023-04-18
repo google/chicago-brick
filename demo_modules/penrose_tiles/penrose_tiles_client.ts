@@ -85,7 +85,7 @@ export function load(
         // hard-code saturation at 100% and lightness at 50% for now
         this.ctx.fillStyle = `hsl(${
           tile.type === TileType.Kite ? kiteHue : dartHue
-        }turn, 100%, 50%)`;
+        }turn 100% 50%)`;
         this.ctx.fill();
       }
     }
