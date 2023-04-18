@@ -60,13 +60,6 @@ export function load(
         this.displayedTiles = deflateTiles(this.displayedTiles);
       }
 
-      this.ctx.clearRect(
-        0,
-        0,
-        this.surface!.virtualRect.w,
-        this.surface!.virtualRect.h,
-      );
-
       // Cycle through the wheel every 10 seconds
       const kiteHue = (time - this.firstDraw) / 10_000;
       const dartHue = kiteHue + 1 / 4;
@@ -86,6 +79,7 @@ export function load(
         this.ctx.fillStyle = `hsl(${
           tile.type === P2TileType.Kite ? kiteHue : dartHue
         }turn 100% 50%)`;
+
         this.ctx.fill();
       }
     }
