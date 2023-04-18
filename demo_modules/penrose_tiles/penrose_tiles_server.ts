@@ -1,5 +1,3 @@
-// deno-lint-ignore-file no-unused-vars
-
 import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
@@ -9,7 +7,7 @@ import { PI_OVER_5 } from "./constants.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
-  network: ModuleWSS,
+  _network: ModuleWSS,
   // Shared state with module's client.
   state: ModuleState,
   // Polygon representing the outer shape of the entire wall area.
@@ -18,7 +16,7 @@ export function load(
   class TemplateServer extends Server {
     readonly protoTiles: Tile[] = [];
 
-    willBeShownSoon(deadline: number): Promise<void> | void {
+    willBeShownSoon(_deadline: number): Promise<void> | void {
       const center = wallGeometry.extents.center();
 
       for (let a = Math.PI / 2 + PI_OVER_5; a < 3 * Math.PI; a += 2 * PI_OVER_5) {
@@ -27,7 +25,7 @@ export function load(
     }
 
     // Notification that your module should execute a tick of work.
-    tick(time: number, delta: number) {
+    tick(time: number, _delta: number) {
       const newTiles = this.protoTiles;
       // TODO(aarestad): New generation every 10 seconds; zoom in-between
       state.store("tiles", time, newTiles);
