@@ -17,7 +17,6 @@ export function load(
   wallGeometry: Polygon,
 ) {
   class TemplateClient extends Client {
-    surface: CanvasSurface | undefined = undefined;
     ctx!: CanvasRenderingContext2D;
     readonly protoTiles: Tile[] = [];
     displayedTiles: Tile[] = [];
@@ -31,7 +30,7 @@ export function load(
       _deadline: number,
     ): Promise<void> | void {
       this.surface = new CanvasSurface(container, wallGeometry);
-      this.ctx = this.surface.context;
+      this.ctx = (this.surface as CanvasSurface).context;
 
       const center = wallGeometry.extents.center();
 
