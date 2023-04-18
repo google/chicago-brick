@@ -4,7 +4,7 @@ import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
 import { ModuleState } from "../../client/network/state_manager.ts";
-import { deflateTiles, Tile, TileType } from "./tile.ts";
+import { deflateTiles, Tile, P2TileType } from "./tile.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
@@ -84,7 +84,7 @@ export function load(
 
         // hard-code saturation at 100% and lightness at 50% for now
         this.ctx.fillStyle = `hsl(${
-          tile.type === TileType.Kite ? kiteHue : dartHue
+          tile.type === P2TileType.Kite ? kiteHue : dartHue
         }turn 100% 50%)`;
         this.ctx.fill();
       }

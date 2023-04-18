@@ -7,7 +7,8 @@ import { Point } from "../../lib/math/vector2d.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 
 // The "P2" Penrose tile types
-export enum TileType {
+// see https://en.wikipedia.org/wiki/Penrose_tiling#Kite_and_dart_tiling_(P2)
+export enum P2TileType {
   Kite = 0,
   Dart,
 }
@@ -18,18 +19,20 @@ export class Tile extends Polygon {
     origin: Point,
     readonly angle: number,
     readonly size: number,
-    readonly type: TileType,
+    readonly type: P2TileType,
   ) {
-    const dist = [[PHI, PHI, PHI], [-PHI, -1, -PHI]];
+    const sideRatios = {
+      [P2TileType.Kite]: [PHI, PHI, PHI],
+      [P2TileType.Dart]: [-PHI, -1, -PHI],
+    };
+
     let a = angle - PI_OVER_5;
 
     const vertices = [origin];
 
-    const ord = type;
-
     for (let i = 0; i < 3; i++) {
-      const x = origin.x + dist[ord][i] * size * Math.cos(a);
-      const y = origin.y - dist[ord][i] * size * Math.sin(a);
+      const x = origin.x + sideRatios[type][i] * size * Math.cos(a);
+      const y = origin.y - sideRatios[type][i] * size * Math.sin(a);
       vertices.push({ x, y });
       a += PI_OVER_5;
     }
@@ -53,7 +56,7 @@ export class Tile extends Polygon {
           center,
           a,
           size,
-          TileType.Kite,
+          P2TileType.Kite,
         ),
       );
     }
@@ -72,8 +75,8 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
     const a = tile.angle;
     const size = tile.size / PHI;
 
-    if (tile.type === TileType.Dart) {
-      newTiles.push(new Tile({ x, y }, a + 5 * PI_OVER_5, size, TileType.Kite));
+    if (tile.type === P2TileType.Dart) {
+      newTiles.push(new Tile({ x, y }, a + 5 * PI_OVER_5, size, P2TileType.Kite));
 
       for (let i = 0, sign = 1; i < 2; i++, sign *= -1) {
         const nx = x + Math.cos(a - 4 * PI_OVER_5 * sign) * PHI * tile.size;
@@ -84,14 +87,14 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
             { x: nx, y: ny },
             a - 4 * PI_OVER_5 * sign,
             size,
-            TileType.Dart,
+            P2TileType.Dart,
           ),
         );
       }
     } else {
       for (let i = 0, sign = 1; i < 2; i++, sign *= -1) {
         newTiles.push(
-          new Tile({ x, y }, a - 4 * PI_OVER_5 * sign, size, TileType.Dart),
+          new Tile({ x, y }, a - 4 * PI_OVER_5 * sign, size, P2TileType.Dart),
         );
 
         const nx = x + Math.cos(a - PI_OVER_5 * sign) * PHI * tile.size;
@@ -102,7 +105,7 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
             { x: nx, y: ny },
             a + 3 * PI_OVER_5 * sign,
             size,
-            TileType.Kite,
+            P2TileType.Kite,
           ),
         );
       }
