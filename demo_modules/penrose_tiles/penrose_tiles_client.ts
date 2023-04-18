@@ -4,25 +4,17 @@ import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
 import { ModuleState } from "../../client/network/state_manager.ts";
-import { deflateTiles, Tile, P2TileType } from "./tile.ts";
+import { Tile, P2TileType } from "./tile.ts";
 
 export function load(
-  // Websocket connected to the client used to send messages back and forth.
-  _network: ModuleWS,
-  // Helper to get information about other clients.
-  _peerNetwork: ModulePeer,
-  // Shared state with module's server.
-  _state: ModuleState,
-  // Polygon representing the outer shape of the entire wall area.
+  network: ModuleWS,
+  peerNetwork: ModulePeer,
+  state: ModuleState,
   wallGeometry: Polygon,
 ) {
   class TemplateClient extends Client {
     ctx!: CanvasRenderingContext2D;
-    readonly protoTiles: Tile[] = [];
-    displayedTiles: Tile[] = [];
-    currentGeneration = 0;
     firstDraw = 0;
-    previousGenTimeMs = 0;
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -30,13 +22,6 @@ export function load(
       _deadline: number,
     ): Promise<void> | void {
       this.surface = new CanvasSurface(container, wallGeometry);
-      this.ctx = (this.surface as CanvasSurface).context;
-
-      const center = wallGeometry.extents.center();
-
-      this.displayedTiles.push(
-        ...Tile.protoTiles(center, wallGeometry.extents.w / 2.5),
-      );
     }
 
     // Notification that your module has started to fade in.
@@ -47,24 +32,17 @@ export function load(
 
     // Notification that your module should now draw.
     draw(time: number, _delta: number) {
-      if (this.previousGenTimeMs === 0) {
-        this.previousGenTimeMs = time;
+      if (this.firstDraw === 0) {
         this.firstDraw = time;
       }
 
-      if (
-        this.currentGeneration < 7 && time - this.previousGenTimeMs >= 10000
-      ) {
-        this.previousGenTimeMs = time;
-        this.currentGeneration += 1;
-        this.displayedTiles = deflateTiles(this.displayedTiles);
-      }
+      let displayedTiles: Tile[] = []; // get from state...
 
       // Cycle through the wheel every 10 seconds
       const kiteHue = (time - this.firstDraw) / 10_000;
       const dartHue = kiteHue + 1 / 4;
 
-      for (const tile of this.displayedTiles) {
+      for (const tile of displayedTiles) {
         this.ctx.beginPath();
         this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
 
