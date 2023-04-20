@@ -3,8 +3,8 @@ import { ModuleWS } from "../../lib/websocket.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
-import { ModuleState } from "../../client/network/state_manager.ts";
-import { Tile, P2TileType } from "./tile.ts";
+import { ModuleState, NumberLerpInterpolator, SharedState, ValueNearestInterpolator } from "../../client/network/state_manager.ts";
+import { Tile, P2TileType, SerializedTile } from "./tile.ts";
 
 export function load(
   network: ModuleWS,
@@ -14,7 +14,7 @@ export function load(
 ) {
   class PenroseTilesClient extends Client {
     ctx!: CanvasRenderingContext2D;
-    firstDraw = 0;
+    tilesState?: SharedState;
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -22,6 +22,15 @@ export function load(
       _deadline: number,
     ): Promise<void> | void {
       this.surface = new CanvasSurface(container, wallGeometry);
+      this.ctx = (this.surface as CanvasSurface).context;
+
+      this.tilesState = state.define("tiles", [{
+         points: ValueNearestInterpolator,
+         angle: ValueNearestInterpolator,
+         size: ValueNearestInterpolator,
+         type: ValueNearestInterpolator,
+         color: NumberLerpInterpolator,
+      }]);
     }
 
     // Notification that your module has started to fade in.
@@ -32,17 +41,16 @@ export function load(
 
     // Notification that your module should now draw.
     draw(time: number, _delta: number) {
-      if (this.firstDraw === 0) {
-        this.firstDraw = time;
+      const serTiles = this.tilesState!.get(time) as SerializedTile[] | undefined;
+      if (!serTiles) {
+        return;
       }
 
-      let displayedTiles: Tile[] = []; // get from state...
+      (this.surface as CanvasSurface).pushOffset();
 
-      // Cycle through the wheel every 10 seconds
-      const kiteHue = (time - this.firstDraw) / 10_000;
-      const dartHue = kiteHue + 1 / 4;
+      for (const serTile of serTiles) {
+        const tile = Tile.deserialize(serTile);
 
-      for (const tile of displayedTiles) {
         this.ctx.beginPath();
         this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
 
@@ -55,11 +63,13 @@ export function load(
 
         // hard-code saturation at 100% and lightness at 50% for now
         this.ctx.fillStyle = `hsl(${
-          tile.type === P2TileType.Kite ? kiteHue : dartHue
+          serTile.hue
         }turn 100% 50%)`;
 
         this.ctx.fill();
       }
+
+      (this.surface as CanvasSurface).popOffset();
     }
 
     // Notification that your module has started to fade out.
@@ -73,5 +83,5 @@ export function load(
     }
   }
 
-  return { client: TemplateClient };
+  return { client: PenroseTilesClient };
 }

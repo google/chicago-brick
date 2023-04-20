@@ -1,5 +1,6 @@
 /**
  * Code adapted from https://rosettacode.org/wiki/Penrose_tiling#Java
+ * License: https://creativecommons.org/licenses/by-sa/4.0/
  */
 
 import { PHI, PI_OVER_5 } from "./constants.ts";
@@ -13,14 +14,31 @@ export enum P2TileType {
   Dart,
 }
 
+export type SerializedTile = {
+  readonly points: Point[];
+  readonly angle: number;
+  readonly size: number;
+  readonly type: P2TileType;
+  readonly hue: number;
+};
+
 // An individual tile
 export class Tile extends Polygon {
   constructor(
-    origin: Point,
+    readonly points: Point[],
     readonly angle: number,
     readonly size: number,
     readonly type: P2TileType,
   ) {
+    super(points);
+  }
+
+  static fromOrigin(
+    origin: Point,
+    angle: number,
+    size: number,
+    type: P2TileType,
+  ): Tile {
     const sideRatios = {
       [P2TileType.Kite]: [PHI, PHI, PHI],
       [P2TileType.Dart]: [-PHI, -1, -PHI],
@@ -28,16 +46,16 @@ export class Tile extends Polygon {
 
     let a = angle - PI_OVER_5;
 
-    const vertices = [origin];
+    const points = [origin];
 
     for (let i = 0; i < 3; i++) {
       const x = origin.x + sideRatios[type][i] * size * Math.cos(a);
       const y = origin.y - sideRatios[type][i] * size * Math.sin(a);
-      vertices.push({ x, y });
+      points.push({ x, y });
       a += PI_OVER_5;
     }
 
-    super(vertices);
+    return new Tile(points, angle, size, type);
   }
 
   static protoTiles(
@@ -52,7 +70,7 @@ export class Tile extends Polygon {
       a += 2 * PI_OVER_5
     ) {
       protoTiles.push(
-        new Tile(
+        Tile.fromOrigin(
           center,
           a,
           size,
@@ -62,6 +80,20 @@ export class Tile extends Polygon {
     }
 
     return protoTiles;
+  }
+
+  serializeWithHue(hue: number): SerializedTile {
+    return {
+      points: this.points,
+      angle: this.angle,
+      size: this.size,
+      type: this.type,
+      hue,
+    };
+  }
+
+  static deserialize(s: SerializedTile): Tile {
+    return new Tile(s.points, s.angle, s.size, s.type);
   }
 }
 
@@ -76,14 +108,16 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
     const size = tile.size / PHI;
 
     if (tile.type === P2TileType.Dart) {
-      newTiles.push(new Tile({ x, y }, a + 5 * PI_OVER_5, size, P2TileType.Kite));
+      newTiles.push(
+        Tile.fromOrigin({ x, y }, a + 5 * PI_OVER_5, size, P2TileType.Kite),
+      );
 
       for (let i = 0, sign = 1; i < 2; i++, sign *= -1) {
         const nx = x + Math.cos(a - 4 * PI_OVER_5 * sign) * PHI * tile.size;
         const ny = y - Math.sin(a - 4 * PI_OVER_5 * sign) * PHI * tile.size;
 
         newTiles.push(
-          new Tile(
+          Tile.fromOrigin(
             { x: nx, y: ny },
             a - 4 * PI_OVER_5 * sign,
             size,
@@ -94,14 +128,14 @@ export function deflateTiles(tiles: Tile[]): Tile[] {
     } else {
       for (let i = 0, sign = 1; i < 2; i++, sign *= -1) {
         newTiles.push(
-          new Tile({ x, y }, a - 4 * PI_OVER_5 * sign, size, P2TileType.Dart),
+          Tile.fromOrigin({ x, y }, a - 4 * PI_OVER_5 * sign, size, P2TileType.Dart),
         );
 
         const nx = x + Math.cos(a - PI_OVER_5 * sign) * PHI * tile.size;
         const ny = y - Math.sin(a - PI_OVER_5 * sign) * PHI * tile.size;
 
         newTiles.push(
-          new Tile(
+          Tile.fromOrigin(
             { x: nx, y: ny },
             a + 3 * PI_OVER_5 * sign,
             size,

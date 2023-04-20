@@ -2,10 +2,7 @@ import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
-import { easyLog } from "../../lib/log.ts";
-import { Tile, deflateTiles } from "./tile.ts";
-
-const log = easyLog("penrose_tiles:server");
+import { Tile, P2TileType, deflateTiles } from "./tile.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
@@ -43,11 +40,17 @@ export function load(
         this.currentGeneration += 1;
         this.displayedTiles = deflateTiles(this.displayedTiles);
       }
+
+      // Cycle through the wheel every 10 seconds
+      const kiteHue = (time - this.firstDraw) / 10_000;
+      const dartHue = kiteHue + 1 / 4;
+
+      state.store("tiles", time, this.displayedTiles.map(t => t.serializeWithHue(t.type === P2TileType.Kite ? kiteHue : dartHue)));
     }
 
     // Notification that your module has been removed from the clients.
     dispose() {}
   }
 
-  return { server: TemplateServer };
+  return { server: PenroseTilesServer };
 }
