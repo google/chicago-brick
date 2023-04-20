@@ -20,16 +20,11 @@ export type PenroseTilesState = {
   readonly dartHue: number;
 }
 
-export type SerializedTile = {
-  readonly points: Point[];
-  readonly angle: number;
-  readonly size: number;
-  readonly type: P2TileType;
-};
+export type SerializedTile = Pick<Tile, "points"|"angle"|"size"|"type">;
 
 // An individual tile
 export class Tile extends Polygon {
-  constructor(
+  private constructor(
     readonly points: Point[],
     readonly angle: number,
     readonly size: number,
