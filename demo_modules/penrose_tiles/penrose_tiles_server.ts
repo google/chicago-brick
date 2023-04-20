@@ -15,7 +15,7 @@ export function load(
   // Polygon representing the outer shape of the entire wall area.
   wallGeometry: Polygon,
 ) {
-  class TemplateServer extends Server {
+  class PenroseTilesServer extends Server {
     displayedTiles: Tile[] = [];
     previousGenTimeMs = 0;
     firstDraw = 0;

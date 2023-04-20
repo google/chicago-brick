@@ -12,7 +12,7 @@ export function load(
   state: ModuleState,
   wallGeometry: Polygon,
 ) {
-  class TemplateClient extends Client {
+  class PenroseTilesClient extends Client {
     ctx!: CanvasRenderingContext2D;
     firstDraw = 0;
 
