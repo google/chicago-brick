@@ -14,12 +14,17 @@ export enum P2TileType {
   Dart,
 }
 
+export type PenroseTilesState = {
+  readonly newTiles: SerializedTile[];
+  readonly kiteHue: number;
+  readonly dartHue: number;
+}
+
 export type SerializedTile = {
   readonly points: Point[];
   readonly angle: number;
   readonly size: number;
   readonly type: P2TileType;
-  readonly hue: number;
 };
 
 // An individual tile
@@ -82,13 +87,12 @@ export class Tile extends Polygon {
     return protoTiles;
   }
 
-  serializeWithHue(hue: number): SerializedTile {
+  serialize(): SerializedTile {
     return {
       points: this.points,
       angle: this.angle,
       size: this.size,
       type: this.type,
-      hue,
     };
   }
 
