@@ -8,7 +8,14 @@ import {
   NumberLerpInterpolator,
   SharedState,
 } from "../../client/network/state_manager.ts";
-import { P2TileType, PenroseTilesState, TileGenerations } from "./tile.ts";
+import { P2TileType, PenroseTilesState } from "./tile.ts";
+import { Point } from "../../lib/math/vector2d.ts";
+
+type DrawableTile = {
+  path: Path2D;
+  type: P2TileType;
+  center: Point;
+}
 
 export function load(
   state: ModuleState,
@@ -17,7 +24,7 @@ export function load(
   class PenroseTilesClient extends Client {
     ctx!: CanvasRenderingContext2D;
     tilesState?: SharedState;
-    tileGenerations?: TileGenerations;
+    tileGenerations?: DrawableTile[][];
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -49,22 +56,44 @@ export function load(
 
     draw(time: number, _delta: number) {
       if (!this.tileGenerations) {
-        this.tileGenerations = (this.tilesState?.get(0) as PenroseTilesState)
-          ?.tileGenerations;
+        const initState = this.tilesState?.get(0) as PenroseTilesState;
 
-        if (!this.tileGenerations) {
+        const tileGens = initState?.tileGenerations;
+        
+        if (!initState || !tileGens) {
           return;
         }
 
-        // Filter out tiles that aren't visible on this screen
-        for (let i = 0; i < this.tileGenerations.length; ++i) {
-          this.tileGenerations[i] = this.tileGenerations[i].filter(st => {
+        this.tileGenerations = [];
+
+        for (const tileGen of tileGens) {
+          this.tileGenerations.push(tileGen
+            // Filter out tiles that aren't visible on this screen
+            .filter(st => {
             if (this.surface) {
               return Rectangle.deserialize(st.extents)?.intersects(this.surface.virtualRect);
             }
 
             return false;
-          });
+          // Pre-calculate paths
+          }).map(st => {
+            const path = new Path2D;
+            path.moveTo(st.points[0].x, st.points[0].y);
+
+            for (const p of st.points.slice(1)) {
+              path.lineTo(p.x, p.y);
+            }
+
+            path.closePath();
+
+            const center = Rectangle.deserialize(st.extents)!.center();
+
+            return {
+              path,
+              type: st.type,
+              center,
+            };
+          }));
         }
       }
 
@@ -81,22 +110,11 @@ export function load(
       }
 
       for (const tile of this.tileGenerations[state.currentGeneration]) {
-        this.ctx.beginPath();
-        this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
-
-        for (const p of tile.points.slice(1)) {
-          this.ctx.lineTo(p.x, p.y);
-        }
-
-        this.ctx.closePath();
-        this.ctx.stroke();
-
-        // hard-code saturation at 100% and lightness at 50% for now
-        this.ctx.fillStyle = `hsl(${
+        this.ctx.translate(tile.center.x, tile.center.y);
+        this.ctx.fillStyle =  `hsl(${
           tile.type == P2TileType.Kite ? state.kiteHue : state.dartHue
         }turn 100% 50%)`;
-
-        this.ctx.fill();
+        this.ctx.fill(tile.path, 'evenodd');
       }
 
       (this.surface as CanvasSurface).popOffset();
