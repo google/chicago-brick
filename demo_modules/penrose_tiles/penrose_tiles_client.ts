@@ -43,13 +43,10 @@ export function load(
       });
     }
 
-    // Notification that your module has started to fade in.
     beginFadeIn(_time: number) {}
 
-    // Notification that your module has finished fading in.
     finishFadeIn() {}
 
-    // Notification that your module should now draw.
     draw(time: number, _delta: number) {
       if (!this.tileGenerations) {
         this.tileGenerations = (this.tilesState?.get(0) as PenroseTilesState)
@@ -60,15 +57,15 @@ export function load(
         }
 
         // Filter out tiles that aren't visible on this screen
-        // for (let i = 0; i < this.tileGenerations.length; ++i) {
-        //   this.tileGenerations[i] = this.tileGenerations[i].filter(st => {
-        //     if (this.surface) {
-        //       return Tile.deserialize(st).extents.intersects(this.surface.virtualRect);
-        //     }
+        for (let i = 0; i < this.tileGenerations.length; ++i) {
+          this.tileGenerations[i] = this.tileGenerations[i].filter(st => {
+            if (this.surface) {
+              return Rectangle.deserialize(st.extents)?.intersects(this.surface.virtualRect);
+            }
 
-        //     return false;
-        //   });
-        // }
+            return false;
+          });
+        }
       }
 
       if (!this.surface) {
@@ -84,14 +81,6 @@ export function load(
       }
 
       for (const tile of this.tileGenerations[state.currentGeneration]) {
-        if (
-          !Rectangle.deserialize(tile.extents)?.intersects(
-            this.surface.virtualRect,
-          )
-        ) {
-          continue;
-        }
-
         this.ctx.beginPath();
         this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
 
