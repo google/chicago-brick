@@ -3,8 +3,14 @@ import { ModuleWS } from "../../lib/websocket.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
 import { ModulePeer } from "../../client/network/peer.ts";
-import { ModuleState, ValueNearestInterpolator, NumberLerpInterpolator, SharedState } from "../../client/network/state_manager.ts";
-import { Tile, P2TileType, PenroseTilesState } from "./tile.ts";
+import { Rectangle } from "../../lib/math/rectangle.ts";
+import {
+  CurrentValueInterpolator,
+  ModuleState,
+  NumberLerpInterpolator,
+  SharedState,
+} from "../../client/network/state_manager.ts";
+import { P2TileType, PenroseTilesState, TileGenerations } from "./tile.ts";
 
 export function load(
   network: ModuleWS,
@@ -15,7 +21,7 @@ export function load(
   class PenroseTilesClient extends Client {
     ctx!: CanvasRenderingContext2D;
     tilesState?: SharedState;
-    displayedTiles?: Tile[];
+    tileGenerations?: TileGenerations;
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -26,14 +32,18 @@ export function load(
       this.ctx = (this.surface as CanvasSurface).context;
 
       this.tilesState = state.define("tiles", {
-        newTiles: [{
-          points: ValueNearestInterpolator,
-          angle: ValueNearestInterpolator,
-          size: ValueNearestInterpolator,
-          type: ValueNearestInterpolator,
-       }],
-       kiteHue: NumberLerpInterpolator,
-       dartHue: NumberLerpInterpolator,
+        currentGeneration: CurrentValueInterpolator,
+        tileGenerations: [[
+          {
+            points: CurrentValueInterpolator,
+            angle: CurrentValueInterpolator,
+            size: CurrentValueInterpolator,
+            type: CurrentValueInterpolator,
+            extents: CurrentValueInterpolator,
+          },
+        ]],
+        kiteHue: NumberLerpInterpolator,
+        dartHue: NumberLerpInterpolator,
       });
     }
 
@@ -45,24 +55,47 @@ export function load(
 
     // Notification that your module should now draw.
     draw(time: number, _delta: number) {
-      const state = this.tilesState!.get(time) as PenroseTilesState;
-      if (!state) {
-        return;
+      if (!this.tileGenerations) {
+        this.tileGenerations = (this.tilesState?.get(0) as PenroseTilesState)
+          ?.tileGenerations;
+
+        if (!this.tileGenerations) {
+          return;
+        }
+
+        // Filter out tiles that aren't visible on this screen
+        // for (let i = 0; i < this.tileGenerations.length; ++i) {
+        //   this.tileGenerations[i] = this.tileGenerations[i].filter(st => {
+        //     if (this.surface) {
+        //       return Tile.deserialize(st).extents.intersects(this.surface.virtualRect);
+        //     }
+
+        //     return false;
+        //   });
+        // }
       }
 
-
-      if (state.newTiles.length) {
-        this.displayedTiles = state.newTiles.map(t => Tile.deserialize(t));
-      }
-
-      if (!this.displayedTiles) {
-        console.log("no tiles to draw :(");
+      if (!this.surface) {
         return;
       }
 
       (this.surface as CanvasSurface).pushOffset();
 
-      for (const tile of this.displayedTiles) {
+      const state = this.tilesState?.get(time) as PenroseTilesState;
+
+      if (!state) {
+        return;
+      }
+
+      for (const tile of this.tileGenerations[state.currentGeneration]) {
+        if (
+          !Rectangle.deserialize(tile.extents)?.intersects(
+            this.surface.virtualRect,
+          )
+        ) {
+          continue;
+        }
+
         this.ctx.beginPath();
         this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
 

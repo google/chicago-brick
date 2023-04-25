@@ -2,10 +2,7 @@ import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { ModuleWSS } from "../../server/network/websocket.ts";
-import { deflateTiles, PenroseTilesState, Tile } from "./tile.ts";
-import { easyLog } from "../../lib/log.ts";
-
-const log = easyLog("PenroseTilesServer");
+import { deflateTiles, Tile, TileGenerations } from "./tile.ts";
 
 export function load(
   // Websocket connected to the client used to send messages back and forth.
@@ -15,8 +12,10 @@ export function load(
   // Polygon representing the outer shape of the entire wall area.
   wallGeometry: Polygon,
 ) {
+  const MAX_GENS = 7;
+  const CYCLE_LENGTH_MILLIS = 5_000;
+
   class PenroseTilesServer extends Server {
-    displayedTiles: Tile[] = [];
     previousGenTimeMs = 0;
     firstDraw = 0;
     currentGeneration = 0;
@@ -24,8 +23,28 @@ export function load(
     willBeShownSoon(_deadline: number): Promise<void> | void {
       const center = wallGeometry.extents.center();
 
-      this.displayedTiles.push(
-        ...Tile.protoTiles(center, wallGeometry.extents.w / 2.5),
+      let lastGen = Tile.protoTiles(center, wallGeometry.extents.w / 2.5);
+
+      const tileGenerations: TileGenerations = [] as TileGenerations;
+
+      tileGenerations[0] = lastGen.map((t) => t.serialize());
+
+      for (let i = 1; i < MAX_GENS; ++i) {
+        // Deflate the tiles, then de-dupe them by id (i.e. its center)
+        lastGen = deflateTiles(lastGen);
+        // lastGen = Array.from(new Map(lastGen.map((t) => [t.id, t])).values());
+        tileGenerations[i] = lastGen.map((t) => t.serialize());
+      }
+
+      state.store(
+        "tiles",
+        0,
+        {
+          currentGeneration: 0,
+          kiteHue: 0,
+          dartHue: 1 / 4,
+          tileGenerations,
+        },
       );
     }
 
@@ -37,28 +56,19 @@ export function load(
       }
 
       // Cycle through the wheel every 10 seconds
-      const kiteHue = (time - this.firstDraw) / 10_000;
+      const kiteHue = (time - this.firstDraw) / CYCLE_LENGTH_MILLIS;
       const dartHue = kiteHue + 1 / 4;
-
-      const newState: PenroseTilesState = {
-        kiteHue,
-        dartHue,
-        newTiles: [],
-      };
-
-      if (
-        this.currentGeneration < 7 && (time - this.previousGenTimeMs >= 10000 || this.firstDraw === time)
-      ) {
-        this.previousGenTimeMs = time;
-        this.currentGeneration += 1;
-        this.displayedTiles = deflateTiles(this.displayedTiles);
-        newState.newTiles.push(...this.displayedTiles.map(t => t.serialize()));
-      }
+      // Change generations every cycle up to MAX_GENS-1
+      const currentGeneration = Math.min(Math.floor(kiteHue), MAX_GENS - 1);
 
       state.store(
         "tiles",
         time,
-        newState
+        {
+          currentGeneration,
+          kiteHue,
+          dartHue,
+        },
       );
     }
 

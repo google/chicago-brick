@@ -14,13 +14,18 @@ export enum P2TileType {
   Dart,
 }
 
+export type SerializedTile = Pick<Tile, "points"|"angle"|"size"|"type"> & {
+  extents: string; // serialized Rectangle
+}
+
+export type TileGenerations = SerializedTile[][];
+
 export type PenroseTilesState = {
-  readonly newTiles: SerializedTile[];
+  readonly tileGenerations?: TileGenerations;
+  readonly currentGeneration: number;
   readonly kiteHue: number;
   readonly dartHue: number;
 }
-
-export type SerializedTile = Pick<Tile, "points"|"angle"|"size"|"type">;
 
 // An individual tile
 export class Tile extends Polygon {
@@ -31,6 +36,11 @@ export class Tile extends Polygon {
     readonly type: P2TileType,
   ) {
     super(points);
+  }
+
+  // Use the serialized extents as an "id"
+  get id(): string {
+    return this.extents.serialize();
   }
 
   static fromOrigin(
@@ -88,6 +98,7 @@ export class Tile extends Polygon {
       angle: this.angle,
       size: this.size,
       type: this.type,
+      extents: this.extents.serialize(),
     };
   }
 
@@ -97,7 +108,7 @@ export class Tile extends Polygon {
 }
 
 // "Deflate" the given tiles to the next generation
-export function deflateTiles(tiles: Tile[]): Tile[] {
+export function deflateTiles(tiles: readonly Tile[]): readonly Tile[] {
   const newTiles: Tile[] = [];
 
   for (const tile of tiles) {
