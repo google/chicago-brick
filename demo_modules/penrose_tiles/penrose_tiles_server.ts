@@ -5,11 +5,7 @@ import { ModuleWSS } from "../../server/network/websocket.ts";
 import { deflateTiles, Tile, TileGenerations } from "./tile.ts";
 
 export function load(
-  // Websocket connected to the client used to send messages back and forth.
-  network: ModuleWSS,
-  // Shared state with module's client.
   state: ModuleState,
-  // Polygon representing the outer shape of the entire wall area.
   wallGeometry: Polygon,
 ) {
   const MAX_GENS = 7;

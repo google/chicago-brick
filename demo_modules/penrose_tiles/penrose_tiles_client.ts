@@ -1,8 +1,6 @@
 import { Client } from "../../client/modules/module_interface.ts";
-import { ModuleWS } from "../../lib/websocket.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
-import { ModulePeer } from "../../client/network/peer.ts";
 import { Rectangle } from "../../lib/math/rectangle.ts";
 import {
   CurrentValueInterpolator,
@@ -13,8 +11,6 @@ import {
 import { P2TileType, PenroseTilesState, TileGenerations } from "./tile.ts";
 
 export function load(
-  network: ModuleWS,
-  peerNetwork: ModulePeer,
   state: ModuleState,
   wallGeometry: Polygon,
 ) {
