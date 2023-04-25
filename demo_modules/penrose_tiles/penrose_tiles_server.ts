@@ -1,7 +1,6 @@
 import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
-import { ModuleWSS } from "../../server/network/websocket.ts";
 import { deflateTiles, Tile, TileGenerations } from "./tile.ts";
 
 export function load(
