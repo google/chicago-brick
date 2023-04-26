@@ -10,6 +10,13 @@ import {
 } from "../../client/network/state_manager.ts";
 import { P2TileType, PenroseTilesState, TileGenerations } from "./tile.ts";
 
+type DrawableTileGeneration = Array<{
+  path: Path2D;
+  type: P2TileType;
+}>;
+
+const LINE_WIDTH = 12;
+
 export function load(
   state: ModuleState,
   wallGeometry: Polygon,
@@ -17,7 +24,7 @@ export function load(
   class PenroseTilesClient extends Client {
     ctx!: CanvasRenderingContext2D;
     tilesState?: SharedState;
-    tileGenerations?: TileGenerations;
+    drawableTiles: DrawableTileGeneration[] = [];
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -26,6 +33,7 @@ export function load(
     ): Promise<void> | void {
       this.surface = new CanvasSurface(container, wallGeometry);
       this.ctx = (this.surface as CanvasSurface).context;
+      this.ctx.lineWidth = LINE_WIDTH;
 
       this.tilesState = state.define("tiles", {
         currentGeneration: CurrentValueInterpolator,
@@ -47,32 +55,42 @@ export function load(
 
     finishFadeIn() {}
 
+    private precomputeTiles(
+      tileGenerations: TileGenerations,
+    ): DrawableTileGeneration[] {
+      return tileGenerations.map((tileGen) => (
+        tileGen.filter((st) => {
+          // Filter out tiles that aren't visible on this screen
+          if (this.surface) {
+            return Rectangle.deserialize(st.extents)?.intersects(
+              this.surface.virtualRect,
+            );
+          }
+
+          return false;
+        }).map((st) => {
+          // Precompute paths
+          const path = new Path2D();
+          path.moveTo(st.points[0].x, st.points[0].y);
+
+          for (const p of st.points.slice(1)) {
+            path.lineTo(p.x, p.y);
+          }
+
+          path.closePath();
+
+          return {
+            path,
+            type: st.type,
+          };
+        })
+      ));
+    }
+
     draw(time: number, _delta: number) {
-      if (!this.tileGenerations) {
-        this.tileGenerations = (this.tilesState?.get(0) as PenroseTilesState)
-          ?.tileGenerations;
-
-        if (!this.tileGenerations) {
-          return;
-        }
-
-        // Filter out tiles that aren't visible on this screen
-        for (let i = 0; i < this.tileGenerations.length; ++i) {
-          this.tileGenerations[i] = this.tileGenerations[i].filter(st => {
-            if (this.surface) {
-              return Rectangle.deserialize(st.extents)?.intersects(this.surface.virtualRect);
-            }
-
-            return false;
-          });
-        }
-      }
-
       if (!this.surface) {
         return;
       }
-
-      (this.surface as CanvasSurface).pushOffset();
 
       const state = this.tilesState?.get(time) as PenroseTilesState;
 
@@ -80,26 +98,30 @@ export function load(
         return;
       }
 
-      this.ctx.lineWidth = 8;
+      if (this.drawableTiles.length === 0) {
+        const tileGenerations = (this.tilesState?.get(0) as PenroseTilesState)
+          ?.tileGenerations;
+
+        if (!tileGenerations) {
+          return;
+        }
+
+        this.drawableTiles.push(...this.precomputeTiles(tileGenerations));
+      }
+
+      (this.surface as CanvasSurface).pushOffset();
 
       // hard-code saturation at 100% and lightness at 50% for now
       const kiteFillStyle = `hsl(${state.kiteHue}turn 100% 50%`;
       const dartFillStyle = `hsl(${state.dartHue}turn 100% 50%`;
 
-      for (const tile of this.tileGenerations[state.currentGeneration]) {
-        const path = new Path2D;
-        path.moveTo(tile.points[0].x, tile.points[0].y);
+      for (const tile of this.drawableTiles[state.currentGeneration]) {
+        this.ctx.fillStyle = tile.type == P2TileType.Kite
+          ? kiteFillStyle
+          : dartFillStyle;
 
-        for (const p of tile.points.slice(1)) {
-          path.lineTo(p.x, p.y);
-        }
-
-        path.closePath();
-
-        this.ctx.fillStyle = tile.type == P2TileType.Kite ? kiteFillStyle : dartFillStyle;
-
-        this.ctx.stroke(path);
-        this.ctx.fill(path);
+        this.ctx.stroke(tile.path);
+        this.ctx.fill(tile.path);
       }
 
       (this.surface as CanvasSurface).popOffset();
