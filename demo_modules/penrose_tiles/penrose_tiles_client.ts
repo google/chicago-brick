@@ -87,14 +87,6 @@ export function load(
       const dartFillStyle = `hsl(${state.dartHue}turn 100% 50%`;
 
       for (const tile of this.tileGenerations[state.currentGeneration]) {
-        // this.ctx.beginPath();
-        // this.ctx.moveTo(tile.points[0].x, tile.points[0].y);
-
-        // for (const p of tile.points.slice(1)) {
-        //   this.ctx.lineTo(p.x, p.y);
-        // }
-
-        // this.ctx.closePath();
         const path = new Path2D;
         path.moveTo(tile.points[0].x, tile.points[0].y);
 
