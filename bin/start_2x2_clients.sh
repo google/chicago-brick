@@ -19,15 +19,17 @@ set -x
 
 WINDOW_SIZE="480,270"
 
-case $(uname) in
-Darwin)
+if [ -z $CHROME ]; then
+  case $(uname) in
+  Darwin)
     CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
     WINDOW_SIZE="480,292"
     ;;
-*)
+  *)
     CHROME=google-chrome
     ;;
-esac
+  esac
+fi
 
 verbose=0
 
