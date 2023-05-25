@@ -1,6 +1,5 @@
 {
     "name": "penrose_tiles",
-    "testonly": true,
     "client_path": "./penrose_tiles_client.ts",
     "server_path": "./penrose_tiles_server.ts",
     "credit": {
