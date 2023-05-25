@@ -17,14 +17,16 @@
 
 set -x
 
-case $(uname) in
-Darwin)
-    CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-    ;;
-*)
-    CHROME=google-chrome
-    ;;
-esac
+if [ -z $CHROME ]; then
+    case $(uname) in
+    Darwin)
+        CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        ;;
+    *)
+        CHROME=google-chrome
+        ;;
+    esac
+fi
 
 verbose=0
 

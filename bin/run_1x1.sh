@@ -38,10 +38,17 @@ readonly BRICK_PID="$!"
 ./status/run_status.sh &
 readonly STATUS_PID="$!"
 
-# Figure out the Chrome path
-(uname -a | grep "Darwin" > /dev/null) \
-&& readonly CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-|| readonly CHROME="google-chrome"
+# Figure out the Chrome path (if not set)
+if [ -z "$CHROME" ]; then
+  case $(uname) in
+  Darwin)
+    CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+    ;;
+  *)
+    CHROME=google-chrome
+    ;;
+  esac
+fi
 
 # Boot two chromes:
 "$CHROME" \

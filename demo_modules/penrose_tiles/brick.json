@@ -1,0 +1,10 @@
+{
+    "name": "penrose_tiles",
+    "client_path": "./penrose_tiles_client.ts",
+    "server_path": "./penrose_tiles_server.ts",
+    "credit": {
+      "title": "Penrose Tiles",
+      "author": "Peter Aarestad"
+    }
+}
+
