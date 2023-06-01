@@ -109,19 +109,13 @@ export function load(
 
       (this.surface as CanvasSurface).pushOffset();
 
-      console.log(JSON.stringify(state));
-
       const kiteFillStyle = `hsl(${state.kiteHue}turn ${state.kiteSat}% ${state.kiteLgt}%`;
       const dartFillStyle = `hsl(${state.dartHue}turn ${state.dartSat}% ${state.dartLgt}%`;
-
-      console.log(kiteFillStyle);
 
       for (const tile of this.generations[state.currentGeneration]) {
         this.ctx.fillStyle = tile.type == P2TileType.Kite
           ? kiteFillStyle
           : dartFillStyle;
-
-        console.log(this.ctx.fillStyle);
 
         this.ctx.stroke(tile.path);
         this.ctx.fill(tile.path);
