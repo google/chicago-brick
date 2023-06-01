@@ -1,7 +1,7 @@
 import { Server } from "../../server/modules/module_interface.ts";
 import { ModuleState } from "../../server/network/state_manager.ts";
 import {
-  CYCLE_LENGTH_MILLIS,
+  GEN_LENGTH_MILLIS,
   GOOGLE_COLORS_600_HSL,
   MAX_GENS,
 } from "./constants.ts";
@@ -34,10 +34,12 @@ export function load(state: ModuleState) {
         this.firstDraw = time;
       }
 
-      // Cycle through the Google colors every CYCLE_LENGTH_MILLIS ms
-      const cyclePosition = (time - this.firstDraw) / CYCLE_LENGTH_MILLIS;
+      const cyclePosition = (time - this.firstDraw) / GEN_LENGTH_MILLIS;
 
-      const baseKiteColorIdx = Math.trunc(cyclePosition * 4) % 4;
+      const cycleIdx = Math.trunc(cyclePosition * 8) % 8;
+      const evenCycle = cycleIdx % 2 === 0; // we transition to the next color on the even, hold the next color on odd
+
+      const baseKiteColorIdx = Math.trunc(cycleIdx / 2);
       const nextKiteColorIdx = (baseKiteColorIdx + 1) % 4;
 
       const baseDartColorIdx = nextKiteColorIdx;
@@ -48,17 +50,17 @@ export function load(state: ModuleState) {
       const baseDartColor = GOOGLE_COLORS_600_HSL[baseDartColorIdx];
       const nextDartColor = GOOGLE_COLORS_600_HSL[nextDartColorIdx];
 
-      const kiteHue = interpolate(
+      const kiteHue = evenCycle ? interpolate(
         baseKiteColor.hue,
         nextKiteColor.hue,
         cyclePosition * 4,
-      );
+      ) : nextKiteColor.hue;
 
-      const dartHue = interpolate(
+      const dartHue = evenCycle ? interpolate(
         baseDartColor.hue,
         nextDartColor.hue,
         cyclePosition * 4,
-      );
+      ) : nextDartColor.hue;
 
       // Change generations every cycle up to MAX_GENS-1
       const currentGeneration = Math.min(

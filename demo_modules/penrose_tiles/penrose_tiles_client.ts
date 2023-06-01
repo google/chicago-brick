@@ -1,7 +1,6 @@
 import { Client } from "../../client/modules/module_interface.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
-import { Rectangle } from "../../lib/math/rectangle.ts";
 import {
   CurrentValueInterpolator,
   ModuleState,
