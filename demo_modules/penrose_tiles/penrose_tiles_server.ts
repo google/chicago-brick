@@ -7,19 +7,8 @@ import {
 } from "./constants.ts";
 
 // Plain ol' lerp
-// If b < a, add one to b first (this assumes |b - a| < 1)
 function interpolate(a: number, b: number, t: number) {
-  if (b < a) {
-    b += 1;
-  }
-
-  let lerp = a + (b - a) * (t % 1);
-
-  if (lerp > 1) {
-    lerp -= 1;
-  }
-
-  return lerp;
+  return a + (b - a) * (t % 1);
 }
 
 export function load(state: ModuleState) {
@@ -34,9 +23,9 @@ export function load(state: ModuleState) {
         this.firstDraw = time;
       }
 
-      const cyclePosition = (time - this.firstDraw) / GEN_LENGTH_MILLIS;
+      const genPosition = (time - this.firstDraw) / GEN_LENGTH_MILLIS;
 
-      const cycleIdx = Math.trunc(cyclePosition * 8) % 8;
+      const cycleIdx = Math.trunc(genPosition * 8) % 8;
       const evenCycle = cycleIdx % 2 === 0; // we transition to the next color on the even, hold the next color on odd
 
       const baseKiteColorIdx = Math.trunc(cycleIdx / 2);
@@ -50,21 +39,61 @@ export function load(state: ModuleState) {
       const baseDartColor = GOOGLE_COLORS_600_HSL[baseDartColorIdx];
       const nextDartColor = GOOGLE_COLORS_600_HSL[nextDartColorIdx];
 
-      const kiteHue = evenCycle ? interpolate(
-        baseKiteColor.hue,
-        nextKiteColor.hue,
-        cyclePosition * 4,
-      ) : nextKiteColor.hue;
+      const kiteHue = evenCycle
+        ? interpolate(
+          baseKiteColor.hue,
+          nextKiteColor.hue > baseKiteColor.hue
+            ? nextKiteColor.hue
+            : nextKiteColor.hue + 1,
+            genPosition * 8,
+        )
+        : nextKiteColor.hue;
 
-      const dartHue = evenCycle ? interpolate(
-        baseDartColor.hue,
-        nextDartColor.hue,
-        cyclePosition * 4,
-      ) : nextDartColor.hue;
+      const kiteSat = evenCycle
+        ? interpolate(
+          baseKiteColor.sat,
+          nextKiteColor.sat,
+          genPosition * 8,
+        )
+        : nextKiteColor.sat;
+
+      const kiteLgt = evenCycle
+        ? interpolate(
+          baseKiteColor.lgt,
+          nextKiteColor.lgt,
+          genPosition * 8,
+        )
+        : nextKiteColor.lgt;
+
+      const dartHue = evenCycle
+        ? interpolate(
+          baseDartColor.hue,
+          nextDartColor.hue > baseDartColor.hue
+            ? nextDartColor.hue
+            : nextDartColor.hue + 1,
+            genPosition * 8,
+        )
+        : nextDartColor.hue;
+
+      const dartSat = evenCycle
+        ? interpolate(
+          baseDartColor.sat,
+          nextDartColor.sat,
+          genPosition * 8,
+        )
+        : nextDartColor.sat;
+
+      const dartLgt = evenCycle
+        ? interpolate(
+          baseDartColor.lgt,
+          nextDartColor.lgt,
+          genPosition * 8,
+        )
+        : nextDartColor.lgt;
 
       // Change generations every cycle up to MAX_GENS-1
       const currentGeneration = Math.min(
-        Math.floor(cyclePosition),
+        Math.floor(genPosition),
         MAX_GENS - 1,
       );
 
@@ -74,7 +103,11 @@ export function load(state: ModuleState) {
         {
           currentGeneration,
           kiteHue,
+          kiteSat,
+          kiteLgt,
           dartHue,
+          dartSat,
+          dartLgt,
         },
       );
     }

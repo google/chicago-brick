@@ -44,7 +44,11 @@ export function load(
       this.tilesState = state.define("tiles", {
         currentGeneration: CurrentValueInterpolator,
         kiteHue: NumberLerpInterpolator,
+        kiteSat: NumberLerpInterpolator,
+        kiteLgt: NumberLerpInterpolator,
         dartHue: NumberLerpInterpolator,
+        dartSat: NumberLerpInterpolator,
+        dartLgt: NumberLerpInterpolator,
       });
 
       const center = wallGeometry.extents.center();
@@ -105,9 +109,12 @@ export function load(
 
       (this.surface as CanvasSurface).pushOffset();
 
-      // hard-code saturation at 80% and lightness at 50% for now
-      const kiteFillStyle = `hsl(${state.kiteHue}turn 80% 50%`;
-      const dartFillStyle = `hsl(${state.dartHue}turn 80% 50%`;
+      console.log(JSON.stringify(state));
+
+      const kiteFillStyle = `hsl(${state.kiteHue}turn ${state.kiteSat}% ${state.kiteLgt}%`;
+      const dartFillStyle = `hsl(${state.dartHue}turn ${state.dartSat}% ${state.dartLgt}%`;
+
+      console.log(kiteFillStyle);
 
       for (const tile of this.generations[state.currentGeneration]) {
         this.ctx.fillStyle = tile.type == P2TileType.Kite

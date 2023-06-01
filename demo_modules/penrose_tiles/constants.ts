@@ -6,24 +6,24 @@ export const MAX_GENS = 7;
 export const GEN_LENGTH_MILLIS = 10_000;
 
 export type HSL = {
-    hue: number;
-    sat: number;
-    val: number;
-}
+  hue: number;
+  sat: number;
+  lgt: number;
+};
 
 function makeHSL(vals: number[]) {
-    return {
-        hue: vals[0],
-        sat: vals[1],
-        val: vals[2],
-    };
+  return {
+    hue: vals[0],
+    sat: vals[1],
+    lgt: vals[2],
+  };
 }
 
 // from https://brand-tools.appspot.com/google-colors/?surface=coated&type=hsl
 export const GOOGLE_COLORS_600_HSL = [
-    // turn/sat%/light%
-    makeHSL([ 3/360, 0.71, 0.5]), // red
-    makeHSL([ 41/360, 1.0, 0.49]), // yellow
-    makeHSL([ 147/360, 0.66, 0.34]), // green
-    makeHSL([ 214/360, 0.82, 0.51]), // blue
-]
+  // turn/sat%/light%
+  makeHSL([3 / 360, 71, 50]),   // red
+  makeHSL([41 / 360, 100, 49]), // yellow
+  makeHSL([147 / 360, 66, 34]), // green
+  makeHSL([214 / 360, 82, 51]), // blue
+];

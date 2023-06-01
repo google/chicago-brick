@@ -17,7 +17,11 @@ export enum P2TileType {
 export type PenroseTilesState = {
   readonly currentGeneration: number;
   readonly kiteHue: number;
+  readonly kiteSat: number;
+  readonly kiteLgt: number;
   readonly dartHue: number;
+  readonly dartSat: number;
+  readonly dartLgt: number;
 }
 
 // An individual tile
