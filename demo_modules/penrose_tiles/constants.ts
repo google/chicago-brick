@@ -1,6 +1,6 @@
 export const PHI = (1 + Math.sqrt(5)) / 2; // the Golden Ratio
 export const PI_OVER_5 = Math.PI / 5; // 72 degrees, the primary angle used in P2 tiles
-export const MAX_GENS = 7;
+export const MAX_GENS = 14;
 // Each gen will have four cycles of transitions from one color to the next (except the very first)
 // each followed by a same-length cycle holding that color
 export const GEN_LENGTH_MILLIS = 20_000;
