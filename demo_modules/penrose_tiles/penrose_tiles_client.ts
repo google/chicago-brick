@@ -78,12 +78,12 @@ export function load(
         }
 
         return false;
-      }).map((st) => {
+      }).map((t) => {
         // Precompute paths
         const path = new Path2D();
-        path.moveTo(st.points[0].x, st.points[0].y);
+        path.moveTo(t.points[0].x, t.points[0].y);
 
-        for (const p of st.points.slice(1)) {
+        for (const p of t.points.slice(1)) {
           path.lineTo(p.x, p.y);
         }
 
@@ -91,7 +91,7 @@ export function load(
 
         return {
           path,
-          type: st.type,
+          type: t.type,
         };
       });
     }
