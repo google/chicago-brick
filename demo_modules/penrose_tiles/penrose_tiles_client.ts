@@ -1,14 +1,19 @@
 import { Client } from "../../client/modules/module_interface.ts";
 import { Polygon } from "../../lib/math/polygon2d.ts";
 import { CanvasSurface } from "../../client/surface/canvas_surface.ts";
-import { Rectangle } from "../../lib/math/rectangle.ts";
 import {
   CurrentValueInterpolator,
   ModuleState,
   NumberLerpInterpolator,
   SharedState,
 } from "../../client/network/state_manager.ts";
-import { P2TileType, PenroseTilesState, TileGenerations } from "./tile.ts";
+import { MAX_GENS } from "./constants.ts";
+import {
+  deflateTiles,
+  P2TileType,
+  PenroseTilesState,
+  Tile,
+} from "./tile.ts";
 
 type DrawableTileGeneration = Array<{
   path: Path2D;
@@ -24,7 +29,7 @@ export function load(
   class PenroseTilesClient extends Client {
     ctx!: CanvasRenderingContext2D;
     tilesState?: SharedState;
-    drawableTiles: DrawableTileGeneration[] = [];
+    generations: DrawableTileGeneration[] = [];
 
     // Notification that your module has been selected next in the queue.
     willBeShownSoon(
@@ -38,54 +43,57 @@ export function load(
 
       this.tilesState = state.define("tiles", {
         currentGeneration: CurrentValueInterpolator,
-        tileGenerations: [[
-          {
-            points: CurrentValueInterpolator,
-            angle: CurrentValueInterpolator,
-            size: CurrentValueInterpolator,
-            type: CurrentValueInterpolator,
-            extents: CurrentValueInterpolator,
-          },
-        ]],
         kiteHue: NumberLerpInterpolator,
+        kiteSat: NumberLerpInterpolator,
+        kiteLgt: NumberLerpInterpolator,
         dartHue: NumberLerpInterpolator,
+        dartSat: NumberLerpInterpolator,
+        dartLgt: NumberLerpInterpolator,
+      });
+
+      const center = wallGeometry.extents.center();
+
+      let lastGen = Tile.protoTiles(center, wallGeometry.extents.w / 2.5);
+
+      this.generations[0] = this.precomputeTiles(lastGen);
+
+      // Compute the rest of the tiles in the background
+      setTimeout(() => {
+        for (let i = 1; i < MAX_GENS; ++i) {
+          lastGen = deflateTiles(lastGen);
+          this.generations[i] = this.precomputeTiles(lastGen);
+        }
       });
     }
 
-    beginFadeIn(_time: number) {}
-
-    finishFadeIn() {}
-
     private precomputeTiles(
-      tileGenerations: TileGenerations,
-    ): DrawableTileGeneration[] {
-      return tileGenerations.map((tileGen) => (
-        tileGen.filter((st) => {
-          // Filter out tiles that aren't visible on this screen
-          if (this.surface) {
-            return Rectangle.deserialize(st.extents)?.intersects(
-              this.surface.virtualRect,
-            );
-          }
+      tiles: readonly Tile[],
+    ): DrawableTileGeneration {
+      return tiles.filter((t) => {
+        // Filter out tiles that aren't visible on this screen
+        if (this.surface) {
+          return t.extents.intersects(
+            this.surface.virtualRect,
+          );
+        }
 
-          return false;
-        }).map((st) => {
-          // Precompute paths
-          const path = new Path2D();
-          path.moveTo(st.points[0].x, st.points[0].y);
+        return false;
+      }).map((t) => {
+        // Precompute paths
+        const path = new Path2D();
+        path.moveTo(t.points[0].x, t.points[0].y);
 
-          for (const p of st.points.slice(1)) {
-            path.lineTo(p.x, p.y);
-          }
+        for (const p of t.points.slice(1)) {
+          path.lineTo(p.x, p.y);
+        }
 
-          path.closePath();
+        path.closePath();
 
-          return {
-            path,
-            type: st.type,
-          };
-        })
-      ));
+        return {
+          path,
+          type: t.type,
+        };
+      });
     }
 
     draw(time: number, _delta: number) {
@@ -99,24 +107,12 @@ export function load(
         return;
       }
 
-      if (this.drawableTiles.length === 0) {
-        const tileGenerations = (this.tilesState?.get(0) as PenroseTilesState)
-          ?.tileGenerations;
-
-        if (!tileGenerations) {
-          return;
-        }
-
-        this.drawableTiles.push(...this.precomputeTiles(tileGenerations));
-      }
-
       (this.surface as CanvasSurface).pushOffset();
 
-      // hard-code saturation at 100% and lightness at 50% for now
-      const kiteFillStyle = `hsl(${state.kiteHue}turn 100% 50%`;
-      const dartFillStyle = `hsl(${state.dartHue}turn 100% 50%`;
+      const kiteFillStyle = `hsl(${state.kiteHue}turn ${state.kiteSat}% ${state.kiteLgt}%`;
+      const dartFillStyle = `hsl(${state.dartHue}turn ${state.dartSat}% ${state.dartLgt}%`;
 
-      for (const tile of this.drawableTiles[state.currentGeneration]) {
+      for (const tile of this.generations[state.currentGeneration]) {
         this.ctx.fillStyle = tile.type == P2TileType.Kite
           ? kiteFillStyle
           : dartFillStyle;

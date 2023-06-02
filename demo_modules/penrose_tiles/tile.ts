@@ -14,17 +14,14 @@ export enum P2TileType {
   Dart,
 }
 
-export type SerializedTile = Pick<Tile, "points"|"angle"|"size"|"type"> & {
-  extents: string; // serialized Rectangle
-}
-
-export type TileGenerations = SerializedTile[][];
-
 export type PenroseTilesState = {
-  readonly tileGenerations?: TileGenerations;
   readonly currentGeneration: number;
   readonly kiteHue: number;
+  readonly kiteSat: number;
+  readonly kiteLgt: number;
   readonly dartHue: number;
+  readonly dartSat: number;
+  readonly dartLgt: number;
 }
 
 // An individual tile
@@ -90,20 +87,6 @@ export class Tile extends Polygon {
     }
 
     return protoTiles;
-  }
-
-  serialize(): SerializedTile {
-    return {
-      points: this.points,
-      angle: this.angle,
-      size: this.size,
-      type: this.type,
-      extents: this.extents.serialize(),
-    };
-  }
-
-  static deserialize(s: SerializedTile): Tile {
-    return new Tile(s.points, s.angle, s.size, s.type);
   }
 }
 
