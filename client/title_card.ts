@@ -99,7 +99,7 @@ function makeEmptyTitleCard() {
 function makeDefaultTitleCard(credit: CreditJson) {
   const elem = makeEmptyTitleCard();
   if (isCreditImageJson(credit)) {
-    elem.innerHTML = `<img src="${asset(credit.image)}">`;
+    elem.innerText = `<img src="${asset(credit.image)}">`;
   } else if (credit.title && credit.author) {
     elem.innerHTML = `<div>${credit.title}</div>
         <div>${credit.author}</div>`;
