@@ -457,7 +457,7 @@ export class PlaylistCreator {
 
       const footer = document.createElement("div");
       footer.className = "footer";
-      footer.innerHTML = "&nbsp;";
+      footer.innerText = "&nbsp;";
       layoutEl.appendChild(footer);
 
       playlistEl.appendChild(layoutEl);
