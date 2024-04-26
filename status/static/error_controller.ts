@@ -82,7 +82,7 @@ export class ErrorController {
     for (const e of this.errors) {
       if (!e.element) {
         const newErrorEl = document.createElement("div");
-        newErrorEl.innerHTML = `<div>
+        newErrorEl.innerText = `<div>
           <span class="timestamp"></span>
           <span class="clients"></span>
           <span class="module"></span>:
