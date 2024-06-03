@@ -18,7 +18,7 @@ import { easyLog } from "../../lib/log.ts";
 import { ContentId, LocalLoadConfig } from "./interfaces.ts";
 import { ClientLoadStrategy, Content } from "./client_interfaces.ts";
 import { Surface } from "../../client/surface/surface.ts";
-import mime from "https://esm.sh/v96/mime@3.0.0/deno/mime.js";
+import mime from "https://esm.sh/v135/mime@4.0.3/deno/mime.js";
 import { WS } from "../../lib/websocket.ts";
 import { DrawFn, setUpVideoElement } from "./video_content_utils.ts";
 
